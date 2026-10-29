@@ -1,0 +1,26 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-check-circle text-success"></i> {{ title }}</h3>
+</div>
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <p>{{ created }} teacher{{ created|pluralize }} {{ created|pluralize:"was,were" }} created.</p>
+        <div class="alert alert-warning">
+          <strong>Download the login sheet now.</strong> It holds each teacher's username and temporary
+          password and can be downloaded only once. Keep it safe and hand each teacher their own details.
+        </div>
+        <a href="{% url 'teacher_import_credentials' %}" class="btn btn-success">
+          <i class="fas fa-download mr-1"></i> Download login sheet
+        </a>
+        <a href="{% url 'allocation_import_upload' %}" class="btn btn-outline-primary">
+          Next: upload their classes and subjects
+        </a>
+        <a href="{% url 'teacher_list' %}" class="btn btn-light">Go to teachers</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        
+        <!-- Left: Title + Breadcrumb -->
+        <div class="d-flex align-items-center flex-wrap">
+            <div class="mr-3">
+                <h3 class="page-title mb-1">
+                    <i class="fas fa-chalkboard text-primary mr-2"></i>
+                    Classes Management
+                </h3>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item active">
+                            Classes
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Right: Add New Class Button -->
+        <div class="ml-2">
+            <a href="{% url 'class_create' %}" class="btn btn-success">
+                                  <i class="fas fa-plus-circle me-1"></i> 
+                    <span class="d-none d-md-inline">Add New Class</span>
+                    <span class="d-inline d-md-none">Add Class</span>
+
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list mr-2"></i>
+                    All Classes ({{ classes.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Filter by level tabs -->
+                <ul class="nav nav-tabs mb-4" id="levelTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="all-tab" data-toggle="tab" href="#all">
+                            <i class="fas fa-th-large mr-1"></i> All
+                        </a>
+                    </li>
+                    {% for level in levels %}
+                    <li class="nav-item">
+                        <a class="nav-link" id="{{ level.code }}-tab" data-toggle="tab" href="#{{ level.code }}">
+                            <i class="{{ level.icon }} mr-1"></i> {{ level.name }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="tab-content" id="levelTabsContent">
+                    <!-- All Classes Tab -->
+                    <div class="tab-pane fade show active" id="all">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th><i class="fas fa-chalkboard mr-1"></i> Class Name</th>
+                                        <th><i class="fas fa-graduation-cap mr-1"></i> Education Level</th>
+                                        <th><i class="fas fa-stream mr-1"></i> Streams</th>
+                                        <th><i class="fas fa-school mr-1"></i> School</th>
+                                        <th><i class="fas fa-cogs mr-1"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for class in classes %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        {% if class.short_name %}
+                                            <div>
+                                                <strong class="text-primary d-block">{{ class.name }}</strong>
+                                                <small class="text-muted">{{ class.short_name }}</small>
+                                            </div>
+                                        {% else %}
+                                            <strong class="text-primary">{{ class.name }}</strong>
+                                        {% endif %}
+                                    </td>
+                                        <td>
+                                            <span class="badge badge-info">
+                                                <i class="{{ class.level.icon }} mr-1"></i>
+                                                {{ class.level.name }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% with stream_count=class.streams.count %}
+                                            <span class="badge {% if stream_count > 0 %}badge-success{% else %}badge-warning{% endif %}">
+                                                {{ stream_count }} stream{{ stream_count|pluralize }}
+                                            </span>
+                                            {% endwith %}
+                                        </td>
+                                        <td>{{ class.school.name }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'class_detail' class.id %}" class="btn btn-sm btn-info" 
+                                                   title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'class_update' class.id %}" class="btn btn-sm btn-warning" 
+                                                   title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-danger delete-class" 
+                                                        data-id="{{ class.id }}" 
+                                                        data-name="{{ class.name }}"
+                                                        title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <div class="empty-state">
+                                                <i class="fas fa-chalkboard-teacher fa-3x text-muted mb-3"></i>
+                                                <h5>No Classes Found</h5>
+                                                <p class="text-muted">Start by adding your first class.</p>
+                                                <a href="{% url 'class_create' %}" class="btn btn-outline-success">
+                                                    <i class="fas fa-plus mr-1"></i> Add Class
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Level-specific Tabs -->
+                    {% for level, level_classes in classes_by_level.items %}
+                    <div class="tab-pane fade" id="{{ level.code }}">
+                        {% if level_classes %}
+                        <div class="row">
+                            {% for class in level_classes %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card class-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h5 class="card-title mb-1">
+                                                    <i class="fas fa-chalkboard text-primary mr-1"></i>
+                                                    {{ class.name }}
+                                                </h5>
+                                                <p class="card-text text-muted small mb-2">
+                                                    <i class="fas fa-school mr-1"></i> {{ class.school.name }}
+                                                </p>
+                                            </div>
+                                            <span class="badge badge-info">
+                                                <i class="{{ class.level.icon }}"></i>
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <div>
+                                                <span class="badge badge-light">
+                                                    <i class="fas fa-stream mr-1"></i>
+                                                    {{ class.streams.count }} stream{{ class.streams.count|pluralize }}
+                                                </span>
+                                            </div>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'class_detail' class.id %}" class="btn btn-outline-info">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'class_update' class.id %}" class="btn btn-outline-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chalkboard fa-3x text-muted mb-3"></i>
+                            <h5>No Classes in {{ level.name }}</h5>
+                            <p class="text-muted">Add classes for {{ level.name }} level.</p>
+                            <a href="{% url 'class_create' %}" class="btn btn-outline-success">
+                                <i class="fas fa-plus mr-1"></i> Add Class
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(document).ready(function() {
+    // Delete class confirmation - WORKING VERSION
+    $(document).on('click', '.delete-class', function() {
+        const classId = $(this).data('id');
+        const className = $(this).data('name');
+        
+        // Show confirmation dialog
+        Swal.fire({
+            title: 'Delete Class?',
+            html: `Are you sure you want to delete <strong>${className}</strong>?<br><br>
+                   <div class="alert alert-danger small p-2">
+                       <i class="fas fa-exclamation-triangle mr-1"></i>
+                       This will also delete all streams in this class!
+                   </div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                // Return a promise with the AJAX call
+                return new Promise((resolve, reject) => {
+                    $.ajax({
+                        url: `/classes/${classId}/delete/`,  // FIXED URL
+                        type: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content') || 
+                                         $('[name=csrfmiddlewaretoken]').val() || 
+                                         '{{ csrf_token }}'
+                        },
+                        dataType: 'json',
+                        success: function(data) {
+                            resolve(data);
+                        },
+                        error: function(xhr) {
+                            reject(new Error('Delete failed'));
+                        }
+                    });
+                });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (result.value && result.value.success) {
+                    // Show success message
+                    Swal.fire({
+                        title: 'Deleted!',
+                        html: `Class <strong>${className}</strong> has been deleted.`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Reload the page
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        result.value?.message || 'Failed to delete class.',
+                        'error'
+                    );
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

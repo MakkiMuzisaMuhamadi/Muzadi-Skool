@@ -1,0 +1,203 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-medical text-danger"></i> Medical Records
+    </h3>
+    <small class="text-muted">Update student medical profiles (blood group, allergies, special needs, diet).</small>
+  </div>
+</div>
+
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body">
+
+    <!-- Filter Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap mb-2">
+      <div class="d-flex align-items-center">
+        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
+             style="width:38px;height:38px;">
+          <i class="fas fa-filter text-primary"></i>
+        </div>
+        <div>
+          <div class="font-weight-bold mb-0">Filters</div>
+          <small class="text-muted">Narrow down results by class, stream and keywords.</small>
+        </div>
+      </div>
+
+      {% if filters.class or filters.stream or filters.q %}
+        <span class="badge badge-light mt-2 mt-md-0">
+          Active filters
+        </span>
+      {% endif %}
+    </div>
+
+    <hr class="mt-2 mb-3">
+
+    <form method="get" class="row">
+
+      <!-- Class -->
+      <div class="col-lg-3 col-md-6 mb-2">
+        <label class="small text-muted mb-1">Class</label>
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white">
+              <i class="fas fa-layer-group text-muted"></i>
+            </span>
+          </div>
+          <select name="class" id="filterClass" class="form-select">
+            <option value="">All Classes</option>
+            {% for c in classes %}
+              <option value="{{ c.id }}" {% if filters.class == c.id|stringformat:"s" %}selected{% endif %}>
+                {{ c.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Stream -->
+      <div class="col-lg-3 col-md-6 mb-2">
+        <label class="small text-muted mb-1">Stream</label>
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white">
+              <i class="fas fa-stream text-muted"></i>
+            </span>
+          </div>
+          <select name="stream" id="filterStream" class="form-select">
+            <option value="">All Streams</option>
+            {% for s in streams %}
+              <option value="{{ s.id }}" {% if filters.stream == s.id|stringformat:"s" %}selected{% endif %}>
+                {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="col-lg-4 col-md-8 mb-2">
+        <label class="small text-muted mb-1">Search</label>
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+          </div>
+          <input type="text" name="q" class="form-control"
+                 placeholder="Name / Admission No..."
+                 value="{{ filters.q }}">
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="col-lg-2 col-md-4 mb-2 d-flex align-items-end">
+        <div class="btn-group w-100">
+          <button class="btn btn-primary" type="submit" title="Apply filters">
+            <i class="fas fa-filter mr-1"></i> Filter
+          </button>
+          <a class="btn btn-outline-secondary" href="{% url 'health_medical_records' %}" title="Reset filters">
+            <i class="fas fa-undo"></i>
+          </a>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="medicalTable">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Blood Group</th>
+            <th>Allergies</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in students %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
+                     style="width:36px;height:36px;">
+                  <i class="fas fa-user text-muted"></i>
+                </div>
+                <div>
+                  <div class="font-weight-bold">{{ s.name }}</div>
+                  <small class="text-muted">{{ s.admission_number }}</small>
+                </div>
+              </div>
+            </td>
+            <td>{{ s.current_class.name|default:"-" }}</td>
+            <td>{{ s.stream.name|default:"-" }}</td>
+            <td><span class="badge badge-light">{{ s.blood_group|default:"-" }}</span></td>
+            <td>
+              <span class="text-muted">
+                {{ s.known_allergies|default:"-"|truncatechars:30 }}
+              </span>
+            </td>
+            <td class="text-right">
+              <a class="btn btn-sm btn-outline-success" href="{% url 'health_medical_record_edit' s.id %}">
+                <i class="fas fa-edit mr-1"></i> Update
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No students found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  const STREAMS_URL = "{% url 'ajax_streams_by_class' %}";
+
+  async function loadStreams(classId, selectedStream){
+    const streamSel = document.getElementById("filterStream");
+    streamSel.innerHTML = '<option value="">All Streams</option>';
+    if(!classId) return;
+
+    const res = await fetch(`${STREAMS_URL}?class_id=${classId}`);
+    const data = await res.json();
+    (data.results || []).forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r.id;
+      opt.textContent = r.name;
+      if(selectedStream && String(selectedStream) === String(r.id)) opt.selected = true;
+      streamSel.appendChild(opt);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    const classSel = document.getElementById("filterClass");
+    const selectedStream = "{{ filters.stream }}";
+    if(classSel.value) loadStreams(classSel.value, selectedStream);
+
+    classSel.addEventListener("change", function(){
+      loadStreams(this.value, "");
+    });
+
+    // DataTables (only if available in your base)
+    try {
+      $('#medicalTable').DataTable({
+        pageLength: 25,
+        order: [],
+      });
+    } catch(e){}
+  });
+</script>
+{% endblock %}

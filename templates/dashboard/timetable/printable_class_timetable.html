@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Class Timetable</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+
+    :root {
+      --primary: #0f172a;
+      --accent: #1d4ed8;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #1f2937;
+      --soft: #eef2f7;
+      --break-bg: #fff7df;
+      --break-border: #e7c96c;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+
+    .page {
+      width: 100%;
+    }
+
+    .no-print {
+      margin-bottom: 14px;
+    }
+
+    .no-print button {
+      border: 1px solid #cbd5e1;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .report-header {
+      border: 1.6px solid var(--primary);
+      border-bottom: 3px solid var(--accent);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+
+    .report-header-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .report-header-table td {
+      border: none;
+      vertical-align: top;
+      padding: 0;
+    }
+
+    .header-logo-cell {
+      width: 88px;
+      padding-right: 10px;
+    }
+
+    .header-logo {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .logo-placeholder {
+      width: 76px;
+      height: 76px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary);
+    }
+
+    .header-main-cell {
+      text-align: center;
+    }
+
+    .school-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.1;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .school-motto {
+      font-size: 12px;
+      margin-top: 3px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .school-contact-line {
+      font-size: 11px;
+      margin-top: 4px;
+      color: #374151;
+    }
+
+    .report-title-block {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid #cbd5e1;
+    }
+
+    .report-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: .3px;
+    }
+
+    .report-subtitle {
+      font-size: 12px;
+      margin-top: 3px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .meta-bar {
+      margin-bottom: 10px;
+      font-size: 12px;
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      background: #fafafa;
+    }
+
+    .meta-bar strong {
+      color: var(--primary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #374151;
+      padding: 6px 7px;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--soft);
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .day-col {
+      width: 105px;
+      background: #f8fafc;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .period-head {
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .break {
+      background: var(--break-bg);
+    }
+
+    .break-box {
+      background: var(--break-bg);
+      border: 1px solid var(--break-border);
+      text-align: center;
+      font-weight: 700;
+      padding: 10px 4px;
+      min-height: 46px;
+    }
+
+    .lesson-box {
+      min-height: 58px;
+    }
+
+    .subject-name {
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      border-top: 1px solid #d1d5db;
+      padding-top: 6px;
+    }
+
+    @media print {
+      .no-print {
+        display: none;
+      }
+
+      body {
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="no-print">
+      <button onclick="window.print()">Print</button>
+    </div>
+
+    <div class="report-header">
+      <table class="report-header-table">
+        <tr>
+          <td class="header-logo-cell">
+            {% if school_info.logo %}
+              <img src="file://{{ school_info.logo }}" alt="School Logo" class="header-logo">
+            {% elif school.logo %}
+              <img src="file://{{ school.logo.path }}" alt="School Logo" class="header-logo">
+            {% else %}
+              <div class="logo-placeholder">
+                {% if school_info.short_name %}
+                  {{ school_info.short_name }}
+                {% elif school.short_name %}
+                  {{ school.short_name }}
+                {% else %}
+                  SCH
+                {% endif %}
+              </div>
+            {% endif %}
+          </td>
+
+          <td class="header-main-cell">
+            <div class="school-name">
+              {{ school_info.name|default:school.name|default:"School Name" }}
+            </div>
+
+            {% if school_info.moto or school.moto %}
+              <div class="school-motto">
+                {{ school_info.moto|default:school.moto }}
+              </div>
+            {% endif %}
+
+            <div class="school-contact-line">
+              {% if school_info.address or school.address %}
+                <span>{{ school_info.address|default:school.address }}</span>
+              {% endif %}
+              {% if school_info.phone or school.contact_phone %}
+                <span>
+                  {% if school_info.address or school.address %} | {% endif %}
+                  Tel: {{ school_info.phone|default:school.contact_phone }}
+                </span>
+              {% endif %}
+              {% if school_info.email or school.contact_email %}
+                <span>
+                  {% if school_info.address or school.address or school_info.phone or school.contact_phone %} | {% endif %}
+                  Email: {{ school_info.email|default:school.contact_email }}
+                </span>
+              {% endif %}
+            </div>
+
+            <div class="report-title-block">
+              <div class="report-title">Class Timetable</div>
+              <div class="report-subtitle">{{ timetable.name }} | {{ subtitle }}</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="meta-bar">
+      <strong>Class:</strong> {{ selected_class.name }}
+      {% if selected_stream %}&nbsp;-&nbsp;<strong>Stream:</strong> {{ selected_stream.name }}{% endif %}
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      <strong>Timetable:</strong> {{ timetable.display_name }}
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      <strong>Lesson periods/week:</strong> {{ weekly_lessons }}
+    </div>
+
+    {% include "dashboard/timetable/_grid_print.html" with mode="class" %}
+
+    <div class="footer-note">
+      <!-- Generated timetable printout -->
+    </div>
+  </div>
+</body>
+</html>

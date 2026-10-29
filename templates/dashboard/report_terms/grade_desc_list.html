@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0">UCE Grade Descriptors</h4>
+    <small class="text-muted">Stores long descriptors per grade (A, B, C...) for the “GRADE RANGE / GRADE DESCRIPTOR” section.</small>
+  </div>
+  <a class="btn btn-primary" href="{% url 'report_grade_desc_add' %}">Add Grade Descriptor</a>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-striped table-sm">
+      <thead>
+        <tr>
+          <th>Level</th>
+          <th>Grade</th>
+          <th>Range</th>
+          <th>Descriptor</th>
+          <th>Order</th>
+          <th>Active</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.level }}</td>
+          <td><b>{{ r.grade_letter }}</b></td>
+          <td>{{ r.min_percentage }} - {{ r.max_percentage }}</td>
+          <td style="max-width:640px; white-space:normal">{{ r.descriptor }}</td>
+          <td>{{ r.order }}</td>
+          <td>{{ r.is_active }}</td>
+          <td class="text-right">
+            <a class="btn btn-sm btn-outline-info" href="{% url 'report_grade_desc_edit' r.id %}">Edit</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'report_grade_desc_delete' r.id %}">Delete</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-muted">No grade descriptors yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

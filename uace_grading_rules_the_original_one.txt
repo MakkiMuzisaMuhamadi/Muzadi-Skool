@@ -1,0 +1,763 @@
+66 objects imported automatically (use -v 2 for details).
+
+==========================================================================================
+UACE GRADING SCALE BACKUP VIEW
+==========================================================================================
+School: Demo High School
+Level: UACE
+Scale Name: Default UACE Scale
+Is Active: True
+Required Principal Subjects: 3
+Required Subsidiary Subjects: 1
+Require General Paper: True
+
+==========================================================================================
+PAPER GRADES
+==========================================================================================
+Grade=D1 | Name=Division 1 | Value=1 | Range=85.00 - 100.00 | Order=1
+Grade=D2 | Name=Division 2 | Value=2 | Range=80.00 - 84.99 | Order=2
+Grade=C3 | Name=Credit 3 | Value=3 | Range=75.00 - 79.99 | Order=3
+Grade=C4 | Name=Credit 4 | Value=4 | Range=70.00 - 74.99 | Order=4
+Grade=C5 | Name=Credit 5 | Value=5 | Range=60.00 - 69.99 | Order=5
+Grade=C6 | Name=Credit 6 | Value=6 | Range=50.00 - 59.99 | Order=6
+Grade=P7 | Name=Pass 7 | Value=7 | Range=45.00 - 49.99 | Order=7
+Grade=P8 | Name=Pass 8 | Value=8 | Range=40.00 - 44.99 | Order=8
+Grade=F9 | Name=Fail 9 | Value=9 | Range=0.00 - 39.99 | Order=9
+
+==========================================================================================
+SUBJECT GRADE RULES
+==========================================================================================
+PaperCount=2 | Pattern=1,1 | FinalGrade=A | Points=6 | Order=1 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,2 | FinalGrade=A | Points=6 | Order=2 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,3 | FinalGrade=B | Points=5 | Order=3 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,4 | FinalGrade=C | Points=4 | Order=4 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,5 | FinalGrade=D | Points=3 | Order=5 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,6 | FinalGrade=E | Points=2 | Order=6 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,7 | FinalGrade=O | Points=1 | Order=7 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,8 | FinalGrade=O | Points=1 | Order=8 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=1,9 | FinalGrade=O | Points=1 | Order=9 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,2 | FinalGrade=A | Points=6 | Order=10 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,3 | FinalGrade=B | Points=5 | Order=11 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,4 | FinalGrade=C | Points=4 | Order=12 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,5 | FinalGrade=D | Points=3 | Order=13 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,6 | FinalGrade=E | Points=2 | Order=14 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,7 | FinalGrade=O | Points=1 | Order=15 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,8 | FinalGrade=O | Points=1 | Order=16 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=2,9 | FinalGrade=O | Points=1 | Order=17 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,3 | FinalGrade=B | Points=5 | Order=18 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,4 | FinalGrade=C | Points=4 | Order=19 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,5 | FinalGrade=D | Points=3 | Order=20 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,6 | FinalGrade=E | Points=2 | Order=21 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,7 | FinalGrade=O | Points=1 | Order=22 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,8 | FinalGrade=O | Points=1 | Order=23 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=3,9 | FinalGrade=O | Points=1 | Order=24 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=4,4 | FinalGrade=C | Points=4 | Order=25 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=4,5 | FinalGrade=D | Points=3 | Order=26 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=4,6 | FinalGrade=E | Points=2 | Order=27 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=4,7 | FinalGrade=O | Points=1 | Order=28 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=4,8 | FinalGrade=O | Points=1 | Order=29 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=4,9 | FinalGrade=O | Points=1 | Order=30 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=5,5 | FinalGrade=D | Points=3 | Order=31 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=5,6 | FinalGrade=E | Points=2 | Order=32 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=5,7 | FinalGrade=O | Points=1 | Order=33 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=5,8 | FinalGrade=O | Points=1 | Order=34 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=5,9 | FinalGrade=F | Points=0 | Order=35 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=6,6 | FinalGrade=E | Points=2 | Order=36 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=6,7 | FinalGrade=O | Points=1 | Order=37 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=6,8 | FinalGrade=O | Points=1 | Order=38 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=6,9 | FinalGrade=F | Points=0 | Order=39 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=7,7 | FinalGrade=F | Points=0 | Order=40 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=7,8 | FinalGrade=F | Points=0 | Order=41 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=7,9 | FinalGrade=F | Points=0 | Order=42 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=8,8 | FinalGrade=F | Points=0 | Order=43 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=8,9 | FinalGrade=F | Points=0 | Order=44 | Remarks=Auto-generated default rule
+PaperCount=2 | Pattern=9,9 | FinalGrade=F | Points=0 | Order=45 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,1,1 | FinalGrade=A | Points=6 | Order=1 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,1,2 | FinalGrade=A | Points=6 | Order=2 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,1,3 | FinalGrade=A | Points=6 | Order=3 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,1,4 | FinalGrade=A | Points=6 | Order=4 | Remarks=Auto-corrected from B (5 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,1,5 | FinalGrade=A | Points=6 | Order=5 | Remarks=Auto-corrected from C (4 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,1,6 | FinalGrade=A | Points=6 | Order=6 | Remarks=Auto-corrected from D (3 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,1,7 | FinalGrade=A | Points=6 | Order=7 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,1,8 | FinalGrade=A | Points=6 | Order=8 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,1,9 | FinalGrade=A | Points=6 | Order=9 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=3 | Pattern=1,2,2 | FinalGrade=A | Points=6 | Order=10 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,2,3 | FinalGrade=A | Points=6 | Order=11 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,2,4 | FinalGrade=A | Points=6 | Order=12 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,2,5 | FinalGrade=A | Points=6 | Order=13 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,2,6 | FinalGrade=A | Points=6 | Order=14 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,2,7 | FinalGrade=A | Points=6 | Order=15 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,2,8 | FinalGrade=A | Points=6 | Order=16 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,2,9 | FinalGrade=A | Points=6 | Order=17 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=3 | Pattern=1,3,3 | FinalGrade=B | Points=5 | Order=18 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,3,4 | FinalGrade=B | Points=5 | Order=19 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,3,5 | FinalGrade=B | Points=5 | Order=20 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,3,6 | FinalGrade=B | Points=5 | Order=21 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,3,7 | FinalGrade=B | Points=5 | Order=22 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,3,8 | FinalGrade=B | Points=5 | Order=23 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,3,9 | FinalGrade=B | Points=5 | Order=24 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=3 | Pattern=1,4,4 | FinalGrade=C | Points=4 | Order=25 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=3 | Pattern=1,4,5 | FinalGrade=C | Points=4 | Order=26 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=3 | Pattern=1,4,6 | FinalGrade=C | Points=4 | Order=27 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=3 | Pattern=1,4,7 | FinalGrade=C | Points=4 | Order=28 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=3 | Pattern=1,4,8 | FinalGrade=C | Points=4 | Order=29 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=3 | Pattern=1,4,9 | FinalGrade=C | Points=4 | Order=30 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=3 | Pattern=1,5,5 | FinalGrade=D | Points=3 | Order=31 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=3 | Pattern=1,5,6 | FinalGrade=D | Points=3 | Order=32 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=3 | Pattern=1,5,7 | FinalGrade=D | Points=3 | Order=33 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=3 | Pattern=1,5,8 | FinalGrade=D | Points=3 | Order=34 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=3 | Pattern=1,5,9 | FinalGrade=D | Points=3 | Order=35 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=3 | Pattern=1,6,6 | FinalGrade=E | Points=2 | Order=36 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=3 | Pattern=1,6,7 | FinalGrade=E | Points=2 | Order=37 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,6,8 | FinalGrade=E | Points=2 | Order=38 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=3 | Pattern=1,6,9 | FinalGrade=E | Points=2 | Order=39 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=3 | Pattern=1,7,7 | FinalGrade=E | Points=2 | Order=40 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,7,8 | FinalGrade=O | Points=1 | Order=41 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,7,9 | FinalGrade=O | Points=1 | Order=42 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,8,8 | FinalGrade=O | Points=1 | Order=43 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,8,9 | FinalGrade=O | Points=1 | Order=44 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=1,9,9 | FinalGrade=O | Points=1 | Order=45 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,9
+PaperCount=3 | Pattern=2,2,2 | FinalGrade=A | Points=6 | Order=46 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,2,3 | FinalGrade=A | Points=6 | Order=47 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,2,4 | FinalGrade=A | Points=6 | Order=48 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,2,5 | FinalGrade=A | Points=6 | Order=49 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,2,6 | FinalGrade=A | Points=6 | Order=50 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,2,7 | FinalGrade=A | Points=6 | Order=51 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,2,8 | FinalGrade=A | Points=6 | Order=52 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,2,9 | FinalGrade=A | Points=6 | Order=53 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=3 | Pattern=2,3,3 | FinalGrade=B | Points=5 | Order=54 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=3 | Pattern=2,3,4 | FinalGrade=B | Points=5 | Order=55 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,3,5 | FinalGrade=B | Points=5 | Order=56 | Remarks=Auto-corrected from C (4 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=3 | Pattern=2,3,6 | FinalGrade=B | Points=5 | Order=57 | Remarks=Auto-corrected from D (3 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=3 | Pattern=2,3,7 | FinalGrade=B | Points=5 | Order=58 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=3 | Pattern=2,3,8 | FinalGrade=B | Points=5 | Order=59 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=3 | Pattern=2,3,9 | FinalGrade=B | Points=5 | Order=60 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=3 | Pattern=2,4,4 | FinalGrade=C | Points=4 | Order=61 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=3 | Pattern=2,4,5 | FinalGrade=C | Points=4 | Order=62 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=3 | Pattern=2,4,6 | FinalGrade=C | Points=4 | Order=63 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=3 | Pattern=2,4,7 | FinalGrade=C | Points=4 | Order=64 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=3 | Pattern=2,4,8 | FinalGrade=C | Points=4 | Order=65 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=3 | Pattern=2,4,9 | FinalGrade=C | Points=4 | Order=66 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=3 | Pattern=2,5,5 | FinalGrade=D | Points=3 | Order=67 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=3 | Pattern=2,5,6 | FinalGrade=D | Points=3 | Order=68 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=3 | Pattern=2,5,7 | FinalGrade=D | Points=3 | Order=69 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=3 | Pattern=2,5,8 | FinalGrade=D | Points=3 | Order=70 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=3 | Pattern=2,5,9 | FinalGrade=D | Points=3 | Order=71 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=3 | Pattern=2,6,6 | FinalGrade=E | Points=2 | Order=72 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=3 | Pattern=2,6,7 | FinalGrade=E | Points=2 | Order=73 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,6,8 | FinalGrade=E | Points=2 | Order=74 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=3 | Pattern=2,6,9 | FinalGrade=E | Points=2 | Order=75 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=3 | Pattern=2,7,7 | FinalGrade=E | Points=2 | Order=76 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,7,8 | FinalGrade=O | Points=1 | Order=77 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,7,9 | FinalGrade=O | Points=1 | Order=78 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,8,8 | FinalGrade=O | Points=1 | Order=79 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,8,9 | FinalGrade=O | Points=1 | Order=80 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=2,9,9 | FinalGrade=O | Points=1 | Order=81 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,9
+PaperCount=3 | Pattern=3,3,3 | FinalGrade=B | Points=5 | Order=82 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=3 | Pattern=3,3,4 | FinalGrade=B | Points=5 | Order=83 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=3,3,5 | FinalGrade=B | Points=5 | Order=84 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=3 | Pattern=3,3,6 | FinalGrade=B | Points=5 | Order=85 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=3 | Pattern=3,3,7 | FinalGrade=B | Points=5 | Order=86 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=3 | Pattern=3,3,8 | FinalGrade=B | Points=5 | Order=87 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=3 | Pattern=3,3,9 | FinalGrade=B | Points=5 | Order=88 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=3 | Pattern=3,4,4 | FinalGrade=C | Points=4 | Order=89 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=3 | Pattern=3,4,5 | FinalGrade=C | Points=4 | Order=90 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=3 | Pattern=3,4,6 | FinalGrade=C | Points=4 | Order=91 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=3 | Pattern=3,4,7 | FinalGrade=C | Points=4 | Order=92 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=3 | Pattern=3,4,8 | FinalGrade=C | Points=4 | Order=93 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=3 | Pattern=3,4,9 | FinalGrade=C | Points=4 | Order=94 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=3 | Pattern=3,5,5 | FinalGrade=D | Points=3 | Order=95 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=3 | Pattern=3,5,6 | FinalGrade=D | Points=3 | Order=96 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=3 | Pattern=3,5,7 | FinalGrade=D | Points=3 | Order=97 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=3 | Pattern=3,5,8 | FinalGrade=D | Points=3 | Order=98 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=3 | Pattern=3,5,9 | FinalGrade=D | Points=3 | Order=99 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=3 | Pattern=3,6,6 | FinalGrade=E | Points=2 | Order=100 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=3 | Pattern=3,6,7 | FinalGrade=E | Points=2 | Order=101 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=3 | Pattern=3,6,8 | FinalGrade=E | Points=2 | Order=102 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=3 | Pattern=3,6,9 | FinalGrade=E | Points=2 | Order=103 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=3 | Pattern=3,7,7 | FinalGrade=O | Points=1 | Order=104 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=3,7,8 | FinalGrade=O | Points=1 | Order=105 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=3,7,9 | FinalGrade=O | Points=1 | Order=106 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=3,8,8 | FinalGrade=O | Points=1 | Order=107 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=3,8,9 | FinalGrade=O | Points=1 | Order=108 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=3,9,9 | FinalGrade=O | Points=1 | Order=109 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,9
+PaperCount=3 | Pattern=4,4,4 | FinalGrade=C | Points=4 | Order=110 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=3 | Pattern=4,4,5 | FinalGrade=C | Points=4 | Order=111 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=4,4,6 | FinalGrade=C | Points=4 | Order=112 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=3 | Pattern=4,4,7 | FinalGrade=C | Points=4 | Order=113 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=3 | Pattern=4,4,8 | FinalGrade=C | Points=4 | Order=114 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=3 | Pattern=4,4,9 | FinalGrade=C | Points=4 | Order=115 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=3 | Pattern=4,5,5 | FinalGrade=D | Points=3 | Order=116 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=3 | Pattern=4,5,6 | FinalGrade=D | Points=3 | Order=117 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=3 | Pattern=4,5,7 | FinalGrade=D | Points=3 | Order=118 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=3 | Pattern=4,5,8 | FinalGrade=D | Points=3 | Order=119 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=3 | Pattern=4,5,9 | FinalGrade=D | Points=3 | Order=120 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=3 | Pattern=4,6,6 | FinalGrade=E | Points=2 | Order=121 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=3 | Pattern=4,6,7 | FinalGrade=E | Points=2 | Order=122 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=3 | Pattern=4,6,8 | FinalGrade=E | Points=2 | Order=123 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=3 | Pattern=4,6,9 | FinalGrade=E | Points=2 | Order=124 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=3 | Pattern=4,7,7 | FinalGrade=O | Points=1 | Order=125 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=4,7,8 | FinalGrade=O | Points=1 | Order=126 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=4,7,9 | FinalGrade=O | Points=1 | Order=127 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=4,8,8 | FinalGrade=O | Points=1 | Order=128 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=4,8,9 | FinalGrade=O | Points=1 | Order=129 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=4,9,9 | FinalGrade=O | Points=1 | Order=130 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,9
+PaperCount=3 | Pattern=5,5,5 | FinalGrade=D | Points=3 | Order=131 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=3 | Pattern=5,5,6 | FinalGrade=D | Points=3 | Order=132 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=5,5,7 | FinalGrade=D | Points=3 | Order=133 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=3 | Pattern=5,5,8 | FinalGrade=D | Points=3 | Order=134 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=3 | Pattern=5,5,9 | FinalGrade=D | Points=3 | Order=135 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=3 | Pattern=5,6,6 | FinalGrade=E | Points=2 | Order=136 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=3 | Pattern=5,6,7 | FinalGrade=E | Points=2 | Order=137 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=3 | Pattern=5,6,8 | FinalGrade=E | Points=2 | Order=138 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=3 | Pattern=5,6,9 | FinalGrade=E | Points=2 | Order=139 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=3 | Pattern=5,7,7 | FinalGrade=O | Points=1 | Order=140 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=5,7,8 | FinalGrade=O | Points=1 | Order=141 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=5,7,9 | FinalGrade=O | Points=1 | Order=142 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=5,8,8 | FinalGrade=O | Points=1 | Order=143 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=5,8,9 | FinalGrade=O | Points=1 | Order=144 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=5,9,9 | FinalGrade=F | Points=0 | Order=145 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=6,6,6 | FinalGrade=E | Points=2 | Order=146 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=3 | Pattern=6,6,7 | FinalGrade=E | Points=2 | Order=147 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=3 | Pattern=6,6,8 | FinalGrade=E | Points=2 | Order=148 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=3 | Pattern=6,6,9 | FinalGrade=E | Points=2 | Order=149 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=3 | Pattern=6,7,7 | FinalGrade=O | Points=1 | Order=150 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=6,7,8 | FinalGrade=O | Points=1 | Order=151 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=6,7,9 | FinalGrade=O | Points=1 | Order=152 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=6,8,8 | FinalGrade=O | Points=1 | Order=153 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=6,8,9 | FinalGrade=O | Points=1 | Order=154 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=6,9,9 | FinalGrade=F | Points=0 | Order=155 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=7,7,7 | FinalGrade=O | Points=1 | Order=156 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=7,7,8 | FinalGrade=O | Points=1 | Order=157 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=7,7,9 | FinalGrade=O | Points=1 | Order=158 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=7,8,8 | FinalGrade=O | Points=1 | Order=159 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=7,8,9 | FinalGrade=O | Points=1 | Order=160 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=7,9,9 | FinalGrade=F | Points=0 | Order=161 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=8,8,8 | FinalGrade=O | Points=1 | Order=162 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=8,8,9 | FinalGrade=O | Points=1 | Order=163 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=8,9,9 | FinalGrade=F | Points=0 | Order=164 | Remarks=Auto-generated default rule
+PaperCount=3 | Pattern=9,9,9 | FinalGrade=F | Points=0 | Order=165 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,1,1,1 | FinalGrade=A | Points=6 | Order=1 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,2 | FinalGrade=A | Points=6 | Order=2 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,3 | FinalGrade=A | Points=6 | Order=3 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,1,1,4 | FinalGrade=A | Points=6 | Order=4 | Remarks=Auto-corrected from B (5 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,5 | FinalGrade=A | Points=6 | Order=5 | Remarks=Auto-corrected from C (4 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,6 | FinalGrade=A | Points=6 | Order=6 | Remarks=Auto-corrected from D (3 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,7 | FinalGrade=A | Points=6 | Order=7 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,8 | FinalGrade=A | Points=6 | Order=8 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,1,9 | FinalGrade=A | Points=6 | Order=9 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,2 | FinalGrade=A | Points=6 | Order=10 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,3 | FinalGrade=A | Points=6 | Order=11 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,4 | FinalGrade=A | Points=6 | Order=12 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,5 | FinalGrade=A | Points=6 | Order=13 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,6 | FinalGrade=A | Points=6 | Order=14 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,7 | FinalGrade=A | Points=6 | Order=15 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,8 | FinalGrade=A | Points=6 | Order=16 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,2,9 | FinalGrade=A | Points=6 | Order=17 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,3 | FinalGrade=A | Points=6 | Order=18 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,4 | FinalGrade=A | Points=6 | Order=19 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,5 | FinalGrade=A | Points=6 | Order=20 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,6 | FinalGrade=A | Points=6 | Order=21 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,7 | FinalGrade=A | Points=6 | Order=22 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,8 | FinalGrade=A | Points=6 | Order=23 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,3,9 | FinalGrade=A | Points=6 | Order=24 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,4,4 | FinalGrade=A | Points=6 | Order=25 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,4,5 | FinalGrade=A | Points=6 | Order=26 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,4,6 | FinalGrade=A | Points=6 | Order=27 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,4,7 | FinalGrade=A | Points=6 | Order=28 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,4,8 | FinalGrade=A | Points=6 | Order=29 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,4,9 | FinalGrade=A | Points=6 | Order=30 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,5,5 | FinalGrade=A | Points=6 | Order=31 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,5,6 | FinalGrade=A | Points=6 | Order=32 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,5,7 | FinalGrade=A | Points=6 | Order=33 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,5,8 | FinalGrade=A | Points=6 | Order=34 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,5,9 | FinalGrade=A | Points=6 | Order=35 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,6,6 | FinalGrade=A | Points=6 | Order=36 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,6,7 | FinalGrade=A | Points=6 | Order=37 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,6,8 | FinalGrade=A | Points=6 | Order=38 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,6,9 | FinalGrade=A | Points=6 | Order=39 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,7,7 | FinalGrade=A | Points=6 | Order=40 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,7,8 | FinalGrade=A | Points=6 | Order=41 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,7,9 | FinalGrade=A | Points=6 | Order=42 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,8,8 | FinalGrade=A | Points=6 | Order=43 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,8,9 | FinalGrade=A | Points=6 | Order=44 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,1,9,9 | FinalGrade=A | Points=6 | Order=45 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,1
+PaperCount=4 | Pattern=1,2,2,2 | FinalGrade=A | Points=6 | Order=46 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,3 | FinalGrade=A | Points=6 | Order=47 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,4 | FinalGrade=A | Points=6 | Order=48 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,5 | FinalGrade=A | Points=6 | Order=49 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,6 | FinalGrade=A | Points=6 | Order=50 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,7 | FinalGrade=A | Points=6 | Order=51 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,8 | FinalGrade=A | Points=6 | Order=52 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,2,9 | FinalGrade=A | Points=6 | Order=53 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,3 | FinalGrade=A | Points=6 | Order=54 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,4 | FinalGrade=A | Points=6 | Order=55 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,5 | FinalGrade=A | Points=6 | Order=56 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,6 | FinalGrade=A | Points=6 | Order=57 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,7 | FinalGrade=A | Points=6 | Order=58 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,8 | FinalGrade=A | Points=6 | Order=59 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,3,9 | FinalGrade=A | Points=6 | Order=60 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,4,4 | FinalGrade=A | Points=6 | Order=61 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,4,5 | FinalGrade=A | Points=6 | Order=62 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,4,6 | FinalGrade=A | Points=6 | Order=63 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,4,7 | FinalGrade=A | Points=6 | Order=64 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,4,8 | FinalGrade=A | Points=6 | Order=65 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,4,9 | FinalGrade=A | Points=6 | Order=66 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,5,5 | FinalGrade=A | Points=6 | Order=67 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,5,6 | FinalGrade=A | Points=6 | Order=68 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,5,7 | FinalGrade=A | Points=6 | Order=69 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,5,8 | FinalGrade=A | Points=6 | Order=70 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,5,9 | FinalGrade=A | Points=6 | Order=71 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,6,6 | FinalGrade=A | Points=6 | Order=72 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,6,7 | FinalGrade=A | Points=6 | Order=73 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,6,8 | FinalGrade=A | Points=6 | Order=74 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,6,9 | FinalGrade=A | Points=6 | Order=75 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,7,7 | FinalGrade=A | Points=6 | Order=76 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,7,8 | FinalGrade=A | Points=6 | Order=77 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,7,9 | FinalGrade=A | Points=6 | Order=78 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,8,8 | FinalGrade=A | Points=6 | Order=79 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,8,9 | FinalGrade=A | Points=6 | Order=80 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,2,9,9 | FinalGrade=A | Points=6 | Order=81 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 1,2
+PaperCount=4 | Pattern=1,3,3,3 | FinalGrade=B | Points=5 | Order=82 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,3,4 | FinalGrade=B | Points=5 | Order=83 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,3,5 | FinalGrade=B | Points=5 | Order=84 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,3,6 | FinalGrade=B | Points=5 | Order=85 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,3,7 | FinalGrade=B | Points=5 | Order=86 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,3,8 | FinalGrade=B | Points=5 | Order=87 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,3,9 | FinalGrade=B | Points=5 | Order=88 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,4,4 | FinalGrade=B | Points=5 | Order=89 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,4,5 | FinalGrade=B | Points=5 | Order=90 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,4,6 | FinalGrade=B | Points=5 | Order=91 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,4,7 | FinalGrade=B | Points=5 | Order=92 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,4,8 | FinalGrade=B | Points=5 | Order=93 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,4,9 | FinalGrade=B | Points=5 | Order=94 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,5,5 | FinalGrade=B | Points=5 | Order=95 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,5,6 | FinalGrade=B | Points=5 | Order=96 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,5,7 | FinalGrade=B | Points=5 | Order=97 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,5,8 | FinalGrade=B | Points=5 | Order=98 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,5,9 | FinalGrade=B | Points=5 | Order=99 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,6,6 | FinalGrade=B | Points=5 | Order=100 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,6,7 | FinalGrade=B | Points=5 | Order=101 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,6,8 | FinalGrade=B | Points=5 | Order=102 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,6,9 | FinalGrade=B | Points=5 | Order=103 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,7,7 | FinalGrade=B | Points=5 | Order=104 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,7,8 | FinalGrade=B | Points=5 | Order=105 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,7,9 | FinalGrade=B | Points=5 | Order=106 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,8,8 | FinalGrade=B | Points=5 | Order=107 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,8,9 | FinalGrade=B | Points=5 | Order=108 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,3,9,9 | FinalGrade=B | Points=5 | Order=109 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 1,3
+PaperCount=4 | Pattern=1,4,4,4 | FinalGrade=C | Points=4 | Order=110 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,4,5 | FinalGrade=C | Points=4 | Order=111 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,4,6 | FinalGrade=C | Points=4 | Order=112 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,4,7 | FinalGrade=C | Points=4 | Order=113 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,4,8 | FinalGrade=C | Points=4 | Order=114 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,4,9 | FinalGrade=C | Points=4 | Order=115 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,5,5 | FinalGrade=C | Points=4 | Order=116 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,5,6 | FinalGrade=C | Points=4 | Order=117 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,5,7 | FinalGrade=C | Points=4 | Order=118 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,5,8 | FinalGrade=C | Points=4 | Order=119 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,5,9 | FinalGrade=C | Points=4 | Order=120 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,6,6 | FinalGrade=C | Points=4 | Order=121 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,6,7 | FinalGrade=C | Points=4 | Order=122 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,6,8 | FinalGrade=C | Points=4 | Order=123 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,6,9 | FinalGrade=C | Points=4 | Order=124 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,7,7 | FinalGrade=C | Points=4 | Order=125 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,7,8 | FinalGrade=C | Points=4 | Order=126 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,7,9 | FinalGrade=C | Points=4 | Order=127 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,8,8 | FinalGrade=C | Points=4 | Order=128 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,8,9 | FinalGrade=C | Points=4 | Order=129 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,4,9,9 | FinalGrade=C | Points=4 | Order=130 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 1,4
+PaperCount=4 | Pattern=1,5,5,5 | FinalGrade=D | Points=3 | Order=131 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,5,6 | FinalGrade=D | Points=3 | Order=132 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,5,7 | FinalGrade=D | Points=3 | Order=133 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,5,8 | FinalGrade=D | Points=3 | Order=134 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,5,9 | FinalGrade=D | Points=3 | Order=135 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,6,6 | FinalGrade=D | Points=3 | Order=136 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,6,7 | FinalGrade=D | Points=3 | Order=137 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,6,8 | FinalGrade=D | Points=3 | Order=138 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,6,9 | FinalGrade=D | Points=3 | Order=139 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,7,7 | FinalGrade=D | Points=3 | Order=140 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,7,8 | FinalGrade=D | Points=3 | Order=141 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,7,9 | FinalGrade=D | Points=3 | Order=142 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,8,8 | FinalGrade=D | Points=3 | Order=143 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,8,9 | FinalGrade=D | Points=3 | Order=144 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,5,9,9 | FinalGrade=D | Points=3 | Order=145 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 1,5
+PaperCount=4 | Pattern=1,6,6,6 | FinalGrade=E | Points=2 | Order=146 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=4 | Pattern=1,6,6,7 | FinalGrade=E | Points=2 | Order=147 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,6,6,8 | FinalGrade=E | Points=2 | Order=148 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,6,6,9 | FinalGrade=E | Points=2 | Order=149 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=4 | Pattern=1,6,7,7 | FinalGrade=E | Points=2 | Order=150 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=4 | Pattern=1,6,7,8 | FinalGrade=E | Points=2 | Order=151 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,6,7,9 | FinalGrade=E | Points=2 | Order=152 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=4 | Pattern=1,6,8,8 | FinalGrade=E | Points=2 | Order=153 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=4 | Pattern=1,6,8,9 | FinalGrade=E | Points=2 | Order=154 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,6,9,9 | FinalGrade=E | Points=2 | Order=155 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 1,6
+PaperCount=4 | Pattern=1,7,7,7 | FinalGrade=O | Points=1 | Order=156 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,7
+PaperCount=4 | Pattern=1,7,7,8 | FinalGrade=O | Points=1 | Order=157 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,7
+PaperCount=4 | Pattern=1,7,7,9 | FinalGrade=O | Points=1 | Order=158 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,7,8,8 | FinalGrade=O | Points=1 | Order=159 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,7
+PaperCount=4 | Pattern=1,7,8,9 | FinalGrade=O | Points=1 | Order=160 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,7,9,9 | FinalGrade=O | Points=1 | Order=161 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,7
+PaperCount=4 | Pattern=1,8,8,8 | FinalGrade=O | Points=1 | Order=162 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,8
+PaperCount=4 | Pattern=1,8,8,9 | FinalGrade=O | Points=1 | Order=163 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=1,8,9,9 | FinalGrade=O | Points=1 | Order=164 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,8
+PaperCount=4 | Pattern=1,9,9,9 | FinalGrade=O | Points=1 | Order=165 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 1,9
+PaperCount=4 | Pattern=2,2,2,2 | FinalGrade=A | Points=6 | Order=166 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,2,3 | FinalGrade=A | Points=6 | Order=167 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,2,2,4 | FinalGrade=A | Points=6 | Order=168 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,2,5 | FinalGrade=A | Points=6 | Order=169 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,2,6 | FinalGrade=A | Points=6 | Order=170 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,2,7 | FinalGrade=A | Points=6 | Order=171 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,2,8 | FinalGrade=A | Points=6 | Order=172 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,2,9 | FinalGrade=A | Points=6 | Order=173 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,3 | FinalGrade=A | Points=6 | Order=174 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,4 | FinalGrade=A | Points=6 | Order=175 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,5 | FinalGrade=A | Points=6 | Order=176 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,6 | FinalGrade=A | Points=6 | Order=177 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,7 | FinalGrade=A | Points=6 | Order=178 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,8 | FinalGrade=A | Points=6 | Order=179 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,3,9 | FinalGrade=A | Points=6 | Order=180 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,4,4 | FinalGrade=A | Points=6 | Order=181 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,4,5 | FinalGrade=A | Points=6 | Order=182 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,4,6 | FinalGrade=A | Points=6 | Order=183 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,4,7 | FinalGrade=A | Points=6 | Order=184 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,4,8 | FinalGrade=A | Points=6 | Order=185 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,4,9 | FinalGrade=A | Points=6 | Order=186 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,5,5 | FinalGrade=A | Points=6 | Order=187 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,5,6 | FinalGrade=A | Points=6 | Order=188 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,5,7 | FinalGrade=A | Points=6 | Order=189 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,5,8 | FinalGrade=A | Points=6 | Order=190 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,5,9 | FinalGrade=A | Points=6 | Order=191 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,6,6 | FinalGrade=A | Points=6 | Order=192 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,6,7 | FinalGrade=A | Points=6 | Order=193 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,6,8 | FinalGrade=A | Points=6 | Order=194 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,6,9 | FinalGrade=A | Points=6 | Order=195 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,7,7 | FinalGrade=A | Points=6 | Order=196 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,7,8 | FinalGrade=A | Points=6 | Order=197 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,7,9 | FinalGrade=A | Points=6 | Order=198 | Remarks=Auto-corrected from O (1 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,8,8 | FinalGrade=A | Points=6 | Order=199 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,8,9 | FinalGrade=A | Points=6 | Order=200 | Remarks=Auto-corrected from E (2 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,2,9,9 | FinalGrade=A | Points=6 | Order=201 | Remarks=Auto-corrected from F (0 pts) to A (6 pts) using best 2-paper pattern 2,2
+PaperCount=4 | Pattern=2,3,3,3 | FinalGrade=B | Points=5 | Order=202 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,3,4 | FinalGrade=B | Points=5 | Order=203 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,3,5 | FinalGrade=B | Points=5 | Order=204 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,3,6 | FinalGrade=B | Points=5 | Order=205 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,3,7 | FinalGrade=B | Points=5 | Order=206 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,3,8 | FinalGrade=B | Points=5 | Order=207 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,3,9 | FinalGrade=B | Points=5 | Order=208 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,4,4 | FinalGrade=B | Points=5 | Order=209 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,4,5 | FinalGrade=B | Points=5 | Order=210 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,4,6 | FinalGrade=B | Points=5 | Order=211 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,4,7 | FinalGrade=B | Points=5 | Order=212 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,4,8 | FinalGrade=B | Points=5 | Order=213 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,4,9 | FinalGrade=B | Points=5 | Order=214 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,5,5 | FinalGrade=B | Points=5 | Order=215 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,5,6 | FinalGrade=B | Points=5 | Order=216 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,5,7 | FinalGrade=B | Points=5 | Order=217 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,5,8 | FinalGrade=B | Points=5 | Order=218 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,5,9 | FinalGrade=B | Points=5 | Order=219 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,6,6 | FinalGrade=B | Points=5 | Order=220 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,6,7 | FinalGrade=B | Points=5 | Order=221 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,6,8 | FinalGrade=B | Points=5 | Order=222 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,6,9 | FinalGrade=B | Points=5 | Order=223 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,7,7 | FinalGrade=B | Points=5 | Order=224 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,7,8 | FinalGrade=B | Points=5 | Order=225 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,7,9 | FinalGrade=B | Points=5 | Order=226 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,8,8 | FinalGrade=B | Points=5 | Order=227 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,8,9 | FinalGrade=B | Points=5 | Order=228 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,3,9,9 | FinalGrade=B | Points=5 | Order=229 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 2,3
+PaperCount=4 | Pattern=2,4,4,4 | FinalGrade=C | Points=4 | Order=230 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,4,5 | FinalGrade=C | Points=4 | Order=231 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,4,6 | FinalGrade=C | Points=4 | Order=232 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,4,7 | FinalGrade=C | Points=4 | Order=233 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,4,8 | FinalGrade=C | Points=4 | Order=234 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,4,9 | FinalGrade=C | Points=4 | Order=235 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,5,5 | FinalGrade=C | Points=4 | Order=236 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,5,6 | FinalGrade=C | Points=4 | Order=237 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,5,7 | FinalGrade=C | Points=4 | Order=238 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,5,8 | FinalGrade=C | Points=4 | Order=239 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,5,9 | FinalGrade=C | Points=4 | Order=240 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,6,6 | FinalGrade=C | Points=4 | Order=241 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,6,7 | FinalGrade=C | Points=4 | Order=242 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,6,8 | FinalGrade=C | Points=4 | Order=243 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,6,9 | FinalGrade=C | Points=4 | Order=244 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,7,7 | FinalGrade=C | Points=4 | Order=245 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,7,8 | FinalGrade=C | Points=4 | Order=246 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,7,9 | FinalGrade=C | Points=4 | Order=247 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,8,8 | FinalGrade=C | Points=4 | Order=248 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,8,9 | FinalGrade=C | Points=4 | Order=249 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,4,9,9 | FinalGrade=C | Points=4 | Order=250 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 2,4
+PaperCount=4 | Pattern=2,5,5,5 | FinalGrade=D | Points=3 | Order=251 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,5,6 | FinalGrade=D | Points=3 | Order=252 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,5,7 | FinalGrade=D | Points=3 | Order=253 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,5,8 | FinalGrade=D | Points=3 | Order=254 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,5,9 | FinalGrade=D | Points=3 | Order=255 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,6,6 | FinalGrade=D | Points=3 | Order=256 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,6,7 | FinalGrade=D | Points=3 | Order=257 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,6,8 | FinalGrade=D | Points=3 | Order=258 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,6,9 | FinalGrade=D | Points=3 | Order=259 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,7,7 | FinalGrade=D | Points=3 | Order=260 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,7,8 | FinalGrade=D | Points=3 | Order=261 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,7,9 | FinalGrade=D | Points=3 | Order=262 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,8,8 | FinalGrade=D | Points=3 | Order=263 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,8,9 | FinalGrade=D | Points=3 | Order=264 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,5,9,9 | FinalGrade=D | Points=3 | Order=265 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 2,5
+PaperCount=4 | Pattern=2,6,6,6 | FinalGrade=E | Points=2 | Order=266 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=4 | Pattern=2,6,6,7 | FinalGrade=E | Points=2 | Order=267 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,6,6,8 | FinalGrade=E | Points=2 | Order=268 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,6,6,9 | FinalGrade=E | Points=2 | Order=269 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=4 | Pattern=2,6,7,7 | FinalGrade=E | Points=2 | Order=270 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=4 | Pattern=2,6,7,8 | FinalGrade=E | Points=2 | Order=271 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,6,7,9 | FinalGrade=E | Points=2 | Order=272 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=4 | Pattern=2,6,8,8 | FinalGrade=E | Points=2 | Order=273 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=4 | Pattern=2,6,8,9 | FinalGrade=E | Points=2 | Order=274 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,6,9,9 | FinalGrade=E | Points=2 | Order=275 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 2,6
+PaperCount=4 | Pattern=2,7,7,7 | FinalGrade=O | Points=1 | Order=276 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,7
+PaperCount=4 | Pattern=2,7,7,8 | FinalGrade=O | Points=1 | Order=277 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,7
+PaperCount=4 | Pattern=2,7,7,9 | FinalGrade=O | Points=1 | Order=278 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,7,8,8 | FinalGrade=O | Points=1 | Order=279 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,7
+PaperCount=4 | Pattern=2,7,8,9 | FinalGrade=O | Points=1 | Order=280 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,7,9,9 | FinalGrade=O | Points=1 | Order=281 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,7
+PaperCount=4 | Pattern=2,8,8,8 | FinalGrade=O | Points=1 | Order=282 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,8
+PaperCount=4 | Pattern=2,8,8,9 | FinalGrade=O | Points=1 | Order=283 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=2,8,9,9 | FinalGrade=O | Points=1 | Order=284 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,8
+PaperCount=4 | Pattern=2,9,9,9 | FinalGrade=O | Points=1 | Order=285 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 2,9
+PaperCount=4 | Pattern=3,3,3,3 | FinalGrade=B | Points=5 | Order=286 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,3,4 | FinalGrade=B | Points=5 | Order=287 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,3,3,5 | FinalGrade=B | Points=5 | Order=288 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,3,6 | FinalGrade=B | Points=5 | Order=289 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,3,7 | FinalGrade=B | Points=5 | Order=290 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,3,8 | FinalGrade=B | Points=5 | Order=291 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,3,9 | FinalGrade=B | Points=5 | Order=292 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,4,4 | FinalGrade=B | Points=5 | Order=293 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,4,5 | FinalGrade=B | Points=5 | Order=294 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,4,6 | FinalGrade=B | Points=5 | Order=295 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,4,7 | FinalGrade=B | Points=5 | Order=296 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,4,8 | FinalGrade=B | Points=5 | Order=297 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,4,9 | FinalGrade=B | Points=5 | Order=298 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,5,5 | FinalGrade=B | Points=5 | Order=299 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,5,6 | FinalGrade=B | Points=5 | Order=300 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,5,7 | FinalGrade=B | Points=5 | Order=301 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,5,8 | FinalGrade=B | Points=5 | Order=302 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,5,9 | FinalGrade=B | Points=5 | Order=303 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,6,6 | FinalGrade=B | Points=5 | Order=304 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,6,7 | FinalGrade=B | Points=5 | Order=305 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,6,8 | FinalGrade=B | Points=5 | Order=306 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,6,9 | FinalGrade=B | Points=5 | Order=307 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,7,7 | FinalGrade=B | Points=5 | Order=308 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,7,8 | FinalGrade=B | Points=5 | Order=309 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,7,9 | FinalGrade=B | Points=5 | Order=310 | Remarks=Auto-corrected from O (1 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,8,8 | FinalGrade=B | Points=5 | Order=311 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,8,9 | FinalGrade=B | Points=5 | Order=312 | Remarks=Auto-corrected from E (2 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,3,9,9 | FinalGrade=B | Points=5 | Order=313 | Remarks=Auto-corrected from F (0 pts) to B (5 pts) using best 2-paper pattern 3,3
+PaperCount=4 | Pattern=3,4,4,4 | FinalGrade=C | Points=4 | Order=314 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,4,5 | FinalGrade=C | Points=4 | Order=315 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,4,6 | FinalGrade=C | Points=4 | Order=316 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,4,7 | FinalGrade=C | Points=4 | Order=317 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,4,8 | FinalGrade=C | Points=4 | Order=318 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,4,9 | FinalGrade=C | Points=4 | Order=319 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,5,5 | FinalGrade=C | Points=4 | Order=320 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,5,6 | FinalGrade=C | Points=4 | Order=321 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,5,7 | FinalGrade=C | Points=4 | Order=322 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,5,8 | FinalGrade=C | Points=4 | Order=323 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,5,9 | FinalGrade=C | Points=4 | Order=324 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,6,6 | FinalGrade=C | Points=4 | Order=325 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,6,7 | FinalGrade=C | Points=4 | Order=326 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,6,8 | FinalGrade=C | Points=4 | Order=327 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,6,9 | FinalGrade=C | Points=4 | Order=328 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,7,7 | FinalGrade=C | Points=4 | Order=329 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,7,8 | FinalGrade=C | Points=4 | Order=330 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,7,9 | FinalGrade=C | Points=4 | Order=331 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,8,8 | FinalGrade=C | Points=4 | Order=332 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,8,9 | FinalGrade=C | Points=4 | Order=333 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,4,9,9 | FinalGrade=C | Points=4 | Order=334 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 3,4
+PaperCount=4 | Pattern=3,5,5,5 | FinalGrade=D | Points=3 | Order=335 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,5,6 | FinalGrade=D | Points=3 | Order=336 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,5,7 | FinalGrade=D | Points=3 | Order=337 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,5,8 | FinalGrade=D | Points=3 | Order=338 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,5,9 | FinalGrade=D | Points=3 | Order=339 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,6,6 | FinalGrade=D | Points=3 | Order=340 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,6,7 | FinalGrade=D | Points=3 | Order=341 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,6,8 | FinalGrade=D | Points=3 | Order=342 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,6,9 | FinalGrade=D | Points=3 | Order=343 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,7,7 | FinalGrade=D | Points=3 | Order=344 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,7,8 | FinalGrade=D | Points=3 | Order=345 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,7,9 | FinalGrade=D | Points=3 | Order=346 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,8,8 | FinalGrade=D | Points=3 | Order=347 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,8,9 | FinalGrade=D | Points=3 | Order=348 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,5,9,9 | FinalGrade=D | Points=3 | Order=349 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 3,5
+PaperCount=4 | Pattern=3,6,6,6 | FinalGrade=E | Points=2 | Order=350 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=4 | Pattern=3,6,6,7 | FinalGrade=E | Points=2 | Order=351 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,6,6,8 | FinalGrade=E | Points=2 | Order=352 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,6,6,9 | FinalGrade=E | Points=2 | Order=353 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=4 | Pattern=3,6,7,7 | FinalGrade=E | Points=2 | Order=354 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=4 | Pattern=3,6,7,8 | FinalGrade=E | Points=2 | Order=355 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,6,7,9 | FinalGrade=E | Points=2 | Order=356 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=4 | Pattern=3,6,8,8 | FinalGrade=E | Points=2 | Order=357 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=4 | Pattern=3,6,8,9 | FinalGrade=E | Points=2 | Order=358 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,6,9,9 | FinalGrade=E | Points=2 | Order=359 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 3,6
+PaperCount=4 | Pattern=3,7,7,7 | FinalGrade=O | Points=1 | Order=360 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,7
+PaperCount=4 | Pattern=3,7,7,8 | FinalGrade=O | Points=1 | Order=361 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,7
+PaperCount=4 | Pattern=3,7,7,9 | FinalGrade=O | Points=1 | Order=362 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,7,8,8 | FinalGrade=O | Points=1 | Order=363 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,7
+PaperCount=4 | Pattern=3,7,8,9 | FinalGrade=O | Points=1 | Order=364 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,7,9,9 | FinalGrade=O | Points=1 | Order=365 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,7
+PaperCount=4 | Pattern=3,8,8,8 | FinalGrade=O | Points=1 | Order=366 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,8
+PaperCount=4 | Pattern=3,8,8,9 | FinalGrade=O | Points=1 | Order=367 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=3,8,9,9 | FinalGrade=O | Points=1 | Order=368 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,8
+PaperCount=4 | Pattern=3,9,9,9 | FinalGrade=O | Points=1 | Order=369 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 3,9
+PaperCount=4 | Pattern=4,4,4,4 | FinalGrade=C | Points=4 | Order=370 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,4,5 | FinalGrade=C | Points=4 | Order=371 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,4,4,6 | FinalGrade=C | Points=4 | Order=372 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,4,7 | FinalGrade=C | Points=4 | Order=373 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,4,8 | FinalGrade=C | Points=4 | Order=374 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,4,9 | FinalGrade=C | Points=4 | Order=375 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,5,5 | FinalGrade=C | Points=4 | Order=376 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,5,6 | FinalGrade=C | Points=4 | Order=377 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,5,7 | FinalGrade=C | Points=4 | Order=378 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,5,8 | FinalGrade=C | Points=4 | Order=379 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,5,9 | FinalGrade=C | Points=4 | Order=380 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,6,6 | FinalGrade=C | Points=4 | Order=381 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,6,7 | FinalGrade=C | Points=4 | Order=382 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,6,8 | FinalGrade=C | Points=4 | Order=383 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,6,9 | FinalGrade=C | Points=4 | Order=384 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,7,7 | FinalGrade=C | Points=4 | Order=385 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,7,8 | FinalGrade=C | Points=4 | Order=386 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,7,9 | FinalGrade=C | Points=4 | Order=387 | Remarks=Auto-corrected from O (1 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,8,8 | FinalGrade=C | Points=4 | Order=388 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,8,9 | FinalGrade=C | Points=4 | Order=389 | Remarks=Auto-corrected from E (2 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,4,9,9 | FinalGrade=C | Points=4 | Order=390 | Remarks=Auto-corrected from F (0 pts) to C (4 pts) using best 2-paper pattern 4,4
+PaperCount=4 | Pattern=4,5,5,5 | FinalGrade=D | Points=3 | Order=391 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,5,6 | FinalGrade=D | Points=3 | Order=392 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,5,7 | FinalGrade=D | Points=3 | Order=393 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,5,8 | FinalGrade=D | Points=3 | Order=394 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,5,9 | FinalGrade=D | Points=3 | Order=395 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,6,6 | FinalGrade=D | Points=3 | Order=396 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,6,7 | FinalGrade=D | Points=3 | Order=397 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,6,8 | FinalGrade=D | Points=3 | Order=398 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,6,9 | FinalGrade=D | Points=3 | Order=399 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,7,7 | FinalGrade=D | Points=3 | Order=400 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,7,8 | FinalGrade=D | Points=3 | Order=401 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,7,9 | FinalGrade=D | Points=3 | Order=402 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,8,8 | FinalGrade=D | Points=3 | Order=403 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,8,9 | FinalGrade=D | Points=3 | Order=404 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,5,9,9 | FinalGrade=D | Points=3 | Order=405 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 4,5
+PaperCount=4 | Pattern=4,6,6,6 | FinalGrade=E | Points=2 | Order=406 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=4 | Pattern=4,6,6,7 | FinalGrade=E | Points=2 | Order=407 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,6,6,8 | FinalGrade=E | Points=2 | Order=408 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,6,6,9 | FinalGrade=E | Points=2 | Order=409 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=4 | Pattern=4,6,7,7 | FinalGrade=E | Points=2 | Order=410 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=4 | Pattern=4,6,7,8 | FinalGrade=E | Points=2 | Order=411 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,6,7,9 | FinalGrade=E | Points=2 | Order=412 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=4 | Pattern=4,6,8,8 | FinalGrade=E | Points=2 | Order=413 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=4 | Pattern=4,6,8,9 | FinalGrade=E | Points=2 | Order=414 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,6,9,9 | FinalGrade=E | Points=2 | Order=415 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 4,6
+PaperCount=4 | Pattern=4,7,7,7 | FinalGrade=O | Points=1 | Order=416 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,7
+PaperCount=4 | Pattern=4,7,7,8 | FinalGrade=O | Points=1 | Order=417 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,7
+PaperCount=4 | Pattern=4,7,7,9 | FinalGrade=O | Points=1 | Order=418 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,7,8,8 | FinalGrade=O | Points=1 | Order=419 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,7
+PaperCount=4 | Pattern=4,7,8,9 | FinalGrade=O | Points=1 | Order=420 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,7,9,9 | FinalGrade=O | Points=1 | Order=421 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,7
+PaperCount=4 | Pattern=4,8,8,8 | FinalGrade=O | Points=1 | Order=422 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,8
+PaperCount=4 | Pattern=4,8,8,9 | FinalGrade=O | Points=1 | Order=423 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=4,8,9,9 | FinalGrade=O | Points=1 | Order=424 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,8
+PaperCount=4 | Pattern=4,9,9,9 | FinalGrade=O | Points=1 | Order=425 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 4,9
+PaperCount=4 | Pattern=5,5,5,5 | FinalGrade=D | Points=3 | Order=426 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,5,6 | FinalGrade=D | Points=3 | Order=427 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,5,5,7 | FinalGrade=D | Points=3 | Order=428 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,5,8 | FinalGrade=D | Points=3 | Order=429 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,5,9 | FinalGrade=D | Points=3 | Order=430 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,6,6 | FinalGrade=D | Points=3 | Order=431 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,6,7 | FinalGrade=D | Points=3 | Order=432 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,6,8 | FinalGrade=D | Points=3 | Order=433 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,6,9 | FinalGrade=D | Points=3 | Order=434 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,7,7 | FinalGrade=D | Points=3 | Order=435 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,7,8 | FinalGrade=D | Points=3 | Order=436 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,7,9 | FinalGrade=D | Points=3 | Order=437 | Remarks=Auto-corrected from O (1 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,8,8 | FinalGrade=D | Points=3 | Order=438 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,8,9 | FinalGrade=D | Points=3 | Order=439 | Remarks=Auto-corrected from E (2 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,5,9,9 | FinalGrade=D | Points=3 | Order=440 | Remarks=Auto-corrected from F (0 pts) to D (3 pts) using best 2-paper pattern 5,5
+PaperCount=4 | Pattern=5,6,6,6 | FinalGrade=E | Points=2 | Order=441 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=4 | Pattern=5,6,6,7 | FinalGrade=E | Points=2 | Order=442 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,6,6,8 | FinalGrade=E | Points=2 | Order=443 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,6,6,9 | FinalGrade=E | Points=2 | Order=444 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=4 | Pattern=5,6,7,7 | FinalGrade=E | Points=2 | Order=445 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=4 | Pattern=5,6,7,8 | FinalGrade=E | Points=2 | Order=446 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,6,7,9 | FinalGrade=E | Points=2 | Order=447 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=4 | Pattern=5,6,8,8 | FinalGrade=E | Points=2 | Order=448 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=4 | Pattern=5,6,8,9 | FinalGrade=E | Points=2 | Order=449 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,6,9,9 | FinalGrade=E | Points=2 | Order=450 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 5,6
+PaperCount=4 | Pattern=5,7,7,7 | FinalGrade=O | Points=1 | Order=451 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 5,7
+PaperCount=4 | Pattern=5,7,7,8 | FinalGrade=O | Points=1 | Order=452 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 5,7
+PaperCount=4 | Pattern=5,7,7,9 | FinalGrade=O | Points=1 | Order=453 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,7,8,8 | FinalGrade=O | Points=1 | Order=454 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 5,7
+PaperCount=4 | Pattern=5,7,8,9 | FinalGrade=O | Points=1 | Order=455 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,7,9,9 | FinalGrade=O | Points=1 | Order=456 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 5,7
+PaperCount=4 | Pattern=5,8,8,8 | FinalGrade=O | Points=1 | Order=457 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 5,8
+PaperCount=4 | Pattern=5,8,8,9 | FinalGrade=O | Points=1 | Order=458 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=5,8,9,9 | FinalGrade=O | Points=1 | Order=459 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 5,8
+PaperCount=4 | Pattern=5,9,9,9 | FinalGrade=F | Points=0 | Order=460 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,6,6,6 | FinalGrade=E | Points=2 | Order=461 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=4 | Pattern=6,6,6,7 | FinalGrade=E | Points=2 | Order=462 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,6,6,8 | FinalGrade=E | Points=2 | Order=463 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,6,6,9 | FinalGrade=E | Points=2 | Order=464 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=4 | Pattern=6,6,7,7 | FinalGrade=E | Points=2 | Order=465 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=4 | Pattern=6,6,7,8 | FinalGrade=E | Points=2 | Order=466 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,6,7,9 | FinalGrade=E | Points=2 | Order=467 | Remarks=Auto-corrected from O (1 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=4 | Pattern=6,6,8,8 | FinalGrade=E | Points=2 | Order=468 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=4 | Pattern=6,6,8,9 | FinalGrade=E | Points=2 | Order=469 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,6,9,9 | FinalGrade=E | Points=2 | Order=470 | Remarks=Auto-corrected from F (0 pts) to E (2 pts) using best 2-paper pattern 6,6
+PaperCount=4 | Pattern=6,7,7,7 | FinalGrade=O | Points=1 | Order=471 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 6,7
+PaperCount=4 | Pattern=6,7,7,8 | FinalGrade=O | Points=1 | Order=472 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 6,7
+PaperCount=4 | Pattern=6,7,7,9 | FinalGrade=O | Points=1 | Order=473 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,7,8,8 | FinalGrade=O | Points=1 | Order=474 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 6,7
+PaperCount=4 | Pattern=6,7,8,9 | FinalGrade=O | Points=1 | Order=475 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,7,9,9 | FinalGrade=O | Points=1 | Order=476 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 6,7
+PaperCount=4 | Pattern=6,8,8,8 | FinalGrade=O | Points=1 | Order=477 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 6,8
+PaperCount=4 | Pattern=6,8,8,9 | FinalGrade=O | Points=1 | Order=478 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=6,8,9,9 | FinalGrade=O | Points=1 | Order=479 | Remarks=Auto-corrected from F (0 pts) to O (1 pts) using best 2-paper pattern 6,8
+PaperCount=4 | Pattern=6,9,9,9 | FinalGrade=F | Points=0 | Order=480 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,7,7,7 | FinalGrade=O | Points=1 | Order=481 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,7,7,8 | FinalGrade=F | Points=0 | Order=482 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,7,7,9 | FinalGrade=O | Points=1 | Order=483 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,7,8,8 | FinalGrade=F | Points=0 | Order=484 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,7,8,9 | FinalGrade=O | Points=1 | Order=485 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,7,9,9 | FinalGrade=F | Points=0 | Order=486 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,8,8,8 | FinalGrade=F | Points=0 | Order=487 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,8,8,9 | FinalGrade=O | Points=1 | Order=488 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,8,9,9 | FinalGrade=F | Points=0 | Order=489 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=7,9,9,9 | FinalGrade=F | Points=0 | Order=490 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=8,8,8,8 | FinalGrade=O | Points=1 | Order=491 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=8,8,8,9 | FinalGrade=O | Points=1 | Order=492 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=8,8,9,9 | FinalGrade=F | Points=0 | Order=493 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=8,9,9,9 | FinalGrade=F | Points=0 | Order=494 | Remarks=Auto-generated default rule
+PaperCount=4 | Pattern=9,9,9,9 | FinalGrade=F | Points=0 | Order=495 | Remarks=Auto-generated default rule
+
+==========================================================================================
+SUBJECT CONFIGS
+==========================================================================================
+Subject=Agriculture | Code=UACE-AGR | Category=PRINCIPAL | Compulsory=True
+Subject=Arabic | Code=UACE-ARB | Category=PRINCIPAL | Compulsory=True
+Subject=Art | Code=UACE-ART | Category=PRINCIPAL | Compulsory=True
+Subject=Ateso | Code=UACE-ATE | Category=PRINCIPAL | Compulsory=True
+Subject=Biology | Code=UACE-BIO | Category=PRINCIPAL | Compulsory=True
+Subject=Chemistry | Code=UACE-CHE | Category=PRINCIPAL | Compulsory=True
+Subject=Divinity | Code=UACE-DIV | Category=PRINCIPAL | Compulsory=True
+Subject=Economics | Code=UACE-ECON | Category=PRINCIPAL | Compulsory=True
+Subject=Entrepreneurship | Code=UACE-ENT | Category=PRINCIPAL | Compulsory=True
+Subject=Foods And Nutrition | Code=UACE-FNT | Category=PRINCIPAL | Compulsory=True
+Subject=French | Code=UACE-FRE | Category=PRINCIPAL | Compulsory=True
+Subject=General Paper | Code=UACE-GP | Category=GENERAL_PAPER | Compulsory=True
+Subject=Geography | Code=UACE-GEOG | Category=PRINCIPAL | Compulsory=True
+Subject=German | Code=UACE-GER | Category=PRINCIPAL | Compulsory=True
+Subject=History | Code=UACE-HIST | Category=PRINCIPAL | Compulsory=True
+Subject=Ire | Code=UACE-IRE | Category=PRINCIPAL | Compulsory=True
+Subject=Kiswahili | Code=UACE-KSW | Category=PRINCIPAL | Compulsory=True
+Subject=Literature | Code=UACE-LIT | Category=PRINCIPAL | Compulsory=True
+Subject=Luganda | Code=UACE-LUG | Category=PRINCIPAL | Compulsory=True
+Subject=Lusoga | Code=UACE-LUS | Category=PRINCIPAL | Compulsory=True
+Subject=Maths | Code=UACE-MTH | Category=PRINCIPAL | Compulsory=True
+Subject=Physics | Code=UACE-PHY | Category=PRINCIPAL | Compulsory=True
+Subject=Sub Mathematics | Code=UACE-SMTC | Category=SUBSIDIARY | Compulsory=True
+Subject=Subsidiary Ict | Code=UACE-ICT | Category=SUBSIDIARY | Compulsory=True
+Subject=Technical Drawing | Code=UACE-TD | Category=PRINCIPAL | Compulsory=False

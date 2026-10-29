@@ -1,0 +1,12 @@
+{% comment %} Renders one form field: include with f=form.fieldname {% endcomment %}
+{% if f.field.widget.input_type == "checkbox" %}
+  <div class="form-check mt-2">
+    {{ f }}
+    <label class="form-check-label" for="{{ f.id_for_label }}">{{ f.label }}</label>
+  </div>
+{% else %}
+  <label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+  {{ f }}
+{% endif %}
+{% if f.help_text %}<small class="form-text text-muted">{{ f.help_text }}</small>{% endif %}
+<div class="text-danger small">{{ f.errors|striptags }}</div>

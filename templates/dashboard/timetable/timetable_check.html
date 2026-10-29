@@ -1,0 +1,75 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-clipboard-check mr-2 text-primary"></i> Check: {{ timetable.display_name }}</h3>
+    <small class="text-muted">Status: {{ timetable.get_status_display }} &middot; Every lesson is re-checked against the current rules.</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'class_timetable_view' %}?timetable={{ timetable.pk }}" class="btn btn-outline-dark btn-sm">Open grid</a>
+    <a href="{% url 'timetable_list' %}" class="btn btn-light border btn-sm">Back</a>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-4 mb-3"><div class="card"><div class="card-body">
+    <div class="small text-muted">Clashes / rule problems</div>
+    <div class="h4 mb-0 {% if problems %}text-danger{% else %}text-success{% endif %}">{{ problems|length }}</div>
+  </div></div></div>
+  <div class="col-md-4 mb-3"><div class="card"><div class="card-body">
+    <div class="small text-muted">Curriculum coverage</div>
+    <div class="h4 mb-0">{% if coverage_totals.required %}{{ coverage_totals.percent }}%{% else %}-{% endif %}</div>
+    {% if not coverage_totals.required %}<small><a href="{% url 'timetable_setup_list' 'subject_load' %}">Set lessons per week</a> to measure this.</small>{% endif %}
+  </div></div></div>
+  <div class="col-md-4 mb-3"><div class="card"><div class="card-body">
+    {% if timetable.status == "DRAFT" %}
+      <form method="post" action="{% url 'timetable_publish' timetable.pk %}">{% csrf_token %}
+        {% if problems %}
+          <input type="hidden" name="force" value="1">
+          <button class="btn btn-outline-danger w-100" onclick="return confirm('Publish with {{ problems|length }} problem(s)?');">Publish anyway</button>
+        {% else %}
+          <button class="btn btn-success w-100"><i class="fas fa-check mr-1"></i> Publish</button>
+        {% endif %}
+      </form>
+    {% else %}
+      <div class="small text-muted">This timetable is {{ timetable.get_status_display|lower }}.</div>
+    {% endif %}
+  </div></div></div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header bg-white"><strong>Problems</strong></div>
+  <div class="card-body table-responsive p-0">
+    <table class="table mb-0">
+      <thead><tr><th>Lesson</th><th>Problem</th><th></th></tr></thead>
+      <tbody>
+        {% for p in problems %}
+        <tr>
+          <td class="text-nowrap">{{ p.entry.get_day_display }} {{ p.entry.period.name }}<br><small class="text-muted">{{ p.entry.class_ref }} &middot; {{ p.entry.group_label }} &middot; {{ p.entry.subject|default:"" }}</small></td>
+          <td>{{ p.message }}</td>
+          <td class="text-right"><a href="{% url 'timetable_entry_update' p.entry.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-outline-primary btn-sm">Fix</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-success p-3"><i class="fas fa-check-circle"></i> No clashes found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if short_rows %}
+<div class="card">
+  <div class="card-header bg-white"><strong>Subjects still missing lessons</strong></div>
+  <div class="card-body table-responsive p-0">
+    <table class="table mb-0">
+      <thead><tr><th>Class</th><th>Stream / Group</th><th>Subject</th><th>Placed</th><th>Needed</th></tr></thead>
+      <tbody>
+        {% for r in short_rows %}
+        <tr><td>{{ r.class_ref }}</td><td>{{ r.target }}</td><td>{{ r.subject }}</td><td>{{ r.placed }}</td><td>{{ r.required }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

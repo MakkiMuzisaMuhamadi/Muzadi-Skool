@@ -1,0 +1,53 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-undo"></i> Reverse receipt {{ payment.receipt_no }}</h3>
+  <small class="text-muted">Cancels the receipt. It stays on record, marked reversed, with your reason.</small>
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-body">
+        <p class="mb-1"><strong>Student:</strong> {{ payment.student }}</p>
+        <p class="mb-1"><strong>Amount:</strong> UGX {{ payment.amount|intcomma }} ({{ payment.get_payment_method_display }})</p>
+        <p class="mb-1"><strong>Date:</strong> {{ payment.payment_date }} &nbsp; <strong>Received by:</strong> {{ payment.received_by.username|default:"-" }}</p>
+        <p class="mb-3"><strong>Reference:</strong> {{ payment.reference|default:"-" }}</p>
+
+        <h6>These fees will become unpaid again</h6>
+        <table class="table table-sm table-bordered">
+          {% for a in allocations %}
+          <tr><td>{{ a.charge.fee_category.name }} - {{ a.charge.term }}</td><td class="text-right">UGX {{ a.allocated_amount|intcomma }}</td></tr>
+          {% endfor %}
+          {% for c in credits %}
+          <tr><td>Credit created by this receipt{% if c.balance < c.amount %} (partly used on other fees, which also reopen){% endif %}</td><td class="text-right">UGX {{ c.amount|intcomma }}</td></tr>
+          {% endfor %}
+        </table>
+        {% if payment.payment_method == "SCHOOLPAY" %}
+        <div class="alert alert-info mb-0">This came from SchoolPay. After reversing, it goes back to the SchoolPay inbox so you can assign it to the right student.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card border-danger">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>Reason</label>{{ form.reason }}
+            {% if form.reason.errors %}<div class="text-danger small">{{ form.reason.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="form-check mb-3">
+            {{ form.confirm }} <label class="form-check-label" for="{{ form.confirm.id_for_label }}">{{ form.confirm.label }}</label>
+            {% if form.confirm.errors %}<div class="text-danger small">Tick the box to confirm.</div>{% endif %}
+          </div>
+          <button class="btn btn-danger">Reverse receipt</button>
+          <a href="{% url 'student_fee_statement' payment.student_id %}" class="btn btn-light">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

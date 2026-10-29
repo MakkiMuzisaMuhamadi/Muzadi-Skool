@@ -1,0 +1,257 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-graduate"></i> {{ title }}
+      </h3>
+      <small class="text-muted">
+        Update student details. Fields marked with <span class="text-danger">*</span> are required.
+      </small>
+    </div>
+
+    <div>
+      <a href="{% url 'student_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Students
+      </a>
+    </div>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <div class="row">
+    <!-- LEFT -->
+    <div class="col-lg-8">
+
+      <!-- Admission / Academic -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-school mr-2"></i> Admission & Academic</h5>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>
+                Admission Number
+                {% if form.admission_number.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.admission_number }}
+              {% for e in form.admission_number.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+              <small class="text-muted">Auto-generated. Usually not edited.</small>
+            </div>
+
+            <div class="form-group col-md-6">
+              <label>
+                Admission Date
+                {% if form.admission_date.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.admission_date }}
+              {% for e in form.admission_date.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>
+                Level
+                {% if form.level.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.level }}
+              {% for e in form.level.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-6">
+              <label>Current Class</label>
+              {{ form.current_class }}
+              {% for e in form.current_class.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bio -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-user mr-2"></i> Student Bio</h5>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label>
+                First Name
+                {% if form.first_name.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.first_name }}
+              {% for e in form.first_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>Middle Name</label>
+              {{ form.middle_name }}
+              {% for e in form.middle_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>
+                Last Name
+                {% if form.last_name.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.last_name }}
+              {% for e in form.last_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Display Name</label>
+              {{ form.name }}
+              {% for e in form.name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+              <small class="text-muted">If empty, it auto-builds from first/middle/last name.</small>
+            </div>
+
+            <div class="form-group col-md-6">
+              <label>
+                Date of Birth
+                {% if form.date_of_birth.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.date_of_birth }}
+              {% for e in form.date_of_birth.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Gender</label>
+              {{ form.gender }}
+              {% for e in form.gender.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-6">
+              <label>Residence</label>
+              {{ form.residence }}
+              {% for e in form.residence.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Profile Photo</label>
+            {{ form.profile_photo }}
+            {% for e in form.profile_photo.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            {% if student.profile_photo %}
+              <small class="text-muted d-block mt-2">
+                Current: <a href="{{ student.profile_photo.url }}" target="_blank">View Photo</a>
+              </small>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Emergency -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-phone-alt mr-2"></i> Emergency Contact</h5>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label>
+                Name
+                {% if form.emergency_contact_name.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.emergency_contact_name }}
+              {% for e in form.emergency_contact_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>
+                Phone
+                {% if form.emergency_contact_phone.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.emergency_contact_phone }}
+              {% for e in form.emergency_contact_phone.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>
+                Relationship
+                {% if form.emergency_contact_relationship.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ form.emergency_contact_relationship }}
+              {% for e in form.emergency_contact_relationship.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Parents -->
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-user-friends mr-2"></i> Parents / Guardians</h5>
+
+          <div class="form-group">
+            <label>Link Parents (optional)</label>
+            {{ form.parents }}
+            {% for e in form.parents.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            <small class="text-muted d-block mt-1">
+              You can select multiple. Add new parent from Student Enrollment > Step 2.
+            </small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-tools mr-2"></i> Actions</h5>
+
+          <button type="submit" class="btn btn-outline-success btn-block">
+            <i class="fas fa-save mr-1"></i> {{ action }}
+          </button>
+
+          <a href="{% url 'student_list' %}" class="btn btn-light btn-block mt-2">
+            Cancel
+          </a>
+
+          <hr>
+
+          <div class="text-muted">
+            <div class="mb-2">
+              <b>Student:</b>
+              {{ student.name|default:student.first_name }}
+            </div>
+
+            <div class="mb-2">
+              <b>Admission #:</b>
+              {{ student.admission_number|default:"-" }}
+            </div>
+
+            <div class="mb-2">
+              <b>Candidate ID:</b>
+              {{ student.candidate_id|default:"-" }}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</form>
+
+{% endblock %}

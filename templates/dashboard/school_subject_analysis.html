@@ -1,0 +1,251 @@
+{% extends 'uce_base.html' %}
+{% load static %}
+
+{% block title %}Subject Analysis - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="page-header">
+    <h3 class="page-title">
+      <i class="fas fa-chart-bar text-info mr-2"></i>
+      Subject Performance Analysis - {{ school.name }}
+    </h3>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'uce_rankings_dashboard' %}">Rankings</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'uce_top_schools' %}">Top Schools</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ school.name }}</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- School Header -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card bg-gradient-primary text-white">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-8">
+              <h3 class="mb-1">{{ school.name }}</h3>
+              <p class="mb-0">
+                <i class="fas fa-graduation-cap mr-2"></i>
+                {{ current_level }} Performance Analysis
+              </p>
+            </div>
+            <div class="col-md-4 text-right">
+              <div class="d-flex flex-column">
+                <span class="h4 mb-1">{{ total_candidates }} Candidates</span>
+                <small>Total Registered</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subject Performance Grid -->
+  <div class="row">
+    {% for subject_name, analysis in subject_analysis.items %}
+    <div class="col-md-6 grid-margin stretch-card">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="card-title mb-0">
+              <i class="fas fa-book mr-2 text-primary"></i>
+              {{ subject_name }}
+            </h4>
+            <span class="badge 
+              {% if analysis.average_score >= 70 %}badge-success
+              {% elif analysis.average_score >= 50 %}badge-warning
+              {% else %}badge-danger{% endif %}">
+              {{ analysis.average_score|floatformat:1 }}%
+            </span>
+          </div>
+
+          <!-- Performance Stats -->
+          <div class="row text-center mb-3">
+            <div class="col-4">
+              <small class="text-muted">Highest</small>
+              <div class="font-weight-bold text-success">{{ analysis.max_score|floatformat:1 }}%</div>
+            </div>
+            <div class="col-4">
+              <small class="text-muted">Lowest</small>
+              <div class="font-weight-bold text-warning">{{ analysis.min_score|floatformat:1 }}%</div>
+            </div>
+            <div class="col-4">
+              <small class="text-muted">Students</small>
+              <div class="font-weight-bold text-info">{{ analysis.total_students }}</div>
+            </div>
+          </div>
+
+          <!-- Pass Rate -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <small class="text-muted">Pass Rate</small>
+              <small class="font-weight-bold">{{ analysis.pass_rate|floatformat:1 }}%</small>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar 
+                {% if analysis.pass_rate >= 80 %}bg-success
+                {% elif analysis.pass_rate >= 60 %}bg-primary
+                {% elif analysis.pass_rate >= 40 %}bg-warning
+                {% else %}bg-danger{% endif %}" 
+                style="width: {{ analysis.pass_rate }}%">
+              </div>
+            </div>
+          </div>
+
+          <!-- Grade Distribution -->
+          <h6 class="mb-2">Grade Distribution:</h6>
+          <div class="grade-distribution-chart mb-3">
+            {% for grade, count in analysis.grade_distribution.items %}
+            {% if count > 0 %}
+            <div class="d-flex align-items-center mb-1">
+              <div class="grade-bar-container flex-grow-1 mr-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="badge 
+                    {% if grade == 'A' %}badge-success
+                    {% elif grade == 'B' %}badge-primary
+                    {% elif grade == 'C' %}badge-info
+                    {% elif grade == 'D' %}badge-warning
+                    {% elif grade == 'E' %}badge-secondary
+                    {% else %}badge-dark{% endif %} mr-2" style="min-width: 30px;">
+                    {{ grade }}
+                  </span>
+                  <div class="progress flex-grow-1" style="height: 20px;">
+                    <div class="progress-bar 
+                      {% if grade == 'A' %}bg-success
+                      {% elif grade == 'B' %}bg-primary
+                      {% elif grade == 'C' %}bg-info
+                      {% elif grade == 'D' %}bg-warning
+                      {% elif grade == 'E' %}bg-secondary
+                      {% else %}bg-dark{% endif %}" 
+                      style="width: {{ count|divisibleby:analysis.total_students|multiply:100 }}%">
+                      {{ count }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+
+          <!-- Performance Indicators -->
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span class="badge badge-success">
+                <i class="fas fa-trophy mr-1"></i>
+                {{ analysis.distinction_count }} Distinctions
+              </span>
+            </div>
+            <small class="text-muted">
+              {{ analysis.pass_count }}/{{ analysis.total_students }} passed
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">No Subject Data Available</h4>
+          <p class="text-muted">Subject analysis data will appear here once marks are entered.</p>
+          <a href="{% url 'uce_mark_entry_dashboard' %}" class="btn btn-outline-success">
+            <i class="fas fa-keyboard mr-2"></i>Enter Marks
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Performance Summary -->
+  {% if subject_analysis %}
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Overall Performance Summary</h4>
+          <div class="row text-center">
+            <div class="col-md-2">
+              <div class="card bg-gradient-success text-white">
+                <div class="card-body">
+                  <h3>{{ overall_avg_score|floatformat:1 }}%</h3>
+                  <small>Average Score</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="card bg-gradient-primary text-white">
+                <div class="card-body">
+                  <h3>{{ total_distinctions }}</h3>
+                  <small>Total Distinctions</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="card bg-gradient-info text-white">
+                <div class="card-body">
+                  <h3>{{ overall_pass_rate|floatformat:1 }}%</h3>
+                  <small>Overall Pass Rate</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="card bg-gradient-warning text-white">
+                <div class="card-body">
+                  <h3>{{ subject_analysis|length }}</h3>
+                  <small>Subjects Offered</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="card bg-gradient-danger text-white">
+                <div class="card-body">
+                  <h3>{{ weak_subjects }}</h3>
+                  <small>Subjects < 40%</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="card bg-gradient-dark text-white">
+                <div class="card-body">
+                  <h3>{{ strong_subjects }}</h3>
+                  <small>Subjects > 70%</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.grade-bar-container .progress {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+}
+
+.grade-bar-container .progress-bar {
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,503 @@
+<!-- templates/uce/top_schools_ranking.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}UCE Top Schools Ranking - UMTA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ranking-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+        border: none;
+    }
+    .ranking-card:hover {
+        transform: translateY(-5px);
+    }
+    .rank-badge {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 16px;
+    }
+    .rank-1 { background-color: #FFD700; color: #000; }
+    .rank-2 { background-color: #C0C0C0; color: #000; }
+    .rank-3 { background-color: #CD7F32; color: #000; }
+    .rank-4-plus { background-color: #6c757d; color: white; }
+    
+    .school-logo {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #dee2e6;
+    }
+    
+    .stat-badge {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .performance-indicator {
+        width: 100%;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .performance-fill {
+        height: 100%;
+        border-radius: 4px;
+    }
+    
+    .excellent { background: linear-gradient(90deg, #28a745, #20c997); }
+    .very-good { background: linear-gradient(90deg, #20c997, #17a2b8); }
+    .good { background: linear-gradient(90deg, #17a2b8, #007bff); }
+    .average { background: linear-gradient(90deg, #007bff, #6c757d); }
+    .below-average { background: linear-gradient(90deg, #6c757d, #dc3545); }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .download-btn {
+        min-width: 140px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-primary">
+                <i class="fas fa-trophy me-2"></i>Top Schools Ranking
+            </h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-graduation-cap me-1"></i>Uganda Certificate of Education (UCE)
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success download-btn" onclick="exportToExcel()">
+                <i class="fas fa-file-excel me-2"></i>Export Excel
+            </button>
+            <button class="btn btn-outline-success download-btn" onclick="exportToPDF()">
+                <i class="fas fa-file-pdf me-2"></i>Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card ranking-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Schools</h6>
+                            <h4 class="fw-bold">{{ school_rankings|length|intcomma }}</h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-primary rounded-circle">
+                                <i class="fas fa-school fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card ranking-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Top Average %</h6>
+                            <h4 class="fw-bold">
+                                {% if school_rankings.0.average_percentage %}
+                                    {{ school_rankings.0.average_percentage|floatformat:1 }}%
+                                {% else %}0%{% endif %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-success rounded-circle">
+                                <i class="fas fa-chart-line fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card ranking-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Distinctions</h6>
+                            <h4 class="fw-bold">
+                                {% with total_distinctions=0 %}
+                                    {% for school in school_rankings %}
+                                        {% widthratio school.distinctions 1 1 as school_dist %}
+                                        {{ total_distinctions|add:school_dist }}
+                                    {% endfor %}
+                                    {{ total_distinctions|intcomma }}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-warning rounded-circle">
+                                <i class="fas fa-star fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card ranking-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Candidates</h6>
+                            <h4 class="fw-bold">
+                                {% with total_candidates=0 %}
+                                    {% for school in school_rankings %}
+                                        {% widthratio school.total_candidates 1 1 as school_candidates %}
+                                        {{ total_candidates|add:school_candidates }}
+                                    {% endfor %}
+                                    {{ total_candidates|intcomma }}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-info rounded-circle">
+                                <i class="fas fa-users fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking Table -->
+    <div class="card ranking-card">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-ol me-2"></i>National School Rankings
+                </h5>
+                <div class="d-flex gap-2">
+                    <div class="input-group input-group-sm" style="width: 250px;">
+                        <input type="text" class="form-control" placeholder="Search school..." 
+                               id="searchInput" onkeyup="filterTable()">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <select class="form-select form-select-sm" style="width: 150px;" id="filterRank">
+                        <option value="">All Ranks</option>
+                        <option value="1-10">Top 10</option>
+                        <option value="1-50">Top 50</option>
+                        <option value="51-100">51-100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="rankingTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 80px;">Rank</th>
+                            <th>School</th>
+                            <th class="text-center">Candidates</th>
+                            <th class="text-center">Complete</th>
+                            <th class="text-center">Distinctions (A)</th>
+                            <th class="text-center">Merits (B)</th>
+                            <th class="text-center">Average %</th>
+                            <th class="text-center">Performance</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in school_rankings %}
+                        <tr data-rank="{{ school.position }}">
+                            <td class="text-center align-middle">
+                                <div class="rank-badge {% if school.position == 1 %}rank-1{% elif school.position == 2 %}rank-2{% elif school.position == 3 %}rank-3{% else %}rank-4-plus{% endif %} mx-auto">
+                                    {{ school.position }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if school.school.logo %}
+                                        <img src="{{ school.school.logo.url }}" alt="{{ school.school.name }}" 
+                                             class="school-logo me-3">
+                                    {% else %}
+                                        <div class="school-logo me-3 bg-light d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-school text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-1">{{ school.school.name }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ school.school.address|default:"Location not specified"|truncatechars:30 }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge bg-primary rounded-pill stat-badge">
+                                    {{ school.total_candidates|intcomma }}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge {% if school.complete_candidates == school.total_candidates %}bg-success{% else %}bg-warning{% endif %} rounded-pill stat-badge">
+                                    {{ school.complete_candidates }}/{{ school.total_candidates }}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge bg-warning text-dark rounded-pill stat-badge">
+                                    <i class="fas fa-star me-1"></i>{{ school.distinctions }}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge bg-info text-white rounded-pill stat-badge">
+                                    <i class="fas fa-star-half-alt me-1"></i>{{ school.merits }}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="d-flex flex-column align-items-center">
+                                    <span class="fw-bold {% if school.average_percentage >= 80 %}text-success{% elif school.average_percentage >= 60 %}text-info{% elif school.average_percentage >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                                        {{ school.average_percentage|floatformat:1 }}%
+                                    </span>
+                                    <div class="performance-indicator mt-1">
+                                        {% if school.average_percentage >= 80 %}
+                                            <div class="performance-fill excellent" style="width: {{ school.average_percentage }}%"></div>
+                                        {% elif school.average_percentage >= 70 %}
+                                            <div class="performance-fill very-good" style="width: {{ school.average_percentage }}%"></div>
+                                        {% elif school.average_percentage >= 60 %}
+                                            <div class="performance-fill good" style="width: {{ school.average_percentage }}%"></div>
+                                        {% elif school.average_percentage >= 50 %}
+                                            <div class="performance-fill average" style="width: {{ school.average_percentage }}%"></div>
+                                        {% else %}
+                                            <div class="performance-fill below-average" style="width: {{ school.average_percentage }}%"></div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                {% if school.average_percentage >= 80 %}
+                                    <span class="badge bg-success">Excellent</span>
+                                {% elif school.average_percentage >= 70 %}
+                                    <span class="badge bg-info">Very Good</span>
+                                {% elif school.average_percentage >= 60 %}
+                                    <span class="badge bg-primary">Good</span>
+                                {% elif school.average_percentage >= 50 %}
+                                    <span class="badge bg-warning">Average</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Needs Improvement</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'uce_school_detailed' school.school.id %}" 
+                                       class="btn btn-outline-success" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-info" 
+                                            onclick="showSchoolStats({{ school.school.id }})" title="Statistics">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" 
+                                            onclick="downloadSchoolReport({{ school.school.id }})" title="Download Report">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-school fa-3x mb-3"></i>
+                                    <h5>No school rankings available</h5>
+                                    <p>Please run performance computation to generate rankings.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted">
+                        Showing {{ school_rankings|length }} of {{ school_rankings|length }} schools
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i>Print
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="refreshRankings()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card ranking-card">
+                <div class="card-body">
+                    <h6 class="card-title mb-3"><i class="fas fa-info-circle me-2"></i>Performance Legend</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="performance-indicator me-2" style="width: 60px;">
+                                    <div class="performance-fill excellent" style="width: 100%"></div>
+                                </div>
+                                <span>Excellent (80%+)</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="performance-indicator me-2" style="width: 60px;">
+                                    <div class="performance-fill very-good" style="width: 100%"></div>
+                                </div>
+                                <span>Very Good (70-79%)</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="performance-indicator me-2" style="width: 60px;">
+                                    <div class="performance-fill good" style="width: 100%"></div>
+                                </div>
+                                <span>Good (60-69%)</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="performance-indicator me-2" style="width: 60px;">
+                                    <div class="performance-fill average" style="width: 100%"></div>
+                                </div>
+                                <span>Average (50-59%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter table by search
+    function filterTable() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toUpperCase();
+        const table = document.getElementById('rankingTable');
+        const rows = table.getElementsByTagName('tr');
+        
+        for (let i = 1; i < rows.length; i++) {
+            const schoolName = rows[i].getElementsByTagName('td')[1];
+            if (schoolName) {
+                const txtValue = schoolName.textContent || schoolName.innerText;
+                rows[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+            }
+        }
+    }
+    
+    // Filter by rank range
+    document.getElementById('filterRank').addEventListener('change', function() {
+        const value = this.value;
+        const rows = document.querySelectorAll('#rankingTable tbody tr');
+        
+        rows.forEach(row => {
+            const rank = parseInt(row.getAttribute('data-rank'));
+            
+            if (!value) {
+                row.style.display = '';
+                return;
+            }
+            
+            const [min, max] = value.split('-').map(Number);
+            
+            if (rank >= min && rank <= max) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+    
+    // Export to Excel
+    function exportToExcel() {
+        alert('Excel export feature will be implemented soon!');
+        // Implementation for Excel export using SheetJS or server-side generation
+    }
+    
+    // Export to PDF
+    function exportToPDF() {
+        alert('PDF export feature will be implemented soon!');
+        // Implementation using jsPDF or server-side PDF generation
+    }
+    
+    // Show school statistics modal
+    function showSchoolStats(schoolId) {
+        // AJAX call to get school statistics
+        fetch(`/api/school/${schoolId}/stats/`)
+            .then(response => response.json())
+            .then(data => {
+                // Create and show modal with statistics
+                console.log('School stats:', data);
+                alert('Statistics modal will be implemented soon!');
+            });
+    }
+    
+    // Download school report
+    function downloadSchoolReport(schoolId) {
+        window.open(`/reports/school/${schoolId}/uce/`, '_blank');
+    }
+    
+    // Refresh rankings
+    function refreshRankings() {
+        window.location.reload();
+    }
+    
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltips = document.querySelectorAll('[title]');
+        tooltips.forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+    });
+</script>
+{% endblock %}

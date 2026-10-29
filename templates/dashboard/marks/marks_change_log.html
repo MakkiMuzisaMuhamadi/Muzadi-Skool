@@ -1,0 +1,93 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-history"></i> Marks Change History</h3>
+    <small class="text-muted">Every mark entered, changed or removed — who did it and when.</small>
+  </div>
+  <a href="{% url 'marks_progress' %}" class="btn btn-light btn-sm"><i class="fas fa-tasks mr-1"></i> Marks Progress</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="form-row align-items-end">
+      <div class="form-group col-md-4">
+        <label class="small mb-1">Search</label>
+        <input type="text" name="q" value="{{ filters.q }}" class="form-control form-control-sm"
+               placeholder="Student, Candidate ID, subject, class or staff name">
+      </div>
+      <div class="form-group col-md-2">
+        <label class="small mb-1">What</label>
+        <select name="action" class="form-control form-control-sm">
+          <option value="">Any</option>
+          <option value="CREATE" {% if filters.action == "CREATE" %}selected{% endif %}>Entered</option>
+          <option value="UPDATE" {% if filters.action == "UPDATE" %}selected{% endif %}>Changed</option>
+          <option value="DELETE" {% if filters.action == "DELETE" %}selected{% endif %}>Removed</option>
+        </select>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="small mb-1">From</label>
+        <select name="source" class="form-control form-control-sm">
+          <option value="">Any</option>
+          <option value="ENTRY" {% if filters.source == "ENTRY" %}selected{% endif %}>Enter Marks screen</option>
+          <option value="IMPORT" {% if filters.source == "IMPORT" %}selected{% endif %}>Excel upload</option>
+        </select>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="small mb-1">Date from</label>
+        <input type="date" name="from" value="{{ filters.from }}" class="form-control form-control-sm">
+      </div>
+      <div class="form-group col-md-2">
+        <label class="small mb-1">Date to</label>
+        <input type="date" name="to" value="{{ filters.to }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-12 d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i> Filter</button>
+        <a href="{% url 'marks_change_log' %}" class="btn btn-light btn-sm">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped mb-0">
+        <thead class="thead-light">
+          <tr><th>When</th><th>Student</th><th>Session</th><th>Subject / Paper</th><th>Change</th><th>By</th><th>Via</th></tr>
+        </thead>
+        <tbody>
+          {% for h in page %}
+          <tr>
+            <td class="small text-nowrap">{{ h.changed_at|date:"d M Y, H:i" }}</td>
+            <td class="small">{{ h.student_label }}</td>
+            <td class="small">{{ h.session_label }}</td>
+            <td class="small">{{ h.target_label }}</td>
+            <td class="text-nowrap">
+              {% if h.action == "CREATE" %}<span class="badge badge-success">Entered</span>
+              {% elif h.action == "UPDATE" %}<span class="badge badge-warning">Changed</span>
+              {% else %}<span class="badge badge-danger">Removed</span>{% endif %}
+              <span class="ml-1">{{ h.old_display }} → <b>{{ h.new_display }}</b></span>
+            </td>
+            <td class="small">{% if h.changed_by %}{{ h.changed_by.get_full_name|default:h.changed_by.username }}{% else %}—{% endif %}</td>
+            <td class="small">{{ h.get_source_display }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No changes found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if page.has_other_pages %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Page {{ page.number }} of {{ page.paginator.num_pages }} • {{ page.paginator.count }} changes</small>
+    <div>
+      {% if page.has_previous %}<a class="btn btn-light btn-sm" href="?{{ params }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}
+      {% if page.has_next %}<a class="btn btn-light btn-sm" href="?{{ params }}&page={{ page.next_page_number }}">Next</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

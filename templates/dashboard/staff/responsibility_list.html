@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-user-tie"></i> {{ title }}</h3>
+      <small class="text-muted">Head teacher, deputies, director of studies, heads of department and other roles.</small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <div class="btn-group btn-group-sm mr-2">
+        <a href="?show=current" class="btn {% if show == 'current' %}btn-primary{% else %}btn-outline-primary{% endif %}">Current</a>
+        <a href="?show=all" class="btn {% if show == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">Including past</a>
+      </div>
+      <a href="{% url 'responsibility_create' %}" class="btn btn-success btn-sm"><i class="fas fa-plus mr-1"></i> Add</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if responsibilities %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead><tr><th>Role</th><th>Teacher</th><th>From</th><th>To</th><th>Status</th><th class="text-right">Action</th></tr></thead>
+          <tbody>
+            {% for r in responsibilities %}
+              <tr>
+                <td>{{ r.label }}</td>
+                <td><a href="{% url 'teacher_detail' r.teacher.id %}">{{ r.teacher.display_name }}</a></td>
+                <td>{{ r.start_date|date:"d M Y"|default:"—" }}</td>
+                <td>{{ r.end_date|date:"d M Y"|default:"—" }}</td>
+                <td>{% if r.is_active %}<span class="badge badge-success">Current</span>{% else %}<span class="badge badge-light border">Ended</span>{% endif %}</td>
+                <td class="text-right">
+                  <a href="{% url 'responsibility_edit' r.id %}" class="btn btn-outline-warning btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
+                  {% if r.is_active %}
+                    <form method="post" action="{% url 'responsibility_end' r.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-outline-secondary btn-sm">End role</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-light border mb-0">
+        No roles recorded yet. <a href="{% url 'responsibility_create' %}">Add the head teacher first</a>: report cards and letters use it.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

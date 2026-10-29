@@ -1,0 +1,207 @@
+<!-- templates/school/class_form.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        
+        <!-- Left: Title + Breadcrumb -->
+        <div class="d-flex align-items-center flex-wrap">
+            <div class="mr-3">
+                <h3 class="page-title mb-1">
+                    <i class="fas fa-chalkboard text-primary mr-2"></i>
+                {{ title }}
+                </h3>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'class_list' %}">Classes</a></li>
+                    <li class="breadcrumb-item active">{{ action }}</li>
+
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Right: Add New Class Button -->
+        <div class="ml-2">
+            <a href="{% url 'class_list' %}" class="btn btn-success mr-2">
+                <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title text-white mb-0">
+                    <i class="fas fa-{{ action|lower }} mr-2"></i>
+                    {{ title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="classForm">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="form-row">
+                        {% if form.school %}
+                        <div class="form-group col-md-12">
+                            <label for="{{ form.school.id_for_label }}">
+                                <i class="fas fa-school mr-1"></i> School
+                            </label>
+                            {{ form.school }}
+                            {% if form.school.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.school.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="form-group col-md-6">
+                            <label for="{{ form.level.id_for_label }}">
+                                <i class="fas fa-graduation-cap mr-1"></i> Education Level *
+                            </label>
+                            {{ form.level }}
+                            {% if form.level.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.level.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Select the education level (e.g., Primary, Secondary)</small>
+                        </div>
+                        
+                        <div class="form-group col-md-6">
+                            <label for="{{ form.name.id_for_label }}">
+                                <i class="fas fa-tag mr-1"></i> Class Name *
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">e.g., Senior Four, Primary Five</small>
+                        </div>
+
+                        <div class="form-group col-md-8">
+                            <label for="{{ form.short_name.id_for_label }}">
+                                <i class="fas fa-compress mr-1"></i> Short Name
+                            </label>
+                            {{ form.short_name }}
+                            {% if form.short_name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.short_name.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">e.g., S4,S2,S1,24,P7,P2</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-success btn-lg btn-block">
+                            <i class="fas fa-save mr-2"></i>
+                            {{ action }} Class
+                        </button>
+                        <a href="{% url 'class_list' %}" class="btn btn-outline-danger btn-block mt-2">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if class %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <a href="{% url 'stream_create' %}?class={{ class.id }}" class="btn btn-success btn-block">
+                            <i class="fas fa-plus-circle mr-2"></i>
+                            Add Stream
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="{% url 'class_detail' class.id %}" class="btn btn-info btn-block">
+                            <i class="fas fa-eye mr-2"></i>
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(document).ready(function() {
+    // Add form validation styling
+    $('input, select').addClass('form-control');
+    
+    // Auto-generate class name suggestions based on level
+    $('#id_level').change(function() {
+        const levelText = $('#id_level option:selected').text();
+        const levelCode = levelText.substring(0, 1).toUpperCase();
+        
+        // Suggest names based on level
+        let suggestions = [];
+        if (levelCode === 'P') {
+            suggestions = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
+        } else if (levelCode === 'S') {
+            suggestions = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
+        }
+        
+        if (suggestions.length > 0) {
+            $('#id_name').attr('placeholder', `e.g., ${suggestions.join(', ')}`);
+        }
+    });
+    
+    // Form validation
+    $('#classForm').submit(function(e) {
+        const className = $('#id_name').val().trim();
+        const level = $('#id_level').val();
+        
+        if (!className) {
+            e.preventDefault();
+            Swal.fire('Error!', 'Please enter a class name.', 'error');
+            $('#id_name').focus();
+            return false;
+        }
+        
+        if (!level) {
+            e.preventDefault();
+            Swal.fire('Error!', 'Please select an education level.', 'error');
+            $('#id_level').focus();
+            return false;
+        }
+        
+        return true;
+    });
+});
+</script>
+
+{% endblock %}

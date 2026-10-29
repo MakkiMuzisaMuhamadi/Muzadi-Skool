@@ -1,0 +1,5 @@
+Worker commands
+pkill -f 'celery -A school360'
+
+celery -A school360 worker -l info -Q reports --pool=prefork --concurrency=1 --prefetch-multiplier=1 --hostname=reports@%h
+celery -A school360 worker -Q default,reports -l info

@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4">
+  <h3 class="page-title mb-1"><i class="fas fa-chart-bar mr-2 text-primary"></i> Teacher Workload</h3>
+  <small class="text-muted">Lesson periods per teacher (a double counts as two).</small>
+</div>
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="form-row">
+    <div class="col-md-10 mb-2">
+      <select name="timetable" class="form-control">
+        <option value="">All current timetables</option>
+        {% for tt in timetables %}<option value="{{ tt.pk }}" {% if selected_timetable and selected_timetable.pk == tt.pk %}selected{% endif %}>{{ tt.display_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 mb-2"><button class="btn btn-primary w-100">Show</button></div>
+  </form>
+</div></div>
+<div class="card"><div class="card-body table-responsive p-0">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Teacher</th>{% for d in day_headers %}<th class="text-center">{{ d }}</th>{% endfor %}<th>Week</th><th>Hours</th><th>Limit</th><th>Classes</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if r.over_week or r.over_day %}table-danger{% endif %}">
+        <td><a href="{% url 'teacher_timetable_view' %}?teacher={{ r.teacher.pk }}">{{ r.name }}</a></td>
+        {% for n in r.per_day_list %}<td class="text-center">{{ n|default:"-" }}</td>{% endfor %}
+        <td><strong>{{ r.lessons }}</strong></td>
+        <td>{{ r.hours }}</td>
+        <td>{% if r.limit %}{{ r.limit.max_lessons_per_day|default:"-" }}/day, {{ r.limit.max_lessons_per_week|default:"-" }}/wk{% else %}-{% endif %}</td>
+        <td><small>{{ r.classes }}</small></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="12" class="text-center text-muted">No lessons found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-layer-group"></i> Beds</h3>
+    <small class="text-muted">Manage beds under rooms.</small>
+  </div>
+  <div>
+    <a href="{% url 'hostel_bed_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Add Bed
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table id="bedsTable" class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Hostel</th>
+          <th>Room</th>
+          <th>Bed No</th>
+          <th>Status</th>
+          <th class="text-right" style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in rows %}
+          <tr>
+            <td class="fw-semibold">{{ b.room.hostel.name }}</td>
+            <td>{{ b.room.room_number }}</td>
+            <td>{{ b.bed_number }}</td>
+            <td>
+              {% if b.is_active %}
+                <span class="badge bg-success text-white">Active</span>
+              {% else %}
+                <span class="badge bg-danger text-white">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a href="{% url 'hostel_bed_update' b.id %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'hostel_bed_delete' b.id %}" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No beds found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  (function(){
+    try {
+      if (window.$ && $.fn.DataTable) {
+        $('#bedsTable').DataTable({
+          pageLength: 25,
+          order: [[0,'asc'], [1,'asc'], [2,'asc']],
+          responsive: true
+        });
+      }
+    } catch(e) {}
+  })();
+</script>
+{% endblock %}

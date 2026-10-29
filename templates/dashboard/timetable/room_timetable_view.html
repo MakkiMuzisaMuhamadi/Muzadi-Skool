@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% include "dashboard/timetable/_tt_styles.html" %}
+
+<div class="page-header mb-4">
+  <h3 class="page-title mb-1"><i class="fas fa-door-open mr-2 text-primary"></i> Room Timetable</h3>
+  <small class="text-muted">When a lab, hall or classroom is in use. Empty cells are free.</small>
+</div>
+
+<div class="card tt-filter-card mb-3">
+  <div class="card-body">
+    <form method="get">
+      <div class="form-row">
+        <div class="form-group col-md-5 mb-2">
+          <label class="tt-filter-label">Timetable</label>
+          <select name="timetable" class="form-control">
+            <option value="">All current timetables</option>
+            {% for tt in timetables %}
+            <option value="{{ tt.id }}" {% if selected_timetable and selected_timetable.pk == tt.id %}selected{% endif %}>{{ tt.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-6 mb-2">
+          <label class="tt-filter-label">Room</label>
+          <select name="room" class="form-control">
+            <option value="">Select Room</option>
+            {% for room in rooms %}
+            <option value="{{ room.id }}" {% if selected_room and selected_room.pk == room.id %}selected{% endif %}>{{ room.name }} ({{ room.get_room_type_display }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-1 mb-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card tt-grid-card">
+  <div class="card-body">
+    {% if selected_room %}
+      <p class="mb-2"><strong>{{ selected_room.name }}</strong> &middot; {{ weekly_lessons }} lesson periods booked per week</p>
+      {% include "dashboard/timetable/_grid.html" with mode="room" can_edit=False %}
+    {% else %}
+      <div class="text-center text-muted p-4">Select a room.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

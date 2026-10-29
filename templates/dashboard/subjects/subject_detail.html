@@ -1,0 +1,82 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-book-open"></i> {{ subject.name }}</h3>
+    <small class="text-muted">{{ subject.code }} • Level: {{ subject.level }}</small>
+  </div>
+
+  <div>
+    <a href="{% url 'paper_create' subject.id %}" class="btn btn-outline-success btn-sm">
+  <i class="fas fa-plus mr-1"></i> Add Paper
+</a>
+
+<a href="{% url 'subject_edit' subject.id %}" class="btn btn-outline-success btn-sm">
+  <i class="fas fa-edit mr-1"></i> Edit Subject
+</a>
+
+    <a href="{% url 'subject_list' %}" class="btn btn-outline-success btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex flex-wrap">
+      <span class="badge badge-light border mr-2 mb-2">Short: {{ subject.short_name }}</span>
+      {% if subject.is_major %}<span class="badge badge-primary mr-2 mb-2">Major</span>{% endif %}
+      {% if subject.is_optional %}<span class="badge badge-info mr-2 mb-2">Optional</span>{% endif %}
+      {% if subject.is_language %}<span class="badge badge-warning mr-2 mb-2">Language</span>{% endif %}
+      {% if subject.is_Religion %}<span class="badge badge-success mr-2 mb-2">Religion</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <h5 class="mb-3"><i class="fas fa-file-alt mr-2"></i> Papers</h5>
+
+    <table class="table table-sm table-bordered">
+      <thead class="thead-light">
+        <tr>
+          <th>Order</th>
+          <th>Paper Code</th>
+          <th>Paper Name</th>
+          <th>Max Marks</th>
+          <th>Compulsory</th>
+          <th style="width:160px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in papers %}
+          <tr>
+            <td>{{ p.order }}</td>
+            <td>{{ p.paper_code }}</td>
+            <td>{{ p.paper_name }}</td>
+            <td>{{ p.max_marks }}</td>
+            <td>
+              {% if p.compulsory %}
+                <span class="badge badge-success">Yes</span>
+              {% else %}
+                <span class="badge badge-secondary">No</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'paper_edit' p.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'paper_delete' p.id %}" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted">No papers added for this subject.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

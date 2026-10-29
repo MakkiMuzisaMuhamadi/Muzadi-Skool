@@ -1,0 +1,173 @@
+{% extends "dashboard/base.html" %}
+{% block extra_css %}
+<style>
+  .student-picker { position: relative; }
+  .student-results {
+    position: absolute; z-index: 20; left: 0; right: 0; top: 100%;
+    max-height: 280px; overflow-y: auto; background: #fff;
+    border: 1px solid #dee2e6; border-top: 0; border-radius: 0 0 .25rem .25rem;
+  }
+  .student-results button {
+    display: block; width: 100%; text-align: left; border: 0; background: none;
+    padding: .55rem .75rem; border-bottom: 1px solid #f1f1f1;
+  }
+  .student-results button:hover, .student-results button:focus { background: #f3faf5; outline: none; }
+  .student-results button[disabled] { color: #999; cursor: not-allowed; }
+  .student-chosen { background: #f3faf5; border: 1px solid #b7e1c3; border-radius: .25rem; padding: .6rem .75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-link"></i> {{ title }}</h3>
+    <small class="text-muted">Parent: <b>{{ parent.full_name }}</b> ({{ parent.parent_id }})</small>
+  </div>
+  <a href="{% url 'parent_detail' parent.id %}" class="btn btn-outline-secondary btn-sm mt-2 mt-md-0">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if link %}<input type="hidden" name="editing" value="{{ link.student_id }}">{% endif %}
+  {{ form.student }}
+
+  <div class="row">
+    <div class="col-lg-7">
+      <div class="card mb-3">
+        <div class="card-body">
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+          <div class="form-group">
+            <label for="studentSearch">Student <span class="text-danger">*</span></label>
+
+            <div id="chosenBox" class="student-chosen d-flex justify-content-between align-items-center {% if not selected_label %}d-none{% endif %}">
+              <span id="chosenLabel">{{ selected_label }}</span>
+              {% if not link %}<a href="#" id="changeStudent" class="small">Change</a>{% endif %}
+            </div>
+
+            {% if not link %}
+            <div id="pickerBox" class="student-picker {% if selected_label %}d-none{% endif %}">
+              <input type="search" id="studentSearch" class="form-control {% if form.student.errors %}is-invalid{% endif %}"
+                     placeholder="Type a name or admission number" autocomplete="off">
+              <div id="studentResults" class="student-results d-none" role="listbox"></div>
+            </div>
+            {% endif %}
+            {% for e in form.student.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.relationship.id_for_label }}">Relationship to this student</label>
+            {{ form.relationship }}
+            {% for e in form.relationship.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title mb-3">For this student, this parent…</h5>
+          {% include "dashboard/parents/_switch.html" with field=form.is_primary hint="The first person the school calls. Only one per student." %}
+          {% include "dashboard/parents/_switch.html" with field=form.is_fee_payer %}
+          {% include "dashboard/parents/_switch.html" with field=form.is_emergency_contact %}
+          {% include "dashboard/parents/_switch.html" with field=form.can_pick_up %}
+          {% include "dashboard/parents/_switch.html" with field=form.receives_sms %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success btn-block">
+        <i class="fas fa-save mr-1"></i> {% if link %}Save link{% else %}Link student{% endif %}
+      </button>
+      {% if not link %}
+        <button type="submit" name="add_another" value="1" class="btn btn-outline-success btn-block">
+          Link and add another
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  var input = document.getElementById("studentSearch");
+  if (!input) return;
+  var results = document.getElementById("studentResults");
+  var hidden = document.getElementById("{{ form.student.id_for_label }}");
+  var chosenBox = document.getElementById("chosenBox");
+  var chosenLabel = document.getElementById("chosenLabel");
+  var pickerBox = document.getElementById("pickerBox");
+  var change = document.getElementById("changeStudent");
+  var url = "{% url 'parent_student_search' %}";
+  var parentId = "{{ parent.id }}";
+  var timer = null, lastQuery = "";
+
+  function hide() { results.classList.add("d-none"); results.innerHTML = ""; }
+
+  function choose(id, label) {
+    hidden.value = id;
+    chosenLabel.textContent = label;
+    chosenBox.classList.remove("d-none");
+    pickerBox.classList.add("d-none");
+    input.classList.remove("is-invalid");
+    hide();
+  }
+
+  function render(items) {
+    results.innerHTML = "";
+    if (!items.length) {
+      results.innerHTML = '<div class="p-2 text-muted small">No students found.</div>';
+    }
+    items.forEach(function (it) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = it.text + (it.linked ? " (already linked)" : "");
+      if (it.linked) { b.disabled = true; }
+      b.addEventListener("click", function () { choose(it.id, it.text); });
+      results.appendChild(b);
+    });
+    results.classList.remove("d-none");
+  }
+
+  input.addEventListener("input", function () {
+    var q = input.value.trim();
+    clearTimeout(timer);
+    if (q.length < 2) { hide(); return; }
+    timer = setTimeout(function () {
+      lastQuery = q;
+      fetch(url + "?q=" + encodeURIComponent(q) + "&parent=" + parentId, {credentials: "same-origin"})
+        .then(function (r) { return r.json(); })
+        .then(function (data) { if (q === lastQuery) render(data.results || []); })
+        .catch(function () {
+          results.innerHTML = '<div class="p-2 text-danger small">Search failed. Check your connection and try again.</div>';
+          results.classList.remove("d-none");
+        });
+    }, 250);
+  });
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); var first = results.querySelector("button:not([disabled])"); if (first) first.click(); }
+    if (e.key === "Escape") hide();
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!pickerBox.contains(e.target)) hide();
+  });
+
+  if (change) {
+    change.addEventListener("click", function (e) {
+      e.preventDefault();
+      hidden.value = "";
+      chosenBox.classList.add("d-none");
+      pickerBox.classList.remove("d-none");
+      input.value = "";
+      input.focus();
+    });
+  }
+})();
+</script>
+{% endblock %}

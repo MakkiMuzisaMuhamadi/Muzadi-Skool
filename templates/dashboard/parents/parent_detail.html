@@ -1,0 +1,147 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-user-friends"></i> {{ parent.full_name }}</h3>
+    <small class="text-muted">{{ parent.parent_id }}</small>
+    {% if not parent.is_active %}<span class="badge badge-secondary ml-1">Inactive</span>{% endif %}
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'parent_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> All parents</a>
+    <a href="{% url 'parent_update' parent.id %}" class="btn btn-outline-primary btn-sm ml-1"><i class="fas fa-pen mr-1"></i> Edit</a>
+    <a href="{% url 'parent_link_students' parent.id %}" class="btn btn-success btn-sm ml-1"><i class="fas fa-link mr-1"></i> Link a student</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          {% if parent.profile_photo %}
+            <img src="{{ parent.profile_photo.url }}" alt="" class="rounded mr-3" style="width:64px;height:64px;object-fit:cover;">
+          {% else %}
+            <div class="rounded bg-light border d-flex align-items-center justify-content-center mr-3" style="width:64px;height:64px;">
+              <i class="fas fa-user fa-lg text-muted"></i>
+            </div>
+          {% endif %}
+          <div>
+            <div class="font-weight-bold">{{ parent.full_name }}</div>
+            <small class="text-muted">{{ parent.get_relationship_display }}{% if parent.occupation %}, {{ parent.get_occupation_display }}{% endif %}</small>
+          </div>
+        </div>
+
+        <div class="mb-2"><i class="fas fa-phone fa-fw text-muted"></i> <a href="tel:{{ parent.phone }}">{{ parent.phone }}</a></div>
+        {% if parent.alternate_phone %}<div class="mb-2"><i class="fas fa-phone-alt fa-fw text-muted"></i> <a href="tel:{{ parent.alternate_phone }}">{{ parent.alternate_phone }}</a></div>{% endif %}
+        {% if parent.whatsapp_number %}<div class="mb-2"><i class="fab fa-whatsapp fa-fw text-success"></i> {{ parent.whatsapp_number }}</div>{% endif %}
+        {% if parent.email %}<div class="mb-2"><i class="fas fa-envelope fa-fw text-muted"></i> <a href="mailto:{{ parent.email }}">{{ parent.email }}</a></div>{% endif %}
+        <div class="mb-2"><i class="fas fa-language fa-fw text-muted"></i> {{ parent.get_preferred_language_display }}</div>
+
+        {% if parent.village or parent.sub_county or parent.district or parent.city or parent.address %}
+          <hr>
+          <div class="text-muted">
+            <i class="fas fa-map-marker-alt fa-fw"></i>
+            {{ parent.village|default:"" }}{% if parent.village and parent.sub_county %}, {% endif %}{{ parent.sub_county|default:"" }}{% if parent.district %}{% if parent.village or parent.sub_county %}, {% endif %}{{ parent.district }}{% endif %}
+            {% if parent.city %}<div class="ml-4">{{ parent.city }}{% if parent.country and parent.country != "Uganda" %}, {{ parent.country }}{% endif %}</div>{% endif %}
+            {% if parent.address %}<div class="ml-4 small">{{ parent.address|linebreaksbr }}</div>{% endif %}
+          </div>
+        {% endif %}
+
+        <hr>
+        <div class="small">
+          <div>
+            {% if parent.sms_consent %}<i class="fas fa-check text-success fa-fw"></i> Receives SMS{% else %}<i class="fas fa-times text-danger fa-fw"></i> No SMS consent{% endif %}
+          </div>
+          <div>
+            {% if parent.whatsapp_consent %}<i class="fas fa-check text-success fa-fw"></i> Receives WhatsApp{% else %}<i class="fas fa-times text-muted fa-fw"></i> No WhatsApp consent{% endif %}
+          </div>
+          {% if parent.consent_date %}<div class="text-muted mt-1">Consent recorded {{ parent.consent_date|date:"j M Y" }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <form method="post" action="{% url 'parent_toggle_active' parent.id %}" class="d-inline">
+          {% csrf_token %}
+          {% if parent.is_active %}
+            <button class="btn btn-outline-warning btn-sm" type="submit"
+                    onclick="return confirm('Deactivate {{ parent.full_name|escapejs }}? They will stop getting school messages.');">
+              <i class="fas fa-user-slash mr-1"></i> Deactivate
+            </button>
+          {% else %}
+            <button class="btn btn-outline-success btn-sm" type="submit"><i class="fas fa-user-check mr-1"></i> Reactivate</button>
+          {% endif %}
+        </form>
+        <a href="{% url 'parent_delete' parent.id %}" class="btn btn-outline-danger btn-sm ml-1"><i class="fas fa-trash mr-1"></i> Delete</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-child mr-2"></i> Children ({{ links|length }})</h5>
+
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Student</th>
+                <th>Class</th>
+                <th>Relationship</th>
+                <th>Role for this child</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for link in links %}
+                {% with s=link.student %}
+                <tr>
+                  <td>
+                    <a href="{% url 'student_detail' s.id %}" class="font-weight-bold">{{ s.name }}</a>
+                    <small class="d-block text-muted">{{ s.admission_number }}</small>
+                  </td>
+                  <td>
+                    {% if s.current_class %}{{ s.current_class.name }}{% if s.stream %} {{ s.stream.name }}{% endif %}{% else %}<span class="text-muted">-</span>{% endif %}
+                  </td>
+                  <td>{{ link.get_relationship_display }}</td>
+                  <td>
+                    {% if link.is_primary %}<span class="badge badge-success">Primary contact</span>{% endif %}
+                    {% if link.is_fee_payer %}<span class="badge badge-info">Pays fees</span>{% endif %}
+                    {% if link.is_emergency_contact %}<span class="badge badge-danger">Emergency</span>{% endif %}
+                    {% if not link.can_pick_up %}<span class="badge badge-warning">Not allowed to pick up</span>{% endif %}
+                    {% if not link.receives_sms %}<span class="badge badge-light border">No SMS</span>{% endif %}
+                  </td>
+                  <td class="text-right text-nowrap">
+                    <a href="{% url 'parent_link_students' parent.id %}?student={{ s.id }}" class="btn btn-sm btn-outline-secondary" title="Edit link"><i class="fas fa-pen"></i></a>
+                    <form method="post" action="{% url 'parent_unlink_student' parent.id s.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Unlink"
+                              onclick="return confirm('Unlink {{ s.name|escapejs }} from {{ parent.full_name|escapejs }}?');">
+                        <i class="fas fa-unlink"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endwith %}
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-4">
+                    No students linked yet.
+                    <div class="mt-2">
+                      <a href="{% url 'parent_link_students' parent.id %}" class="btn btn-sm btn-success"><i class="fas fa-link mr-1"></i> Link a student</a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

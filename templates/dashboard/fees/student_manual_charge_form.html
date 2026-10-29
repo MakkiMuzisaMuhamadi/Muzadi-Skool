@@ -1,0 +1,154 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-user-plus"></i> {{ title }}
+    </h3>
+    <small class="text-muted">Charge one student only</small>
+  </div>
+  <a href="{% url 'manual_charge_list' %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <strong>Student Charge Details</strong>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Student <span class="text-danger">*</span></label>
+            {{ form.student }}
+            {% if form.student.errors %}
+              <div class="text-danger small">{{ form.student.errors }}</div>
+            {% endif %}
+            <small class="text-muted">Search by admission number or student name</small>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Academic Year <span class="text-danger">*</span></label>
+            {{ form.academic_year }}
+            {% if form.academic_year.errors %}
+              <div class="text-danger small">{{ form.academic_year.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Term <span class="text-danger">*</span></label>
+            {{ form.term }}
+            {% if form.term.errors %}
+              <div class="text-danger small">{{ form.term.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Fee Category <span class="text-danger">*</span></label>
+            {{ form.fee_category }}
+            {% if form.fee_category.errors %}
+              <div class="text-danger small">{{ form.fee_category.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Amount <span class="text-danger">*</span></label>
+            {{ form.amount }}
+            {% if form.amount.errors %}
+              <div class="text-danger small">{{ form.amount.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Description <span class="text-danger">*</span></label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div class="text-danger small">{{ form.description.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group">
+            <label>Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+              <div class="text-danger small">{{ form.notes.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <button class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save Student Charge
+      </button>
+      <a href="{% url 'manual_charge_list' %}" class="btn btn-light">Cancel</a>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    const initialTerm = "{{ form.term.value|default:'' }}";
+
+    function loadTerms(yearId, selectedValue = null) {
+      const $term = $('#id_term');
+      $term.empty().append('<option value="">---------</option>');
+      if (!yearId) return;
+
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $term.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+        });
+      });
+    }
+
+    $('#id_academic_year').on('change', function () {
+      loadTerms($(this).val());
+    });
+
+    if ($('#id_academic_year').val()) {
+      loadTerms($('#id_academic_year').val(), initialTerm);
+    }
+
+    $('#id_student').select2({
+      width: '100%',
+      placeholder: 'Search student by admission number or name',
+      allowClear: true,
+      minimumInputLength: 1,
+      ajax: {
+        url: "{% url 'ajax_fee_student_search' %}",
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return { q: params.term };
+        },
+        processResults: function (data) {
+          return { results: data.results || [] };
+        },
+        cache: true
+      }
+    });
+  });
+</script>
+{% endblock %}

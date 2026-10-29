@@ -1,0 +1,305 @@
+/* =========================================================
+   responsive.css — Muzadi School System
+   Loaded LAST (after style.css and cust.css) so these rules win.
+   Breakpoints follow Bootstrap 4:
+     < 576px  phones          576–767  large phones
+     768–991  tablets         >= 992   desktop (unchanged)
+========================================================= */
+
+/* ---------- 1. Global safety (all sizes) ---------- */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+
+/* A flex child must be allowed to shrink, otherwise one wide
+   table/chart pushes the whole page sideways. */
+.main-panel,
+.content-wrapper { min-width: 0; }
+
+.content-wrapper img,
+.content-wrapper video,
+.content-wrapper iframe { max-width: 100%; }
+
+/* Logos: never stretch or overflow their box */
+.navbar .navbar-brand-wrapper .navbar-brand img.brand-img {
+  height: 50px; width: auto; max-width: 100%; object-fit: contain;
+}
+.navbar .navbar-brand-wrapper .navbar-brand img.brand-img-mini {
+  height: 40px; width: auto; max-width: 100%; object-fit: contain;
+}
+
+/* Tables: scroll sideways inside their card */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive > .table { margin-bottom: 0; }
+
+/* DataTables with scrollX: keep each row on one line so the
+   table scrolls sideways instead of squashing names into 4 lines */
+table.dataTable.nowrap th,
+table.dataTable.nowrap td { white-space: nowrap; }
+.dataTables_wrapper .dataTables_scrollBody {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+/* Mobile menu button is only for < 992px */
+.mobile-menu-btn { display: none; }
+.sidebar-backdrop { display: none; }
+
+
+/* =========================================================
+   2. TABLETS AND PHONES (< 992px)
+========================================================= */
+@media (max-width: 991.98px) {
+
+  /* ----- Navbar ----- */
+  .navbar.default-layout-navbar .navbar-menu-wrapper {
+    width: calc(100% - 55px);
+    padding-left: 6px;
+    padding-right: 8px;
+  }
+  .navbar.default-layout-navbar .navbar-menu-wrapper .navbar-toggler.mobile-menu-btn {
+    display: inline-block;
+    font-size: 1.25rem;
+    padding: 8px 12px 8px 6px;
+    margin-right: 4px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+  .navbar.default-layout-navbar .navbar-menu-wrapper .navbar-nav .nav-item {
+    margin-left: 0.35rem;
+    margin-right: 0.35rem;
+  }
+  .navbar .navbar-nav-right { margin-left: auto; }
+
+  /* Title: show it, but shorten it to fit */
+  .header-title {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .header-title h5 {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-title small { display: none; }
+
+  /* Quick Actions: keep it, as an icon button */
+  .quick-access-dropdown { display: block !important; margin-left: 0.5rem !important; }
+  .quick-access-btn { padding: 0.45rem 0.8rem; }
+  .quick-access-btn .qa-label { display: none; }
+  .quick-access-btn:hover { transform: none; }
+
+  /* ----- Sidebar: slides in from the left ----- */
+  .sidebar.sidebar-offcanvas {
+    position: fixed;
+    top: 70px;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 270px;
+    max-width: 85vw;
+    height: calc(100vh - 70px);
+    height: calc(100dvh - 70px);
+    max-height: none;
+    min-height: 0;
+    overflow: hidden;            /* the list inside scrolls, not this box */
+    display: flex;
+    flex-direction: column;
+    z-index: 1026;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease-out;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  }
+  .sidebar.sidebar-offcanvas.active {
+    right: auto;
+    transform: translateX(0);
+  }
+  /* The menu list is the scroll area. The template's scroll plugin
+     (PerfectScrollbar, started in misc.js) is attached to this list,
+     so the scrolling must happen here or touch swipes get blocked. */
+  .sidebar.sidebar-offcanvas > .nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding-bottom: 2rem;
+  }
+  /* Hide the plugin's own scrollbar rail on touch screens */
+  .sidebar.sidebar-offcanvas .ps__rail-y,
+  .sidebar.sidebar-offcanvas .ps__rail-x { display: none !important; }
+
+  /* Bigger tap targets */
+  .sidebar .nav .nav-item .nav-link { padding-top: 0.8rem; padding-bottom: 0.8rem; }
+  .sidebar .nav.sub-menu .nav-item .nav-link { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+
+  .sidebar-backdrop {
+    position: fixed;
+    top: 70px; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 1025;
+  }
+  body.sidebar-open .sidebar-backdrop { display: block; }
+  body.sidebar-open { overflow: hidden; }   /* page behind doesn't scroll */
+
+  /* ----- Content ----- */
+  .content-wrapper { padding: 1.25rem 1rem; }
+  .table th { white-space: nowrap; }
+
+  /* Tabs scroll sideways instead of wrapping into a mess */
+  .nav-tabs,
+  .nav-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-tabs .nav-link,
+  .nav-pills .nav-link { white-space: nowrap; }
+}
+
+
+/* =========================================================
+   3. PHONES & SMALL TABLETS (< 768px)
+========================================================= */
+@media (max-width: 767.98px) {
+
+  .content-wrapper { padding: 1rem 0.75rem; }
+
+  .card .card-body { padding: 1rem; }
+  .card .card-header,
+  .card .card-footer { padding: 0.75rem 1rem; }
+
+  h1, .h1 { font-size: 1.6rem; }
+  h2, .h2 { font-size: 1.4rem; }
+  h3, .h3, .page-title { font-size: 1.2rem; }
+  h4, .h4 { font-size: 1.1rem; }
+
+  /* Header rows (title + buttons) wrap instead of overflowing */
+  .card-header.d-flex,
+  .page-header,
+  .d-flex.justify-content-between {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .btn-group,
+  .btn-toolbar { flex-wrap: wrap; }
+
+  /* Inline filter forms stack */
+  .form-inline { flex-direction: column; align-items: stretch; }
+  .form-inline .form-group,
+  .form-inline .form-control,
+  .form-inline .custom-select,
+  .form-inline .btn {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Stops iPhone zooming in when a field is tapped */
+  input.form-control,
+  select.form-control,
+  textarea.form-control,
+  .custom-select { font-size: 16px; }
+
+  .table { font-size: 0.85rem; }
+  .table th, .table td { padding: 0.55rem 0.6rem; }
+
+  /* DataTables controls: stack and centre */
+  .dataTables_wrapper .dataTables_length,
+  .dataTables_wrapper .dataTables_filter,
+  .dataTables_wrapper .dataTables_info,
+  .dataTables_wrapper .dataTables_paginate {
+    text-align: center !important;
+    float: none !important;
+    margin-bottom: 0.5rem;
+  }
+  .dataTables_wrapper .dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  .dataTables_wrapper .dataTables_filter input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto !important;
+    margin-left: 0 !important;
+  }
+  .dataTables_wrapper .pagination { justify-content: center !important; flex-wrap: wrap; }
+
+  .modal-dialog { margin: 0.5rem; }
+  .modal-lg, .modal-xl { max-width: calc(100% - 1rem); }
+
+  .stat-value { font-size: 1.3rem; }
+  .stat-card:hover { transform: none; }
+
+  .footer { padding: 15px 0.75rem; text-align: center; }
+}
+
+
+/* =========================================================
+   4. PHONES (< 576px)
+========================================================= */
+@media (max-width: 575.98px) {
+
+  .header-title { display: none; }
+  .create-new-dropdown .new-label { display: none; }
+
+  .content-wrapper { padding: 0.75rem 0.5rem; }
+  .card .card-body { padding: 0.85rem; }
+  .card { margin-bottom: 0.75rem; }
+
+  /* Navbar dropdowns: full width under the bar, never off-screen */
+  .navbar .dropdown-menu {
+    position: fixed !important;
+    top: 70px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-height: calc(100vh - 86px);
+    overflow-y: auto;
+    transform: none !important;
+  }
+
+  /* Footer buttons in cards go full width */
+  .card-footer .btn,
+  .modal-footer .btn { flex: 1 1 auto; }
+  .modal-footer { flex-wrap: wrap; gap: 0.5rem; }
+  .modal-footer > * { margin: 0 !important; }
+
+  .stats-row { gap: 0.25rem; }
+  .stat-number { font-size: 1.25rem; }
+
+  .alert { font-size: 0.875rem; }
+}
+
+
+/* ---------- Accessibility ---------- */
+.mobile-menu-btn:focus-visible,
+.quick-access-btn:focus-visible {
+  outline: 2px solid #2a5298;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar.sidebar-offcanvas { transition: none; }
+}
+
+/* ---------- Print: hide app chrome ---------- */
+@media print {
+  .navbar, .sidebar, .sidebar-backdrop, .footer { display: none !important; }
+  .main-panel { width: 100% !important; margin-left: 0 !important; }
+  .default-layout-navbar + .page-body-wrapper { padding-top: 0 !important; }
+}

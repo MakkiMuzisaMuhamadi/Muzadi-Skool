@@ -1,0 +1,88 @@
+{% comment %}
+Screen grid. Context:
+  grid      - from timetable_services.build_grid()
+  mode      - "class" (default), "teacher", "room" or "student": decides the second line of each card
+  can_edit  - show + / edit links (class view only)
+{% endcomment %}
+<div class="table-responsive">
+  <table class="table table-bordered tt-table mb-0">
+    <thead>
+      <tr>
+        <th class="tt-day-col">Day</th>
+        {% for period in grid.columns %}
+          <th class="tt-period-head">
+            {% if period %}
+              {{ period.name }}<br>
+              <small class="text-muted">{{ period.start_time|time:"H:i" }} - {{ period.end_time|time:"H:i" }}</small>
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in grid.rows %}
+      <tr>
+        <th class="tt-day-col">{{ row.label }}</th>
+        {% for cell in row.cells %}
+        <td class="tt-cell">
+          {% if not cell.period %}
+            <div class="tt-empty">&nbsp;</div>
+          {% else %}
+            {% if cell.time_differs %}
+              <div class="tt-time-note"><i class="far fa-clock"></i> {{ cell.period.start_time|time:"H:i" }}-{{ cell.period.end_time|time:"H:i" }}</div>
+            {% endif %}
+            {% for item in cell.items %}
+              {% with e=item.entry %}
+              <div class="tt-card{% if e.period.is_break %} tt-break{% endif %}{% if item.is_continuation %} tt-cont{% endif %}{% if e.teaching_group_id %} tt-group{% endif %}">
+                {% if can_edit and not item.is_continuation %}
+                  <a class="tt-edit" href="{% url 'timetable_entry_update' e.pk %}?next={{ request.get_full_path|urlencode }}" title="Edit"><i class="fas fa-pen"></i></a>
+                {% endif %}
+                {% if e.period.is_break %}
+                  <span class="badge badge-warning">{{ e.period.get_period_type_display }}</span>
+                  {% if e.notes %}<div class="small mt-1 text-muted">{{ e.notes }}</div>{% endif %}
+                {% else %}
+                  <div class="font-weight-bold">
+                    {{ e.subject.short_name|default:e.subject.name|default:"-" }}
+                    {% if e.span > 1 and not item.is_continuation %}<span class="badge badge-light border ml-1">x{{ e.span }}</span>{% endif %}
+                    {% if item.is_continuation %}<small class="text-muted">(cont.)</small>{% endif %}
+                  </div>
+                  {% if not item.is_continuation %}
+                    {% if mode == "teacher" %}
+                      <div class="small text-muted mt-1">{{ e.class_ref.name }}{% if e.stream_id or e.teaching_group_id %} &middot; {{ e.group_label }}{% endif %}</div>
+                    {% elif mode == "room" %}
+                      <div class="small text-muted mt-1">{{ e.class_ref.name }}{% if e.stream_id or e.teaching_group_id %} &middot; {{ e.group_label }}{% endif %}</div>
+                      <div class="small text-muted">{{ e.teacher.initials|default:e.teacher|default:"" }}</div>
+                    {% else %}
+                      <div class="small text-muted mt-1">{{ e.teacher.initials|default:e.teacher|default:"No teacher" }}</div>
+                      {% if e.stream_id or e.teaching_group_id %}<div class="small">{{ e.group_label }}</div>{% endif %}
+                    {% endif %}
+                    {% if mode != "room" and e.venue_label %}<div class="small text-muted"><i class="fas fa-door-open"></i> {{ e.venue_label }}</div>{% endif %}
+                    {% if e.notes %}<div class="small text-muted">{{ e.notes }}</div>{% endif %}
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% endwith %}
+            {% empty %}
+              {% if not cell.period.is_lesson %}
+                <div class="tt-card tt-break"><span class="badge badge-warning">{{ cell.period.get_period_type_display }}</span></div>
+              {% elif can_edit %}
+                <a class="tt-add" title="Add lesson"
+                   href="{% url 'timetable_entry_create' %}?timetable={{ timetable.pk }}&class_ref={{ selected_class.pk }}{% if selected_stream %}&stream={{ selected_stream.pk }}{% endif %}&day={{ row.code }}&period={{ cell.period.pk }}&next={{ request.get_full_path|urlencode }}">+</a>
+              {% else %}
+                <div class="tt-empty">-</div>
+              {% endif %}
+            {% endfor %}
+            {% if can_edit and cell.items and cell.period.is_lesson %}
+              <a class="small d-block text-center mt-1" title="Add a parallel lesson (another stream or group)"
+                 href="{% url 'timetable_entry_create' %}?timetable={{ timetable.pk }}&class_ref={{ selected_class.pk }}&day={{ row.code }}&period={{ cell.period.pk }}&next={{ request.get_full_path|urlencode }}">+ parallel</a>
+            {% endif %}
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% empty %}
+      <tr><td class="text-center text-muted p-4">Nothing to show yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

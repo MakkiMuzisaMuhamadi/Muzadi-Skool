@@ -1,0 +1,66 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-print"></i> Print Labels</h3>
+    <small class="text-muted">Choose units (or filter) then print A4 3×8 stickers</small>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="form-inline mb-3">
+      <input class="form-control mr-2" name="q" placeholder="Search tag or item..." value="{{ q }}">
+      <select class="form-control mr-2" name="type">
+        <option value="">All Types</option>
+        <option value="LIBRARY" {% if type == "LIBRARY" %}selected{% endif %}>Library</option>
+        <option value="ASSET" {% if type == "ASSET" %}selected{% endif %}>Assets</option>
+      </select>
+        <select class="form-control mr-2" name="status">
+        <option value="">All Status</option>
+        {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+        </select>
+      <input class="form-control mr-2" name="limit" style="width:110px" value="{{ limit }}" />
+      <button class="btn btn-outline-primary">Filter</button>
+
+      <a class="btn btn-primary ml-2"
+         href="{% url 'inv_labels_print' %}?q={{ q|urlencode }}&type={{ type|urlencode }}&status={{ status|urlencode }}&limit={{ limit }}">
+        <i class="fas fa-print mr-1"></i> Print (first {{ limit }})
+      </a>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>Item</th>
+            <th>Type</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in units %}
+          <tr>
+            <td><strong>{{ u.tag_code }}</strong></td>
+            <td>{{ u.item.name }}</td>
+            <td>{{ u.item.category.type }}</td>
+            <td>{{ u.status }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted">No units found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <small class="text-muted">
+      Tip: For exact printing, use Chrome → Print → Scale 100% → No margins (or default if it keeps A4).
+    </small>
+  </div>
+</div>
+{% endblock %}

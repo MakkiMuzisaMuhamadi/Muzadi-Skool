@@ -1,0 +1,16 @@
+{# Renders one Bootstrap 4 form field. Usage: {% include "dashboard/partials/_field.html" with field=form.first_name col="col-md-6" %} #}
+<div class="form-group {{ col|default:'col-md-6' }}">
+  {% if field.field.widget.input_type == "checkbox" %}
+    <div class="form-check mt-md-4">
+      {{ field }}
+      <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    </div>
+  {% else %}
+    <label for="{{ field.id_for_label }}">
+      {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+    </label>
+    {{ field }}
+  {% endif %}
+  {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+  {% for e in field.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+</div>

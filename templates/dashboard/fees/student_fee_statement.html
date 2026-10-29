@@ -1,0 +1,269 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-invoice"></i> Student Fee Statement
+    </h3>
+    <small class="text-muted">Detailed financial ledger for this student</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'fees_collect' %}?student_id={{ student.id }}" class="btn btn-primary btn-sm">
+      <i class="fas fa-money-bill-wave mr-1"></i> Receive Payment
+    </a>
+    {% if waive_form %}
+    <button class="btn btn-outline-secondary btn-sm" type="button" data-toggle="collapse" data-target="#waiveBox">
+      <i class="fas fa-user-minus mr-1"></i> Student left: waive fees
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3"><strong>Admission No:</strong> {{ student.admission_number }}</div>
+      <div class="col-md-4"><strong>Name:</strong> {{ student.name }}</div>
+      <div class="col-md-3"><strong>Class:</strong> {{ student.current_class.name|default:"-" }}</div>
+      <div class="col-md-2"><strong>Residence:</strong> {{ student.get_residence_display|default:"-" }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row text-center mb-3">
+  <div class="col-md-4 mb-2">
+    <div class="card border-left-primary">
+      <div class="card-body">
+        <small class="text-muted d-block">Total Billed</small>
+        <h5 class="mb-0">UGX {{ total_billed|intcomma }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card border-left-success">
+      <div class="card-body">
+        <small class="text-muted d-block">Total Paid</small>
+        <h5 class="mb-0 text-success">UGX {{ total_paid|intcomma }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card border-left-danger">
+      <div class="card-body">
+        {% if balance < 0 %}
+          <small class="text-muted d-block">In credit (paid in advance)</small>
+          <h5 class="mb-0 text-success">UGX {{ credit_total|intcomma }}</h5>
+        {% else %}
+          <small class="text-muted d-block">Balance to pay</small>
+          <h5 class="mb-0 text-danger">UGX {{ balance|intcomma }}</h5>
+          {% if credit_total > 0 %}<small class="text-muted">Owing UGX {{ owing|intcomma }} less UGX {{ credit_total|intcomma }} credit</small>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if pending_adjustments %}
+<div class="alert alert-info">{{ pending_adjustments }} discount/waiver request(s) for this student are waiting for admin approval.</div>
+{% endif %}
+
+{% if waive_form %}
+<div class="collapse mb-3" id="waiveBox">
+  <div class="card border-secondary">
+    <div class="card-body">
+      <p class="mb-2">Use this when a student leaves. Every unpaid fee in the chosen term and later terms is waived, with your reason recorded. Money already paid is not touched.</p>
+      <form method="post" action="{% url 'fee_student_waive_term' student.id %}" class="form-row align-items-end"
+            onsubmit="return confirm('Waive all unpaid fees from this term onwards?');">
+        {% csrf_token %}
+        <div class="col-md-4"><label>From term</label>{{ waive_form.term }}</div>
+        <div class="col-md-6"><label>Reason</label>{{ waive_form.reason }}</div>
+        <div class="col-md-2"><button class="btn btn-secondary btn-block">Waive fees</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Charges</strong>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="studentChargesTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Academic Year</th>
+            <th>Term</th>
+            <th>Fee Type</th>
+            <th>Amount</th>
+            <th>Waiver</th>
+            <th>Surcharge</th>
+            <th>Net Amount</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for charge in charges %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ charge.academic_year.year }}</td>
+            <td>{{ charge.term.name }}</td>
+            <td>
+              <a href="{% url 'student_fee_charge_detail' charge.id %}">
+                {{ charge.fee_category.name }}
+              </a>
+            </td>
+            <td>UGX {{ charge.amount|intcomma }}</td>
+            <td>UGX {{ charge.waiver_amount|intcomma }}</td>
+            <td>UGX {{ charge.surcharge_amount|intcomma }}</td>
+            <td>UGX {{ charge.net_amount|intcomma }}</td>
+            <td>UGX {{ charge.amount_paid|intcomma }}</td>
+            <td>UGX {{ charge.balance|intcomma }}</td>
+            <td>
+              {% if charge.status == "PAID" %}
+                <span class="badge badge-success">Paid</span>
+              {% elif charge.status == "PARTIAL" %}
+                <span class="badge badge-warning">Partial</span>
+              {% elif charge.status == "WAIVED" %}
+                <span class="badge badge-info">Waived</span>
+              {% else %}
+                <span class="badge badge-danger">Pending</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted">No charges found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Payments</strong>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="studentPaymentsTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Receipt No</th>
+            <th>Academic Year</th>
+            <th>Term</th>
+            <th>Amount</th>
+            <th>Unapplied</th>
+            <th>Method</th>
+            <th>Reference</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ p.payment_date }}</td>
+            <td>{% if p.is_reversed %}<s>{{ p.receipt_no }}</s>{% else %}{{ p.receipt_no }}{% endif %}</td>
+            <td>{{ p.academic_year.year }}</td>
+            <td>{{ p.term.name }}</td>
+            <td>UGX {{ p.amount|intcomma }}</td>
+            <td>UGX {{ p.unapplied_amount|intcomma }}</td>
+            <td>{{ p.get_payment_method_display }}</td>
+            <td>{{ p.reference|default:"-" }}</td>
+            <td>
+              {% if p.is_reversed %}
+                <span class="badge badge-danger" title="{{ p.reversal_reason }}">Reversed</span>
+                <small class="d-block text-muted">{{ p.reversed_at|date:"Y-m-d" }} by {{ p.reversed_by.username|default:"-" }}</small>
+              {% else %}
+                <span class="badge badge-success">Valid</span>
+              {% endif %}
+            </td>
+            <td class="text-nowrap">
+              <a href="{% url 'fee_payment_receipt' p.id %}" target="_blank" class="btn btn-sm btn-outline-primary">Receipt</a>
+              {% if can_reverse and not p.is_reversed %}
+                <a href="{% url 'fee_payment_reverse' p.id %}" class="btn btn-sm btn-outline-danger">Reverse</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted">No payments found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>Carry Forward Credits</strong>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="studentCreditsTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Created</th>
+            <th>Year</th>
+            <th>Term</th>
+            <th>Original Amount</th>
+            <th>Balance</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in credits %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ c.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ c.academic_year.year|default:"-" }}</td>
+            <td>{{ c.term.name|default:"-" }}</td>
+            <td>UGX {{ c.amount|intcomma }}</td>
+            <td>UGX {{ c.balance|intcomma }}</td>
+            <td>
+              {% if c.is_active %}
+                <span class="badge badge-success">Active</span>
+              {% else %}
+                <span class="badge badge-secondary">Used</span>
+              {% endif %}
+            </td>
+            <td>{{ c.notes|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted">No carry forward credits found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#studentChargesTable').DataTable({ pageLength: 25 });
+    $('#studentPaymentsTable').DataTable({ pageLength: 25 });
+    $('#studentCreditsTable').DataTable({ pageLength: 25 });
+  });
+</script>
+{% endblock %}

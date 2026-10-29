@@ -1,0 +1,116 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-stream"></i> {{ title }}
+    </h3>
+    <small class="text-muted">Manage section order, visibility, boxes, and page breaks</small>
+  </div>
+  <a href="{% url 'report_template_list' %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back to Templates
+  </a>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="card">
+    <div class="card-header">
+      <strong>Section Order and Visibility</strong>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle">
+          <thead class="thead-light">
+            <tr>
+              <th style="min-width: 190px;">Section</th>
+              <th style="min-width: 220px;">Title Override</th>
+              <th style="width: 90px;">Visible</th>
+              <th style="width: 100px;">Order</th>
+              <th style="width: 90px;">Boxed</th>
+              <th style="width: 110px;">New Page</th>
+              <th style="min-width: 260px;">Custom Text</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for section in sections %}
+            <tr>
+              <td>
+                <span class="badge badge-light border px-3 py-2">
+                  {{ section.get_section_key_display }}
+                </span>
+              </td>
+
+              <td>
+                <input type="text"
+                       name="section_{{ section.id }}_title"
+                       value="{{ section.title }}"
+                       class="form-control"
+                       placeholder="Optional custom title">
+              </td>
+
+              <td class="text-center">
+                <div class="custom-control custom-checkbox d-inline-block">
+                  <input type="checkbox"
+                         class="custom-control-input"
+                         id="section_{{ section.id }}_is_visible"
+                         name="section_{{ section.id }}_is_visible"
+                         {% if section.is_visible %}checked{% endif %}>
+                  <label class="custom-control-label" for="section_{{ section.id }}_is_visible"></label>
+                </div>
+              </td>
+
+              <td>
+                <input type="number"
+                       min="1"
+                       name="section_{{ section.id }}_sort_order"
+                       value="{{ section.sort_order }}"
+                       class="form-control">
+              </td>
+
+              <td class="text-center">
+                <div class="custom-control custom-checkbox d-inline-block">
+                  <input type="checkbox"
+                         class="custom-control-input"
+                         id="section_{{ section.id }}_is_boxed"
+                         name="section_{{ section.id }}_is_boxed"
+                         {% if section.is_boxed %}checked{% endif %}>
+                  <label class="custom-control-label" for="section_{{ section.id }}_is_boxed"></label>
+                </div>
+              </td>
+
+              <td class="text-center">
+                <div class="custom-control custom-checkbox d-inline-block">
+                  <input type="checkbox"
+                         class="custom-control-input"
+                         id="section_{{ section.id }}_start_new_page"
+                         name="section_{{ section.id }}_start_new_page"
+                         {% if section.start_new_page %}checked{% endif %}>
+                  <label class="custom-control-label" for="section_{{ section.id }}_start_new_page"></label>
+                </div>
+              </td>
+
+              <td>
+                <textarea name="section_{{ section.id }}_custom_text"
+                          rows="2"
+                          class="form-control"
+                          placeholder="Optional custom text">{{ section.custom_text }}</textarea>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-right mt-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i> Save Sections
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock %}

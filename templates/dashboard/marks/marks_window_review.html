@@ -1,0 +1,147 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-check"></i> Review Marks</h3>
+    <small class="text-muted">{{ sheet.display_name }} • {{ window.target_label }}</small>
+  </div>
+  <a href="{% url 'marks_progress' %}?term={{ sheet.term_id }}&class_ref={{ sheet.class_ref_id }}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back to progress
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+          {% if window.submission_status == "APPROVED" %}<span class="badge badge-success">Approved</span>
+          {% elif window.submission_status == "SUBMITTED" %}<span class="badge badge-info">Waiting for approval</span>
+          {% elif window.submission_status == "RETURNED" %}<span class="badge badge-warning">Returned for correction</span>
+          {% else %}<span class="badge badge-secondary">Draft</span>{% endif %}
+          {% if window.is_locked %}<span class="badge badge-danger">Closed</span>{% else %}<span class="badge badge-success">Open</span>{% endif %}
+          <span class="small text-muted">
+            {{ window.entered_count }}/{{ window.total_students }} entered
+            {% if window.absent_count %} • {{ window.absent_count }} absent{% endif %}
+            {% if window.missing_count %} • <span class="text-danger">{{ window.missing_count }} missing</span>{% endif %}
+          </span>
+        </div>
+        <div class="small text-muted mt-2">
+          Teacher(s): {{ window.teachers|join:", "|default:"not allocated" }}
+          {% if window.submitted_by %} • Submitted by {{ window.submitted_by.get_full_name|default:window.submitted_by.username }} on {{ window.submitted_at|date:"d M Y, H:i" }}{% endif %}
+          {% if window.reviewed_by %} • Last reviewed by {{ window.reviewed_by.get_full_name|default:window.reviewed_by.username }} on {{ window.reviewed_at|date:"d M Y, H:i" }}{% endif %}
+        </div>
+        {% if window.review_note %}<div class="alert alert-light border small mt-2 mb-0"><b>Note:</b> {{ window.review_note }}</div>{% endif %}
+      </div>
+    </div>
+
+    {% if stats %}
+    <div class="row mb-3">
+      <div class="col-6 col-md-3"><div class="card"><div class="card-body py-2"><div class="small text-muted">Average</div><div class="h5 mb-0">{{ stats.average }}{% if stats.average_pct is not None %} <small class="text-muted">({{ stats.average_pct }}%)</small>{% endif %}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card"><div class="card-body py-2"><div class="small text-muted">Highest</div><div class="h5 mb-0">{{ stats.highest }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card"><div class="card-body py-2"><div class="small text-muted">Lowest</div><div class="h5 mb-0">{{ stats.lowest }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card"><div class="card-body py-2"><div class="small text-muted">Zeros</div><div class="h5 mb-0 {% if stats.zeros %}text-warning{% endif %}">{{ stats.zeros }}</div></div></div></div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped mb-0">
+            <thead class="thead-light">
+              <tr><th>Candidate ID</th><th>Student</th><th>Mark / {{ sheet.exam_type.max_mark|floatformat:"-1" }}</th><th>Entered by</th><th>Last change</th></tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr {% if not r.entry %}class="table-warning"{% endif %}>
+                <td>{{ r.student.candidate_id }}</td>
+                <td>{{ r.student.last_name }} {{ r.student.first_name }}</td>
+                <td>
+                  {% if not r.entry %}<span class="text-danger">Missing</span>
+                  {% elif r.entry.is_absent %}<span class="badge badge-secondary">ABS</span>
+                  {% else %}<b>{{ r.entry.marks }}</b>{% endif %}
+                </td>
+                <td class="small">{% if r.entry.entered_by %}{{ r.entry.entered_by.get_full_name|default:r.entry.entered_by.username }}{% endif %}</td>
+                <td class="small text-muted">{% if r.entry %}{{ r.entry.updated_at|date:"d M, H:i" }}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    {% if sheet.term.is_marks_entry_open %}
+    <div class="card mb-3">
+      <div class="card-header"><strong>Decision</strong></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'marks_window_action' window.id %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="small mb-1" for="note">Note to the teacher</label>
+            <textarea name="note" id="note" rows="3" class="form-control form-control-sm"
+                      placeholder="Required when returning, e.g. “Check marks for S.3 East, several look too low.”"></textarea>
+          </div>
+          <div class="d-flex flex-wrap" style="gap:.5rem;">
+            {% if window.submission_status != "APPROVED" %}
+              <button name="action" value="approve" class="btn btn-success btn-sm"
+                      {% if window.missing_count %}onclick="return confirm('{{ window.missing_count }} student(s) have no mark. Approve anyway?');"{% endif %}>
+                <i class="fas fa-check mr-1"></i> Approve &amp; lock
+              </button>
+            {% endif %}
+            <button name="action" value="return" class="btn btn-warning btn-sm"><i class="fas fa-undo mr-1"></i> Return for correction</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>Lock &amp; deadline</strong></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'marks_window_action' window.id %}" class="mb-3">
+          {% csrf_token %}
+          {% if window.is_locked %}
+            <button name="action" value="reopen" class="btn btn-outline-warning btn-sm"><i class="fas fa-lock-open mr-1"></i> Reopen this list</button>
+          {% else %}
+            <button name="action" value="close" class="btn btn-outline-danger btn-sm"><i class="fas fa-lock mr-1"></i> Close this list</button>
+          {% endif %}
+        </form>
+        <form method="post" action="{% url 'marks_window_action' window.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="deadline">
+          <label class="small mb-1" for="deadline">Deadline for teachers</label>
+          <div class="input-group input-group-sm">
+            <input type="datetime-local" name="deadline" id="deadline" class="form-control"
+                   value="{% if window.deadline %}{{ window.deadline|date:'Y-m-d\TH:i' }}{% endif %}">
+            <div class="input-group-append"><button class="btn btn-outline-secondary">Save</button></div>
+          </div>
+          <small class="text-muted">Leave empty and save to remove the deadline.</small>
+        </form>
+      </div>
+    </div>
+    {% else %}
+      <div class="alert alert-secondary">{{ sheet.term.name }} is finalized. Reopen the term in Marksheet Control to make changes.</div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Recent changes</strong>
+        <a href="{% url 'marks_change_log' %}?marksheet={{ sheet.id }}" class="small">See all</a>
+      </div>
+      <ul class="list-group list-group-flush small">
+        {% for h in history %}
+        <li class="list-group-item py-2">
+          <div><b>{{ h.student_label }}</b>: {{ h.old_display }} → {{ h.new_display }}</div>
+          <div class="text-muted">{{ h.changed_by.get_full_name|default:h.changed_by.username|default:"—" }} • {{ h.changed_at|date:"d M, H:i" }}{% if h.source == "IMPORT" %} • Excel{% endif %}</div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">No changes recorded yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

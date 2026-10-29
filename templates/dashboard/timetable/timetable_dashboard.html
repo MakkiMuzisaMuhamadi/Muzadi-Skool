@@ -1,0 +1,372 @@
+{% extends "dashboard/base.html" %}
+{% load role_tags %}
+{% block content %}
+
+<style>
+  .tt-stat-card {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 0.35rem 1rem rgba(0,0,0,.06);
+  }
+  .tt-action-btn {
+    border-radius: .8rem;
+  }
+  .tt-mini-table td, .tt-mini-table th {
+    vertical-align: middle;
+  }
+  .tt-readonly-badge {
+    border-radius: 999px;
+    font-size: .75rem;
+    padding: .35rem .65rem;
+  }
+</style>
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-1">
+      <i class="fas fa-calendar-alt mr-2 text-primary"></i> Timetable Dashboard
+    </h3>
+
+    {% if request.user|has_role:"TEACHER" %}
+      <small class="text-muted">View your timetable, print it, and track timetable updates.</small>
+    {% else %}
+      <small class="text-muted">Manage periods, lesson allocation, class schedules, teacher schedules and substitutions.</small>
+    {% endif %}
+  </div>
+
+  <div class="mt-2 mt-md-0 d-flex" style="gap:.5rem;">
+    {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+      <a href="{% url 'timetable_create' %}" class="btn btn-outline-primary btn-sm tt-action-btn">
+        <i class="fas fa-plus-circle mr-1"></i> New Timetable
+      </a>
+      <a href="{% url 'timetable_entry_create' %}" class="btn btn-primary btn-sm tt-action-btn">
+        <i class="fas fa-edit mr-1"></i> Add Lesson
+      </a>
+    {% elif request.user|has_role:"TEACHER" %}
+      <span class="badge badge-light border tt-readonly-badge">
+        <i class="fas fa-lock mr-1"></i> Read Only
+      </span>
+      <a href="{% url 'teacher_timetable_view' %}" class="btn btn-primary btn-sm tt-action-btn">
+        <i class="fas fa-eye mr-1"></i> My Timetable
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row mb-4">
+  {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+    <div class="col-md-3 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">Timetables</div>
+          <h3 class="mb-0">{{ timetables_count }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">Periods</div>
+          <h3 class="mb-0">{{ periods_count }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">Entries</div>
+          <h3 class="mb-0">{{ entries_count }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">Substitutions</div>
+          <h3 class="mb-0">{{ substitutions_count }}</h3>
+        </div>
+      </div>
+    </div>
+  {% elif request.user|has_role:"TEACHER" %}
+    <div class="col-md-4 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">My Timetable Entries</div>
+          <h3 class="mb-0">{{ teacher_entries_count|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">My Lessons This Week</div>
+          <h3 class="mb-0">{{ teacher_weekly_lessons|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card tt-stat-card">
+        <div class="card-body">
+          <div class="small text-muted mb-1">My Substitutions</div>
+          <h3 class="mb-0">{{ teacher_substitutions_count|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+      {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap" style="gap:.75rem;">
+        <a href="{% url 'timetable_list' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-calendar-week mr-1"></i> Timetables
+        </a>
+        <a href="{% url 'timetable_period_list' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-clock mr-1"></i> Periods
+        </a>
+        <a href="{% url 'timetable_entry_list' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-list mr-1"></i> Planner
+        </a>
+        <a href="{% url 'class_timetable_view' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-school mr-1"></i> Class View
+        </a>
+        <a href="{% url 'teacher_timetable_view' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-chalkboard-teacher mr-1"></i> Teacher View
+        </a>
+        <a href="{% url 'substitution_list' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-exchange-alt mr-1"></i> Substitutions
+        </a>
+        <a href="{% url 'timetable_setup_list' 'room' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-door-open mr-1"></i> Rooms
+        </a>
+        <a href="{% url 'timetable_setup_list' 'teaching_group' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-users mr-1"></i> Teaching Groups
+        </a>
+        <a href="{% url 'timetable_setup_list' 'subject_load' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-balance-scale mr-1"></i> Lessons per Week
+        </a>
+        <a href="{% url 'timetable_setup_list' 'teacher_unavailability' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-user-clock mr-1"></i> Teacher Availability
+        </a>
+        <a href="{% url 'timetable_setup_list' 'teacher_load_limit' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-tachometer-alt mr-1"></i> Load Limits
+        </a>
+        <a href="{% url 'timetable_coverage_report' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-tasks mr-1"></i> Coverage
+        </a>
+        <a href="{% url 'timetable_teacher_load_report' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-chart-bar mr-1"></i> Workload
+        </a>
+        <a href="{% url 'timetable_free_teachers' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-user-check mr-1"></i> Who Is Free?
+        </a>
+        <a href="{% url 'room_timetable_view' %}" class="btn btn-light border tt-action-btn">
+          <i class="fas fa-door-closed mr-1"></i> Room View
+        </a>
+
+     
+    </div>
+  </div>
+</div>
+ {% endif %}
+{% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+<div class="row">
+  <div class="col-lg-6 mb-4">
+    <div class="card tt-stat-card h-100">
+      <div class="card-header bg-white">
+        <strong>Recent Timetables</strong>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover tt-mini-table mb-0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Year</th>
+              <th>Terms</th>
+              <th>Lessons</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in active_timetables %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.academic_year }}</td>
+              <td>{{ item.term_names|default:"-" }}</td>
+              <td>{{ item.entries.count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">No timetables found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6 mb-4">
+    <div class="card tt-stat-card h-100">
+      <div class="card-header bg-white">
+        <strong>Recent Substitutions</strong>
+      </div>
+      <div class="card-body">
+        {% for item in recent_substitutions %}
+          <div class="border rounded p-3 mb-2">
+            <div class="font-weight-bold">{{ item.date }}</div>
+            <div class="small text-muted">
+              {{ item.timetable_entry.class_ref.name }}
+              {% if item.timetable_entry.stream %} - {{ item.timetable_entry.stream.name }}{% endif %}
+              • {{ item.timetable_entry.get_day_display }} • {{ item.timetable_entry.period.name }}
+            </div>
+            <div class="mt-1">
+              {{ item.original_teacher }} <i class="fas fa-arrow-right mx-2 text-muted"></i> {{ item.substitute_teacher }}
+            </div>
+            {% if item.reason %}
+              <div class="small text-muted mt-1">{{ item.reason }}</div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div class="text-muted">No substitutions yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card tt-stat-card">
+  <div class="card-header bg-white">
+    <strong>Recent Entries</strong>
+  </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover tt-mini-table mb-0">
+      <thead>
+        <tr>
+          <th>Timetable</th>
+          <th>Class</th>
+          <th>Day</th>
+          <th>Period</th>
+          <th>Subject</th>
+          <th>Teacher</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in recent_entries %}
+        <tr>
+          <td>{{ item.timetable.name }}</td>
+          <td>
+            {{ item.class_ref.name }}
+            {% if item.stream_id or item.teaching_group_id %}<br><small class="text-muted">{{ item.group_label }}</small>{% endif %}
+          </td>
+          <td>{{ item.get_day_display }}</td>
+          <td>{{ item.period.name }}</td>
+          <td>{{ item.subject|default:"-" }}</td>
+          <td>{{ item.teacher|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">No recent entries.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if request.user|has_role:"TEACHER" %}
+<div class="card mb-4">
+  <div class="card-header bg-white"><strong>Today</strong> <small class="text-muted">{% now "l, d M" %}</small></div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      {% for row in teacher_today %}
+      <tr class="{% if row.is_cover %}table-info{% elif row.substitution %}table-secondary{% endif %}">
+        <td class="text-nowrap">{{ row.entry.period.start_time|time:"H:i" }} &middot; {{ row.entry.period.name }}</td>
+        <td><strong>{{ row.entry.subject|default:row.entry.period.get_period_type_display }}</strong> &middot; {{ row.entry.class_ref }}{% if row.entry.stream_id or row.entry.teaching_group_id %} ({{ row.entry.group_label }}){% endif %}</td>
+        <td>{{ row.entry.venue_label }}</td>
+        <td class="text-right">
+          {% if row.is_cover %}<span class="badge badge-info">Cover for {{ row.substitution.original_teacher.user.get_full_name }}</span>
+          {% elif row.substitution %}<span class="badge badge-secondary">Covered by {{ row.substitution.substitute_teacher.user.get_full_name }}</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td class="text-center text-muted p-3">No lessons today.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-7 mb-4">
+    <div class="card tt-stat-card h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>My Recent Lessons</strong>
+        <a href="{% url 'teacher_timetable_view' %}" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-eye mr-1"></i> View Full Timetable
+        </a>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover tt-mini-table mb-0">
+          <thead>
+            <tr>
+              <th>Timetable</th>
+              <th>Class</th>
+              <th>Day</th>
+              <th>Period</th>
+              <th>Subject</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in teacher_recent_entries %}
+            <tr>
+              <td>{{ item.timetable.name }}</td>
+              <td>
+                {{ item.class_ref.name }}
+                {% if item.stream_id or item.teaching_group_id %}<br><small class="text-muted">{{ item.group_label }}</small>{% endif %}
+              </td>
+              <td>{{ item.get_day_display }}</td>
+              <td>{{ item.period.name }}</td>
+              <td>{{ item.subject|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted">No lessons found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5 mb-4">
+    <div class="card tt-stat-card h-100">
+      <div class="card-header bg-white">
+        <strong>My Recent Substitutions</strong>
+      </div>
+      <div class="card-body">
+        {% for item in teacher_recent_substitutions %}
+          <div class="border rounded p-3 mb-2">
+            <div class="font-weight-bold">{{ item.date }}</div>
+            <div class="small text-muted">
+              {{ item.timetable_entry.class_ref.name }}
+              {% if item.timetable_entry.stream %} - {{ item.timetable_entry.stream.name }}{% endif %}
+              • {{ item.timetable_entry.get_day_display }} • {{ item.timetable_entry.period.name }}
+            </div>
+            <div class="mt-1">
+              {{ item.original_teacher }} <i class="fas fa-arrow-right mx-2 text-muted"></i> {{ item.substitute_teacher }}
+            </div>
+            {% if item.reason %}
+              <div class="small text-muted mt-1">{{ item.reason }}</div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div class="text-muted">No substitutions affecting you yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

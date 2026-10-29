@@ -1,0 +1,511 @@
+<!-- templates/uce/subject_rankings.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}UCE Subject Rankings - UMTA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .subject-card {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+    
+    .subject-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .subject-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    .subject-progress {
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .subject-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+    
+    .stat-item {
+        text-align: center;
+        flex: 1;
+    }
+    
+    .stat-value {
+        font-weight: bold;
+        font-size: 18px;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+    
+    .subject-category {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .category-major { background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2); }
+    .category-language { background: rgba(0, 123, 255, 0.1); color: #007bff; border: 1px solid rgba(0, 123, 255, 0.2); }
+    .category-religion { background: rgba(111, 66, 193, 0.1); color: #6f42c1; border: 1px solid rgba(111, 66, 193, 0.2); }
+    .category-other { background: rgba(108, 117, 125, 0.1); color: #6c757d; border: 1px solid rgba(108, 117, 125, 0.2); }
+    
+    .heatmap-cell {
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .heatmap-cell:hover {
+        transform: scale(1.1);
+    }
+    
+    .performance-0 { background: #dc3545; }
+    .performance-1 { background: #e35d6a; }
+    .performance-2 { background: #ea868f; }
+    .performance-3 { background: #f1aeb5; }
+    .performance-4 { background: #f8d7da; color: #495057; }
+    .performance-5 { background: #d1e7dd; color: #495057; }
+    .performance-6 { background: #a3cfbb; color: #495057; }
+    .performance-7 { background: #75b798; color: white; }
+    .performance-8 { background: #479f76; color: white; }
+    .performance-9 { background: #198754; color: white; }
+    .performance-10 { background: #146c43; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-primary">
+                <i class="fas fa-book me-2"></i>Subject Performance Analysis
+            </h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-graduation-cap me-1"></i>Uganda Certificate of Education (UCE) - All Subjects
+            </p>
+        </div>
+        <div>
+            <select class="form-select form-select-sm" style="width: 200px;" id="categoryFilter">
+                <option value="all">All Categories</option>
+                <option value="major">Major Subjects</option>
+                <option value="language">Languages</option>
+                <option value="religion">Religion</option>
+                <option value="other">Other Subjects</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Overall Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card subject-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Subjects</h6>
+                            <h4 class="fw-bold">{{ subjects|length }}</h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-primary rounded-circle">
+                                <i class="fas fa-book fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card subject-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Best Performing</h6>
+                            <h6 class="fw-bold text-success">
+                                {% if subject_stats.0.subject.name %}
+                                    {{ subject_stats.0.subject.name|truncatechars:20 }}
+                                {% else %}N/A{% endif %}
+                            </h6>
+                            <small class="text-muted">
+                                {{ subject_stats.0.average_percentage|default:0|floatformat:1 }}% average
+                            </small>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-success rounded-circle">
+                                <i class="fas fa-trophy fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card subject-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Candidates</h6>
+                            <h4 class="fw-bold text-warning">
+                                {% with total_candidates=0 %}
+                                    {% for stat in subject_stats %}
+                                        {% widthratio stat.total_candidates 1 1 as stat_candidates %}
+                                        {{ total_candidates|add:stat_candidates }}
+                                    {% endfor %}
+                                    {{ total_candidates|intcomma }}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-warning rounded-circle">
+                                <i class="fas fa-users fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card subject-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Overall Average</h6>
+                            <h4 class="fw-bold text-info">
+                                {% with total_percentage=0 count=0 %}
+                                    {% for stat in subject_stats %}
+                                        {% widthratio stat.average_percentage 1 1 as stat_percentage %}
+                                        {{ total_percentage|add:stat_percentage }}
+                                        {{ count|add:1 }}
+                                    {% endfor %}
+                                    {% if count > 0 %}
+                                        {{ total_percentage| floatformat:1 }}%
+                                    {% else %}0%{% endif %}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-info rounded-circle">
+                                <i class="fas fa-chart-pie fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Heatmap -->
+    <div class="card subject-card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-fire me-2"></i>Subject Performance Heatmap
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>0-10%</th>
+                            <th>11-20%</th>
+                            <th>21-30%</th>
+                            <th>31-40%</th>
+                            <th>41-50%</th>
+                            <th>51-60%</th>
+                            <th>61-70%</th>
+                            <th>71-80%</th>
+                            <th>81-90%</th>
+                            <th>91-100%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subject in subjects|slice:":25" %}
+                        <tr>
+                            <td class="text-start">
+                                <strong>{{ subject.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ subject.code }}</small>
+                            </td>
+                            {% for i in "0123456789" %}
+                            <td>
+                                <div class="heatmap-cell performance-{{ forloop.counter0 }}"
+                                     title="{{ subject.name }}: {{ forloop.counter0 }}0-{{ forloop.counter }}0% range">
+                                    
+                                </div>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subjects Grid -->
+    <div class="row" id="subjectsGrid">
+        {% for subject in subjects %}
+        <div class="col-xl-4 col-lg-6 mb-4 subject-item"
+             data-category="{% if subject.is_major %}major{% elif subject.is_language %}language{% elif subject.is_Religion %}religion{% else %}other{% endif %}"
+             data-percentage="
+                {% for stat in subject_stats %}
+                    {% if stat.subject.id == subject.id %}
+                        {{ stat.average_percentage|default:0 }}
+                    {% endif %}
+                {% endfor %}">
+            <div class="card subject-card">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="subject-icon 
+                            {% if subject.is_major %}bg-success text-white
+                            {% elif subject.is_language %}bg-primary text-white
+                            {% elif subject.is_Religion %}bg-purple text-white
+                            {% else %}bg-secondary text-white{% endif %} mx-auto">
+                            {% if subject.is_major %}
+                                <i class="fas fa-star"></i>
+                            {% elif subject.is_language %}
+                                <i class="fas fa-language"></i>
+                            {% elif subject.is_Religion %}
+                                <i class="fas fa-church"></i>
+                            {% else %}
+                                <i class="fas fa-book-open"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="card-title mb-1">{{ subject.name }}</h5>
+                        <p class="text-muted mb-2">{{ subject.code }}</p>
+                        
+                        <div class="mb-3">
+                            <span class="subject-category 
+                                {% if subject.is_major %}category-major
+                                {% elif subject.is_language %}category-language
+                                {% elif subject.is_Religion %}category-religion
+                                {% else %}category-other{% endif %}">
+                                {% if subject.is_major %}Major
+                                {% elif subject.is_language %}Language
+                                {% elif subject.is_Religion %}Religion
+                                {% else %}Other{% endif %}
+                            </span>
+                            {% if subject.is_major %}
+                            <span class="badge bg-light text-dark border ms-1">
+                                <i class="fas fa-asterisk me-1"></i>Compulsory
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Subject Stats -->
+                    {% for stat in subject_stats %}
+                        {% if stat.subject.id == subject.id %}
+                        <div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Average Score:</span>
+                                <span class="fw-bold 
+                                    {% if stat.average_percentage >= 80 %}text-success
+                                    {% elif stat.average_percentage >= 60 %}text-info
+                                    {% elif stat.average_percentage >= 40 %}text-warning
+                                    {% else %}text-danger{% endif %}">
+                                    {{ stat.average_percentage|floatformat:1 }}%
+                                </span>
+                            </div>
+                            
+                            <div class="subject-progress bg-light mb-3">
+                                <div class="h-100 
+                                    {% if stat.average_percentage >= 80 %}bg-success
+                                    {% elif stat.average_percentage >= 60 %}bg-info
+                                    {% elif stat.average_percentage >= 40 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    style="width: {{ stat.average_percentage }}%">
+                                </div>
+                            </div>
+                            
+                            <div class="subject-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">{{ stat.total_candidates|intcomma }}</span>
+                                    <span class="stat-label">Candidates</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">{{ stat.schools_count }}</span>
+                                    <span class="stat-label">Schools</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">
+                                        {% if subject.papers.count %}
+                                            {{ subject.papers.count }}
+                                        {% else %}1{% endif %}
+                                    </span>
+                                    <span class="stat-label">Papers</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                        <p>No performance data available</p>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-4">
+                        <a href="{% url 'uce_top_candidates_subject' subject.id %}" 
+                           class="btn btn-sm btn-outline-primary me-2">
+                            <i class="fas fa-ranking-star me-1"></i>Top Candidates
+                        </a>
+                        <button class="btn btn-sm btn-outline-info" 
+                                onclick="viewSubjectAnalysis('{{ subject.id }}')">
+                            <i class="fas fa-chart-line me-1"></i>Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card subject-card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-book fa-4x text-muted mb-3"></i>
+                    <h5>No subjects found</h5>
+                    <p class="text-muted">No subjects have been configured for UCE level.</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Analysis Tools -->
+    <div class="card subject-card mt-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-tools me-2"></i>Subject Analysis Tools
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-success" onclick="compareSubjects()">
+                            <i class="fas fa-balance-scale me-2"></i>Compare Subjects
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-success" onclick="exportSubjectData()">
+                            <i class="fas fa-file-excel me-2"></i>Export Data
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-warning" onclick="generateSubjectReport()">
+                            <i class="fas fa-file-pdf me-2"></i>Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter by category
+    document.getElementById('categoryFilter').addEventListener('change', function() {
+        const filter = this.value;
+        const items = document.querySelectorAll('.subject-item');
+        
+        items.forEach(item => {
+            const category = item.getAttribute('data-category');
+            
+            if (filter === 'all' || category === filter) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+    
+    // Sort by percentage (example functionality)
+    function sortByPercentage() {
+        const container = document.getElementById('subjectsGrid');
+        const items = Array.from(container.getElementsByClassName('subject-item'));
+        
+        items.sort((a, b) => {
+            const aVal = parseFloat(a.getAttribute('data-percentage')) || 0;
+            const bVal = parseFloat(b.getAttribute('data-percentage')) || 0;
+            return bVal - aVal;
+        });
+        
+        // Reorder items
+        items.forEach(item => container.appendChild(item));
+    }
+    
+    function viewSubjectAnalysis(subjectId) {
+        window.open(`/subjects/${subjectId}/analysis/uce/`, '_blank');
+    }
+    
+    function compareSubjects() {
+        alert('Subject comparison tool will be implemented soon!');
+    }
+    
+    function exportSubjectData() {
+        alert('Export feature will be implemented soon!');
+    }
+    
+    function generateSubjectReport() {
+        alert('Report generation will be implemented soon!');
+    }
+    
+    // Initialize heatmap tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const heatmapCells = document.querySelectorAll('.heatmap-cell');
+        heatmapCells.forEach(cell => {
+            cell.addEventListener('mouseenter', function() {
+                const title = this.getAttribute('title');
+                // You can implement custom tooltip here
+            });
+        });
+    });
+</script>
+{% endblock %}

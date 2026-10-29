@@ -1,0 +1,385 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="fas fa-upload me-2"></i>Upload Marks from Excel</h2>
+    
+    <!-- Upload Card -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-file-excel me-2"></i>Upload Excel File</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.school.id_for_label }}" class="form-label fw-bold">School</label>
+                        {{ form.school }}
+                        {% if form.school.errors %}
+                            <div class="text-danger mt-1">{{ form.school.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.excel_file.id_for_label }}" class="form-label fw-bold">Excel File</label>
+                        <div class="file-upload-area">
+                            {{ form.excel_file }}
+                            <div class="file-drop-zone mt-2 p-4 text-center border rounded">
+                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                <p class="mb-1">Drag & drop your file here</p>
+                                <p class="text-muted small">or click to browse</p>
+                            </div>
+                        </div>
+                        {% if form.excel_file.errors %}
+                            <div class="text-danger mt-1">{{ form.excel_file.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Format Requirements:</strong> Each sheet should represent a subject with columns for student names and paper marks (P1, P2, P3, etc.)
+                </div>
+                
+                <button type="submit" class="btn btn-outline-success btn-lg" id="uploadButton">
+                    <i class="fas fa-upload me-2"></i> Upload Marks
+                </button>
+                <a href="{% url 'uce_school_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </form>
+        </div>
+    </div> 
+    
+    <!-- Progress Indicator (initially hidden) -->
+    <div class="card mt-4 shadow d-none" id="progressCard">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="fas fa-spinner fa-spin me-2"></i>Processing Upload</h5>
+        </div>
+        <div class="card-body">
+            <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 0%" id="uploadProgress">
+                    0%
+                </div>
+            </div>
+            <div class="upload-details">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white text-center mb-3">
+                            <div class="card-body py-2">
+                                <i class="fas fa-check-circle fa-2x mb-1"></i>
+                                <h5 class="mb-0" id="successCount">0</h5>
+                                <small>Successful</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white text-center mb-3">
+                            <div class="card-body py-2">
+                                <i class="fas fa-exclamation-circle fa-2x mb-1"></i>
+                                <h5 class="mb-0" id="errorCount">0</h5>
+                                <small>Errors</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white text-center mb-3">
+                            <div class="card-body py-2">
+                                <i class="fas fa-book fa-2x mb-1"></i>
+                                <h5 class="mb-0" id="subjectCount">0</h5>
+                                <small>Subjects</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white text-center mb-3">
+                            <div class="card-body py-2">
+                                <i class="fas fa-clock fa-2x mb-1"></i>
+                                <h5 class="mb-0" id="timeElapsed">0s</h5>
+                                <small>Time Elapsed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3" id="statusMessages">
+                <!-- Status messages will appear here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Format Guide -->
+    <div class="card mt-4 shadow">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Expected Excel Format</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Your Excel file should have the following structure:</p>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Each sheet represents a subject</li>
+                        <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Sheet name = subject name</li>
+                        <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Include columns: S/N, NAME, P1, P2, P3, etc.</li>
+                        <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Student names should match the database</li>
+                        <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>Paper codes should match your paper definitions</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-bold">Example sheet structure:</p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>NAME</th>
+                                    <th>P1</th>
+                                    <th>P2</th>
+                                    <th>P3</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Student Name 1</td>
+                                    <td>85</td>
+                                    <td>78</td>
+                                    <td>92</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Student Name 2</td>
+                                    <td>90</td>
+                                    <td>85</td>
+                                    <td>88</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.file-upload-area input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.file-drop-zone {
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6 !important;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover, .file-drop-zone.active {
+    background-color: #e9ecef;
+    border-color: #0d6efd !important;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    font-weight: bold;
+}
+
+.upload-status-item {
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #0d6efd;
+}
+
+.status-success {
+    background-color: #d4edda;
+    border-left-color: #28a745;
+}
+
+.status-warning {
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.card .card-body.py-2 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('uploadForm');
+    const progressCard = document.getElementById('progressCard');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const successCount = document.getElementById('successCount');
+    const errorCount = document.getElementById('errorCount');
+    const subjectCount = document.getElementById('subjectCount');
+    const timeElapsed = document.getElementById('timeElapsed');
+    const statusMessages = document.getElementById('statusMessages');
+    const uploadButton = document.getElementById('uploadButton');
+    
+    // File drop zone functionality
+    const fileInput = document.querySelector('input[type="file"]');
+    const dropZone = document.querySelector('.file-drop-zone');
+    
+    if (fileInput && dropZone) {
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                dropZone.innerHTML = `
+                    <i class="fas fa-file-excel fa-2x text-success mb-2"></i>
+                    <p class="mb-0">${e.target.files[0].name}</p>
+                    <small class="text-muted">Click to change file</small>
+                `;
+            }
+        });
+        
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropZone.classList.add('active');
+        }
+        
+        function unhighlight() {
+            dropZone.classList.remove('active');
+        }
+        
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            
+            if (files.length) {
+                dropZone.innerHTML = `
+                    <i class="fas fa-file-excel fa-2x text-success mb-2"></i>
+                    <p class="mb-0">${files[0].name}</p>
+                    <small class="text-muted">Click to change file</small>
+                `;
+            }
+        }
+    }
+    
+    // Form submission with progress indicator
+    form.addEventListener('submit', function(e) {
+        // Show progress card
+        progressCard.classList.remove('d-none');
+        
+        // Disable upload button to prevent multiple submissions
+        uploadButton.disabled = true;
+        uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
+        
+        // Start time tracking
+        let startTime = new Date();
+        let timerInterval = setInterval(() => {
+            let elapsed = Math.floor((new Date() - startTime) / 1000);
+            timeElapsed.textContent = `${elapsed}s`;
+        }, 1000);
+        
+        // Simulate progress (in a real implementation, this would use AJAX with progress events)
+        let progress = 0;
+        let progressInterval = setInterval(() => {
+            progress += 5;
+            if (progress <= 100) {
+                uploadProgress.style.width = `${progress}%`;
+                uploadProgress.textContent = `${progress}%`;
+            } else {
+                clearInterval(progressInterval);
+            }
+        }, 500);
+        
+        // In a real implementation, you would use AJAX to submit the form
+        // and update the progress based on actual upload/processing status
+        // This is just a visual simulation
+        
+        // The form will continue with normal submission
+        // For a production implementation, consider using AJAX with progress tracking
+    });
+    
+    // Check if there are messages from previous upload attempts
+    {% if messages %}
+        // Show progress card if there are messages
+        progressCard.classList.remove('d-none');
+        
+        // Parse messages to extract counts
+        let success = 0;
+        let errors = 0;
+        let subjects = 0;
+        
+        {% for message in messages %}
+            {% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                success += {{ message|length }};
+                statusMessages.innerHTML += `
+                    <div class="upload-status-item status-success">
+                        <i class="fas fa-check-circle me-2 text-success"></i>
+                        {{ message }}
+                    </div>
+                `;
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                errors += {{ message|length }};
+                statusMessages.innerHTML += `
+                    <div class="upload-status-item status-error">
+                        <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+                        {{ message }}
+                    </div>
+                `;
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                subjects += {{ message|length }};
+                statusMessages.innerHTML += `
+                    <div class="upload-status-item status-warning">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        {{ message }}
+                    </div>
+                `;
+            {% endif %}
+        {% endfor %}
+        
+        // Update counters
+        successCount.textContent = success;
+        errorCount.textContent = errors;
+        subjectCount.textContent = subjects;
+        uploadProgress.style.width = '100%';
+        uploadProgress.textContent = '100%';
+        uploadProgress.classList.remove('progress-bar-animated');
+    {% endif %}
+});
+</script>
+{% endblock %}

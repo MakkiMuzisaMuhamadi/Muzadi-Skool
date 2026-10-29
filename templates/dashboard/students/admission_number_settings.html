@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-hashtag text-primary"></i> Admission Numbers</h3>
+    <small class="text-muted">How the system numbers new learners. Numbers already given are never changed.</small>
+  </div>
+  <a href="{% url 'student_list' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-body">
+        <div class="form-group">
+          <label for="{{ form.pattern.id_for_label }}">{{ form.pattern.label }}</label>
+          {{ form.pattern }}
+          {% for e in form.pattern.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.sequence_padding.id_for_label }}">{{ form.sequence_padding.label }}</label>
+          {{ form.sequence_padding }}
+          {% for e in form.sequence_padding.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="alert alert-light border mb-0">
+          Next number: <strong>{{ next_number }}</strong>
+        </div>
+      </div>
+      <div class="card-footer bg-white">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save format</button>
+      </div>
+    </form>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-body small">
+        <h6>Codes you can use</h6>
+        <table class="table table-sm mb-3">
+          <tr><th>{SEQ}</th><td>Running number (required)</td></tr>
+          <tr><th>{YYYY}</th><td>Admission year, e.g. 2026</td></tr>
+          <tr><th>{YY}</th><td>Short year, e.g. 26</td></tr>
+          <tr><th>{SCHOOL}</th><td>School short name</td></tr>
+        </table>
+        <h6>Examples</h6>
+        <table class="table table-sm mb-0">
+          <tr><td>ADM-{YYYY}-{SEQ}</td><td>ADM-2026-001</td></tr>
+          <tr><td>{SEQ}/{YY}</td><td>001/26</td></tr>
+          <tr><td>{SCHOOL}{SEQ}</td><td>SMS0001</td></tr>
+          <tr><td>{SEQ}</td><td>2346 (continues after your highest number)</td></tr>
+        </table>
+        <p class="text-muted mt-3 mb-0">With a year in the format, numbering restarts each year. Without one, it runs on forever.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4">
+  <h3 class="page-title mb-1"><i class="fas fa-trash mr-2 text-danger"></i> Delete Lesson</h3>
+</div>
+<div class="card">
+  <div class="card-body">
+    <p class="mb-4">
+      Delete <strong>{{ item.subject|default:item.period.name }}</strong> for
+      <strong>{{ item.class_ref.name }}</strong> ({{ item.group_label }}) on
+      <strong>{{ item.get_day_display }}</strong>, <strong>{{ item.period.name }}</strong>{% if item.span > 1 %} (x{{ item.span }}){% endif %}?
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      <a href="{% if next %}{{ next }}{% else %}{% url 'timetable_entry_list' %}{% endif %}" class="btn btn-light border">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

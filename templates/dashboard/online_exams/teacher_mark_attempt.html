@@ -1,0 +1,97 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-edit"></i> Mark Attempt</h3>
+    <small class="text-muted">
+      {{ exam.title }} — {{ attempt.student }} (Attempt {{ attempt.attempt_no }})
+    </small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'teacher_marking_inbox' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="mb-3">
+      <div class="d-flex flex-wrap" style="gap:1rem;">
+        <div><span class="text-muted">Auto:</span> <b>{{ attempt.auto_score }}</b></div>
+        <div><span class="text-muted">Manual:</span> <b>{{ attempt.manual_score }}</b></div>
+        <div><span class="text-muted">Total:</span> <b>{{ attempt.total_score }}</b></div>
+        <div>
+          {% if attempt.is_manual_pending %}
+            <span class="badge badge-warning">Manual Pending</span>
+          {% else %}
+            <span class="badge badge-success">Final Marked</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% for ans in manual_answers %}
+        <div class="border rounded p-3 mb-3">
+          <div class="font-weight-bold mb-2">
+            Q{{ forloop.counter }} — {{ ans.question.marks }} marks
+          </div>
+
+          <div class="mb-2">{{ ans.question.prompt|linebreaksbr }}</div>
+
+          {% if ans.question.marking_guide %}
+            <div class="alert alert-light py-2">
+              <small class="text-muted"><b>Marking guide:</b> {{ ans.question.marking_guide|linebreaksbr }}</small>
+            </div>
+          {% endif %}
+
+          <div class="mb-2">
+            <label class="font-weight-bold">Student Answer</label>
+            <div class="p-2 bg-light border rounded">
+              {{ ans.typed_answer|default:"(No answer)"|linebreaksbr }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-3">
+              <label class="font-weight-bold">Award Marks</label>
+              <input type="number"
+                     step="0.25"
+                     min="0"
+                     max="{{ ans.question.marks }}"
+                     name="marks_{{ ans.id }}"
+                     value="{{ ans.awarded_marks }}"
+                     class="form-control">
+              <small class="text-muted">Max: {{ ans.question.marks }}</small>
+            </div>
+            <div class="col-md-9">
+              <label class="font-weight-bold">Marker Comment (optional)</label>
+              <input type="text"
+                     name="comment_{{ ans.id }}"
+                     value="{{ ans.marker_comment }}"
+                     class="form-control"
+                     placeholder="e.g. Good explanation, but missing conclusion">
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-muted text-center py-4">No typed answers to mark for this attempt.</div>
+      {% endfor %}
+
+      <div class="d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-save mr-1"></i> Save Marks
+        </button>
+        {% if not attempt.is_manual_pending %}
+          <span class="badge badge-success align-self-center">Attempt is finalized</span>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

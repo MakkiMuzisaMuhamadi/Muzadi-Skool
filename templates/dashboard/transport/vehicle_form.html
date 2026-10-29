@@ -1,0 +1,82 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-bus mr-1"></i> {{ title|default:"Vehicle" }}</h3>
+    <small class="text-muted">Fill vehicle details and save.</small>
+  </div>
+  <div>
+    <a href="{% url 'transport_vehicle_list' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>Reg Number</label>
+          {{ form.reg_number }}
+          <small class="text-danger">{{ form.reg_number.errors }}</small>
+        </div>
+        <div class="form-group col-md-4">
+          <label>Name</label>
+          {{ form.name }}
+          <small class="text-danger">{{ form.name.errors }}</small>
+        </div>
+        <div class="form-group col-md-4">
+          <label>Type</label>
+          {{ form.vehicle_type }}
+          <small class="text-danger">{{ form.vehicle_type.errors }}</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label>Capacity</label>
+          {{ form.capacity }}
+          <small class="text-danger">{{ form.capacity.errors }}</small>
+        </div>
+        <div class="form-group col-md-5">
+          <label>Driver</label>
+          {{ form.driver }}
+          <small class="text-danger">{{ form.driver.errors }}</small>
+        </div>
+        <div class="form-group col-md-4">
+          <label>Status</label>
+          {{ form.status }}
+          <small class="text-danger">{{ form.status.errors }}</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notes</label>
+        {{ form.notes }}
+        <small class="text-danger">{{ form.notes.errors }}</small>
+      </div>
+
+      <div class="form-group form-check">
+        {{ form.is_active }}
+        <label class="form-check-label">Active</label>
+      </div>
+
+      <div class="d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+        <a href="{% url 'transport_vehicle_list' %}" class="btn btn-light">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

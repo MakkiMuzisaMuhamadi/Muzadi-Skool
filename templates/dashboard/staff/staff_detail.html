@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-user-cog"></i> {{ member.get_title_display }} {{ member }}</h3>
+      <small class="text-muted">{{ member.job_title }}{% if member.department %}, {{ member.department }}{% endif %}. Staff no. {{ member.staff_no|default:"—" }}</small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'staff_list' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+      <a href="{% url 'staff_edit' member.id %}" class="btn btn-outline-warning btn-sm"><i class="fas fa-edit mr-1"></i> Edit</a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="text-muted border-bottom pb-1">Contacts</h6>
+            <dl class="row small">
+              <dt class="col-5">Phone</dt><dd class="col-7">{{ member.contact1|default:"—" }}</dd>
+              <dt class="col-5">Alt. phone</dt><dd class="col-7">{{ member.contact2|default:"—" }}</dd>
+              <dt class="col-5">Email</dt><dd class="col-7 text-break">{{ member.email|default:"—" }}</dd>
+              <dt class="col-5">Address</dt><dd class="col-7">{{ member.address|default:"—" }}</dd>
+              <dt class="col-5">Gender</dt><dd class="col-7">{{ member.get_gender_display|default:"—" }}</dd>
+              <dt class="col-5">Date of birth</dt><dd class="col-7">{{ member.date_of_birth|date:"d M Y"|default:"—" }}</dd>
+            </dl>
+            <h6 class="text-muted border-bottom pb-1">Next of kin</h6>
+            <dl class="row small mb-0">
+              <dt class="col-5">Name</dt><dd class="col-7">{{ member.next_of_kin_name|default:"—" }}</dd>
+              <dt class="col-5">Phone</dt><dd class="col-7">{{ member.next_of_kin_phone|default:"—" }}</dd>
+              <dt class="col-5">Relationship</dt><dd class="col-7">{{ member.next_of_kin_relationship|default:"—" }}</dd>
+            </dl>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-muted border-bottom pb-1">Employment</h6>
+            <dl class="row small mb-0">
+              <dt class="col-5">Status</dt><dd class="col-7">{{ member.get_status_display }}</dd>
+              <dt class="col-5">Joined</dt><dd class="col-7">{{ member.date_joined|date:"d M Y"|default:"—" }}</dd>
+              {% if member.date_left %}<dt class="col-5">Left</dt><dd class="col-7">{{ member.date_left|date:"d M Y" }} ({{ member.leaving_reason|default:"no reason" }})</dd>{% endif %}
+              <dt class="col-5">Type</dt><dd class="col-7">{{ member.get_employment_type_display }}</dd>
+              <dt class="col-5">Qualification</dt><dd class="col-7">{{ member.get_qualification_display|default:"—" }}</dd>
+              <dt class="col-5">Payroll no.</dt><dd class="col-7">{{ member.payroll_no|default:"—" }}</dd>
+              <dt class="col-5">Login</dt><dd class="col-7">{% if member.user %}{{ member.user.username }}{% else %}None{% endif %}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4 mb-3">
+    <form method="post" action="{% url 'staff_change_status' member.id %}" class="card" novalidate>
+      {% csrf_token %}
+      <div class="card-body">
+        <h5 class="mb-3">Change status</h5>
+        <div class="form-row">
+          {% include "dashboard/partials/_field.html" with field=status_form.status col="col-12" %}
+          {% include "dashboard/partials/_field.html" with field=status_form.date_left col="col-12" %}
+          {% include "dashboard/partials/_field.html" with field=status_form.leaving_reason col="col-12" %}
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save status</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

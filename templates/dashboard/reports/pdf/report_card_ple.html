@@ -1,0 +1,862 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ template_data.report_title|default:"PLE Report Card" }}</title>
+
+  <style>
+    @page {
+      size: {{ template_data.page_size|default:"A4" }} {% if template_data.orientation == "LANDSCAPE" %}landscape{% else %}portrait{% endif %};
+      margin: 9mm;
+    }
+
+    :root {
+      --primary: {{ template_data.primary_color|default:"#123f66" }};
+      --secondary: {{ template_data.secondary_color|default:"#f6f9fc" }};
+      --accent: {{ template_data.accent_color|default:"#0f6fa8" }};
+      --text: {{ template_data.text_color|default:"#17212b" }};
+      --border: {{ template_data.border_color|default:"#c9d6e2" }};
+      --muted: #6b7280;
+      --soft: #f4f8fb;
+      --soft-2: #edf4fa;
+      --line: #d8e3ec;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "DejaVu Serif", "Times New Roman", Georgia, serif;
+      color: var(--text);
+      font-size: 12.8px;
+      line-height: 1.35;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+
+    .page { position: relative; }
+
+    .watermark {
+      position: fixed;
+      top: 43%;
+      left: 11%;
+      font-size: 58px;
+      color: rgba(0, 0, 0, 0.045);
+      transform: rotate(-25deg);
+      z-index: 0;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .report-card {
+      position: relative;
+      z-index: 2;
+    }
+
+    .school-header {
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+
+    .school-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .school-table td {
+      border: none;
+      vertical-align: middle;
+      padding: 0;
+    }
+
+    .logo-cell {
+      width: 92px;
+      padding-right: 12px;
+    }
+
+    .logo-img {
+      width: 82px;
+      height: auto;
+      display: block;
+    }
+
+    .school-name {
+      text-align: center;
+      font-size: 27px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--primary);
+      letter-spacing: .2px;
+      line-height: 1.05;
+    }
+
+    .school-motto {
+      text-align: center;
+      font-size: 13.2px;
+      margin-top: 4px;
+      color: #34495e;
+      font-style: italic;
+    }
+
+    .school-meta {
+      text-align: center;
+      font-size: 12.3px;
+      margin-top: 4px;
+      color: #243447;
+      line-height: 1.35;
+    }
+
+    .report-title-wrap {
+      text-align: center;
+      margin: 8px 0 10px;
+    }
+
+    .report-title {
+      display: inline-block;
+      color: var(--primary);
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      padding: 5px 22px;
+      border-radius: 999px;
+    }
+
+    .report-subtitle {
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-top: 4px;
+      color: var(--muted);
+    }
+
+    .plain-section {
+      margin-bottom: 9px;
+      page-break-inside: avoid;
+    }
+
+    .boxed {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #ffffff;
+    }
+
+    .section-title {
+      font-size: 14.2px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      color: var(--primary);
+      border-bottom: 1.5px solid var(--line);
+      letter-spacing: .2px;
+    }
+
+    .section-title:before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .student-info-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 8px 9px;
+    }
+
+    .student-info-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 7px 5px;
+    }
+
+    .student-info-table td {
+      border: none;
+      padding: 0;
+      vertical-align: top;
+    }
+
+    .info-label {
+      font-size: 9.5px;
+      color: var(--muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .45px;
+      margin-bottom: 1px;
+    }
+
+    .info-value {
+      font-size: 13.3px;
+      color: var(--text);
+      font-weight: 800;
+      padding: 4px 6px;
+      background: #ffffff;
+      border: 1px solid #e1eaf2;
+      border-radius: 6px;
+      min-height: 24px;
+    }
+
+    .student-name-value {
+      font-size: 14.2px;
+      color: var(--primary);
+    }
+
+    .info-cell-wide { width: 42%; }
+    .info-cell-small { width: 19%; }
+
+    .academic-table {
+      border-collapse: collapse;
+      width: 100%;
+      border: 1px solid var(--border);
+    }
+
+    .academic-table th {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      padding: 6px 6px;
+      font-size: 11.7px;
+      text-align: center;
+      font-weight: 800;
+      vertical-align: middle;
+    }
+
+    .academic-table td {
+      border: 1px solid var(--border);
+      padding: 5.5px 6px;
+      font-size: 12.2px;
+      vertical-align: middle;
+    }
+
+    .academic-table tbody tr:nth-child(even) td {
+      background: #f8fbfd;
+    }
+
+    .subject-cell {
+      font-weight: 800;
+      color: #1f2937;
+    }
+
+    .final-mark {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+
+    .grade-pill {
+      display: inline-block;
+      min-width: 30px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--soft-2);
+      color: var(--primary);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .text-center { text-align: center; }
+    .text-muted { color: var(--muted); }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 8px;
+    }
+
+    .summary-grid {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 8px 0;
+    }
+
+    .summary-grid td {
+      border: none;
+      width: 50%;
+      padding: 0;
+    }
+
+    .summary-box {
+      background: #ffffff;
+      border: 1px solid #e1eaf2;
+      border-radius: 7px;
+      padding: 9px 10px;
+    }
+
+    .summary-label {
+      font-size: 10.3px;
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .summary-value {
+      font-size: 19px;
+      color: var(--primary);
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .comment-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 8px 10px;
+      min-height: 44px;
+      font-size: 13px;
+    }
+
+    .comment-empty { color: var(--muted); }
+
+    .next-term-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 8px 10px;
+    }
+
+    .next-term-value {
+      color: var(--primary);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .promotion-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    .promotion-row { margin-bottom: 4px; }
+
+    .promotion-label {
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .promotion-value {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .legend-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .legend-table th {
+      background: var(--soft-2);
+      border: 1px solid var(--line);
+      color: var(--primary);
+      padding: 5px 6px;
+      font-size: 11.5px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .legend-table td {
+      border: 1px solid var(--line);
+      padding: 5px 6px;
+      font-size: 11.7px;
+    }
+
+    .signature-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #ffffff;
+    }
+
+    .signature-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .signature-table td {
+      border: none !important;
+      width: 50%;
+      padding: 8px 10px 0 0;
+      vertical-align: bottom;
+      font-size: 12.8px;
+      text-align: center;
+    }
+
+    .signature-box {
+      min-height: 86px;
+      padding: 4px 6px;
+      page-break-inside: avoid;
+    }
+
+    .signature-image-area {
+      height: 44px;
+      margin-bottom: 2px;
+      text-align: center;
+    }
+
+    .signature-img {
+      max-height: 42px;
+      max-width: 185px;
+      object-fit: contain;
+      display: inline-block;
+    }
+
+    .signature-line {
+      border-top: 1px dotted #333;
+      width: 220px;
+      margin: 0 auto;
+      padding-top: 4px;
+      min-height: 18px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .signature-role {
+      font-weight: 900;
+      color: var(--primary);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      margin-top: 2px;
+    }
+
+    .page-break { page-break-before: always; }
+
+    .footer {
+      margin-top: 10px;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    {% if template_data.watermark_text %}
+      <div class="watermark">{{ template_data.watermark_text }}</div>
+    {% endif %}
+
+    <div class="report-card">
+      <div class="school-header">
+        <table class="school-table">
+          <tr>
+            {% if template_data.show_logo and report.school.logo_url %}
+              <td class="logo-cell">
+                <img src="file://{{ report.school.logo_url }}" alt="School Logo" class="logo-img">
+              </td>
+            {% endif %}
+
+            <td>
+              <div class="school-name">{{ report.school.name|default:"SCHOOL NAME" }}</div>
+
+              {% if template_data.show_school_motto and report.school.moto %}
+                <div class="school-motto">{{ report.school.moto }}</div>
+              {% endif %}
+
+              <div class="school-meta">
+                {% if template_data.show_school_address and report.school.address %}
+                  {{ report.school.address }}
+                {% endif %}
+
+                {% if template_data.show_school_phone and report.school.tel %}
+                  {% if template_data.show_school_address and report.school.address %}<br>{% endif %}
+                  Tel: {{ report.school.tel }}
+                {% endif %}
+
+                {% if template_data.show_school_email and report.school.email %}
+                  <br>Email: {{ report.school.email }}
+                {% endif %}
+
+                {% if template_data.show_school_website and report.school.website %}
+                  &nbsp;&nbsp; Website: {{ report.school.website }}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="report-title-wrap">
+        <div class="report-title">
+          {{ template_data.report_title|default:"PRIMARY LEAVING EXAMINATION REPORT CARD" }}
+        </div>
+
+        {% if template_data.report_subtitle %}
+          <div class="report-subtitle">{{ template_data.report_subtitle }}</div>
+        {% endif %}
+      </div>
+
+      {% for sec in sections %}
+        {% if sec.start_new_page %}
+          <div class="page-break"></div>
+        {% endif %}
+
+        {% if sec.is_visible %}
+
+          {% if sec.section_key == "student_info" %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:template_data.student_info_title|default:"Student Information" }}</div>
+
+              <div class="student-info-card">
+                <table class="student-info-table">
+                  <tr>
+                    <td class="info-cell-wide">
+                      <div class="info-label">Student Name</div>
+                      <div class="info-value student-name-value">{{ report.meta.student_name|default:"-" }}</div>
+                    </td>
+
+                    <td class="info-cell-small">
+                      <div class="info-label">Class</div>
+                      <div class="info-value">
+                        {{ report.meta.class_name|default:"-" }}
+                        {% if template_data.show_stream and report.meta.stream_name %} {{ report.meta.stream_name }}{% endif %}
+                      </div>
+                    </td>
+
+                    <td class="info-cell-small">
+                      <div class="info-label">Academic Year</div>
+                      <div class="info-value">{{ report.meta.year_name|default:"-" }}</div>
+                    </td>
+
+                    <td class="info-cell-small">
+                      <div class="info-label">Term</div>
+                      <div class="info-value">{{ report.meta.term_name|default:"-" }}</div>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="info-cell-wide">
+                      <div class="info-label">Learner Identification Number</div>
+                      <div class="info-value">{{ report.meta.lin|default:"-" }}</div>
+                    </td>
+
+                    {% if template_data.show_admission_number %}
+                      <td class="info-cell-small">
+                        <div class="info-label">Admission No.</div>
+                        <div class="info-value">{{ report.meta.admission_number|default:"-" }}</div>
+                      </td>
+                    {% else %}
+                      <td class="info-cell-small">
+                        <div class="info-label">Admission No.</div>
+                        <div class="info-value">-</div>
+                      </td>
+                    {% endif %}
+
+                    <td class="info-cell-small">
+                      <div class="info-label">Class Position</div>
+                      <div class="info-value">
+                        {% if report.meta.class_position %}
+                          {{ report.meta.class_position }}{% if report.meta.class_size %} / {{ report.meta.class_size }}{% endif %}
+                        {% else %}
+                          -
+                        {% endif %}
+                      </div>
+                    </td>
+
+                    <td class="info-cell-small">
+                      <div class="info-label">Stream Position</div>
+                      <div class="info-value">
+                        {% if report.meta.stream_position %}
+                          {{ report.meta.stream_position }}{% if report.meta.stream_size %} / {{ report.meta.stream_size }}{% endif %}
+                        {% else %}
+                          -
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "academic_table" %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:template_data.academic_table_title|default:"Academic Performance" }}</div>
+
+              <table class="academic-table">
+                <thead>
+                  <tr>
+                    <th style="width: 28%;">Subject</th>
+
+                    {% for exam in report.assessment_breakdown %}
+                      <th class="text-center">
+                        {{ exam.label|default:exam.name }}
+                      </th>
+                    {% endfor %}
+
+                    <th class="text-center">Final Marks</th>
+                    <th class="text-center">Grade</th>
+                    <th>Remark</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for row in report.summary_rows %}
+                    <tr>
+                      <td class="subject-cell">{{ row.subject_name|default:"-" }}</td>
+
+                      {% for exam_mark in row.exam_marks %}
+                        <td class="text-center">{{ exam_mark.marks|default:"-" }}</td>
+                      {% endfor %}
+
+                      <td class="text-center">
+                        <span class="final-mark">{{ row.final_marks|default:row.total|default:"-" }}</span>
+                      </td>
+
+                      <td class="text-center">
+                        <span class="grade-pill">{{ row.grade|default:"-" }}</span>
+                      </td>
+
+                      <td>{{ row.comment|default:"-" }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="7" class="text-center text-muted">No academic records available.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "summary_strip" %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Average / Overall" }}</div>
+
+              <div class="summary-card">
+                <table class="summary-grid">
+                  <tr>
+                    <td>
+                      <div class="summary-box">
+                        <div class="summary-label">Total Aggregates</div>
+                        <div class="summary-value">{{ report.total_aggregates|default:"-" }}</div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div class="summary-box">
+                        <div class="summary-label">Division</div>
+                        <div class="summary-value">{{ report.division|default:report.average_grade|default:"-" }}</div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "next_term" and report.next_term_begins %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Next Term Begins" }}</div>
+              <div class="next-term-card">
+                <span class="next-term-value">{{ report.next_term_begins }}</span>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "teacher_comment" and template_data.show_class_teacher_comment %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Class Teacher Comment" }}</div>
+              <div class="comment-card">
+                {% if report.class_teacher_comment %}
+                  {{ report.class_teacher_comment }}
+                {% else %}
+                  <span class="comment-empty">-</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "head_comment" and template_data.show_head_teacher_comment %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Head Teacher Comment" }}</div>
+              <div class="comment-card">
+                {% if report.head_teacher_comment %}
+                  {{ report.head_teacher_comment }}
+                {% else %}
+                  <span class="comment-empty">-</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "promotion" and template_data.show_promotion_status %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Promotion" }}</div>
+
+              <div class="promotion-card">
+                <div class="promotion-row">
+                  <span class="promotion-label">Final Division:</span>
+                  <span class="promotion-value">{{ report.division|default:"-" }}</span>
+                </div>
+
+                <div class="promotion-row">
+                  <span class="promotion-label">Status / Recommendation:</span>
+                  <span class="promotion-value">{{ report.promotion_state|default:"-" }}</span>
+                </div>
+
+                {% if report.remarks %}
+                  <div class="promotion-row">
+                    <span class="promotion-label">System Remark:</span>
+                    {{ report.remarks }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "grade_legend" and template_data.show_grade_legend %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:template_data.legend_title|default:"Grade Legend" }}</div>
+
+              <table class="legend-table">
+                <thead>
+                  <tr>
+                    <th style="width: 18%;">Grade</th>
+                    <th style="width: 26%;">Percentage Range</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for g in report.grade_ranges %}
+                    <tr>
+                      <td class="text-center">{{ g.grade }}</td>
+                      <td class="text-center">{{ g.range }}</td>
+                      <td>{{ g.desc }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="3" class="text-center text-muted">No grade scale configured.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <table class="legend-table">
+                <thead>
+                  <tr>
+                    <th style="width: 25%;">Division</th>
+                    <th>Aggregate Range</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for d in report.division_ranges %}
+                    <tr>
+                      <td class="text-center">{{ d.division }}</td>
+                      <td class="text-center">{{ d.range }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="2" class="text-center text-muted">No division scale configured.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "custom_text" and sec.custom_text %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Additional Information" }}</div>
+              <div class="comment-card">{{ sec.custom_text|linebreaksbr }}</div>
+            </div>
+          {% endif %}
+
+          {% if sec.section_key == "signatures" and template_data.show_signatures %}
+            <div class="plain-section">
+              <div class="section-title">{{ sec.title|default:"Signatures" }}</div>
+
+              <div class="signature-card">
+                <table class="signature-table">
+                  <tr>
+                    {% for role in signature_roles %}
+                      {% if role.is_visible %}
+                        <td>
+                          <div class="signature-box">
+                              <div class="signature-image-area">
+                                {% if role.signature_file_uri %}
+                                  <img src="{{ role.signature_file_uri }}" class="signature-img" alt="{{ role.role_name }} Signature">
+                                {% elif role.signature_path %}
+                                  <img src="file://{{ role.signature_path }}" class="signature-img" alt="{{ role.role_name }} Signature">
+                                {% elif role.signature_url %}
+                                  <img src="{{ role.signature_url }}" class="signature-img" alt="{{ role.role_name }} Signature">
+                                {% endif %}
+                              </div>
+
+                            <div class="signature-line">
+                              {% if role.person_name %}
+                                {{ role.person_name }}
+                              {% else %}
+                                &nbsp;
+                              {% endif %}
+                            </div>
+
+                            <div class="signature-role">{{ role.role_name }}</div>
+                          </div>
+                        </td>
+                      {% endif %}
+
+                      {% if forloop.counter|divisibleby:2 and not forloop.last %}
+                        </tr><tr>
+                      {% endif %}
+                    {% empty %}
+                      <td>
+                        <div class="signature-box">
+                          <div class="signature-image-area"></div>
+                          <div class="signature-line">&nbsp;</div>
+                          <div class="signature-role">Class Teacher</div>
+                        </div>
+                      </td>
+
+                      <td>
+                        <div class="signature-box">
+                          <div class="signature-image-area"></div>
+                          <div class="signature-line">&nbsp;</div>
+                          <div class="signature-role">Head Teacher</div>
+                        </div>
+                      </td>
+                    {% endfor %}
+                  </tr>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+
+        {% endif %}
+      {% endfor %}
+
+      <div class="footer">
+        {% if template_data.footer_text %}
+          {{ template_data.footer_text }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

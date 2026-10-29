@@ -1,0 +1,142 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h3 class="page-title">
+            <i class="fas fa-calendar-plus mr-2"></i>
+            {% if object %}Edit{% else %}Add New{% endif %} Academic Year
+        </h3>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'academic_calendar' %}">Academic Calendar</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'academic_year_list' %}">Academic Years</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {% if object %}Edit {{ object.year }}{% else %}Add New{% endif %}
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Academic Year Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_year">Academic Year *</label>
+                                    <input type="text" class="form-control" id="id_year" name="year" 
+                                           value="{{ form.year.value|default:'' }}" 
+                                           placeholder="e.g., 2024/2025" required>
+                                    <small class="form-text text-muted">Format: YYYY/YYYY</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="id_start_date">Start Date *</label>
+                                    <input type="date" class="form-control" id="id_start_date" name="start_date" 
+                                           value="{{ form.start_date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="id_end_date">End Date *</label>
+                                    <input type="date" class="form-control" id="id_end_date" name="end_date" 
+                                           value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="id_is_active" 
+                                           name="is_active" {% if form.is_active.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_is_active">
+                                        Set as active academic year
+                                    </label>
+                                    <small class="form-text text-muted">
+                                        Only one academic year can be active at a time.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-outline-success">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if object %}Update{% else %}Create{% endif %} Academic Year
+                                </button>
+                                <a href="{% url 'academic_year_list' %}" class="btn btn-info">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+<div class="col-md-4">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-info-circle text-primary mr-2"></i>
+                Guidelines
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Tips -->
+            <div class="border-left border-warning pl-3 mb-4">
+                <h6 class="text-warning font-weight-semibold mb-2">
+                    <i class="fas fa-lightbulb mr-2"></i>Tips
+                </h6>
+                <ul class="small mb-0 pl-2">
+                    <li class="mb-1">Format: <code>2024/2025</code></li>
+                    <li class="mb-1">Start: January <small class="text-muted">(typically)</small></li>
+                    <li class="mb-1">End: December of next year</li>
+                    <li class="mb-1">Avoid overlapping academic years</li>
+                    <li>Add terms & holidays after creation</li>
+                </ul>
+            </div>
+            
+            <!-- Important -->
+            <div class="border-left border-danger pl-3">
+                <h6 class="text-danger font-weight-semibold mb-2">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Important
+                </h6>
+                <p class="small mb-0">
+                    Only one academic year can be active. 
+                    Activating this will deactivate all others automatically.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+</div>
+{% endblock %}

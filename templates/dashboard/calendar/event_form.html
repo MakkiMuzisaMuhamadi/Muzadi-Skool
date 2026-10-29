@@ -1,0 +1,344 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h3 class="page-title">
+            <i class="fas fa-calendar-plus mr-2"></i>
+            {% if object %}Edit{% else %}Add New{% endif %} Event
+        </h3>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'academic_calendar' %}">Academic Calendar</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {% if object %}Edit Event{% else %}Add Event{% endif %}
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Event Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_title">Event Title *</label>
+                                    <input type="text" class="form-control" id="id_title" name="title" 
+                                           value="{{ form.title.value|default:'' }}" 
+                                           placeholder="e.g., Sports Day, Parent Meeting" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_academic_year">Academic Year *</label>
+                                    <select class="form-control" id="id_academic_year" name="academic_year" required>
+                                        <option value="">Select Academic Year</option>
+                                        {% for year in academic_years %}
+                                        <option value="{{ year.id }}" 
+                                            {% if form.academic_year.value == year.id %}selected{% endif %}>
+                                            {{ year.year }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_event_type">Event Type *</label>
+                                    <select class="form-control" id="id_event_type" name="event_type" required>
+                                        {% for value, label in form.fields.event_type.choices %}
+                                        <option value="{{ value }}" 
+                                            {% if form.event_type.value == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_priority">Priority</label>
+                                    <select class="form-control" id="id_priority" name="priority">
+                                        {% for value, label in form.fields.priority.choices %}
+                                        <option value="{{ value }}" 
+                                            {% if form.priority.value == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_is_public">Visibility</label>
+                                    <select class="form-control" id="id_is_public" name="is_public">
+                                        <option value="true" {% if form.is_public.value %}selected{% endif %}>Public</option>
+                                        <option value="false" {% if not form.is_public.value %}selected{% endif %}>Private</option>
+                                    </select>
+                                    <small class="form-text text-muted">Public events appear in calendar</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="id_start_date">Start Date *</label>
+                                    <input type="date" class="form-control" id="id_start_date" name="start_date" 
+                                           value="{{ form.start_date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="id_start_time">Start Time</label>
+                                    <input type="time" class="form-control" id="id_start_time" name="start_time" 
+                                           value="{{ form.start_time.value|default:'' }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="id_end_date">End Date *</label>
+                                    <input type="date" class="form-control" id="id_end_date" name="end_date" 
+                                           value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="id_end_time">End Time</label>
+                                    <input type="time" class="form-control" id="id_end_time" name="end_time" 
+                                           value="{{ form.end_time.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_venue">Venue</label>
+                                    <input type="text" class="form-control" id="id_venue" name="venue" 
+                                           value="{{ form.venue.value|default:'' }}" 
+                                           placeholder="e.g., Main Hall, Sports Field">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_organizer">Organizer</label>
+                                    <input type="text" class="form-control" id="id_organizer" name="organizer" 
+                                           value="{{ form.organizer.value|default:'' }}" 
+                                           placeholder="e.g., Sports Department, PTA">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_description">Description</label>
+                                    <textarea class="form-control" id="id_description" name="description" 
+                                              rows="4" placeholder="Event description, agenda, notes...">{{ form.description.value|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_participants">Participants</label>
+                                    <textarea class="form-control" id="id_participants" name="participants" 
+                                              rows="2" placeholder="e.g., All Students, P7 Parents, Staff">{{ form.participants.value|default:'' }}</textarea>
+                                    <small class="form-text text-muted">Comma-separated list of participants</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-calendar-check mr-2"></i>Event Summary</h6>
+                                    <p class="mb-0" id="eventSummary">
+                                        {% if form.start_date.value %}
+                                        {{ form.start_date.value|date:"M d, Y" }}
+                                        {% if form.start_time.value %} at {{ form.start_time.value|time:"g:i A" }}{% endif %}
+                                        {% else %}
+                                        Fill details to see summary
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-outline-success">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if object %}Update{% else %}Create{% endif %} Event
+                                </button>
+                                <a href="{% url 'academic_calendar' %}" class="btn btn-info">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-day mr-2"></i>
+                        Upcoming Events
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for event in upcoming_events|slice:":5" %}
+                        <div class="card mb-2 border-left-{{ event.event_type|lower }}">
+                            <div class="card-body p-3">
+                                <h6 class="mb-1">{{ event.title }}</h6>
+                                <small class="text-muted">
+                                    {{ event.start_date|date:"M d" }}
+                                    {% if event.start_time %}{{ event.start_time|time:"g:i A" }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                        <p>No upcoming events</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Event Types
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <span class="badge badge-success mr-2">Academic</span>
+                        <small>Classes, exams, academic activities</small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge badge-warning mr-2">Sports</span>
+                        <small>Sports events, competitions</small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge badge-info mr-2">Cultural</span>
+                        <small>Cultural activities, festivals</small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge badge-dark mr-2">Meeting</span>
+                        <small>Staff, PTA, board meetings</small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge badge-danger mr-2">Examination</span>
+                        <small>Exams, tests, assessments</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(document).ready(function() {
+    // Update event summary
+    $('#id_start_date, #id_start_time, #id_title').on('change', function() {
+        var title = $('#id_title').val();
+        var date = $('#id_start_date').val();
+        var time = $('#id_start_time').val();
+        
+        var summary = '';
+        if (date) {
+            var dateObj = new Date(date);
+            var formattedDate = dateObj.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            
+            summary = formattedDate;
+            
+            if (time) {
+                var timeParts = time.split(':');
+                var hours = parseInt(timeParts[0]);
+                var minutes = timeParts[1];
+                var ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                summary += ' at ' + hours + ':' + minutes + ' ' + ampm;
+            }
+            
+            if (title) {
+                summary = title + ' on ' + summary;
+            }
+        }
+        
+        $('#eventSummary').text(summary || 'Fill details to see summary');
+    });
+    
+    // Auto-set end date same as start if not set
+    $('#id_start_date').on('change', function() {
+        if (!$('#id_end_date').val()) {
+            $('#id_end_date').val($(this).val());
+        }
+    });
+    
+    // Validate end date is not before start date
+    $('#id_end_date').on('change', function() {
+        var startDate = $('#id_start_date').val();
+        var endDate = $(this).val();
+        
+        if (startDate && endDate) {
+            if (new Date(endDate) < new Date(startDate)) {
+                alert('End date cannot be before start date');
+                $(this).val(startDate);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

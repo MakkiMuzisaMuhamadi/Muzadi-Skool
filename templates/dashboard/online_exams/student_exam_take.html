@@ -1,0 +1,618 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+  .exam-page-wrap{
+    height: calc(100vh - 140px);
+    min-height: calc(100vh - 140px);
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
+  }
+
+  .exam-main-row{
+    height: 100%;
+    margin: 0;
+  }
+
+  .exam-left-col,
+  .exam-right-col{
+    height: 100%;
+  }
+
+  .exam-left-scroll{
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: .5rem;
+    scroll-behavior: smooth;
+  }
+
+  .exam-right-sticky{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .exam-sidebar-card{
+    border-radius: .85rem;
+  }
+
+  .exam-sidebar-main{
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .question-nav-scroll{
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .timer-normal{
+    border: 1px solid #dbeafe;
+    background: #f8fbff;
+  }
+
+  .timer-warning{
+    border: 1px solid #ffe08a;
+    background: #fff8e1;
+  }
+
+  .timer-danger{
+    border: 1px solid #ffb3b3;
+    background: #fff5f5;
+    animation: timerPulse 1s infinite;
+  }
+
+  @keyframes timerPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220,53,69,.25); }
+    50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(220,53,69,.08); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220,53,69,0); }
+  }
+
+  .question-nav-btn{
+    min-width: 42px;
+  }
+
+  .question-nav-btn.answered{
+    background: #28a745;
+    border-color: #28a745;
+    color: #fff;
+  }
+
+  .question-nav-btn.current{
+    background: #007bff !important;
+    border-color: #007bff !important;
+    color: #fff !important;
+  }
+
+  .question-nav-btn.unanswered{
+    background: #f1f3f5;
+    border-color: #ced4da;
+    color: #495057;
+  }
+
+  .exam-question-card{
+    scroll-margin-top: 10px;
+  }
+
+  .final-warning-banner{
+    display: none;
+    border-radius: .75rem;
+    animation: bannerShake .45s ease-in-out;
+  }
+
+  @keyframes bannerShake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+    75% { transform: translateX(-2px); }
+    100% { transform: translateX(0); }
+  }
+
+  @media (max-width: 991.98px){
+    .exam-page-wrap{
+      height: auto;
+      min-height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .exam-main-row,
+    .exam-left-col,
+    .exam-right-col,
+    .exam-left-scroll,
+    .exam-right-sticky{
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .question-nav-scroll{
+      max-height: none;
+    }
+  }
+</style>
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-1">
+      <i class="fas fa-pen text-primary"></i> {{ exam.title }}
+    </h3>
+    <small class="text-muted">
+      {{ exam.subject.name }}
+      {% if exam.paper %} • {{ exam.paper.paper_name }}{% endif %}
+      • Attempt {{ attempt.attempt_no }}
+    </small>
+  </div>
+</div>
+
+<div id="finalWarningBanner" class="alert alert-danger final-warning-banner mb-3">
+  <i class="fas fa-exclamation-triangle mr-1"></i>
+  Final 5 minutes remaining. Review quickly and submit.
+</div>
+
+<div class="alert alert-secondary mb-3">
+  <i class="fas fa-desktop mr-1"></i>
+  For best exam experience, stay on this page and avoid switching tabs or minimizing the browser.
+</div>
+
+<div class="exam-page-wrap">
+  <div class="row exam-main-row">
+    <div class="col-lg-8 col-xl-9 exam-left-col">
+      <div class="exam-left-scroll" id="examLeftScroll">
+
+        <div class="card mb-3">
+          <div class="card-body">
+            {% if exam.instructions %}
+              <div class="alert alert-info mb-0">
+                <div class="font-weight-bold mb-1">
+                  <i class="fas fa-info-circle mr-1"></i> Instructions
+                </div>
+                <div>{{ exam.instructions|linebreaksbr }}</div>
+              </div>
+            {% else %}
+              <div class="text-muted">
+                <i class="fas fa-info-circle mr-1"></i>
+                Answer all questions. Your answers are saved automatically as you work.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if questions %}
+          {% for q in questions %}
+            <div class="card mb-3 exam-question-card" data-qid="{{ q.id }}" id="q{{ q.id }}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                  <div class="font-weight-bold">
+                    Question {{ forloop.counter }}
+                  </div>
+                  <span class="badge badge-primary">
+                    {{ q.marks }} mark{{ q.marks|pluralize }}
+                  </span>
+                </div>
+
+                <div class="mb-3" style="font-size: 1rem; line-height: 1.6;">
+                  {{ q.prompt|linebreaksbr }}
+                </div>
+
+                {% if q.question_type == "MCQ_SINGLE" or q.question_type == "TRUE_FALSE" %}
+                  {% for c in q.choices.all %}
+                    <div class="form-check mb-2">
+                      <input
+                        class="form-check-input choice-input"
+                        type="radio"
+                        name="q_{{ q.id }}"
+                        id="choice_{{ q.id }}_{{ c.id }}"
+                        value="{{ c.id }}"
+                        {% if c.id in q.saved_choice_ids %}checked{% endif %}
+                      >
+                      <label class="form-check-label" for="choice_{{ q.id }}_{{ c.id }}">
+                        {{ c.text }}
+                      </label>
+                    </div>
+                  {% empty %}
+                    <div class="alert alert-warning mb-0">
+                      No answer choices have been added for this question.
+                    </div>
+                  {% endfor %}
+
+                {% elif q.question_type == "MCQ_MULTI" %}
+                  {% for c in q.choices.all %}
+                    <div class="form-check mb-2">
+                      <input
+                        class="form-check-input choice-input"
+                        type="checkbox"
+                        name="q_{{ q.id }}"
+                        id="choice_{{ q.id }}_{{ c.id }}"
+                        value="{{ c.id }}"
+                        {% if c.id in q.saved_choice_ids %}checked{% endif %}
+                      >
+                      <label class="form-check-label" for="choice_{{ q.id }}_{{ c.id }}">
+                        {{ c.text }}
+                      </label>
+                    </div>
+                  {% empty %}
+                    <div class="alert alert-warning mb-0">
+                      No answer choices have been added for this question.
+                    </div>
+                  {% endfor %}
+
+                {% else %}
+                  <div class="form-group mb-2">
+                    <textarea
+                      class="form-control typed-input"
+                      rows="{% if q.question_type == 'LONG_TEXT' %}6{% else %}3{% endif %}"
+                      placeholder="Type your answer here..."
+                    >{{ q.saved_typed_answer }}</textarea>
+                  </div>
+                {% endif %}
+
+                <div class="small text-muted mt-3 save-status">
+                  {% if q.last_saved_at %}
+                    <i class="fas fa-check-circle text-success mr-1"></i>
+                    Last saved at {{ q.last_saved_at }}
+                  {% elif q.saved_typed_answer or q.saved_choice_ids %}
+                    <i class="fas fa-check-circle text-success mr-1"></i>
+                    Loaded saved answer
+                  {% else %}
+                    <i class="far fa-save mr-1"></i>
+                    Not saved yet
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="card">
+            <div class="card-body">
+              <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                This exam has no available questions at the moment.
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <div class="col-lg-4 col-xl-3 exam-right-col">
+      <div class="exam-right-sticky">
+
+        <div id="examTimerBox" class="card exam-sidebar-card timer-normal">
+                      <div class="mt-auto">
+              <form id="submitExamForm" method="post" action="{% url 'student_exam_submit' attempt.id %}" onsubmit="return confirm('Are you sure you want to submit this exam?');">
+                {% csrf_token %}
+                <button class="btn btn-danger btn-block" type="submit">
+                  <i class="fas fa-paper-plane mr-1"></i> Submit Exam
+                </button>
+              </form>
+            </div>
+          <div class="card-body">
+            <h6 class="mb-2"><i class="fas fa-clock mr-1"></i> Time Remaining</h6>
+
+            {% if end_time %}
+              <div id="timerText" class="h4 mb-1 font-weight-bold">--:--</div>
+              <div id="timerSubtext" class="small text-muted">Stay focused and keep saving.</div>
+              <div class="progress mt-3" style="height: 8px;">
+                <div id="timerBar" class="progress-bar" role="progressbar" style="width: 100%;"></div>
+              </div>
+            {% else %}
+              <div class="h6 mb-0 text-success">No time limit</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card exam-sidebar-card exam-sidebar-main">
+          <div class="card-body d-flex flex-column h-100">
+            <h6 class="mb-3"><i class="fas fa-list-ol mr-1"></i> Questions</h6>
+
+            <div class="mb-3">
+              <div class="small text-muted">Progress</div>
+              <div class="font-weight-bold">
+                <span id="answeredCount">{{ answered_count }}</span> / {{ total_questions }} answered
+              </div>
+            </div>
+
+            <div class="question-nav-scroll mb-3">
+              {% if questions %}
+                <div class="d-flex flex-wrap" style="gap:.45rem;">
+                  {% for q in questions %}
+                    <a
+                      href="#q{{ q.id }}"
+                      class="btn btn-sm question-nav-btn {% if q.is_answered %}answered{% else %}unanswered{% endif %}"
+                      data-nav-qid="{{ q.id }}"
+                    >
+                      {{ forloop.counter }}
+                    </a>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="text-muted small">No questions available.</div>
+              {% endif %}
+            </div>
+
+            <div class="small text-muted mb-3">
+              Green = answered, blue = current, gray = not answered.
+            </div>
+
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function csrfToken() {
+    return document.querySelector("input[name=csrfmiddlewaretoken]")?.value || "";
+  }
+
+  let autoSubmitTriggered = false;
+  let unsavedChanges = false;
+  let finalBannerShown = false;
+  let lastShakeAt = 0;
+
+  function markUnsaved() { unsavedChanges = true; }
+  function clearUnsaved() { unsavedChanges = false; }
+
+  function updateAnsweredUI(block){
+    const qid = block.getAttribute("data-qid");
+    const navBtn = document.querySelector(`[data-nav-qid="${qid}"]`);
+    const typed = block.querySelector("textarea.typed-input");
+    const checkedInputs = block.querySelectorAll('.choice-input:checked');
+
+    let answered = false;
+    if (typed) {
+      answered = !!typed.value.trim();
+    } else {
+      answered = checkedInputs.length > 0;
+    }
+
+    if (navBtn) {
+      navBtn.classList.remove("answered", "unanswered");
+      navBtn.classList.add(answered ? "answered" : "unanswered");
+    }
+
+    const count = document.querySelectorAll(".question-nav-btn.answered").length;
+    const countEl = document.getElementById("answeredCount");
+    if (countEl) countEl.textContent = count;
+  }
+
+  function setSavedStatus(block, text, ok=true){
+    const statusEl = block.querySelector(".save-status");
+    if (!statusEl) return;
+
+    if (ok) {
+      statusEl.innerHTML = `<i class="fas fa-check-circle text-success mr-1"></i> ${text}`;
+    } else {
+      statusEl.innerHTML = `<i class="fas fa-times-circle text-danger mr-1"></i> ${text}`;
+    }
+  }
+
+  async function saveAnswer(block) {
+    const qid = block.getAttribute("data-qid");
+    const url = "{% url 'student_exam_save_answer' attempt.id 0 %}".replace("/0/save/", "/" + qid + "/save/");
+
+    const radios = block.querySelectorAll('input[type="radio"].choice-input');
+    const checks = block.querySelectorAll('input[type="checkbox"].choice-input');
+    const typed = block.querySelector("textarea.typed-input");
+    const statusEl = block.querySelector(".save-status");
+
+    let payload = {};
+
+    if (typed) {
+      payload.typed_answer = typed.value || "";
+    } else {
+      let ids = [];
+
+      if (radios.length) {
+        const chosen = block.querySelector('input[type="radio"].choice-input:checked');
+        if (chosen) ids.push(parseInt(chosen.value));
+      }
+
+      if (checks.length) {
+        checks.forEach(ch => {
+          if (ch.checked) ids.push(parseInt(ch.value));
+        });
+      }
+
+      payload.choice_ids = ids;
+    }
+
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSavedStatus(block, `Last saved at ${data.saved_at}`, true);
+        updateAnsweredUI(block);
+        clearUnsaved();
+      } else {
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+        if (data.expired) {
+          setSavedStatus(block, "Time is up", false);
+          autoSubmitExam(true);
+          return;
+        }
+        setSavedStatus(block, "Save failed", false);
+      }
+    } catch (err) {
+      setSavedStatus(block, "Save failed", false);
+    }
+  }
+
+  function autoSubmitExam(fromTimeout=false){
+    if (autoSubmitTriggered) return;
+    autoSubmitTriggered = true;
+
+    const form = document.getElementById("submitExamForm");
+    if (!form) return;
+
+    const btn = form.querySelector("button[type='submit']");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = fromTimeout
+        ? '<i class="fas fa-clock mr-1"></i> Submitting...'
+        : '<i class="fas fa-paper-plane mr-1"></i> Submitting...';
+    }
+
+    clearUnsaved();
+    form.submit();
+  }
+
+  document.querySelectorAll("[data-qid]").forEach(block => {
+    block.addEventListener("change", () => {
+      markUnsaved();
+      updateAnsweredUI(block);
+      saveAnswer(block);
+    });
+
+    const ta = block.querySelector("textarea.typed-input");
+    if (ta) {
+      let t = null;
+      ta.addEventListener("input", () => {
+        markUnsaved();
+        updateAnsweredUI(block);
+        clearTimeout(t);
+        t = setTimeout(() => saveAnswer(block), 700);
+      });
+    }
+  });
+
+  const leftScrollRoot = document.getElementById("examLeftScroll");
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const qid = entry.target.getAttribute("data-qid");
+      const nav = document.querySelector(`[data-nav-qid="${qid}"]`);
+      if (nav && entry.isIntersecting) {
+        document.querySelectorAll(".question-nav-btn").forEach(btn => btn.classList.remove("current"));
+        nav.classList.add("current");
+      }
+    });
+  }, {
+    root: leftScrollRoot,
+    threshold: 0.35
+  });
+
+  document.querySelectorAll(".exam-question-card").forEach(card => observer.observe(card));
+
+  window.addEventListener("beforeunload", function (e) {
+    if (unsavedChanges && !autoSubmitTriggered) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
+  {% if end_time %}
+    const examTimerBox = document.getElementById("examTimerBox");
+    const timerText = document.getElementById("timerText");
+    const timerSubtext = document.getElementById("timerSubtext");
+    const timerBar = document.getElementById("timerBar");
+    const finalWarningBanner = document.getElementById("finalWarningBanner");
+
+    const endTime = new Date("{{ end_time_iso|escapejs }}").getTime();
+    const startTime = new Date("{{ started_at_iso|escapejs }}").getTime();
+    const totalMs = Math.max(endTime - startTime, 1);
+
+    function formatDuration(ms){
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      if (hrs > 0) {
+        return String(hrs).padStart(2, "0") + ":" +
+               String(mins).padStart(2, "0") + ":" +
+               String(secs).padStart(2, "0");
+      }
+      return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+    }
+
+    function refreshTimer(remainingMs){
+      const pct = Math.max(0, Math.min(100, (remainingMs / totalMs) * 100));
+
+      if (timerText) timerText.textContent = formatDuration(remainingMs);
+      if (timerBar) timerBar.style.width = pct + "%";
+
+      examTimerBox.classList.remove("timer-normal", "timer-warning", "timer-danger");
+
+      if (remainingMs <= 0) {
+        examTimerBox.classList.add("timer-danger");
+        if (timerText) timerText.textContent = "00:00";
+        if (timerSubtext) timerSubtext.textContent = "Time is up. Submitting exam...";
+        autoSubmitExam(true);
+        return;
+      }
+
+      if (remainingMs <= 5 * 60 * 1000) {
+        examTimerBox.classList.add("timer-danger");
+        if (timerSubtext) timerSubtext.textContent = "Final minutes. Review quickly and submit.";
+
+        if (finalWarningBanner && !finalBannerShown) {
+          finalWarningBanner.style.display = "block";
+          finalBannerShown = true;
+        }
+
+        const now = Date.now();
+        if (now - lastShakeAt > 20000 && finalWarningBanner) {
+          finalWarningBanner.style.animation = "none";
+          finalWarningBanner.offsetHeight;
+          finalWarningBanner.style.animation = null;
+          lastShakeAt = now;
+        }
+      } else if (remainingMs <= 15 * 60 * 1000) {
+        examTimerBox.classList.add("timer-warning");
+        if (timerSubtext) timerSubtext.textContent = "Less than 15 minutes left.";
+      } else {
+        examTimerBox.classList.add("timer-normal");
+        if (timerSubtext) timerSubtext.textContent = "Stay focused and keep saving.";
+      }
+    }
+
+    function localRemainingMs(){
+      return endTime - Date.now();
+    }
+
+    async function syncTimerWithServer(){
+      try {
+        const res = await fetch("{% url 'student_exam_timer_sync' attempt.id %}", {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.expired || data.status === "TIMED_OUT") {
+          autoSubmitExam(true);
+          return;
+        }
+
+        if (typeof data.remaining_seconds === "number") {
+          refreshTimer(data.remaining_seconds * 1000);
+        }
+      } catch (e) {}
+    }
+
+    refreshTimer(localRemainingMs());
+    setInterval(() => refreshTimer(localRemainingMs()), 1000);
+    setInterval(syncTimerWithServer, 30000);
+  {% endif %}
+</script>
+
+{% endblock %}

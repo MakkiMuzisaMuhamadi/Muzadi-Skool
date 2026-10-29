@@ -1,0 +1,404 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-money-bill-wave"></i> Collect Fees
+    </h3>
+    <small class="text-muted">Search student by admission number or name, review balance, then receive payment</small>
+  </div>
+</div>
+
+<div id="paymentAlertArea"></div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Find Student</strong>
+  </div>
+  <div class="card-body">
+    <form method="get" id="studentSearchForm" class="mb-0">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="form-group mb-md-0">
+            <label>Student</label>
+            <select id="student_search_select" class="form-control"></select>
+            <small class="text-muted">Search by admission number or student name</small>
+          </div>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <a href="{% url 'fees_collect' %}" class="btn btn-light btn-block">
+            <i class="fas fa-sync-alt mr-1"></i> Reset
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if selected_student %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+    <strong>Student Summary</strong>
+    <a href="{% url 'student_fee_statement' selected_student.id %}" class="btn btn-sm btn-outline-dark mt-2 mt-md-0">
+      <i class="fas fa-file-invoice mr-1"></i> Full Statement
+    </a>
+  </div>
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-4"><strong>Admission No:</strong> {{ selected_student.admission_number }}</div>
+      <div class="col-md-4"><strong>Name:</strong> {{ selected_student.name }}</div>
+      <div class="col-md-4"><strong>Class:</strong> {{ selected_student.current_class.name|default:"-" }}</div>
+    </div>
+
+    <div class="row text-center">
+      <div class="col-md-4 mb-2">
+        <div class="border rounded p-3">
+          <small class="text-muted d-block">Total Billed</small>
+          <strong>UGX {{ student_summary.total_billed|intcomma }}</strong>
+        </div>
+      </div>
+      <div class="col-md-4 mb-2">
+        <div class="border rounded p-3">
+          <small class="text-muted d-block">Total Paid</small>
+          <strong class="text-success">UGX {{ student_summary.total_paid|intcomma }}</strong>
+        </div>
+      </div>
+      <div class="col-md-4 mb-2">
+        <div class="border rounded p-3">
+          {% if student_summary.balance < 0 %}
+            <small class="text-muted d-block">In credit</small>
+            <strong class="text-success">UGX {{ student_summary.credit_total|intcomma }}</strong>
+          {% else %}
+            <small class="text-muted d-block">Balance to pay</small>
+            <strong class="text-danger">UGX {{ student_summary.balance|intcomma }}</strong>
+            {% if student_summary.credit_total > 0 %}<small class="d-block text-muted">after UGX {{ student_summary.credit_total|intcomma }} credit</small>{% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if student_summary.credits %}
+    <div class="alert alert-info mt-3 mb-0">
+      <strong>Carry Forward Credits:</strong>
+      {% for c in student_summary.credits %}
+        UGX {{ c.balance|intcomma }}{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Receive Payment</strong>
+  </div>
+  <div class="card-body">
+    <form method="post" id="paymentForm" action="{% url 'fees_collect' %}?student_id={{ selected_student.id }}">
+      {% csrf_token %}
+      {{ form.student }}
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Academic Year <span class="text-danger">*</span></label>
+            {{ form.academic_year }}
+            <div class="text-danger small field-error" data-field="academic_year"></div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Term <span class="text-danger">*</span></label>
+            {{ form.term }}
+            <div class="text-danger small field-error" data-field="term"></div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Payment Date <span class="text-danger">*</span></label>
+            {{ form.payment_date }}
+            <div class="text-danger small field-error" data-field="payment_date"></div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Amount <span class="text-danger">*</span></label>
+            {{ form.amount }}
+            <div class="text-danger small field-error" data-field="amount"></div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Payment Method <span class="text-danger">*</span></label>
+            {{ form.payment_method }}
+            <div class="text-danger small field-error" data-field="payment_method"></div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Reference</label>
+            {{ form.reference }}
+            <div class="text-danger small field-error" data-field="reference"></div>
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group">
+            <label>Notes</label>
+            {{ form.notes }}
+            <div class="text-danger small field-error" data-field="notes"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-check mb-3 d-none" id="confirmDuplicateBox">
+        <input class="form-check-input" type="checkbox" name="confirm_duplicate" value="1" id="confirmDuplicate">
+        <label class="form-check-label" for="confirmDuplicate">
+          This is a second, separate payment. Record it anyway.
+        </label>
+      </div>
+      <p class="small text-muted mb-2">The payment clears the oldest unpaid fees first. Any extra is kept as credit.</p>
+
+      <button class="btn btn-success" type="submit" id="receivePaymentBtn">
+        <i class="fas fa-check-circle mr-1"></i> Receive Payment
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>Charges Overview</strong>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light">
+          <tr>
+            <th>Academic Year</th>
+            <th>Term</th>
+            <th>Fee Type</th>
+            <th>Net Amount</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for charge in student_summary.charges %}
+          <tr>
+            <td>{{ charge.academic_year.year }}</td>
+            <td>{{ charge.term.name }}</td>
+            <td>
+              <a href="{% url 'student_fee_charge_detail' charge.id %}">
+                {{ charge.fee_category.name }}
+              </a>
+            </td>
+            <td>UGX {{ charge.net_amount|intcomma }}</td>
+            <td>UGX {{ charge.amount_paid|intcomma }}</td>
+            <td>UGX {{ charge.balance|intcomma }}</td>
+            <td>
+              {% if charge.status == "PAID" %}
+                <span class="badge badge-success">Paid</span>
+              {% elif charge.status == "PARTIAL" %}
+                <span class="badge badge-warning">Partial</span>
+              {% elif charge.status == "WAIVED" %}
+                <span class="badge badge-info">Waived</span>
+              {% else %}
+                <span class="badge badge-danger">Pending</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted">No charges found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if student_summary.payments %}
+    <hr>
+    <h6 class="mb-2">Recent Payments</h6>
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light">
+          <tr>
+            <th>Date</th>
+            <th>Receipt No</th>
+            <th>Amount</th>
+            <th>Method</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in student_summary.payments %}
+          <tr>
+            <td>{{ p.payment_date }}</td>
+            <td>{{ p.receipt_no }}</td>
+            <td>UGX {{ p.amount|intcomma }}</td>
+            <td>{{ p.get_payment_method_display }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+  Search and select a student to view balances and receive payment.
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    const initialTerm = "{{ form.term.value|default:'' }}";
+    const selectedStudentId = "{{ selected_student.id|default:'' }}";
+    const selectedStudentText = "{% if selected_student %}{{ selected_student.admission_number }} - {{ selected_student.name }} - {{ selected_student.current_class.name|default:'' }}{% endif %}";
+
+    function loadTerms(yearId, selectedValue = null) {
+      const $term = $('#id_term');
+      $term.empty().append('<option value="">---------</option>');
+
+      if (!yearId) return;
+
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $term.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+        });
+      });
+    }
+
+    function clearErrors() {
+      $('.field-error').text('');
+      $('#paymentAlertArea').html('');
+    }
+
+    function showFormErrors(errors) {
+      clearErrors();
+
+      let hasNonField = false;
+
+      Object.keys(errors).forEach(function(field) {
+        const messages = errors[field].join(' ');
+        const $errorBox = $('.field-error[data-field="' + field + '"]');
+
+        if ($errorBox.length) {
+          $errorBox.text(messages);
+        } else {
+          hasNonField = true;
+        }
+      });
+
+      if (errors.__all__) {
+        const text = errors.__all__.join(' ');
+        $('#paymentAlertArea').html($('<div class="alert alert-danger"></div>').text(text));
+        if (text.indexOf('double submission') !== -1) {
+          $('#confirmDuplicateBox').removeClass('d-none');
+        }
+      } else if (hasNonField) {
+        $('#paymentAlertArea').html(`
+          <div class="alert alert-danger">
+            Please correct the highlighted errors and try again.
+          </div>
+        `);
+      }
+    }
+
+    $('#id_academic_year').on('change', function () {
+      loadTerms($(this).val());
+    });
+
+    if ($('#id_academic_year').length && $('#id_academic_year').val()) {
+      loadTerms($('#id_academic_year').val(), initialTerm);
+    }
+
+    $('#student_search_select').select2({
+      width: '100%',
+      placeholder: 'Search student by admission number or name',
+      allowClear: true,
+      minimumInputLength: 1,
+      ajax: {
+        url: "{% url 'ajax_fee_student_search' %}",
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return { q: params.term };
+        },
+        processResults: function (data) {
+          return { results: data.results || [] };
+        },
+        cache: true
+      }
+    });
+
+    if (selectedStudentId && selectedStudentText) {
+      const option = new Option(selectedStudentText, selectedStudentId, true, true);
+      $('#student_search_select').append(option).trigger('change');
+    }
+
+    $('#student_search_select').on('select2:select', function (e) {
+      const selectedId = e.params.data.id;
+      if (selectedId) {
+        window.location.href = "{% url 'fees_collect' %}?student_id=" + selectedId;
+      }
+    });
+
+    $('#student_search_select').on('select2:clear', function () {
+      window.location.href = "{% url 'fees_collect' %}";
+    });
+
+    $('#paymentForm').on('submit', function (e) {
+      e.preventDefault();
+      clearErrors();
+
+      const $form = $(this);
+      const $btn = $('#receivePaymentBtn');
+      const formData = $form.serialize();
+
+      $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Processing...');
+
+      $.ajax({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function (response) {
+          if (response.status === 'success') {
+            window.open(response.receipt_url, '_blank');
+            window.location.href = response.reset_url;
+          }
+        },
+        error: function (xhr) {
+          if (xhr.responseJSON && xhr.responseJSON.errors) {
+            showFormErrors(xhr.responseJSON.errors);
+          } else {
+            $('#paymentAlertArea').html(`
+              <div class="alert alert-danger">
+                Something went wrong while processing the payment.
+              </div>
+            `);
+          }
+        },
+        complete: function () {
+          $btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Receive Payment');
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

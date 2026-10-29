@@ -1,0 +1,133 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-columns text-primary"></i> Match Columns</h3>
+    <small class="text-muted">{{ batch.title }} &middot; {{ batch.file.name|cut:"student_bulk_uploads/" }}</small>
+  </div>
+  <a href="{% url 'student_bulk_upload' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Upload a different file</a>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger">
+    <strong>Before continuing:</strong>
+    <ul class="mb-0 pl-3">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-4 mb-md-0">
+          <label for="{{ form.sheet_name.id_for_label }}">Sheet</label>
+          {{ form.sheet_name }}
+        </div>
+        <div class="form-group col-md-3 mb-md-0">
+          <label for="{{ form.header_row.id_for_label }}">Row with the column headings</label>
+          {{ form.header_row }}
+        </div>
+        <div class="col-md-5 small text-muted">
+          We found the headings on row {{ batch.header_row }}. If that is wrong, change the row
+          (or sheet) and press <em>Continue</em>; the headings reload.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if samples %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h6 class="mb-2">First rows of your file</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered small mb-0">
+          <thead class="thead-light"><tr>{% for h in headers %}<th class="text-nowrap">{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for cells in sample_table %}
+            <tr>{% for value in cells %}<td class="text-nowrap">{{ value }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% for group, fields in form.grouped_fields %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="mb-3">{{ group }}</h5>
+      {% for field in fields %}
+      <div class="form-row align-items-center border-bottom py-2">
+        <div class="col-md-4">
+          <label class="mb-0" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% if field.help_text %}<small class="text-muted d-block">{{ field.help_text }}</small>{% endif %}
+        </div>
+        <div class="col-md-4">{{ field }}</div>
+        <div class="col-md-4 small text-muted sample-preview" data-for="{{ field.id_for_label }}"></div>
+      </div>
+      {% endfor %}
+
+      {% if group == "Fees" %}
+      <div class="form-row mt-3">
+        <div class="form-group col-md-4">
+          <label for="{{ form.fee_category.id_for_label }}">{{ form.fee_category.label }}</label>
+          {{ form.fee_category }}
+          {% for e in form.fee_category.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group col-md-4">
+          <label for="{{ form.balance_academic_year.id_for_label }}">{{ form.balance_academic_year.label }}</label>
+          {{ form.balance_academic_year }}
+        </div>
+        <div class="form-group col-md-4">
+          <label for="{{ form.balance_term.id_for_label }}">{{ form.balance_term.label }}</label>
+          {{ form.balance_term }}
+          {% for e in form.balance_term.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <small class="col-12 text-muted">
+          Needed only if you match a balance column. Amounts owed become an opening balance charge;
+          negative amounts become a credit the learner can use.
+        </small>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if unmatched_headers %}
+  <div class="alert alert-light border small">
+    <strong>Columns that will not be imported:</strong> {{ unmatched_headers|join:", " }}
+  </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between mb-4">
+    <a href="{% url 'student_bulk_batches' %}" class="btn btn-light">Finish later</a>
+    <button type="submit" class="btn btn-success"><i class="fas fa-check mr-1"></i> Continue and check rows</button>
+  </div>
+</form>
+
+{{ samples|json_script:"sample-rows" }}
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const samples = JSON.parse(document.getElementById("sample-rows").textContent || "[]");
+  function preview(select) {
+    const target = document.querySelector('.sample-preview[data-for="' + select.id + '"]');
+    if (!target) return;
+    const header = select.value;
+    if (!header) { target.textContent = ""; return; }
+    const values = samples.map(function (r) { return r[header]; }).filter(function (v) { return v; });
+    target.textContent = values.length ? "e.g. " + values.slice(0, 3).join(", ") : "Empty in the first rows";
+  }
+  document.querySelectorAll('select[id^="id_map_"]').forEach(function (s) {
+    preview(s);
+    s.addEventListener("change", function () { preview(s); });
+  });
+})();
+</script>
+{% endblock %}

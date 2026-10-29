@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-trash"></i> Delete {{ parent.full_name }}?</h3>
+</div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body">
+        {% if linked_count %}
+          <div class="alert alert-warning mb-3">
+            {{ parent.full_name }} is linked to {{ linked_count }} student{{ linked_count|pluralize }}.
+            Unlink them first, or deactivate this parent so their history stays on record.
+          </div>
+          <a href="{% url 'parent_detail' parent.id %}" class="btn btn-outline-secondary">Back to {{ parent.full_name }}</a>
+        {% else %}
+          <p>{{ parent.full_name }} ({{ parent.parent_id }}, {{ parent.phone }}) will be moved to the recycle bin.
+             You can restore them from there.</p>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash mr-1"></i> Delete parent</button>
+            <a href="{% url 'parent_detail' parent.id %}" class="btn btn-light ml-1">Cancel</a>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

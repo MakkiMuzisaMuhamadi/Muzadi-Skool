@@ -1,0 +1,1777 @@
+{% load static %}
+{% load role_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>Muzadi Technologies</title>
+
+  <!-- plugins:css -->
+  <link rel="stylesheet" href="{% static 'vendors/iconfonts/font-awesome/css/all.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'vendors/css/vendor.bundle.base.css' %}" />
+  <link rel="stylesheet" href="{% static 'vendors/css/vendor.bundle.addons.css' %}" />
+  <!-- endinject -->
+
+  <!-- inject:css -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/cust.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/responsivee.css' %}" />
+  <!-- endinject -->
+
+  <link rel="shortcut icon" href="{% static 'images/favicon1.png' %}" />
+
+  <!-- Sidebar: remembered state, active page highlight, menu search -->
+  <style>
+    .sidebar .nav-search { padding: .5rem 1rem .75rem; }
+    .sidebar .nav-search .form-control { font-size: .85rem; height: 34px; border-radius: 6px; }
+    .sidebar .nav-search-empty { display: none; padding: .25rem 1.25rem; font-size: .8rem; color: #8a8a8a; }
+    .sidebar-icon-only .sidebar .nav-search,
+    .sidebar-icon-only .sidebar .nav-search-empty { display: none !important; }
+    /* current page inside a section */
+    .sidebar .nav.sub-menu .nav-item .nav-link.active { font-weight: 600; }
+    /* current section header */
+    .sidebar .nav:not(.sub-menu) > .nav-item.active-section > .nav-link .menu-title { font-weight: 600; }
+    /* no animation when the page first opens the current section */
+    .sidebar.no-anim .collapsing { transition: none !important; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="sidebar-fixed">
+{% with role=request.user.profile.role %}
+  <div class="container-scroller">
+
+    <!-- Navbar -->
+    <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row default-layout-navbar">
+      <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
+        <a class="navbar-brand brand-logo" href="{% url 'login' %}">
+          {% if school_logo %}
+            <img src="{{ school_logo.url }}" alt="logo" class="brand-img" />
+          {% else %}
+            <img src="{% static 'images/logo-fav.png' %}" alt="logo" class="brand-img" />
+          {% endif %}
+        </a>
+        <a class="navbar-brand brand-logo-mini" href="{% url 'login' %}">
+          {% if school_logo %}
+            <img src="{{ school_logo.url }}" alt="logo" class="brand-img-mini" />
+          {% else %}
+            <img src="{% static 'images/logo-fav.png' %}" alt="logo" class="brand-img-mini" />
+          {% endif %}
+        </a>
+      </div>
+
+      <div class="navbar-menu-wrapper d-flex align-items-center">
+        <!-- Desktop: collapse sidebar to icons -->
+        <button class="navbar-toggler align-self-center" type="button" data-toggle="minimize" aria-label="Collapse menu">
+          <span class="fas fa-bars"></span>
+        </button>
+        <!-- Phones & tablets: open/close the sidebar -->
+        <button class="navbar-toggler navbar-toggler-right mobile-menu-btn d-lg-none align-self-center" type="button"
+                id="mobileSidebarToggle" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+          <span class="fas fa-bars"></span>
+        </button>
+
+        <!-- Header Title -->
+        <div class="header-title">
+          <h5 class="mb-0 font-weight-bold text-primary">
+            <i class="fas fa-graduation-cap"></i>
+            {{ short_name }} DASHBOARD
+          </h5>
+          <small class="text-muted">{{ school_name }}</small>
+        </div>
+
+        <!-- Quick Access Dropdown -->
+        {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+        <div class="quick-access-dropdown ml-3">
+          <div class="dropdown w-100">
+            <button class="btn quick-access-btn dropdown-toggle w-100" type="button" id="quickAccessDropdown" data-toggle="dropdown">
+              <i class="fas fa-bolt"></i> <span class="qa-label d-inline d-sm-none d-lg-inline">Quick Actions</span>
+            </button>
+
+            <div class="dropdown-menu" aria-labelledby="quickAccessDropdown">
+              {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+              <a class="dropdown-item" href="{% url 'enroll_student_step1' %}">
+                <i class="fas fa-user-plus text-success"></i> Add Student
+              </a>
+              <a class="dropdown-item" href="{% url 'enroll_teacher_step1' %}">
+                <i class="fas fa-chalkboard-teacher text-primary"></i> Add Teacher
+              </a>
+              <a class="dropdown-item" href="{% url 'teacher_import_upload' %}">
+                <i class="fas fa-file-excel text-success"></i> Upload Teachers
+              </a>
+              {% endif %}
+
+          {% if role == 'TEACHER' %}
+              <a class="dropdown-item" href="{% url 'marks_entry' %}">
+                <i class="fas fa-edit text-primary"></i> Enter Marks
+              </a>
+               {% endif %}
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+              <a class="dropdown-item" href="{% url 'attendance_take' %}">
+                <i class="fas fa-calendar-check text-warning"></i> Take Attendance
+              </a>
+              {% endif %}
+
+              {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="{% url 'fees_collect' %}">
+                <i class="fas fa-money-bill-wave menu-icon"></i> Collect Fees
+              </a>
+              <a class="dropdown-item" href="{% url 'report_command_center' %}">
+                <i class="fas fa-print text-secondary"></i> Download Reports Cards
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+
+        <!-- Right Side Navigation Items -->
+        <ul class="navbar-nav navbar-nav-right d-flex align-items-center">
+           {% if role == 'SUPER_ADMIN' %}
+          <!-- Create New Dropdown (hidden on phones) -->
+          <li class="nav-item dropdown create-new-dropdown d-none d-sm-block">
+            <div class="nav-link">
+              <span class="dropdown-toggle" id="languageDropdown" data-toggle="dropdown">
+                <i class="fas fa-plus mr-1"></i>
+                <span class="new-label">New</span>
+              </span>
+              <div class="dropdown-menu navbar-dropdown" aria-labelledby="languageDropdown">
+                <a class="dropdown-item font-weight-medium" href="{% url 'enroll_student_step1' %}">
+                  <i class="fas fa-user-graduate mr-2"></i>New Student
+                </a>
+                <a class="dropdown-item font-weight-medium" href="{% url 'student_bulk_upload' %}">
+                  <i class="fas fa-file-import mr-2"></i>Import Students
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item font-weight-medium" href="{% url 'subject_enroll_step1' %}">
+                  <i class="fas fa-book-open mr-2"></i>New Subject
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item font-weight-medium" href="{% url 'user_management' %}">
+                  <i class="fas fa-users mr-2"></i>New User
+                </a>
+              </div>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- Notification Dropdown
+          <li class="nav-item dropdown notification-dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" data-toggle="dropdown">
+              <i class="fas fa-bell"></i>
+              <span class="notification-count badge badge-danger" id="notificationBadge" style="display: none;">0</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="notificationDropdown" style="min-width: 400px;">
+              <div class="dropdown-header">
+                <h6 class="dropdown-title">Notifications</h6>
+                <a href="javascript:void(0)" id="markAllRead" class="text-small">Mark all as read</a>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div id="notificationList">
+                <div class="text-center p-3">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                  <p class="mt-2 mb-0 text-muted">Loading notifications...</p>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item text-center text-primary" href="javascript:void(0)" id="viewAllNotifications">
+                View All Notifications
+              </a>
+            </div>
+          </li> -->
+
+          <!-- Profile Dropdown -->
+          <li class="nav-item nav-profile dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+              <img src="{% static 'images/noimage.jpg' %}" alt="profile" />
+              <span class="nav-profile-name d-none d-md-inline">
+                {{ request.user.username }}
+              </span>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+              <!-- Profile Header -->
+              <div class="dropdown-header">
+                <div class="d-flex align-items-center">
+                  <div class="mr-3">
+                    <img src="{% static 'images/noimage.jpg' %}" alt="profile" class="img-xs rounded-circle">
+                  </div>
+                  <div>
+                    <p class="mb-1 font-weight-semibold">{{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p class="mb-0 text-muted text-small">
+                      <span class="badge
+                        {% if role == 'SUPER_ADMIN' %}badge-danger
+                        {% elif role == 'ADMIN' %}badge-warning
+                        {% elif role == 'TEACHER' %}badge-info
+                        {% else %}badge-secondary
+                        {% endif %}">
+                        {{ request.user.profile.get_role_display }}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <!-- Profile Information -->
+              <div class="px-3 py-2">
+                <small class="text-muted d-block">Username</small>
+                <p class="mb-2">{{ request.user.username }}</p>
+
+                <small class="text-muted d-block">Email</small>
+                <p class="mb-2">{{ request.user.email|default:"Not set" }}</p>
+
+                {% if request.user.profile.school %}
+                <small class="text-muted d-block">School</small>
+                <p class="mb-0">{{ request.user.profile.school.name }}</p>
+                {% endif %}
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <!-- Actions -->
+              <a class="dropdown-item" href="{% url 'user_profile' %}">
+                <i class="fas fa-user text-primary"></i>
+                My Profile
+              </a>
+
+              {% if role == 'TEACHER' %}
+              <a class="dropdown-item" href="{% url 'teacher_my_profile' %}">
+                <i class="fas fa-id-badge text-primary"></i>
+                My Staff Profile
+              </a>
+              {% endif %}
+
+               {% if role == 'SUPER_ADMIN' %}
+              <a class="dropdown-item" href="{% url 'user_management' %}">
+                <i class="fas fa-users-cog text-primary"></i>
+                User Management
+              </a>
+              {% endif %}
+
+              <div class="dropdown-divider"></div>
+
+              <!-- Logout -->
+              <form class="dropdown-item" method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item btn btn-link p-0 m-0"
+                  style="border: none; background: none; width: 100%; text-align: left;">
+                  <i class="fas fa-power-off text-primary"></i>
+                  Logout
+                </button>
+              </form>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid page-body-wrapper">
+
+      <!-- Sidebar -->
+      <nav class="sidebar sidebar-offcanvas" id="sidebar">
+        <ul class="nav">
+
+          <!-- Profile Section -->
+          <li class="nav-item nav-profile">
+            <div class="nav-link">
+              <div class="profile-image">
+                {% if school_logo %}
+                  <img src="{{ school_logo.url }}" alt="School logo" />
+                {% else %}
+                  <img src="{% static 'images/logo-fav.png' %}" alt="School logo" />
+                {% endif %}
+              </div>
+              <div class="profile-name">
+                <p class="name">{{ short_name }} System</p>
+                <p class="designation">{{ request.user.profile.get_role_display }}</p>
+              </div>
+            </div>
+          </li>
+
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item nav-stats">
+            <div class="nav-link" style="border-bottom: 1px solid #eee; padding-bottom: 15px;">
+              <div class="stats-container">
+                <div class="stats-row">
+                  <div class="stat-item text-center">
+                    <h6 class="stat-number mb-0 text-primary">{{ total_students|default:"0" }}</h6>
+                    <small class="text-muted">Students</small>
+                  </div>
+                  <div class="stat-item text-center">
+                    <h6 class="stat-number mb-0 text-success">{{ total_teachers|default:"0" }}</h6>
+                    <small class="text-muted">Teachers</small>
+                  </div>
+                </div>
+                <div class="stats-row">
+                  <div class="stat-item text-center">
+                    <h6 class="stat-number mb-0 text-warning">{{ total_classes|default:"0" }}</h6>
+                    <small class="text-muted">Classes</small>
+                  </div>
+                  <div class="stat-item text-center">
+                    <h6 class="stat-number mb-0 text-info">{{ total_subjects|default:"0" }}</h6>
+                    <small class="text-muted">Subjects</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- Menu search -->
+          <li class="nav-item nav-search" role="search">
+            <input type="search" id="sidebarSearch" class="form-control" placeholder="Find a menu…"
+                   autocomplete="off" aria-label="Search the menu">
+          </li>
+          <li class="nav-item nav-search-empty" id="sidebarSearchEmpty">No menu matches that.</li>
+
+          <!-- Dashboard -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}">
+              <i class="fas fa-tachometer-alt menu-icon"></i>
+              <span class="menu-title">Dashboard</span>
+            </a>
+          </li>
+
+          <!-- STUDENT PORTAL (For Students) -->
+
+
+          {% if role == 'TEACHER' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'teacher_my_classes' %}">
+              <i class="fas fa-chalkboard-teacher menu-icon"></i>
+              <span class="menu-title">My Classes</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'teacher_my_profile' %}">
+              <i class="fas fa-id-badge menu-icon"></i>
+              <span class="menu-title">My Staff Profile</span>
+            </a>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- ACADEMIC CALENDAR SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#academic-calendar" aria-expanded="false"
+              aria-controls="academic-calendar">
+              <i class="fas fa-calendar-alt menu-icon"></i>
+              <span class="menu-title">Academic Calendar</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="academic-calendar">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item nav-category">Calendar</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'academic_calendar' %}">
+                    <i class="fas fa-calendar-check menu-icon"></i>
+                    View Calendar
+                  </a>
+                </li>
+
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item nav-category">Management</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'academic_year_list' %}">
+                    <i class="fas fa-calendar menu-icon"></i>
+                    Academic Years
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'academic_year_add' %}">
+                    <i class="fas fa-plus-circle menu-icon"></i>
+                    Add Academic Year
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'term_add' %}">
+                    <i class="fas fa-clock menu-icon"></i>
+                    Add Term
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'holiday_add' %}">
+                    <i class="fas fa-umbrella-beach menu-icon"></i>
+                    Add Holiday
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'event_add' %}">
+                    <i class="fas fa-calendar-plus menu-icon"></i>
+                    Add Event
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- STUDENT MANAGEMENT SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#student-management" aria-expanded="false"
+              aria-controls="student-management">
+              <i class="fas fa-users menu-icon"></i>
+              <span class="menu-title">Student Management</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="student-management">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item nav-category">Students</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'student_list'%}">
+                    <i class="fas fa-user-graduate menu-icon"></i>
+                    All Students
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'enroll_student_step1' %}">
+                    <i class="fas fa-user-plus menu-icon"></i>
+                    Add New Student
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'student_bulk_upload' %}">
+                    <i class="fas fa-file-import menu-icon"></i>
+                    Import Students
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'student_bulk_batches' %}">
+                    <i class="fas fa-history menu-icon"></i>
+                    Import History
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'admission_number_settings' %}">
+                    <i class="fas fa-hashtag menu-icon"></i>
+                    Admission Numbers
+                  </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'promotion_setup' %}">
+                        <i class="fas fa-project-diagram menu-icon"></i>
+                        Promotion Setup
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'promotion_dashboard' %}">
+                        <i class="fas fa-exchange-alt menu-icon"></i>
+                        Promote Students
+                    </a>
+                </li>
+                <li class="nav-item nav-category">Classes & Streams</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'class_list' %}">
+                    <i class="fas fa-chalkboard menu-icon"></i>
+                    Classes
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'stream_list' %}">
+                    <i class="fas fa-stream menu-icon"></i>
+                    Streams
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- TEACHER MANAGEMENT SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#teacher-management" aria-expanded="false"
+              aria-controls="teacher-management">
+              <i class="fas fa-chalkboard-teacher menu-icon"></i>
+              <span class="menu-title">Teachers &amp; Staff</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="teacher-management">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item nav-category">Teachers</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'teacher_list' %}">
+                    <i class="fas fa-users-cog menu-icon"></i>
+                    All Teachers
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'enroll_teacher_step1' %}">
+                    <i class="fas fa-user-plus menu-icon"></i>
+                    Add Teacher
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'teacher_import_upload' %}">
+                    <i class="fas fa-file-excel menu-icon"></i>
+                    Upload from Excel
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'teacher_workload' %}">
+                    <i class="fas fa-balance-scale menu-icon"></i>
+                    Workload
+                  </a>
+                </li>
+
+                <li class="nav-item nav-category">Roles</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'class_teacher_list' %}">
+                    <i class="fas fa-user-check menu-icon"></i>
+                    Class Teachers
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'responsibility_list' %}">
+                    <i class="fas fa-user-tie menu-icon"></i>
+                    Leadership &amp; Responsibilities
+                  </a>
+                </li>
+
+                <li class="nav-item nav-category">Support Staff</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'staff_list' %}">
+                    <i class="fas fa-users menu-icon"></i>
+                    Non-teaching Staff
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'staff_create' %}">
+                    <i class="fas fa-user-plus menu-icon"></i>
+                    Add Staff Member
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#navSubjectAllocation" aria-expanded="false" aria-controls="navSubjectAllocation">
+              <i class="fas fa-book menu-icon"></i>
+              <span class="menu-title">Subject Allocation</span>
+              <i class="menu-arrow"></i>
+            </a>
+
+            <div class="collapse" id="navSubjectAllocation">
+              <ul class="nav flex-column sub-menu">
+
+                <!-- Subjects -->
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'subject_list' %}">
+                    <i class="fas fa-list mr-1"></i> View Subjects
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'subject_enroll_step1' %}">
+                    <i class="fas fa-plus mr-1"></i> Add Subject
+                  </a>
+                </li>
+
+                <!-- Teacher allocations -->
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'teacher_allocation_list' %}">
+                    <i class="fas fa-chalkboard-teacher mr-1"></i> Teacher Allocations
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'teacher_allocation_create' %}">
+                    <i class="fas fa-random mr-1"></i> Allocate Subject/Papers
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'allocation_import_upload' %}">
+                    <i class="fas fa-file-excel mr-1"></i> Upload Allocations
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'allocation_copy_year' %}">
+                    <i class="fas fa-copy mr-1"></i> Copy to New Year
+                  </a>
+                </li>
+
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+          <!-- ======================= -->
+          <!-- TIMETABLE SECTION -->
+          <!-- ======================= -->
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#timetable" aria-expanded="false" aria-controls="timetable">
+              <i class="fas fa-calendar-alt menu-icon"></i>
+              <span class="menu-title">Timetable</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="timetable">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_dashboard' %}">
+                    <i class="fas fa-th-large menu-icon"></i> Dashboard
+                  </a>
+                </li>
+                <li class="nav-item mt-2">
+                  <small class="nav-link text-uppercase text-muted py-1" style="font-size:.68rem;letter-spacing:.05em;">View</small>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'class_timetable_view' %}">
+                    <i class="fas fa-school menu-icon"></i> Class Timetable
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'teacher_timetable_view' %}">
+                    <i class="fas fa-chalkboard-teacher menu-icon"></i> Teacher Timetable
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'room_timetable_view' %}">
+                    <i class="fas fa-door-closed menu-icon"></i> Room Timetable
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_free_teachers' %}">
+                    <i class="fas fa-user-check menu-icon"></i> Who Is Free?
+                  </a>
+                </li>
+
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item mt-2">
+                  <small class="nav-link text-uppercase text-muted py-1" style="font-size:.68rem;letter-spacing:.05em;">Build</small>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_list' %}">
+                    <i class="fas fa-calendar-week menu-icon"></i> Timetables
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_entry_list' %}">
+                    <i class="fas fa-edit menu-icon"></i> Planner (Lessons)
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'substitution_list' %}">
+                    <i class="fas fa-exchange-alt menu-icon"></i> Substitutions
+                  </a>
+                </li>
+                <li class="nav-item mt-2">
+                  <small class="nav-link text-uppercase text-muted py-1" style="font-size:.68rem;letter-spacing:.05em;">Setup</small>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_period_list' %}">
+                    <i class="fas fa-clock menu-icon"></i> Bell Schedules &amp; Periods
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_setup_list' 'room' %}">
+                    <i class="fas fa-door-open menu-icon"></i> Rooms
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_setup_list' 'teaching_group' %}">
+                    <i class="fas fa-users menu-icon"></i> Teaching Groups
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_setup_list' 'subject_load' %}">
+                    <i class="fas fa-balance-scale menu-icon"></i> Lessons per Week
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_setup_list' 'teacher_unavailability' %}">
+                    <i class="fas fa-user-clock menu-icon"></i> Teacher Availability
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_setup_list' 'teacher_load_limit' %}">
+                    <i class="fas fa-tachometer-alt menu-icon"></i> Teacher Load Limits
+                  </a>
+                </li>
+                <li class="nav-item mt-2">
+                  <small class="nav-link text-uppercase text-muted py-1" style="font-size:.68rem;letter-spacing:.05em;">Reports</small>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_coverage_report' %}">
+                    <i class="fas fa-tasks menu-icon"></i> Coverage
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'timetable_teacher_load_report' %}">
+                    <i class="fas fa-chart-bar menu-icon"></i> Teacher Workload
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          {% if request.user|has_role:"STUDENT" %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'student_timetable_view' %}">
+              <i class="fas fa-calendar-alt menu-icon"></i>
+              <span class="menu-title">My Timetable</span>
+            </a>
+          </li>
+          {% endif %}
+      {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+        <!-- ======================= -->
+        <!-- TODO SECTION -->
+        <!-- ======================= -->
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="collapse" href="#todoMenu" aria-expanded="false" aria-controls="todoMenu">
+            <i class="fas fa-tasks menu-icon"></i>
+            <span class="menu-title">To-Do</span>
+            <i class="menu-arrow"></i>
+          </a>
+          <div class="collapse" id="todoMenu">
+            <ul class="nav flex-column sub-menu">
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'todo_list' %}">
+                  <i class="fas fa-list-check menu-icon"></i>
+                  My Tasks
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'todo_create' %}">
+                  <i class="fas fa-plus menu-icon"></i>
+                  Add Task
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+          
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#exam-marks" aria-expanded="false" aria-controls="exam-marks">
+              <i class="fas fa-file-alt menu-icon"></i>
+              <span class="menu-title">Exams & Marks</span>
+              <i class="menu-arrow"></i>
+            </a>
+
+            <div class="collapse" id="exam-marks">
+              <ul class="nav flex-column sub-menu">
+
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item nav-category">Setup</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'exam_setup_list' %}">
+                    <i class="fas fa-sitemap menu-icon"></i> Exam Setup
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'exam_type_list' %}">
+                    <i class="fas fa-sliders-h menu-icon"></i> Exam Types & Weights
+                  </a>
+                </li>
+                {% endif %}
+
+                <li class="nav-item nav-category">Marks</li>
+                  {% if request.user|has_role:"TEACHER" %}
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'marks_entry' %}">
+                    <i class="fas fa-pen-square menu-icon"></i> Enter Marks
+                  </a>
+                </li>
+                {% endif %}
+
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'marksheet_control_list' %}">
+                    <i class="fas fa-pen-square menu-icon"></i> Control Mark Entry
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'marks_progress' %}">
+                    <i class="fas fa-tasks menu-icon"></i> Progress &amp; Approval
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'marks_change_log' %}">
+                    <i class="fas fa-history menu-icon"></i> Marks Change History
+                  </a>
+                </li>
+                {% endif %}
+
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'marks_audit' %}">
+                    <i class="fas fa-user-shield menu-icon"></i> Marks Audit
+                  </a>
+                </li>
+                {% endif %}
+
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- ATTENDANCE SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#attendance" aria-expanded="false"
+              aria-controls="attendance">
+              <i class="fas fa-calendar-check menu-icon"></i>
+              <span class="menu-title">Attendance</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="attendance">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item nav-category">Student Attendance</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'attendance_take' %}">
+                    <i class="fas fa-edit menu-icon"></i>
+                    Take Attendance
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'attendance_qr_take' %}">
+                    <i class="fas fa-chart-pie menu-icon"></i>
+                   QR Attendance 
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'attendance_history' %}">
+                    <i class="fas fa-history menu-icon"></i>
+                    Attendance History
+                  </a>
+                </li>
+                {% comment %} {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %} {% endcomment %}
+                {% comment %} <li class="nav-item nav-category">Teacher Attendance</li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#">
+                    <i class="fas fa-user-check menu-icon"></i>
+                    Staff Attendance
+                  </a>
+                </li> {% endcomment %}
+                {% comment %} {% endif %} {% endcomment %}
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+
+        {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="collapse" href="#fee-management" aria-expanded="false"
+            aria-controls="fee-management">
+            <i class="fas fa-money-bill-wave menu-icon"></i>
+            <span class="menu-title">Fee Management</span>
+            <i class="menu-arrow"></i>
+          </a>
+
+          <div class="collapse" id="fee-management">
+            <ul class="nav flex-column sub-menu">
+
+              <li class="nav-item nav-category">Collection</li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fees_collect' %}">
+                <i class="fas fa-money-bill-wave menu-icon"></i>
+                  Collect Fees
+                </a>
+              </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'fee_opening_balance_list' %}">
+                <i class="fas fa-hourglass-half menu-icon"></i>
+                Old Fee Balances
+              </a>
+            </li>
+              <li class="nav-item nav-category">Manual Charges</li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'manual_charge_list' %}">
+                  <i class="fas fa-list-alt menu-icon"></i>
+                  Manual Charges
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'student_manual_charge_create' %}">
+                  <i class="fas fa-user-plus menu-icon"></i>
+                  Student Charge
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'bulk_manual_charge_create' %}">
+                  <i class="fas fa-users menu-icon"></i>
+                  Bulk Class/Stream Charge
+                </a>
+              </li>
+              <li class="nav-item nav-category">Setup</li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_category_list' %}">
+                  <i class="fas fa-tags menu-icon"></i>
+                  Fee Categories
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_structure_list' %}">
+                  <i class="fas fa-file-invoice-dollar menu-icon"></i>
+                  Fee Structures
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_structure_create' %}">
+                  <i class="fas fa-plus-circle menu-icon"></i>
+                  Add Fee Structure
+                </a>
+              </li>
+
+              <li class="nav-item nav-category">Reports</li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_financial_report' %}">
+                  <i class="fas fa-chart-line menu-icon"></i>
+                  Financial Report
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_defaulters_report' %}">
+                  <i class="fas fa-exclamation-circle menu-icon"></i>
+                  Defaulters Report
+                </a>
+              </li>
+
+            </ul>
+          </div>
+        </li>
+        {% endif %}
+
+          <!-- ======================= -->
+          <!-- PARENTS & GUARDIANS -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#parents-guardians" aria-expanded="false"
+              aria-controls="parents-guardians">
+              <i class="fas fa-user-friends menu-icon"></i>
+              <span class="menu-title">Parents &amp; Guardians</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="parents-guardians">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'parent_list' %}">
+                    <i class="fas fa-users menu-icon"></i>
+                    All parents
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'parent_create' %}">
+                    <i class="fas fa-user-plus menu-icon"></i>
+                    Add parent
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- HEALTH SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#health" aria-expanded="false"
+              aria-controls="health">
+              <i class="fas fa-heartbeat menu-icon"></i>
+              <span class="menu-title">Health Records</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="health">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'health_medical_records' %}">
+                    <i class="fas fa-file-medical menu-icon"></i>
+                    Medical Records
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'health_sickbay_list' %}">
+                    <i class="fas fa-clipboard-list menu-icon"></i>
+                    Sick Bay Register
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'health_medication_list' %}">
+                    <i class="fas fa-pills menu-icon"></i>
+                    Medication Records
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+            {# ======================= #}
+            {# INVENTORY SECTION #}
+            {# ======================= #}
+            {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="collapse" href="#inventory" aria-expanded="false" aria-controls="inventory">
+                <i class="fas fa-boxes menu-icon"></i>
+                <span class="menu-title">Inventory</span>
+                <i class="menu-arrow"></i>
+              </a>
+
+              <div class="collapse" id="inventory">
+                <ul class="nav flex-column sub-menu">
+
+                  <li class="nav-item nav-category">Operations</li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_scan' %}">
+                      <i class="fas fa-qrcode menu-icon"></i> Issue / Return
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_transactions' %}">
+                      <i class="fas fa-list menu-icon"></i> Transactions Log
+                    </a>
+                  </li>
+
+                  <li class="nav-item nav-category">Library</li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_items' %}?type=LIBRARY">
+                      <i class="fas fa-book menu-icon"></i> Book Titles
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_units' %}?type=LIBRARY">
+                      <i class="fas fa-tags menu-icon"></i> Book Copies (Tags)
+                    </a>
+                  </li>
+
+                  <li class="nav-item nav-category">Assets</li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_items' %}?type=ASSET">
+                      <i class="fas fa-desktop menu-icon"></i> Asset Types
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_units' %}?type=ASSET">
+                      <i class="fas fa-qrcode menu-icon"></i> Asset Tags
+                    </a>
+                  </li>
+
+                  <li class="nav-item nav-category">Labels & Setup</li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_labels_select' %}">
+                      <i class="fas fa-print menu-icon"></i> Print QR Labels
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_dashboard' %}">
+                      <i class="fas fa-chart-pie menu-icon"></i> Inventory Dashboard
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_categories' %}">
+                      <i class="fas fa-layer-group menu-icon"></i> Categories
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inv_locations' %}">
+                      <i class="fas fa-map-marker-alt menu-icon"></i> Locations
+                    </a>
+                  </li>
+
+                </ul>
+              </div>
+            </li>
+            {% endif %}
+          <!-- ======================= -->
+          <!-- TRANSPORT SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#transport" aria-expanded="false"
+              aria-controls="transport">
+              <i class="fas fa-bus menu-icon"></i>
+              <span class="menu-title">Transport</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="transport">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_vehicle_list' %}">
+                    <i class="fas fa-bus-alt menu-icon"></i>
+                    Vehicles
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_route_list' %}">
+                    <i class="fas fa-route menu-icon"></i>
+                    Routes
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_students' %}">
+                    <i class="fas fa-users menu-icon"></i>
+                    Transport Students
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+          <!-- ======================= -->
+          <!-- HOSTEL SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#hostel" aria-expanded="false"
+              aria-controls="hostel">
+              <i class="fas fa-bed menu-icon"></i>
+              <span class="menu-title">Hostel</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="hostel">
+              <ul class="nav flex-column sub-menu">
+                
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'hostel_list' %}">
+                <i class="fas fa-bed menu-icon"></i>
+                Hostels
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'hostel_room_list' %}">
+                <i class="fas fa-home menu-icon"></i>
+                Rooms
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'boarders_list' %}">
+                <i class="fas fa-users menu-icon"></i>
+                Boarders
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'hostel_assignment_list' %}">
+                <i class="fas fa-user-check menu-icon"></i>
+                Allocations
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'fee_structure_list' %}?residence=BOARDING">
+                <i class="fas fa-file-invoice-dollar menu-icon"></i>
+                Hostel Fees
+              </a>
+            </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- COMMUNICATION SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#communication" aria-expanded="false"
+              aria-controls="communication">
+              <i class="fas fa-comments menu-icon"></i>
+              <span class="menu-title">Communication</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="communication">
+              <ul class="nav flex-column sub-menu">
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'sms_campaign_list' %}">
+                    <i class="fas fa-mobile-alt menu-icon"></i>
+                    SMS to Parents
+                  </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                  <a class="nav-link" href="#">
+                    <i class="fas fa-envelope menu-icon"></i>
+                    Email Notifications
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+
+          <!-- ======================= -->
+          <!-- DATA ENTRY SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"TEACHER" %}
+
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'teacher_exam_list' %}">
+            <i class="fas fa-file-signature menu-icon"></i>
+            Online Exams
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'teacher_marking_inbox' %}">
+            <i class="fas fa-marker menu-icon"></i>
+            Exam Marking Inbox
+          </a>
+        </li>
+          {% endif %}
+
+
+          {% if request.user|has_role:"STUDENT" %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'student_exam_list' %}">
+              <i class="fas fa-laptop-code menu-icon"></i>
+              Online Exams
+            </a>
+          </li>
+        {% endif %}
+
+
+          <!-- ======================= -->
+          <!-- UCE CBC COMPETENCY SECTION -->
+          <!-- ======================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+          {% if request.user.profile.school|school_has_level:"UCE" %}
+
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="collapse" href="#uce-cbc"
+            aria-expanded="false" aria-controls="uce-cbc">
+            <i class="fas fa-clipboard-check menu-icon"></i>
+            <span class="menu-title">Competencies</span>
+            <i class="menu-arrow"></i>
+          </a>
+
+          <div class="collapse" id="uce-cbc">
+            <ul class="nav flex-column sub-menu">
+
+              {% if request.user|has_role:"TEACHER" %}
+                    <li class="nav-item">
+                <a class="nav-link" href="{% url 'topic_list' %}">
+                  <i class="fas fa-list menu-icon"></i>
+                  Topics
+                </a>
+              </li>
+
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'topic_create' %}">
+          <i class="fas fa-plus menu-icon"></i>
+          Add Topic
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'competency_definition_list' %}">
+          <i class="fas fa-book menu-icon"></i>
+          Competencies
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'competency_definition_create' %}">
+          <i class="fas fa-edit menu-icon"></i>
+          Add Competencies
+        </a>
+      </li>
+      {% endif %}
+
+    </ul>
+  </div>
+</li>
+{% endif %}
+{% endif %}
+
+{% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+<li class="nav-item">
+  <a class="nav-link" data-toggle="collapse" href="#ui-reports" aria-expanded="false" aria-controls="ui-reports">
+    <i class="fas fa-file-invoice menu-icon"></i>
+    <span class="menu-title">Report Cards</span>
+    <i class="menu-arrow"></i>
+  </a>
+
+  <div class="collapse" id="ui-reports">
+    <ul class="nav flex-column sub-menu">
+
+      <li class="nav-item nav-category">Processing</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_command_center' %}">
+          <i class="fas fa-desktop text-primary mr-2"></i>
+          Report Command Center
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_run_list' %}">
+          <i class="fas fa-history text-success mr-2"></i>
+          Runs History
+        </a>
+      </li>
+
+    </ul>
+  </div>
+</li>
+{% endif %}
+
+{% if request.user|has_role:"STUDENT" %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'student_my_reports' %}">
+    <i class="fas fa-file-alt menu-icon"></i>
+    <span class="menu-title">My Report Cards</span>
+  </a>
+</li>
+{% endif %}
+
+{% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+<li class="nav-item">
+  <a class="nav-link" data-toggle="collapse" href="#report-setup" aria-expanded="false" aria-controls="report-setup">
+    <i class="fas fa-file-signature menu-icon"></i>
+    <span class="menu-title">Report Setup</span>
+    <i class="menu-arrow"></i>
+  </a>
+
+  <div class="collapse" id="report-setup">
+    <ul class="nav flex-column sub-menu">
+
+      <li class="nav-item nav-category">Template Settings</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_template_list' %}">
+          <i class="fas fa-palette menu-icon text-info"></i>
+          Manage Templates
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_template_create' %}">
+          <i class="fas fa-plus-square menu-icon text-primary"></i>
+          Add Report Template
+        </a>
+      </li>
+
+      <li class="nav-item nav-category">Report Card Terms / Comments</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_auto_comment_list' %}">
+          <i class="fas fa-comment-dots menu-icon text-primary"></i>
+          Auto Comments
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_keyword_band_list' %}">
+          <i class="fas fa-layer-group menu-icon text-success"></i>
+          UCE Keyword Score Bands
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_keyword_def_list' %}">
+          <i class="fas fa-book-open menu-icon text-warning"></i>
+         UCE Keyword Definitions
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_grade_desc_list' %}">
+          <i class="fas fa-award menu-icon text-danger"></i>
+         UCE Grade Descriptors
+        </a>
+      </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'report_subject_comment_list' %}">
+        <i class="fas fa-comment-dots menu-icon"></i>
+        <span class="menu-title">PLE Subject Comments</span>
+      </a>
+    </li>
+    </ul>
+  </div>
+</li>
+{% endif %}
+
+
+          <!-- ======================= -->
+          <!-- ADMINISTRATION SECTION -->
+          <!-- ======================= -->
+            {# ======================= #}
+            {# GRADING SECTION #}
+            {# ======================= #}
+            {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="collapse" href="#grading-menu" aria-expanded="false" aria-controls="grading-menu">
+                <i class="fas fa-graduation-cap menu-icon"></i>
+                <span class="menu-title">Grading</span>
+                <i class="menu-arrow"></i>
+              </a>
+
+              <div class="collapse" id="grading-menu">
+                <ul class="nav flex-column sub-menu">
+                  <li class="nav-item nav-category">Grading Scales</li>
+
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'uce_grading_scale_list' %}">
+                      <i class="fas fa-certificate mr-2 text-primary"></i> UCE Grading
+                    </a>
+                  </li>
+
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'new_uace_grading_scale_list' %}">
+                      <i class="fas fa-award mr-2 text-warning"></i> UACE Grading
+                    </a>
+                  </li>
+
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'ple_grading_scale_list' %}">
+                      <i class="fas fa-star mr-2 text-success"></i> PLE Grading
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'user_management' %}">
+              <i class="fas fa-users-cog menu-icon"></i>
+              <span class="menu-title">Users</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'recycle_bin_dashboard' %}">
+              <i class="fas fa-trash-alt menu-icon"></i>
+              <span class="menu-title">Recycle Bin</span>
+            </a>
+          </li>
+          {% endif %}
+
+        </ul>
+      </nav>
+      <!-- Dark overlay behind the open sidebar on phones/tablets -->
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+      <!-- Main Panel -->
+      <div class="main-panel">
+        <div class="content-wrapper">
+
+          <!-- Global Messages -->
+          {% if messages %}
+            {% for message in messages %}
+            <div class="alert
+              {% if message.tags == 'error' %}alert-danger
+              {% elif message.tags == 'success' %}alert-success
+              {% elif message.tags == 'warning' %}alert-warning
+              {% else %}alert-info
+              {% endif %}
+              alert-dismissible fade show mt-2" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            {% endfor %}
+          {% endif %}
+          <!-- End Global Messages -->
+
+          {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <div class="d-sm-flex justify-content-center justify-content-sm-between">
+            <span class="text-muted text-center text-sm-left d-block d-sm-inline-block">
+              Copyright © {% now "Y" %}
+              Muzadi Technologies. All rights reserved.
+            </span>
+            <span class="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
+              <a href="https://wa.me/256701006010" target="_blank" style="text-decoration: none; color: inherit;">
+                Contact us<i class="far fa-call text-danger"></i>
+              </a>
+            </span>
+          </div>
+        </footer>
+
+      </div>
+      <!-- End main-panel -->
+    </div>
+    <!-- End page-body-wrapper -->
+  </div>
+  <!-- End container-scroller -->
+
+  <!-- Scripts -->
+  <script src="{% static 'vendors/js/vendor.bundle.base.js' %}"></script>
+  <script src="{% static 'vendors/js/vendor.bundle.addons.js' %}"></script>
+
+  <script src="{% static 'js/off-canvas.js' %}"></script>
+  <script src="{% static 'js/hoverable-collapse.js' %}"></script>
+  <script src="{% static 'js/misc.js' %}"></script>
+  <script src="{% static 'js/settings.js' %}"></script>
+  <script src="{% static 'js/todolist.js' %}"></script>
+
+  <!-- Pass template variables to external JS safely -->
+  <script>
+    window.USER_ROLE = "{{ role|default:'' }}";
+    window.IS_AUTHENTICATED = {{ user.is_authenticated|yesno:"true,false" }};
+  </script>
+
+  <!-- Your custom dashboard JS (move your big JS here) -->
+  <script src="{% static 'js/dashboard.js' %}"></script>
+
+  <!-- Sidebar: keep the current section open, remember position, accordion, menu search -->
+  <script>
+  (function () {
+    var sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    var ACCORDION = true;                       // opening one section closes the others
+    var LAST_LINK_KEY = 'sidebar:lastLink';
+    var SCROLL_KEY = 'sidebar:scroll';
+    var $ = window.jQuery;
+
+    function store(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+    function read(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+
+    function pathOf(href) {
+      try { return new URL(href, window.location.href).pathname.replace(/\/+$/, '') || '/'; }
+      catch (e) { return null; }
+    }
+
+    var pageLinks = Array.prototype.filter.call(sidebar.querySelectorAll('a.nav-link[href]'), function (a) {
+      var h = a.getAttribute('href') || '';
+      return h && h.charAt(0) !== '#' && a.getAttribute('data-toggle') !== 'collapse';
+    });
+
+    // ---- 1. Find the link for the current page -------------------------
+    var here = pathOf(window.location.href);
+    var best = null, bestScore = 0;
+    pageLinks.forEach(function (a) {
+      var p = pathOf(a.href);
+      if (!p) return;
+      var score = 0;
+      if (p === here) score = 10000 + p.length;                       // exact page
+      else if (p !== '/' && here.indexOf(p + '/') === 0) score = p.length;  // a page under it
+      if (score > bestScore) { bestScore = score; best = a; }
+    });
+
+    // Pages not in the menu (e.g. a review or edit page): use the menu link clicked last
+    if (!best) {
+      var last = read(LAST_LINK_KEY);
+      if (last) best = pageLinks.filter(function (a) { return pathOf(a.href) === last; })[0] || null;
+    }
+
+    // ---- 2. Highlight it and open its section, without animation -------
+    sidebar.classList.add('no-anim');
+    sidebar.querySelectorAll('.nav-link.active, .nav-item.active').forEach(function (el) { el.classList.remove('active'); });
+    sidebar.querySelectorAll('.collapse.show').forEach(function (c) { c.classList.remove('show'); });
+
+    if (best) {
+      best.classList.add('active');
+      best.setAttribute('aria-current', 'page');
+      var li = best.closest('.nav-item');
+      if (li) li.classList.add('active');
+
+      var section = best.closest('.collapse');
+      while (section && sidebar.contains(section)) {
+        section.classList.add('show');
+        var toggler = sidebar.querySelector('[data-toggle="collapse"][href="#' + section.id + '"]');
+        if (toggler) {
+          toggler.setAttribute('aria-expanded', 'true');
+          toggler.classList.remove('collapsed');
+          var top = toggler.closest('.nav-item');
+          if (top) top.classList.add('active', 'active-section');
+        }
+        section = section.parentElement ? section.parentElement.closest('.collapse') : null;
+      }
+    }
+    setTimeout(function () { sidebar.classList.remove('no-anim'); }, 50);
+
+    // ---- 3. Keep the sidebar scrolled where the user left it ------------
+    var scroller = sidebar.querySelector('.ps') || sidebar;
+    var savedScroll = parseInt(read(SCROLL_KEY) || '', 10);
+    if (!isNaN(savedScroll)) {
+      scroller.scrollTop = savedScroll;
+    }
+    if (best) {                                    // make sure the current link is visible
+      var linkTop = best.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      if (linkTop < 0 || linkTop > scroller.clientHeight - 40) {
+        scroller.scrollTop += linkTop - scroller.clientHeight / 3;
+      }
+    }
+    window.addEventListener('pagehide', function () { store(SCROLL_KEY, String(scroller.scrollTop)); });
+
+    // Remember the clicked menu link (used for pages that are not in the menu)
+    pageLinks.forEach(function (a) {
+      a.addEventListener('click', function () { var p = pathOf(a.href); if (p) store(LAST_LINK_KEY, p); });
+    });
+
+    // ---- 4. Accordion: one section open at a time ---------------------
+    if (ACCORDION && $) {
+      $(sidebar).on('show.bs.collapse', '.collapse', function (e) {
+        if (e.target !== this) return;
+        var opening = this;
+        $(sidebar).find('.collapse.show').each(function () {
+          if (this !== opening && !this.contains(opening) && !opening.contains(this)) $(this).collapse('hide');
+        });
+      });
+    }
+
+    // ---- 5. Menu search ------------------------------------------------
+    var search = document.getElementById('sidebarSearch');
+    var empty = document.getElementById('sidebarSearchEmpty');
+    var topItems = Array.prototype.filter.call(sidebar.querySelectorAll('.nav > .nav-item'), function (li) {
+      return li.parentElement.closest('.sidebar') === sidebar &&
+             !li.parentElement.classList.contains('sub-menu') &&
+             !li.matches('.nav-profile, .nav-stats, .nav-search, .nav-search-empty');
+    });
+    var openBeforeSearch = null;
+
+    function text(el) { return (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+
+    function resetSearch() {
+      sidebar.querySelectorAll('[data-search-hidden]').forEach(function (el) {
+        el.style.display = ''; el.removeAttribute('data-search-hidden');
+      });
+      sidebar.querySelectorAll('.collapse').forEach(function (c) {
+        c.classList.toggle('show', !!(openBeforeSearch && openBeforeSearch.indexOf(c) !== -1));
+      });
+      openBeforeSearch = null;
+      if (empty) empty.style.display = 'none';
+    }
+
+    function hide(el) { el.style.display = 'none'; el.setAttribute('data-search-hidden', '1'); }
+    function show(el) { el.style.display = ''; el.removeAttribute('data-search-hidden'); }
+
+    function runSearch(q) {
+      if (!q) { resetSearch(); return; }
+      if (!openBeforeSearch) openBeforeSearch = Array.prototype.slice.call(sidebar.querySelectorAll('.collapse.show'));
+
+      var any = false;
+      topItems.forEach(function (li) {
+        var collapse = li.querySelector('.collapse');
+        var title = li.querySelector(':scope > .nav-link');
+        var titleHit = title && text(title).indexOf(q) !== -1;
+
+        if (!collapse) {
+          if (titleHit) { show(li); any = true; } else { hide(li); }
+          return;
+        }
+        var hits = 0;
+        collapse.querySelectorAll('.nav-item').forEach(function (sub) {
+          if (sub.classList.contains('nav-category')) { hide(sub); return; }
+          if (titleHit || text(sub).indexOf(q) !== -1) { show(sub); hits++; } else { hide(sub); }
+        });
+        if (hits) { show(li); collapse.classList.add('show'); any = true; }
+        else { hide(li); collapse.classList.remove('show'); }
+      });
+      if (empty) empty.style.display = any ? 'none' : 'block';
+    }
+
+    if (search) {
+      search.addEventListener('input', function () { runSearch(this.value.trim().toLowerCase()); });
+      search.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { this.value = ''; resetSearch(); this.blur(); }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var first = pageLinks.filter(function (a) { return a.offsetParent !== null; })[0];
+          if (first) first.click();
+        }
+      });
+      // Press "/" anywhere (not while typing) to jump to the menu search
+      document.addEventListener('keydown', function (e) {
+        var t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+        if (e.key === '/' && !typing && !document.body.classList.contains('sidebar-icon-only')) {
+          e.preventDefault(); search.focus();
+        }
+      });
+    }
+  })();
+  </script>
+
+  <!-- Responsive helpers: mobile sidebar + scrollable tables -->
+  <script>
+  (function () {
+    var body = document.body;
+    var sidebar = document.getElementById('sidebar');
+    var toggle = document.getElementById('mobileSidebarToggle');
+    var backdrop = document.getElementById('sidebarBackdrop');
+    var DESKTOP = 992;
+
+    function setOpen(open) {
+      if (!sidebar) return;
+      sidebar.classList.toggle('active', open);
+      body.classList.toggle('sidebar-open', open);
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        var icon = toggle.querySelector('.fas');
+        if (icon) { icon.classList.toggle('fa-bars', !open); icon.classList.toggle('fa-times', open); }
+      }
+    }
+
+    if (toggle) toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      setOpen(!sidebar.classList.contains('active'));
+    });
+    if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+
+    // Close after choosing a page (but not when opening a sub-menu)
+    if (sidebar) sidebar.addEventListener('click', function (e) {
+      var link = e.target.closest('a.nav-link');
+      if (link && link.getAttribute('data-toggle') !== 'collapse' && window.innerWidth < DESKTOP) setOpen(false);
+    });
+
+    // Reset if the screen is rotated / resized to desktop width
+    window.addEventListener('resize', function () { if (window.innerWidth >= DESKTOP) setOpen(false); });
+
+    // Any table not already wrapped gets a horizontal-scroll wrapper,
+    // so wide tables scroll inside the card instead of breaking the page.
+    var content = document.querySelector('.content-wrapper');
+    if (content) {
+      content.querySelectorAll('table').forEach(function (t) {
+        if (t.closest('.table-responsive, .dataTables_scrollBody, .no-responsive-wrap')) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'table-responsive';
+        t.parentNode.insertBefore(wrap, t);
+        wrap.appendChild(t);
+      });
+    }
+  })();
+  </script>
+
+  {% block extrajs %}{% endblock %}
+{% endwith %}
+</body>
+</html>

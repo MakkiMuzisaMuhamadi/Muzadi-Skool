@@ -1,0 +1,174 @@
+{% extends "dashboard/base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-bed"></i> {{ title|default:"Hostels" }}</h3>
+    <small class="text-muted">Manage hostels (buildings), warden, capacity and status.</small>
+  </div>
+  <div>
+    <a href="{% url 'hostel_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Add Hostel
+    </a>
+  </div>
+</div>
+
+<!-- =======================
+     HOSTEL FILTERS
+======================== -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body py-3">
+
+    <form method="get" id="hostelFilter"
+          data-streams-url="{% url 'ajax_streams_for_class' %}">
+
+      <div class="row align-items-end">
+
+        <!-- Class -->
+        <div class="col-lg-4 col-md-6 mb-3">
+          <label class="form-label fw-semibold text-muted small mb-1">
+            <i class="fas fa-layer-group me-1 text-primary"></i> Class
+          </label>
+          <select name="class_id" id="classSelect" class="form-control">
+            <option value="">All Classes</option>
+            {% for c in classes %}
+              <option value="{{ c.id }}" {% if selected_class_id == c.id|stringformat:"s" %}selected{% endif %}>
+                {{ c.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Stream -->
+        <div class="col-lg-4 col-md-6 mb-3">
+          <label class="form-label fw-semibold text-muted small mb-1">
+            <i class="fas fa-stream me-1 text-info"></i> Stream
+          </label>
+          <select name="stream_id"
+                  id="streamSelect"
+                  class="form-control"
+                  {% if not selected_class_id %}disabled{% endif %}>
+            <option value="">All Streams</option>
+            {% for s in streams %}
+              <option value="{{ s.id }}" {% if selected_stream_id == s.id|stringformat:"s" %}selected{% endif %}>
+                {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <small class="text-muted d-block mt-1">
+            Select class first to load streams
+          </small>
+        </div>
+
+        <!-- Buttons -->
+        <div class="col-lg-4 col-md-12 mb-3">
+          <div class="d-flex gap-2 justify-content-lg-end">
+            <button type="submit" class="btn btn-success px-4">
+              <i class="fas fa-filter me-1"></i> Apply Filters
+            </button>
+
+            <a href="{% url 'hostel_list' %}" class="btn btn-outline-danger px-4">
+              <i class="fas fa-undo me-1"></i> Reset
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</div>
+
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table id="hostelsTable" class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Warden</th>
+          <th>Gender</th>
+          <th>Capacity</th>
+          <th>Occupancy</th>
+          <th>Status</th>
+          <th class="text-right" style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in rows %}
+          <tr>
+            <td class="fw-semibold">{{ h.name }}</td>
+            <td>{{ h.warden|default:"-" }}</td>
+            <td>{{ h.get_gender_display|default:"-" }}</td>
+            <td>{{ h.capacity|default:"0" }}</td>
+            <td><span class="badge bg-info text-white">{{ h.live_occupancy|default:"0" }}</span></td>
+            <td>
+              {% if h.is_active %}
+                <span class="badge bg-success text-white">Active</span>
+              {% else %}
+                <span class="badge bg-danger text-white">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a href="{% url 'hostel_update' h.id %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'hostel_delete' h.id %}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No hostels found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function(){
+  // datatables
+  try {
+    if (window.$ && $.fn.DataTable) {
+      $('#hostelsTable').DataTable({
+        pageLength: 25,
+        order: [[0, 'asc']],
+        responsive: true
+      });
+    }
+  } catch(e) {}
+
+  // class -> stream ajax (your endpoint)
+  const filterForm = document.getElementById('hostelFilter');
+  if(!filterForm) return;
+
+  const streamsUrl = filterForm.getAttribute('data-streams-url');
+  const classSelect = document.getElementById('classSelect');
+  const streamSelect = document.getElementById('streamSelect');
+
+  function resetStreams(disable=true){
+    streamSelect.innerHTML = '<option value="">All Streams</option>';
+    streamSelect.disabled = disable;
+  }
+
+  async function loadStreams(){
+    const classId = classSelect.value;
+    resetStreams(true);
+
+    if(!classId) return;
+
+    const res = await fetch(`${streamsUrl}?class_id=${encodeURIComponent(classId)}`);
+    const data = await res.json();
+
+    (data.streams || []).forEach(s=>{
+      const op = document.createElement('option');
+      op.value = s.id;
+      op.textContent = s.name;
+      streamSelect.appendChild(op);
+    });
+
+    streamSelect.disabled = false;
+  }
+
+  classSelect.addEventListener('change', loadStreams);
+})();
+</script>
+{% endblock %}

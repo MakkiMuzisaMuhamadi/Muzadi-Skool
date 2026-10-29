@@ -1,0 +1,244 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h3 class="page-title">
+            <i class="fas fa-clock mr-2"></i>
+            {% if object %}Edit{% else %}Add New{% endif %} Term
+        </h3>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'academic_calendar' %}">Academic Calendar</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {% if object %}Edit Term{% else %}Add Term{% endif %}
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Term Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_academic_year">Academic Year *</label>
+                                    <select class="form-control" id="id_academic_year" name="academic_year" required>
+                                        <option value="">Select Academic Year</option>
+                                        {% for year in academic_years %}
+                                        <option value="{{ year.id }}" 
+                                            {% if form.academic_year.value == year.id %}selected{% endif %}>
+                                            {{ year.year }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_name">Term Name *</label>
+                                    <select class="form-control" id="id_name" name="name" required>
+                                        <option value="">Select Term</option>
+                                        <option value="Term I" {% if form.name.value == "Term I" %}selected{% endif %}>Term I</option>
+                                        <option value="Term II" {% if form.name.value == "Term II" %}selected{% endif %}>Term II</option>
+                                        <option value="Term III" {% if form.name.value == "Term III" %}selected{% endif %}>Term III</option>
+                                        <option value="Holiday Term" {% if form.name.value == "Holiday Term" %}selected{% endif %}>Holiday Term</option>
+                                        <option value="Special Term" {% if form.name.value == "Special Term" %}selected{% endif %}>Special Term</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_short_name">Short Name</label>
+                                    <input type="text" class="form-control" id="id_short_name" name="short_name" 
+                                           value="{{ form.short_name.value|default:'' }}" 
+                                           placeholder="e.g., T1, T2">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_order">Order *</label>
+                                    <input type="number" class="form-control" id="id_order" name="order" 
+                                           value="{{ form.order.value|default:'1' }}" min="1" max="5" required>
+                                    <small class="form-text text-muted">Order of term in academic year (1, 2, 3, etc.)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_is_current">Status</label>
+                                    <select class="form-control" id="id_is_current" name="is_current">
+                                        <option value="false" {% if not form.is_current.value %}selected{% endif %}>Not Current</option>
+                                        <option value="true" {% if form.is_current.value %}selected{% endif %}>Current Term</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_start_date">Start Date *</label>
+                                    <input type="date" class="form-control" id="id_start_date" name="start_date" 
+                                           value="{{ form.start_date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_end_date">End Date *</label>
+                                    <input type="date" class="form-control" id="id_end_date" name="end_date" 
+                                           value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle mr-2"></i>Term Duration</h6>
+                                    <p class="mb-0" id="durationInfo">
+                                        {% if form.start_date.value and form.end_date.value %}
+                                        Duration: {{ duration_days }} days
+                                        {% else %}
+                                        Select dates to see duration
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-outline-success">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if object %}Update{% else %}Create{% endif %} Term
+                                </button>
+                                <a href="{% url 'academic_calendar' %}" class="btn btn-info">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Active Terms
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if active_terms %}
+                    <div class="list-group">
+                        {% for term in active_terms %}
+                        <div class="list-group-item {% if term.is_current %}list-group-item-success{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ term.name }}</h6>
+                                {% if term.is_current %}
+                                <span class="badge badge-success">Current</span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1 small">{{ term.academic_year.year }}</p>
+                            <small>{{ term.start_date|date:"M d" }} - {{ term.end_date|date:"M d, Y" }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p>No active terms found</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Guidelines
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Ensure term dates don't overlap with other terms</li>
+                        <li>Only one term per academic year can be marked as current</li>
+                        <li>Term order determines sequence in reports</li>
+                        <li>Short name appears in schedules and timetables</li>
+                        <li>Marking as current will update school's current term</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(document).ready(function() {
+    // Calculate duration when dates change
+    $('#id_start_date, #id_end_date').on('change', function() {
+        var startDate = $('#id_start_date').val();
+        var endDate = $('#id_end_date').val();
+        
+        if (startDate && endDate) {
+            var start = new Date(startDate);
+            var end = new Date(endDate);
+            var diffTime = Math.abs(end - start);
+            var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            $('#durationInfo').html('Duration: ' + diffDays + ' days');
+        }
+    });
+    
+    // Auto-fill short name based on term name
+    $('#id_name').on('change', function() {
+        var termName = $(this).val();
+        var shortNameMap = {
+            'Term I': 'T1',
+            'Term II': 'T2',
+            'Term III': 'T3',
+            'Holiday Term': 'HT',
+            'Special Term': 'ST'
+        };
+        
+        if (shortNameMap[termName]) {
+            $('#id_short_name').val(shortNameMap[termName]);
+        }
+    });
+});
+</script>
+{% endblock %}

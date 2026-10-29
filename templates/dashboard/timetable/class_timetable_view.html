@@ -1,0 +1,115 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% include "dashboard/timetable/_tt_styles.html" %}
+
+<div class="page-header mb-4 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-school mr-2 text-primary"></i> Class Timetable</h3>
+    <small class="text-muted">Weekly grid for a class or stream. Parallel lessons (streams, electives) appear together in one cell.</small>
+  </div>
+  {% if selected_class and timetable %}
+  <div class="mt-2 mt-md-0 d-flex" style="gap:.5rem;">
+    <a href="{% url 'printable_class_timetable' %}?timetable={{ timetable.pk }}&class_ref={{ selected_class.pk }}{% if selected_stream %}&stream={{ selected_stream.pk }}{% endif %}" target="_blank" class="btn btn-outline-dark btn-sm">
+      <i class="fas fa-print mr-1"></i> Print
+    </a>
+    <a href="{% url 'export_class_timetable_pdf' %}?timetable={{ timetable.pk }}&class_ref={{ selected_class.pk }}{% if selected_stream %}&stream={{ selected_stream.pk }}{% endif %}" target="_blank" class="btn btn-primary btn-sm">
+      <i class="fas fa-file-pdf mr-1"></i> PDF
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card tt-filter-card mb-3">
+  <div class="card-body">
+    <form method="get">
+      <div class="form-row">
+        <div class="form-group col-md-4 mb-2">
+          <label class="tt-filter-label">Timetable</label>
+          <select name="timetable" class="form-control">
+            {% for tt in timetables %}
+            <option value="{{ tt.id }}" {% if timetable and timetable.pk == tt.id %}selected{% endif %}>{{ tt.display_name }} ({{ tt.get_status_display }})</option>
+            {% empty %}
+            <option value="">No timetables yet</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-4 mb-2">
+          <label class="tt-filter-label">Class</label>
+          <select name="class_ref" id="classFilter" class="form-control">
+            <option value="">Select Class</option>
+            {% for cls in classes %}
+            <option value="{{ cls.id }}" {% if selected_class and selected_class.pk == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-3 mb-2">
+          <label class="tt-filter-label">Stream</label>
+          <select name="stream" id="streamFilter" class="form-control">
+            <option value="">All Streams</option>
+            {% for s in streams %}
+            <option value="{{ s.id }}" {% if selected_stream and selected_stream.pk == s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-1 mb-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-4 mb-3"><div class="card tt-summary-card"><div class="card-body">
+    <div class="small text-muted">Timetable</div>
+    <div class="font-weight-bold">{{ timetable.display_name|default:"-" }}
+      {% if timetable %}<span class="badge {% if timetable.status == 'PUBLISHED' %}badge-success{% elif timetable.status == 'DRAFT' %}badge-warning{% else %}badge-secondary{% endif %}">{{ timetable.get_status_display }}</span>{% endif %}
+    </div>
+  </div></div></div>
+  <div class="col-md-4 mb-3"><div class="card tt-summary-card"><div class="card-body">
+    <div class="small text-muted">Class / Stream</div>
+    <div class="font-weight-bold">{{ selected_class|default:"-" }}{% if selected_stream %} - {{ selected_stream }}{% endif %}</div>
+  </div></div></div>
+  <div class="col-md-4 mb-3"><div class="card tt-summary-card"><div class="card-body">
+    <div class="small text-muted">Weekly lesson periods</div>
+    <div class="font-weight-bold">{{ weekly_lessons }}</div>
+  </div></div></div>
+</div>
+
+<div class="card tt-grid-card">
+  <div class="card-body">
+    {% if not timetable %}
+      <div class="text-center text-muted p-4">Create a timetable first.</div>
+    {% elif not selected_class %}
+      <div class="text-center text-muted p-4">Select a class to see its week.</div>
+    {% else %}
+      <div class="tt-legend mb-2">
+        <span><i class="fas fa-square" style="color:#6f42c1"></i> Teaching group / elective</span>
+        <span>x2 = double period</span>
+        {% if can_edit %}<span>Click <strong>+</strong> to add a lesson, <i class="fas fa-pen"></i> to edit</span>{% endif %}
+      </div>
+      {% include "dashboard/timetable/_grid.html" with mode="class" %}
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function () {
+  const classSelect = document.getElementById("classFilter");
+  const streamSelect = document.getElementById("streamFilter");
+  if (!classSelect) return;
+  classSelect.addEventListener("change", function () {
+    streamSelect.innerHTML = '<option value="">All Streams</option>';
+    if (!this.value) return;
+    fetch(`{% url 'ajax_streams_for_class' %}?class_id=${encodeURIComponent(this.value)}`)
+      .then(r => r.json())
+      .then(data => (data.results || []).forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.name || item.text;
+        streamSelect.appendChild(opt);
+      }));
+  });
+})();
+</script>
+{% endblock %}

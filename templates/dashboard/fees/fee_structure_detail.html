@@ -1,0 +1,150 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-invoice-dollar"></i> Fee Structure Detail
+    </h3>
+    <small class="text-muted">Review structure information and its fee items</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'fee_structure_edit' structure.id %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-edit mr-1"></i> Edit
+    </a>
+    <form method="post" action="{% url 'fee_structure_generate_charges' structure.id %}" class="d-inline"
+          onsubmit="return confirm('Bill every matching student for this term? Students already billed are skipped.');">
+      {% csrf_token %}
+      <input type="hidden" name="mode" value="generate">
+      <button class="btn btn-success btn-sm"><i class="fas fa-cogs mr-1"></i>
+        {% if structure.charges_generated %}Bill new students{% else %}Generate charges{% endif %}</button>
+    </form>
+    {% if structure.charges_generated %}
+    <form method="post" action="{% url 'fee_structure_generate_charges' structure.id %}" class="d-inline"
+          onsubmit="return confirm('Update every billed student to the amounts shown here? Removed items will be waived and any overpayment becomes credit.');">
+      {% csrf_token %}
+      <input type="hidden" name="mode" value="apply_changes">
+      <button class="btn btn-warning btn-sm"><i class="fas fa-sync mr-1"></i> Apply changes to billed students</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'fee_structure_list' %}" class="btn btn-light btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Structure Summary</strong>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-4 mb-2">
+        <strong>Name:</strong><br>
+        <span>{{ structure.name|default:"-" }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Academic Year:</strong><br>
+        <span>{{ structure.academic_year.year }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Term:</strong><br>
+        <span>{{ structure.term.name }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Class:</strong><br>
+        <span>{{ structure.class_ref.name }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Stream:</strong><br>
+        <span>{{ structure.stream.name|default:"-" }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Residence:</strong><br>
+        <span>{{ structure.get_residence_display|default:"All" }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Apply Mode:</strong><br>
+        <span>{{ structure.get_apply_mode_display }}</span>
+      </div>
+
+      <div class="col-md-4 mb-2">
+        <strong>Status:</strong><br>
+        {% if structure.is_active %}
+          <span class="badge badge-success">Active</span>
+        {% else %}
+          <span class="badge badge-danger">Inactive</span>
+        {% endif %}
+      </div>
+
+      {% if structure.charges_generated %}
+      <div class="col-md-12 mb-2">
+        <div class="alert alert-light border mb-0">
+          Billed <strong>{{ stats.students }}</strong> student(s) a total of
+          <strong>UGX {{ stats.billed|floatformat:0|intcomma }}</strong>; paid so far
+          <strong>UGX {{ stats.paid|floatformat:0|intcomma }}</strong>.
+        </div>
+      </div>
+      {% endif %}
+      <div class="col-md-4 mb-2">
+        <strong>Charges Generated:</strong><br>
+        {% if structure.charges_generated %}
+          <span class="badge badge-primary">Yes</span>
+        {% else %}
+          <span class="badge badge-warning">No</span>
+        {% endif %}
+      </div>
+
+      <div class="col-md-12 mt-2">
+        <strong>Notes:</strong><br>
+        <span class="text-muted">{{ structure.notes|default:"-" }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>Fee Items</strong>
+    <span class="badge badge-info p-2">
+      Total: UGX {{ structure.total_amount|intcomma }}
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Fee Category</th>
+            <th>Amount</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ item.fee_category.name }}</td>
+            <td>UGX {{ item.amount|intcomma }}</td>
+            <td>{{ item.notes|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted">No fee items found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

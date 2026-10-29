@@ -1,0 +1,299 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zimak</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f6cff, #3d54d1);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .logo-section {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .logo {
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            background: #f8f9fa;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-icon {
+            font-size: 3rem;
+            color: #4f6cff;
+            margin-bottom: 20px;
+        }
+        
+        .welcome-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+        
+        .welcome-section p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .verification-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 2px dashed #4f6cff;
+            margin: 25px 0;
+        }
+        
+        .code {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #4f6cff;
+            letter-spacing: 10px;
+            margin: 25px 0;
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 3px solid #e9ecef;
+        }
+        
+        .instructions {
+            background: #e8f4ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+        }
+        
+        .instructions h3 {
+            color: #4f6cff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            color: #495057;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .expiry-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+            color: #856404;
+        }
+        
+        .expiry-notice strong {
+            color: #e74c3c;
+        }
+        
+        .user-info {
+            background: #e8f5e8;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .user-info strong {
+            color: #27ae60;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+        
+        .support {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .support a {
+            color: #4f6cff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .support a:hover {
+            text-decoration: underline;
+        }
+        
+        .security-note {
+            background: #fff3cd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #856404;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .code {
+                font-size: 2.5rem;
+                letter-spacing: 5px;
+                padding: 15px;
+            }
+            
+            .verification-box {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>{{ app_name }}</h1>
+            <p>Uganda Muslim Teachers' Association</p>
+        </div>
+        
+        <div class="logo-section">
+            <!-- Logo would be embedded here in actual email -->
+            <div style="font-size: 2rem; color: #4f6cff;">📧</div>
+            <h3 style="color: #2c3e50; margin: 10px 0;">Email Verification</h3>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-section">
+                <div class="welcome-icon">🔐</div>
+                <h2>Verify Your Email Address</h2>
+                <p>Hello <strong>{{ user.first_name|default:user.username }}</strong>,</p>
+                <p>Welcome to  {{ app_name }}! Please verify your email address to activate your account and access all features.</p>
+            </div>
+            
+            <div class="user-info">
+                <p><strong>Account Details:</strong><br>
+                Username: {{ user.username }}<br>
+                Email: {{ user.email }}</p>
+            </div>
+            
+            <div class="verification-box">
+                <h3 style="color: #2c3e50; margin-bottom: 20px;">Your Verification Code</h3>
+                <div class="code">{{ verification_code }}</div>
+                <p style="color: #6c757d; font-size: 1.1rem;">
+                    Enter this code on the verification page to complete your registration
+                </p>
+            </div>
+            
+            <div class="instructions">
+                <h3>How to verify your email:</h3>
+                <ol>
+                    <li>Return to the {{ app_name }} website</li>
+                    <li>Go to the email verification page (you might already be there)</li>
+                    <li>Enter the 6-digit code shown above</li>
+                    <li>Click "Verify Email Address" to complete the process</li>
+                    <li>You'll be automatically redirected to your dashboard</li>
+                </ol>
+            </div>
+            
+            <div class="expiry-notice">
+                <strong>⚠️ Important Security Notice:</strong><br>
+                This verification code will expire in <strong>{{ expiry_minutes }} minutes</strong> for security reasons.
+                Do not share this code with anyone.
+            </div>
+            
+            <div class="security-note">
+                <strong>Security Tip:</strong> {{ app_name }} will never ask for your password or verification code via email.
+            </div>
+            
+            <div style="text-align: center; color: #6c757d; margin-top: 30px;">
+                <p>If you didn't create an account with {{ app_name }}, please ignore this email.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {% now "Y" %} Uganda Muslim Teachers' Association. All rights reserved.</p>
+            <div class="support">
+                <p>Need help? Contact our support team at 
+                    <a href="mailto:support@umta.org">support@umta.org</a>
+                </p>
+                <p>Or visit our website: <a href="https://umtaug.org">www.umta.org</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

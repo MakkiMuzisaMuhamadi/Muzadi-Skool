@@ -1,0 +1,178 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-plus-circle"></i> {{ title }}</h3>
+    <small class="text-muted">Step 1: Create the competency statement (no scores here).</small>
+  </div>
+  <div>
+    <a href="{% url 'competency_definition_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-list mr-1"></i> Competencies
+    </a>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-body">
+
+      <div class="form-row">
+
+        <div class="form-group col-md-3">
+          <label class="small text-muted mb-1">Academic Year</label>
+          {{ form.academic_year }}
+          {% for e in form.academic_year.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+        </div>
+
+        <div class="form-group col-md-3">
+          <label class="small text-muted mb-1">Term</label>
+          {{ form.term }}
+          {% for e in form.term.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          <small class="text-muted">Select year first</small>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label class="small text-muted mb-1">Topic <span class="text-danger">*</span></label>
+          {{ form.topic }}
+          {% for e in form.topic.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+
+          <div class="mt-2 p-2 border rounded bg-light" id="topicMeta" style="display:none;">
+            <div class="d-flex justify-content-between">
+              <div><strong>Class:</strong> <span id="metaClass">-</span></div>
+              <div><strong>Subject:</strong> <span id="metaSubject">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="small text-muted mb-1">Stream (optional)</label>
+          {{ form.stream }}
+          {% for e in form.stream.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          <small class="text-muted">Loads after topic selection</small>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="small text-muted mb-1">Teacher Initials (optional)</label>
+          {{ form.teacher_initials }}
+          {% for e in form.teacher_initials.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+        </div>
+
+        <div class="form-group col-md-12">
+          <label class="small text-muted mb-1">Competency Statement <span class="text-danger">*</span></label>
+          {{ form.competency_text }}
+          {% for e in form.competency_text.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+        </div>
+
+      </div>
+
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-success">
+          <i class="fas fa-save mr-1"></i> Create Competency
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+(function(){
+  const yearSel = document.getElementById("id_academic_year");
+  const termSel = document.getElementById("id_term");
+
+  function loadTerms(){
+    if(!yearSel || !termSel) return;
+    const ay = yearSel.value;
+    const prev = termSel.value;
+    termSel.innerHTML = '<option value="">---------</option>';
+    if(!ay) return;
+
+    fetch("{% url 'ajax_terms_by_year' %}?academic_year=" + ay)
+      .then(r => r.json())
+      .then(resp => {
+        (resp.results || []).forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.textContent = t.name;
+          termSel.appendChild(opt);
+        });
+        if(prev) termSel.value = prev;
+      });
+  }
+
+  if(yearSel){
+    yearSel.addEventListener("change", function(){
+      termSel.value = "";
+      loadTerms();
+    });
+    if(yearSel.value) loadTerms();
+  }
+
+  // Topic meta + stream load
+  const topicSel = document.getElementById("filterTopic");
+  const streamSel = document.getElementById("filterStream");
+  const metaBox = document.getElementById("topicMeta");
+  const metaClass = document.getElementById("metaClass");
+  const metaSubject = document.getElementById("metaSubject");
+
+  function clearMeta(){
+    if(metaBox) metaBox.style.display = "none";
+    if(metaClass) metaClass.textContent = "-";
+    if(metaSubject) metaSubject.textContent = "-";
+  }
+
+  function loadStreams(classId){
+    if(!streamSel) return;
+    streamSel.innerHTML = '<option value="">---------</option>';
+    if(!classId) return;
+
+    fetch("{% url 'ajax_teacher_streams' %}?class_id=" + classId)
+      .then(r => r.json())
+      .then(resp => {
+        (resp.results || []).forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = s.name;
+          streamSel.appendChild(opt);
+        });
+      });
+  }
+
+  function onTopicChange(){
+    if(!topicSel) return;
+    const topicId = topicSel.value;
+    clearMeta();
+    if(streamSel) streamSel.innerHTML = '<option value="">---------</option>';
+    if(!topicId) return;
+
+    fetch("{% url 'ajax_topic_meta' %}?topic_id=" + topicId)
+      .then(r => r.json())
+      .then(data => {
+        if(!data.ok) return;
+        metaClass.textContent = data.class_name;
+        metaSubject.textContent = data.subject_name;
+        metaBox.style.display = "block";
+        loadStreams(data.class_id);
+      });
+  }
+
+  if(topicSel){
+    topicSel.addEventListener("change", onTopicChange);
+    if(topicSel.value) onTopicChange();
+  }
+})();
+</script>
+
+{% endblock %}

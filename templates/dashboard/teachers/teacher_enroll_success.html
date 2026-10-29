@@ -1,0 +1,140 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-check-circle"></i> Enrollment Complete
+      </h3>
+      <small class="text-muted">Print or copy the login credentials below. This page is shown once.</small>
+    </div>
+    <div class="d-flex">
+      <a href="{% url 'teacher_list' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-list mr-1"></i> Teachers
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+
+    <div class="card mb-3" id="printArea">
+      <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-id-card mr-2"></i> Teacher Login Credentials</h5>
+
+        <div class="alert alert-warning py-2">
+          <small class="text-muted">
+            The teacher should change this password on first login.
+            {% if creds.sms == "sent" %}<br><i class="fas fa-sms mr-1"></i> Sent by SMS.{% elif creds.sms != "skipped" %}<br><span class="text-danger"><i class="fas fa-sms mr-1"></i> SMS not sent: {{ creds.sms }}</span>{% endif %}
+            {% if creds.email == "sent" %}<br><i class="fas fa-envelope mr-1"></i> Sent by email.{% elif creds.email != "skipped" %}<br><span class="text-danger"><i class="fas fa-envelope mr-1"></i> Email not sent: {{ creds.email }}</span>{% endif %}
+          </small>
+        </div>
+
+        <div class="mb-2">
+          <span class="text-muted">Teacher:</span>
+          <span class="font-weight-bold">{{ creds.full_name|default:"—" }}</span>
+        </div>
+
+        <div class="mb-2">
+          <span class="text-muted">Username:</span>
+          <span class="font-weight-bold">{{ creds.username }}</span>
+        </div>
+
+        <div class="mb-2">
+          <span class="text-muted">Temporary Password:</span>
+          <span class="font-weight-bold">{{ creds.password }}</span>
+        </div>
+
+        <hr>
+
+        <small class="text-muted d-block">
+          <i class="fas fa-shield-alt"></i> Keep these credentials private.
+        </small>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-tools mr-2"></i> Actions</h5>
+
+        <div class="form-group">
+          <label class="text-muted">Username</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="cred_username" value="{{ creds.username }}" readonly>
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" data-copy="#cred_username">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="text-muted">Temporary Password</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="cred_password" value="{{ creds.password }}" readonly>
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" data-copy="#cred_password">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline-success btn-block" type="button" id="printBtn">
+          <i class="fas fa-print mr-1"></i> Print
+        </button>
+
+        <a href="{% url 'teacher_list' %}" class="btn btn-light btn-block mt-2">
+          Done
+        </a>
+
+        <hr>
+
+        <small class="text-muted d-block">
+          <i class="fas fa-info-circle"></i> This credentials page won’t be accessible again after you leave.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  function copyFrom(selector) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.select();
+    el.setSelectionRange(0, 99999);
+    try { document.execCommand("copy"); } catch (e) {}
+  }
+
+  document.querySelectorAll("[data-copy]").forEach(btn => {
+    btn.addEventListener("click", function () {
+      copyFrom(this.getAttribute("data-copy"));
+    });
+  });
+
+  document.getElementById("printBtn").addEventListener("click", function () {
+    window.print();
+  });
+})();
+</script>
+
+<style>
+@media print {
+  /* Hide everything except the printable card */
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+}
+</style>
+{% endblock %}

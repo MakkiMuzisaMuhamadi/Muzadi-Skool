@@ -1,0 +1,27 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-sliders-h"></i> Fee Settings</h3>
+</div>
+<div class="card" style="max-width:640px">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Clearance percentage</label>{{ form.clearance_percentage }}
+        <small class="text-muted">{{ form.clearance_percentage.help_text }}</small>
+        {% if form.clearance_percentage.errors %}<div class="text-danger small">{{ form.clearance_percentage.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>Bursar discount limit (UGX)</label>{{ form.waiver_approval_threshold }}
+        <small class="text-muted">{{ form.waiver_approval_threshold.help_text }}</small>
+      </div>
+      <div class="form-check mb-3">
+        {{ form.auto_apply_carry_forward_credit }}
+        <label class="form-check-label" for="{{ form.auto_apply_carry_forward_credit.id_for_label }}">{{ form.auto_apply_carry_forward_credit.help_text }}</label>
+      </div>
+      <button class="btn btn-primary">Save settings</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

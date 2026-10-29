@@ -1,0 +1,41 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <h3 class="page-title mb-0"><i class="fas {{ icon|default:'fa-edit' }}"></i> {{ title }}</h3>
+    <a href="{{ cancel_url }}" class="btn btn-light btn-sm mt-2 mt-md-0"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+  </div>
+</div>
+
+<form method="post" {% if multipart %}enctype="multipart/form-data"{% endif %} class="card" novalidate>
+  {% csrf_token %}
+  <div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    {% if form.job_title %}
+      {# Non-teaching staff: names and job first, then the shared HR sections #}
+      <div class="form-row">
+        {% include "dashboard/partials/_field.html" with field=form.first_name col="col-md-3" %}
+        {% include "dashboard/partials/_field.html" with field=form.last_name col="col-md-3" %}
+        {% include "dashboard/partials/_field.html" with field=form.job_title col="col-md-3" %}
+        {% include "dashboard/partials/_field.html" with field=form.department col="col-md-3" %}
+      </div>
+      {% include "dashboard/partials/_staff_hr_fields.html" %}
+      <div class="form-row">
+        {% include "dashboard/partials/_field.html" with field=form.profile_photo col="col-md-6" %}
+      </div>
+    {% else %}
+      <div class="form-row">
+        {% for field in form %}
+          {% include "dashboard/partials/_field.html" with field=field col="col-md-6" %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-success">{{ submit_label|default:"Save" }}</button>
+    <a href="{{ cancel_url }}" class="btn btn-light">Cancel</a>
+  </div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+    {# --------------------------- #}
+{# Specific error summary       #}
+{# --------------------------- #}
+
+{% if formset.errors or formset.non_form_errors %}
+  <div class="alert alert-danger">
+    <strong>Please fix the errors below:</strong>
+
+  </div>
+  {# Row-specific errors with student name AND hidden-field errors #}
+<div class="mt-2">
+  <div class="font-weight-bold">Row errors:</div>
+  <ul class="mb-0">
+    {% for form in formset.forms %}
+      {% if form.errors %}
+        <li class="mb-1">
+          <strong>
+            Row {{ forloop.counter }} —
+            {{ form.instance.student|default:"Student" }}
+          </strong>
+          <ul class="mb-0">
+            {# non-field errors #}
+            {% for e in form.non_field_errors %}
+              <li>{{ e }}</li>
+            {% endfor %}
+
+            {# ✅ hidden fields errors (THIS is where "student required" is) #}
+            {% for hf in form.hidden_fields %}
+              {% for e in hf.errors %}
+                <li><strong>{{ hf.name }}:</strong> {{ e }}</li>
+              {% endfor %}
+            {% endfor %}
+
+            {# visible fields errors #}
+            {% for field in form.visible_fields %}
+              {% for e in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ e }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</div>
+
+{% endif %}
+
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-edit"></i> {{ title }}</h3>
+    <small class="text-muted">
+      {{ cd.academic_year }} / {{ cd.term }} • {{ cd.class_ref }} • {{ cd.subject }}
+      {% if cd.stream %} • Stream: {{ cd.stream }}{% endif %}
+    </small>
+    <div class="mt-1"><strong>Competency:</strong> {{ cd.competency_text }}</div>
+  </div>
+  <div>
+    <a href="{% url 'competency_definition_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-body">
+
+      {{ formset.management_form }}
+
+      <div class="table-responsive">
+        <table id="studentsTable" class="table table-striped w-100">
+          <thead>
+            <tr>
+              <th style="width:60px;">#</th>
+              <th>Student</th>
+              <th>Remark (optional)</th>
+              <th style="width:200px;">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset.forms %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+            <td>
+            {% for h in form.hidden_fields %}{{ h }}{% endfor %}
+            <strong>{{ form.instance.student }}</strong>
+            </td>
+
+              <td>
+                {{ form.remark_text }}
+                {% for e in form.remark_text.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+              </td>
+              <td>
+                {{ form.score }}
+                {% for e in form.score.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+                <small class="text-danger d-none score-live-error">Score must be between 0.0 and 3.0.</small>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end">
+        <button id="saveBtn" class="btn btn-success">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+(function(){
+  // ----------------------------
+  // DataTables
+  // ----------------------------
+  function initDataTable(){
+    const table = document.getElementById("studentsTable");
+    if(!table) return;
+
+    if(!(window.jQuery && jQuery.fn && jQuery.fn.DataTable)){
+      console.warn("DataTables not loaded (missing jQuery/DataTable in base.html).");
+      return;
+    }
+    if(jQuery.fn.DataTable.isDataTable(table)) return;
+
+    jQuery(table).DataTable({
+    responsive: true,
+    paging: false,        
+    searching: true,     
+    info: false,
+    ordering: true,
+    autoWidth: false,
+    order: [[1, "asc"]],
+    columnDefs: [{ orderable: false, targets: [0] }],
+    });
+
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initDataTable);
+  }else{
+    initDataTable();
+  }
+
+  const saveBtn = document.getElementById("saveBtn");
+
+  function validateScoreInput(input){
+    const raw = (input.value || "").trim();
+    const cell = input.closest("td");
+    const err = cell ? cell.querySelector(".score-live-error") : null;
+
+    // ✅ empty is allowed now
+    if(raw === ""){
+      input.classList.remove("is-invalid");
+      if(err){ err.classList.add("d-none"); }
+      return true;
+    }
+
+    const v = Number(raw);
+    const ok = Number.isFinite(v) && v >= 0 && v <= 3;
+
+    input.classList.toggle("is-invalid", !ok);
+    if(err){
+      err.classList.toggle("d-none", ok);
+    }
+    return ok;
+  }
+
+  function validateAllScores(){
+    const inputs = document.querySelectorAll('input[name$="-score"]');
+    let ok = true;
+    inputs.forEach(i => { if(!validateScoreInput(i)) ok = false; });
+    if(saveBtn) saveBtn.disabled = !ok; // only disable if invalid values exist
+    return ok;
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && e.target.matches('input[name$="-score"]')){
+      validateScoreInput(e.target);
+      validateAllScores();
+    }
+  });
+
+  const form = document.querySelector("form");
+  if(form){
+    form.addEventListener("submit", function(e){
+      // ✅ only block if there are invalid values (NOT blanks)
+      if(!validateAllScores()){
+        e.preventDefault();
+        alert("Please fix scores: they must be between 0.0 and 3.0.");
+      }
+    });
+  }
+
+  validateAllScores();
+})();
+</script>
+
+{% endblock %}

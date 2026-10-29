@@ -1,0 +1,384 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  input[readonly] {
+    background: #f5f5f5 !important;
+    cursor: not-allowed;
+  }
+
+  .rule-helper-box {
+    background: #f8fbff;
+    border: 1px solid #d9e8ff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #315478;
+  }
+
+  .rule-helper-box strong {
+    font-weight: 700;
+  }
+</style>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h4 class="mb-1">Auto Comment Rule</h4>
+        <small class="text-muted">
+          Define Class Teacher / Head Teacher comments. UCE uses grade rules, PLE uses division rules, and UACE uses total points ranges.
+        </small>
+      </div>
+
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'report_auto_comment_list' %}">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+
+    <hr>
+
+    <form method="post" novalidate data-grades-url="{% url 'ajax_grades_for_level' %}" data-purpose="auto_comment">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="row">
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.level.label }} <span class="text-danger">*</span>
+            </label>
+
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">
+                  <i class="fas fa-layer-group"></i>
+                </span>
+              </div>
+              {{ form.level }}
+            </div>
+
+            {% for e in form.level.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.comment_for.label }} <span class="text-danger">*</span>
+            </label>
+
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">
+                  <i class="fas fa-user-edit"></i>
+                </span>
+              </div>
+              {{ form.comment_for }}
+            </div>
+
+            {% for e in form.comment_for.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-12 mb-3">
+          <div class="rule-helper-box" id="ruleHelpBox">
+            Select a level. UCE uses grade rules, PLE uses aggregate division rules, and UACE uses total points ranges.
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.grade_letter.label }} <span class="text-danger">*</span>
+            </label>
+
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">
+                  <i class="fas fa-award"></i>
+                </span>
+              </div>
+              {{ form.grade_letter }}
+            </div>
+
+            <small class="text-muted">
+              UCE: grade rule. PLE: division rule. UACE: total points range.
+            </small>
+
+            {% for e in form.grade_letter.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              Minimum Rule Value
+            </label>
+            {{ form.min_percentage }}
+            <small class="text-muted">
+              UCE: minimum percentage. PLE: minimum aggregate. UACE: minimum points.
+            </small>
+
+            {% for e in form.min_percentage.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              Maximum Rule Value
+            </label>
+            {{ form.max_percentage }}
+            <small class="text-muted">
+              UCE: maximum percentage. PLE: maximum aggregate. UACE: maximum points.
+            </small>
+
+            {% for e in form.max_percentage.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.comment_text.label }} <span class="text-danger">*</span>
+            </label>
+
+            {{ form.comment_text }}
+
+            {% for e in form.comment_text.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-group mb-0">
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label font-weight-bold ml-1" for="{{ form.is_active.id_for_label }}">
+                {{ form.is_active.label }}
+              </label>
+            </div>
+
+            {% for e in form.is_active.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      <hr>
+
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function(){
+  const form = document.querySelector('form[data-grades-url]');
+  if (!form) return;
+
+  const gradesUrl = form.getAttribute('data-grades-url');
+  const purpose = form.getAttribute('data-purpose') || 'auto_comment';
+
+  const levelSelect = form.querySelector('[data-level-select="1"]') || form.querySelector('#id_level');
+  const ruleSelect = form.querySelector('[data-grade-select="1"]') || form.querySelector('#id_grade_letter');
+
+  const minInput = form.querySelector('#id_min_percentage');
+  const maxInput = form.querySelector('#id_max_percentage');
+  const ruleHelpBox = document.querySelector('#ruleHelpBox');
+
+  const selectedRuleFromServer = ruleSelect ? ruleSelect.value : "";
+
+  function setHelp(message, type){
+    if (!ruleHelpBox) return;
+
+    ruleHelpBox.innerHTML = message;
+
+    ruleHelpBox.style.background = '#f8fbff';
+    ruleHelpBox.style.borderColor = '#d9e8ff';
+    ruleHelpBox.style.color = '#315478';
+
+    if (type === 'error') {
+      ruleHelpBox.style.background = '#fff5f5';
+      ruleHelpBox.style.borderColor = '#ffd6d6';
+      ruleHelpBox.style.color = '#9b1c1c';
+    }
+
+    if (type === 'success') {
+      ruleHelpBox.style.background = '#f3fff6';
+      ruleHelpBox.style.borderColor = '#ccefd4';
+      ruleHelpBox.style.color = '#206a35';
+    }
+  }
+
+  function setMinMax(minVal, maxVal){
+    if (minInput) minInput.value = (minVal ?? "");
+    if (maxInput) maxInput.value = (maxVal ?? "");
+  }
+
+  function resetRules(){
+    if (!ruleSelect) return;
+
+    ruleSelect.innerHTML = '';
+
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '— Select Rule —';
+    ruleSelect.appendChild(opt);
+
+    setMinMax("", "");
+  }
+
+  function fillRangeFromSelectedRule(){
+    if (!ruleSelect) return;
+
+    const opt = ruleSelect.options[ruleSelect.selectedIndex];
+
+    if (!opt || !opt.value) {
+      setMinMax("", "");
+      setHelp("Select a rule to auto-fill the minimum and maximum values.", "info");
+      return;
+    }
+
+    const minVal = opt.dataset.min || "";
+    const maxVal = opt.dataset.max || "";
+    const ruleType = opt.dataset.ruleType || "";
+    const ruleName = opt.textContent || opt.value;
+
+    setMinMax(minVal, maxVal);
+
+    let message = `Selected <strong>${ruleName}</strong>.`;
+
+    if (ruleType === "DIVISION") {
+      message += ` Aggregate range <strong>${minVal} - ${maxVal}</strong>.`;
+    } else if (ruleType === "UACE_POINTS") {
+      message += ` Points range <strong>${minVal} - ${maxVal}</strong>.`;
+    } else {
+      message += ` Percentage range <strong>${minVal} - ${maxVal}</strong>.`;
+    }
+
+    setHelp(message, "success");
+  }
+
+  async function loadRules(levelId, selectedRule){
+    resetRules();
+
+    if (!levelId) {
+      setHelp("Select a level first. UCE uses grade rules, PLE uses division rules, and UACE uses total points ranges.", "info");
+      return;
+    }
+
+    setHelp("Loading active result rules...", "info");
+
+    try {
+      const url = `${gradesUrl}?level_id=${encodeURIComponent(levelId)}&purpose=${encodeURIComponent(purpose)}`;
+
+      const res = await fetch(url, {
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      });
+
+      const data = await res.json();
+
+      if (!data || !data.ok) {
+        setHelp((data && data.message) ? data.message : "Failed to load rules.", "error");
+        return;
+      }
+
+      const rules = data.grades || [];
+
+      if (!rules.length) {
+        if (data.message) {
+          setHelp(data.message, "error");
+        } else if (data.level_code === "UACE") {
+          setHelp("No UACE point ranges were loaded. Check the AJAX view for the UACE auto_comment block.", "error");
+        } else {
+          setHelp("No active rules found for this level. Check the grading setup.", "error");
+        }
+        return;
+      }
+
+      rules.forEach(g => {
+        const opt = document.createElement('option');
+
+        opt.value = g.grade_letter;
+        opt.textContent = g.label;
+
+        opt.dataset.min = g.min;
+        opt.dataset.max = g.max;
+        opt.dataset.ruleType = g.rule_type || "";
+
+        if (selectedRule && selectedRule === g.grade_letter) {
+          opt.selected = true;
+        }
+
+        ruleSelect.appendChild(opt);
+      });
+
+      if (selectedRule) {
+        fillRangeFromSelectedRule();
+      } else {
+        if (data.level_code === "PLE") {
+          setHelp("PLE aggregate division rules loaded. Select the division rule.", "success");
+        } else if (data.level_code === "UACE") {
+          setHelp("UACE total points range rules loaded. Select the points range.", "success");
+        } else {
+          setHelp("Grade rules loaded. Select the grade rule.", "success");
+        }
+      }
+
+    } catch (err) {
+      setHelp("Something went wrong while loading rules. Check the browser console and Django terminal.", "error");
+      console.error(err);
+    }
+  }
+
+  if (levelSelect) {
+    levelSelect.addEventListener('change', function(){
+      loadRules(this.value, "");
+    });
+  }
+
+  if (ruleSelect) {
+    ruleSelect.addEventListener('change', function(){
+      fillRangeFromSelectedRule();
+    });
+  }
+
+  if (levelSelect && levelSelect.value) {
+    loadRules(levelSelect.value, selectedRuleFromServer);
+  } else {
+    resetRules();
+    setHelp("Select a level first. UCE uses grade rules, PLE uses division rules, and UACE uses total points ranges.", "info");
+  }
+})();
+</script>
+{% endblock %}

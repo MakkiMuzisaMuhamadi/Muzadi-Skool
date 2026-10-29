@@ -1,0 +1,124 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-balance-scale"></i> Teacher workload</h3>
+      <small class="text-muted">Who teaches what in {{ selected_year|default:"the selected year" }}, and which classes still need teachers.</small>
+    </div>
+    <form method="get" class="mt-2 mt-md-0">
+      <select name="year" class="form-control form-control-sm" onchange="this.form.submit()" aria-label="Academic year">
+        {% for y in years %}
+          <option value="{{ y.id }}" {% if selected_year and y.id == selected_year.id %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+{% if needs_replacement %}
+  <div class="card border-danger mb-3">
+    <div class="card-body">
+      <h5 class="text-danger mb-2"><i class="fas fa-user-slash mr-1"></i> Classes held by teachers who are not working</h5>
+      <p class="text-muted small mb-2">These teachers have left or are suspended. Give the classes to someone else.</p>
+      <ul class="mb-0">
+        {% for a in needs_replacement %}
+          <li>
+            {{ a.class_ref }}{% if a.stream %} {{ a.stream.name }}{% endif %}: {{ a.subject.name }},
+            held by {{ a.teacher }} ({{ a.teacher.get_status_display|lower }}).
+            <a href="{% url 'teacher_allocation_edit' a.id %}">Reassign</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="mb-1">Teachers</h5>
+    <p class="small text-muted">
+      {% if has_timetable %}
+        Periods per week come from the active timetable. Flagged above {{ max_periods }} or below {{ min_periods }} periods.
+      {% else %}
+        No active timetable for this year yet, so periods per week are not shown.
+      {% endif %}
+    </p>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover" id="workloadTable">
+        <thead>
+          <tr>
+            <th>Teacher</th>
+            <th class="text-center">Allocations</th>
+            <th class="text-center">Classes</th>
+            <th class="text-center">Subjects</th>
+            {% if has_timetable %}<th class="text-center">Periods / week</th>{% endif %}
+            <th>Class teacher of</th>
+            <th>Load</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in teachers %}
+            <tr>
+              <td><a href="{% url 'teacher_detail' row.teacher.id %}">{{ row.teacher.display_name }}</a></td>
+              <td class="text-center">{{ row.allocations }}</td>
+              <td class="text-center">{{ row.classes }}</td>
+              <td class="text-center">{{ row.subjects }}</td>
+              {% if has_timetable %}<td class="text-center">{{ row.periods }}</td>{% endif %}
+              <td>{{ row.class_teacher_of|join:", "|default:"—" }}</td>
+              <td>
+                {% if row.flag == "none" %}<span class="badge badge-secondary">No classes</span>
+                {% elif row.flag == "over" %}<span class="badge badge-danger">Overloaded</span>
+                {% elif row.flag == "under" %}<span class="badge badge-warning">Light load</span>
+                {% else %}<span class="badge badge-success">OK</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-1">Subjects without a teacher</h5>
+    <p class="small text-muted">
+      Every subject of the class's level that nobody is allocated to. Optional subjects are listed separately
+      because not every class offers them.
+    </p>
+    {% if gaps %}
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead><tr><th>Class</th><th>Compulsory subjects</th><th>Optional subjects</th></tr></thead>
+          <tbody>
+            {% for g in gaps %}
+              <tr>
+                <td class="text-nowrap">{{ g.class_ref.name }}{% if g.stream %} {{ g.stream.name }}{% endif %}</td>
+                <td>
+                  {% for s in g.compulsory %}
+                    <a href="{% url 'teacher_allocation_create' %}" class="badge badge-danger mr-1">{{ s.name }}</a>
+                  {% empty %}<span class="text-muted">—</span>{% endfor %}
+                </td>
+                <td>
+                  {% for s in g.optional %}<span class="badge badge-light border mr-1">{{ s.name }}</span>{% empty %}<span class="text-muted">—</span>{% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-success mb-0">Every subject in every class has a teacher.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $("#workloadTable").DataTable({ pageLength: 50, order: [[0, "asc"]], language: { search: "", searchPlaceholder: "Search teachers..." } });
+</script>
+{% endblock %}

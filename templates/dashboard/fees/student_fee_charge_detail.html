@@ -1,0 +1,140 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-receipt"></i> Charge Detail</h3>
+    <small class="text-muted">Payments made against this fee, and any discount, waiver or surcharge</small>
+  </div>
+  <a href="{% url 'student_fee_statement' charge.student.id %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back to statement
+  </a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-4"><strong>Student:</strong> {{ charge.student.admission_number }} - {{ charge.student.name|default:charge.student }}</div>
+      <div class="col-md-4"><strong>Fee:</strong> {{ charge.fee_category.name }}</div>
+      <div class="col-md-4"><strong>Year / Term:</strong> {{ charge.academic_year.year }} / {{ charge.term.name }}</div>
+      <div class="col-md-3 mt-2"><strong>Amount:</strong> UGX {{ charge.amount|intcomma }}</div>
+      <div class="col-md-3 mt-2"><strong>Waived/discount:</strong> UGX {{ charge.waiver_amount|intcomma }}</div>
+      <div class="col-md-3 mt-2"><strong>Surcharge:</strong> UGX {{ charge.surcharge_amount|intcomma }}</div>
+      <div class="col-md-3 mt-2"><strong>Net:</strong> UGX {{ charge.net_amount|intcomma }}</div>
+      <div class="col-md-3 mt-2"><strong>Paid:</strong> UGX {{ charge.amount_paid|intcomma }}</div>
+      <div class="col-md-3 mt-2"><strong>Balance:</strong> <span class="{% if charge.balance > 0 %}text-danger{% endif %}">UGX {{ charge.balance|intcomma }}</span></div>
+      <div class="col-md-3 mt-2"><strong>Status:</strong> {{ charge.get_status_display }}</div>
+      <div class="col-md-3 mt-2"><strong>Source:</strong> {{ charge.get_source_type_display }}</div>
+      <div class="col-md-12 mt-3"><strong>Description:</strong> <span class="text-muted">{{ charge.description|default:"-" }}</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Paid by</strong></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead class="thead-light"><tr><th>Date</th><th>Receipt / source</th><th class="text-right">Amount</th></tr></thead>
+            <tbody>
+              {% for alloc in allocations %}
+              <tr class="{% if alloc.payment.is_reversed %}text-muted{% endif %}">
+                <td>{{ alloc.payment.payment_date }}</td>
+                <td>{{ alloc.payment.receipt_no }} ({{ alloc.payment.get_payment_method_display }})
+                  {% if alloc.payment.is_reversed %}<span class="badge badge-danger">Reversed</span>{% endif %}</td>
+                <td class="text-right">UGX {{ alloc.allocated_amount|intcomma }}</td>
+              </tr>
+              {% endfor %}
+              {% for app in credit_applications %}
+              <tr class="{% if app.is_reversed %}text-muted{% endif %}">
+                <td>{{ app.created_at|date:"Y-m-d" }}</td>
+                <td>Credit carried forward{% if app.is_reversed %} <span class="badge badge-danger">Reversed</span>{% endif %}</td>
+                <td class="text-right">UGX {{ app.amount|intcomma }}</td>
+              </tr>
+              {% endfor %}
+              {% if not allocations and not credit_applications %}
+              <tr><td colspan="3" class="text-center text-muted">Nothing paid yet.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>Discounts, waivers and surcharges</strong></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead class="thead-light"><tr><th>Date</th><th>Type</th><th class="text-right">Amount</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {% for adj in adjustments %}
+              <tr>
+                <td>{{ adj.created_at|date:"Y-m-d" }}<small class="d-block text-muted">{{ adj.created_by.username|default:"" }}</small></td>
+                <td>{{ adj.get_adjustment_type_display }}</td>
+                <td class="text-right">UGX {{ adj.amount|intcomma }}</td>
+                <td>{{ adj.reason|default:"-" }}{% if adj.decision_note %}<small class="d-block text-muted">Note: {{ adj.decision_note }}</small>{% endif %}{% if adj.reversal_reason %}<small class="d-block text-danger">Reversed: {{ adj.reversal_reason }}</small>{% endif %}</td>
+                <td>
+                  {% if adj.status == "APPROVED" %}<span class="badge badge-success">Applied</span>
+                  {% elif adj.status == "PENDING" %}<span class="badge badge-warning">Waiting for approval</span>
+                  {% elif adj.status == "REJECTED" %}<span class="badge badge-secondary">Rejected</span>
+                  {% else %}<span class="badge badge-danger">Reversed</span>{% endif %}
+                </td>
+                <td class="text-nowrap">
+                  {% if can_admin and adj.status == "PENDING" %}
+                    <form method="post" action="{% url 'fee_adjustment_decide' adj.id %}" class="d-inline">
+                      {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+                      <button name="decision" value="approve" class="btn btn-sm btn-success">Approve</button>
+                      <button name="decision" value="reject" class="btn btn-sm btn-outline-secondary">Reject</button>
+                    </form>
+                  {% elif can_admin and adj.status == "APPROVED" %}
+                    <form method="post" action="{% url 'fee_adjustment_reverse' adj.id %}" class="form-inline"
+                          onsubmit="return confirm('Undo this adjustment?');">
+                      {% csrf_token %}
+                      <input type="text" name="reason" class="form-control form-control-sm mr-1" placeholder="Reason" required>
+                      <button class="btn btn-sm btn-outline-danger">Undo</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted">No adjustments.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><strong>Add discount, waiver or surcharge</strong></div>
+      <div class="card-body">
+        {% if adjustment_form.non_field_errors %}<div class="alert alert-danger">{{ adjustment_form.non_field_errors|join:" " }}</div>{% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>Type</label>{{ adjustment_form.adjustment_type }}
+            {% if adjustment_form.adjustment_type.errors %}<div class="text-danger small">{{ adjustment_form.adjustment_type.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Amount</label>{{ adjustment_form.amount }}
+            <small class="text-muted">A discount or waiver can be at most the unpaid balance (UGX {{ charge.balance|intcomma }}).</small>
+            {% if adjustment_form.amount.errors %}<div class="text-danger small">{{ adjustment_form.amount.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Reason</label>{{ adjustment_form.reason }}
+            {% if adjustment_form.reason.errors %}<div class="text-danger small">{{ adjustment_form.reason.errors|join:" " }}</div>{% endif %}
+          </div>
+          <button class="btn btn-primary">{% if can_admin %}Apply{% else %}Send for approval{% endif %}</button>
+          {% if not can_admin %}<small class="d-block text-muted mt-2">Discounts and waivers above the school's limit wait for an admin to approve them.</small>{% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

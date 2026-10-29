@@ -1,0 +1,413 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zimak - Verify Email</title>
+
+    <link rel="stylesheet" href="{% static 'vendors/iconfonts/font-awesome/css/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendors/css/vendor.bundle.base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body {
+            background: #f4f7ff;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        .verify-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verify-card {
+            width: 100%;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 18px;
+            padding: 40px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.07);
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .app-logo {
+            height: 70px;
+            margin-bottom: 15px;
+        }
+
+        .title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .email-info {
+            background: #e8f4ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #4f6cff;
+        }
+
+        .email-info h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .email-address {
+            font-weight: 600;
+            color: #4f6cff;
+            font-size: 1.05rem;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            height: 55px;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 8px;
+            font-weight: 600;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #4f6cff;
+            box-shadow: 0 0 0 3px rgba(79, 108, 255, 0.1);
+        }
+
+        .code-input {
+            font-size: 1.4rem !important;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .btn-verify {
+            width: 100%;
+            margin-top: 10px;
+            height: 50px;
+            border-radius: 10px;
+            background: #4f6cff;
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-verify:hover {
+            background: #3d54d1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 108, 255, 0.3);
+        }
+
+        .resend-section {
+            text-align: center;
+            margin: 25px 0;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-resend {
+            background: transparent;
+            border: 2px solid #4f6cff;
+            color: #4f6cff;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-resend:hover {
+            background: #4f6cff;
+            color: white;
+        }
+
+        .support-info {
+            background: #fff9e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            border: 1px solid #ffeaa7;
+        }
+
+        .support-info h5 {
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .support-info p {
+            color: #856404;
+            font-size: 0.85rem;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .logout-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .logout-link a {
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .logout-link a:hover {
+            color: #4f6cff;
+            text-decoration: underline;
+        }
+
+        .timer {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 0.9rem;
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        .verification-icon {
+            text-align: center;
+            font-size: 4rem;
+            color: #4f6cff;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 576px) {
+            .verify-card {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .form-control {
+                height: 50px;
+                font-size: 1.1rem;
+                letter-spacing: 6px;
+            }
+            
+            .code-input {
+                font-size: 1.2rem !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="verify-wrapper">
+    <div class="verify-card">
+
+        <!-- Logo -->
+        <div class="text-center">
+            <img src="{% static 'images/logo.png' %}" class="app-logo">
+        </div>
+
+        <!-- Header -->
+        <div class="verification-icon">
+            <i class="fas fa-envelope-circle-check"></i>
+        </div>
+        
+        <h2 class="title">Verify Your Email</h2>
+        <p class="subtitle">Enter the 6-digit verification code sent to your email address</p>
+
+        <!-- Email Information -->
+        <div class="email-info">
+            <h4><i class="fas fa-envelope me-2"></i>Verification Required</h4>
+            <p>We've sent a verification code to:<br>
+            <span class="email-address">{{ masked_email }}</span></p>
+        </div>
+
+        <!-- Django Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="fas 
+                        {% if message.tags == 'success' %}fa-check-circle
+                        {% elif message.tags == 'error' %}fa-exclamation-circle
+                        {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                        {% else %}fa-info-circle{% endif %} me-2">
+                    </i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- VERIFICATION FORM -->
+        <form method="POST" action="{% url 'verify_email' %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <input type="text" 
+                       name="verification_code" 
+                       class="form-control code-input"
+                       placeholder="000000" 
+                       maxlength="6"
+                       pattern="[0-9]{6}"
+                       title="Please enter exactly 6 digits"
+                       required
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,6)">
+            </div>
+
+            {% if attempts_left < max_attempts %}
+            <p class="text-muted" style="margin-top:8px;font-size:13px;">
+                <i class="fas fa-shield-alt me-1"></i>
+                {{ attempts_left }} of {{ max_attempts }} attempts left for this code.
+            </p>
+            {% endif %}
+
+            <button type="submit" class="btn-verify">
+                <i class="fas fa-check-circle me-2"></i>
+                Verify Email Address
+            </button>
+        </form>
+
+        <!-- Resend Code Section -->
+        <div class="resend-section">
+            <p class="text-muted mb-3">Didn't receive the code?</p>
+            <form method="POST" action="{% url 'verify_email' %}">
+                {% csrf_token %}
+                <button type="submit" name="resend_code" class="btn-resend">
+                    <i class="fas fa-redo me-2"></i>Resend Verification Code
+                </button>
+            </form>
+            
+            <!-- Timer Display -->
+            <div class="timer" id="timer">
+                Code expires in: <span id="countdown">30:00</span>
+            </div>
+        </div>
+
+        <!-- Support Information -->
+        <div class="support-info">
+            <h5><i class="fas fa-question-circle me-2"></i>Need Help?</h5>
+            <p>Check your spam folder or contact system administrator if you're having trouble receiving the code.</p>
+        </div>
+
+        <!-- Logout Link -->
+        <div class="logout-link">
+            <a href="{% url 'logout' %}">
+                <i class="fas fa-sign-out-alt me-1"></i>Logout
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<!-- Countdown Timer Script -->
+<script>
+    // Seconds left on the real code, calculated by the server, so refreshing
+    // the page shows the true remaining time instead of restarting at 30:00.
+    let timeLeft = {{ code_seconds_left|default:0 }};
+    
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        
+        // Format the time as MM:SS
+        const formattedTime = 
+            minutes.toString().padStart(2, '0') + ':' + 
+            seconds.toString().padStart(2, '0');
+        
+        document.getElementById('countdown').textContent = formattedTime;
+        
+        // Change color when less than 5 minutes
+        if (timeLeft < 300) { // 5 minutes
+            document.getElementById('countdown').style.color = '#e74c3c';
+        }
+        
+        // Stop the timer when it reaches 0
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('countdown').textContent = 'Expired!';
+            document.getElementById('countdown').style.color = '#e74c3c';
+        } else {
+            timeLeft--;
+        }
+    }
+    
+    // Update the timer every second
+    const timerInterval = setInterval(updateTimer, 1000);
+    
+    // Input formatting and validation
+    document.querySelector('input[name="verification_code"]').addEventListener('input', function(e) {
+        // Remove any non-digit characters
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Limit to 6 characters
+        if (this.value.length > 6) {
+            this.value = this.value.slice(0, 6);
+        }
+        
+        // Auto-format with spaces (optional)
+        // if (this.value.length > 3) {
+        //     this.value = this.value.replace(/(\d{3})(\d{3})/, '$1 $2');
+        // }
+    });
+    
+    // Focus on input when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('input[name="verification_code"]').focus();
+    });
+</script>
+
+</body>
+</html>

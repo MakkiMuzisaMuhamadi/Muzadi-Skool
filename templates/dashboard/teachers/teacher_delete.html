@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-user-times"></i> Delete {{ teacher.display_name }}</h3>
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    {% if history %}
+      <div class="card border-warning">
+        <div class="card-body">
+          <h5 class="mb-2">This teacher cannot be deleted</h5>
+          <p class="text-muted">
+            They have records in the system. Deleting them would remove who entered marks, set exams
+            or wrote comments, and could break report cards. Mark them as having left instead: their
+            login is disabled and every record stays.
+          </p>
+          <ul class="mb-3">
+            {% for label, count in history %}
+              <li>{{ label }}: {{ count }}</li>
+            {% endfor %}
+          </ul>
+
+          <form method="post" action="{% url 'teacher_change_status' teacher.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="LEFT">
+            <div class="form-row">
+              {% include "dashboard/partials/_field.html" with field=status_form.date_left col="col-md-5" %}
+              {% include "dashboard/partials/_field.html" with field=status_form.leaving_reason col="col-md-7" %}
+            </div>
+            <button type="submit" class="btn btn-warning">Mark as left</button>
+            <a href="{% url 'teacher_detail' teacher.id %}" class="btn btn-light">Cancel</a>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <div class="card border-danger">
+        <div class="card-body">
+          <h5 class="mb-2">Delete permanently?</h5>
+          <p class="text-muted">
+            {{ teacher }} has no marks, exams or other records, so the teacher record and the login
+            <strong>{{ teacher.user.username }}</strong> can be removed. Use this only for a teacher added by mistake.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete teacher</button>
+            <a href="{% url 'teacher_detail' teacher.id %}" class="btn btn-light">Cancel</a>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

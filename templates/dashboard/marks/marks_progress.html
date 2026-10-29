@@ -1,0 +1,220 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-tasks"></i> Marks Progress &amp; Approval</h3>
+    <small class="text-muted">See which mark lists are complete, set deadlines, and approve submitted marks.</small>
+  </div>
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    <a href="{% url 'marksheet_control_list' %}" class="btn btn-light btn-sm"><i class="fas fa-lock mr-1"></i> Marksheet Control</a>
+    <a href="{% url 'marks_change_log' %}" class="btn btn-light btn-sm"><i class="fas fa-history mr-1"></i> Change History</a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" id="progressFilter" class="form-row align-items-end">
+      <div class="form-group col-md-2">
+        <label class="small mb-1">Academic Year</label>
+        <select name="academic_year" class="form-control form-control-sm auto-submit">
+          {% for y in f.years %}<option value="{{ y.id }}" {% if f.year and y.id == f.year.id %}selected{% endif %}>{{ y.year }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="small mb-1">Term</label>
+        <select name="term" class="form-control form-control-sm auto-submit">
+          {% for t in f.terms %}<option value="{{ t.id }}" {% if f.term and t.id == f.term.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="small mb-1">Class</label>
+        <select name="class_ref" class="form-control form-control-sm auto-submit">
+          <option value="">All classes</option>
+          {% for c in f.classes %}<option value="{{ c.id }}" {% if f.class_ref and c.id == f.class_ref.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label class="small mb-1">Exam Type</label>
+        <select name="exam_type" class="form-control form-control-sm auto-submit">
+          <option value="">All exam types</option>
+          {% for et in f.exam_types %}<option value="{{ et.id }}" {% if f.exam_type and et.id == f.exam_type.id %}selected{% endif %}>{{ et.scheme.level.code }} • {{ et.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label class="small mb-1">Status</label>
+        <select name="status" class="form-control form-control-sm auto-submit">
+          <option value="">Any status</option>
+          <option value="DRAFT" {% if f.status == "DRAFT" %}selected{% endif %}>Draft</option>
+          <option value="SUBMITTED" {% if f.status == "SUBMITTED" %}selected{% endif %}>Waiting for approval</option>
+          <option value="RETURNED" {% if f.status == "RETURNED" %}selected{% endif %}>Returned for correction</option>
+          <option value="APPROVED" {% if f.status == "APPROVED" %}selected{% endif %}>Approved</option>
+          <option value="OVERDUE" {% if f.status == "OVERDUE" %}selected{% endif %}>Past deadline (not approved)</option>
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if not f.term %}
+  <div class="alert alert-info">Create an academic year and term first.</div>
+{% else %}
+
+<div class="row mb-3">
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Mark lists</div><div class="h4 mb-0">{{ totals.lists }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Fully entered</div><div class="h4 mb-0 text-success">{{ totals.complete }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Waiting for approval</div><div class="h4 mb-0 text-info">{{ totals.submitted }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Approved</div><div class="h4 mb-0">{{ totals.approved }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Past deadline</div><div class="h4 mb-0 {% if totals.overdue %}text-danger{% endif %}">{{ totals.overdue }}</div></div></div></div>
+</div>
+
+{% if f.exam_types %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="post" action="{% url 'marks_generate_windows' %}" class="form-row align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <div class="col-12 mb-2 small text-muted">
+        Prepare mark lists in advance from teacher allocations, so you can track progress and set a deadline before teachers start.
+      </div>
+      <div class="form-group col-md-4 mb-0">
+        <label class="small mb-1">Exam Type</label>
+        <select name="exam_type" class="form-control form-control-sm" required>
+          {% for et in f.exam_types %}<option value="{{ et.id }}" {% if f.exam_type and et.id == f.exam_type.id %}selected{% endif %}>{{ et.scheme.level.code }} • {{ et.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-4 mb-0">
+        <label class="small mb-1">Deadline (optional)</label>
+        <input type="datetime-local" name="deadline" class="form-control form-control-sm">
+      </div>
+      <div class="form-group col-md-4 mb-0">
+        <button class="btn btn-outline-primary btn-sm btn-block"><i class="fas fa-magic mr-1"></i> Prepare lists</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'marks_progress_bulk' %}" id="bulkForm">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+  <div class="card mb-3">
+    <div class="card-header d-flex flex-wrap align-items-center" style="gap:.5rem;">
+      <strong class="mr-2">With ticked lists:</strong>
+      <button name="action" value="approve" class="btn btn-success btn-sm" data-confirm="Approve and lock the ticked lists?"><i class="fas fa-check mr-1"></i> Approve</button>
+      <button name="action" value="close" class="btn btn-danger btn-sm"><i class="fas fa-lock mr-1"></i> Close</button>
+      <button name="action" value="reopen" class="btn btn-warning btn-sm"><i class="fas fa-lock-open mr-1"></i> Reopen</button>
+      <span class="ml-md-3 d-flex align-items-center" style="gap:.4rem;">
+        <input type="datetime-local" name="deadline" class="form-control form-control-sm" style="width:auto;">
+        <button name="action" value="deadline" class="btn btn-outline-secondary btn-sm">Set deadline</button>
+        <button name="action" value="clear_deadline" class="btn btn-link btn-sm">Remove deadline</button>
+      </span>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th style="width:32px;"><input type="checkbox" id="checkAll" aria-label="Tick all"></th>
+              <th>Class / Stream</th>
+              <th>Exam</th>
+              <th>Subject / Paper</th>
+              <th>Teacher(s)</th>
+              <th style="min-width:160px;">Entered</th>
+              <th>Status</th>
+              <th>Deadline</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for w in windows %}
+            <tr>
+              <td><input type="checkbox" name="window_ids" value="{{ w.id }}" class="row-check" aria-label="Tick"></td>
+              <td>{{ w.marksheet.class_ref.name }}{% if w.marksheet.stream %} <span class="text-muted">({{ w.marksheet.stream.name }})</span>{% endif %}</td>
+              <td>{{ w.marksheet.exam_type.code }}</td>
+              <td>{{ w.target_label }}</td>
+              <td class="small">{% if w.teachers %}{{ w.teachers|join:", " }}{% else %}<span class="text-danger">Not allocated</span>{% endif %}</td>
+              <td>
+                <div class="progress" style="height:8px;" title="{{ w.entered_count }} of {{ w.total_students }}">
+                  <div class="progress-bar {% if w.percent >= 100 %}bg-success{% elif w.percent >= 50 %}bg-info{% else %}bg-warning{% endif %}" style="width: {{ w.percent }}%;"></div>
+                </div>
+                <div class="small text-muted">{{ w.entered_count }}/{{ w.total_students }}{% if w.absent_count %} • {{ w.absent_count }} absent{% endif %}{% if w.missing_count %} • <span class="text-danger">{{ w.missing_count }} missing</span>{% endif %}</div>
+              </td>
+              <td>
+                {% if w.submission_status == "APPROVED" %}<span class="badge badge-success">Approved</span>
+                {% elif w.submission_status == "SUBMITTED" %}<span class="badge badge-info">Waiting</span>
+                {% elif w.submission_status == "RETURNED" %}<span class="badge badge-warning">Returned</span>
+                {% else %}<span class="badge badge-secondary">Draft</span>{% endif %}
+                {% if w.is_locked and w.submission_status != "APPROVED" %}<span class="badge badge-danger">Closed</span>{% endif %}
+              </td>
+              <td class="small {% if w.is_past_deadline and w.submission_status != 'APPROVED' %}text-danger font-weight-bold{% endif %}">
+                {% if w.deadline %}{{ w.deadline|date:"d M, H:i" }}{% else %}—{% endif %}
+              </td>
+              <td><a href="{% url 'marks_window_review' w.id %}" class="btn btn-outline-primary btn-sm">Review</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted py-4">
+              No mark lists yet for this selection. Lists appear when teachers open Enter Marks, or use “Prepare lists” above.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if f.class_ref %}
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Students with incomplete marks — {{ f.class_ref.name }}</strong><br>
+    <small class="text-muted">These students have some exams entered for a subject but are missing others, so their totals would come out low.</small>
+  </div>
+  <div class="card-body p-0">
+    {% if incomplete %}
+    <table class="table table-sm mb-0">
+      <thead class="thead-light"><tr><th>Student</th><th>Stream</th><th>What is missing</th></tr></thead>
+      <tbody>
+        {% for row in incomplete %}
+        <tr>
+          <td>{{ row.student.last_name }} {{ row.student.first_name }}<div class="small text-muted">{{ row.student.candidate_id }}</div></td>
+          <td>{{ row.student.stream.name|default:"—" }}</td>
+          <td class="small">{% for item in row.items %}<div>{{ item }}</div>{% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="p-3 text-success"><i class="fas fa-check-circle mr-1"></i> No incomplete students found.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+<script>
+(function () {
+  document.querySelectorAll("#progressFilter .auto-submit").forEach(el => {
+    el.addEventListener("change", () => {
+      if (el.name === "academic_year") {
+        const t = document.querySelector("#progressFilter [name=term]");
+        if (t) t.value = "";
+      }
+      document.getElementById("progressFilter").submit();
+    });
+  });
+
+  const all = document.getElementById("checkAll");
+  if (all) all.addEventListener("change", () => {
+    document.querySelectorAll(".row-check").forEach(c => { c.checked = all.checked; });
+  });
+
+  document.querySelectorAll("#bulkForm [data-confirm]").forEach(btn => {
+    btn.addEventListener("click", e => { if (!confirm(btn.dataset.confirm)) e.preventDefault(); });
+  });
+})();
+</script>
+{% endblock %}

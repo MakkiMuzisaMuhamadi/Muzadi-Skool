@@ -1,0 +1,145 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title">
+                        {{ entrant.get_full_name|default:entrant.username }} - Daily Report - {{ target_date }}
+                    </h4>
+                    <div>
+                        <a href="{% url 'entrant_full_report' entrant.id %}" class="btn btn-info btn-sm">
+                            View Full Report
+                        </a>
+                        <a href="{% url 'all_entrants_today' %}" class="btn btn-success btn-sm">
+                            Back to Today's View
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ session.total_entries }}</h3>
+                                <p class="mb-0">Total Entries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>UGX {{ total_amount|floatformat:0 }}</h3>
+                                <p class="mb-0">Amount Earned</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ current_rate }}</h3>
+                                <p class="mb-0">Rate per Entry</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card {% if session.is_active %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                            <div class="card-body text-center">
+                                <h3>{% if session.is_active %}Active{% else %}Ended{% endif %}</h3>
+                                <p class="mb-0">Session Status</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Breakdown -->
+                {% if subject_breakdown %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>Subject Breakdown</h5>
+                        <div class="d-flex flex-wrap">
+                            {% for subject in subject_breakdown %}
+                            <div class="mr-3 mb-2">
+                                <span class="badge badge-primary">{{ subject.paper__subject__short_name }}</span>
+                                <small class="text-muted">({{ subject.count }} entries)</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Mark Entries Table -->
+                <h5>All Mark Entries ({{ mark_entries.count }} total)</h5>
+                <div class="table-responsive">
+                    <table id="entriesTable" class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>School</th>
+                                <th>Level</th>
+                                <th>Subject</th>
+                                <th>Paper</th>
+                                <th>Candidate</th>
+                                <th>Marks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in mark_entries %}
+                            <tr>
+                                <td>{{ entry.entered_at|time:"H:i:s" }}</td>
+                                <td>{{ entry.school.name }}</td>
+                                <td>{{ entry.level.name }}</td>
+                                <td>
+                                    <strong>{{ entry.paper.subject.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ entry.paper.subject.short_name }}</small>
+                                </td>
+                                <td>
+                                    {{ entry.paper.paper_name }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.paper.paper_code }}</small>
+                                </td>
+                                <td>
+                                    {{ entry.candidate.name }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.candidate.candidate_id }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <strong>{{ entry.marks_entered }}</strong>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    No mark entries found for this day
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#entriesTable').DataTable({
+        "pageLength": 50,
+        "order": [[0, 'desc']],
+        "responsive": true
+    });
+});
+</script>
+{% endblock %}
+
+

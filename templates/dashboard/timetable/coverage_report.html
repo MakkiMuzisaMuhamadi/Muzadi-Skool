@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4">
+  <h3 class="page-title mb-1"><i class="fas fa-tasks mr-2 text-primary"></i> Curriculum Coverage</h3>
+  <small class="text-muted">Lessons placed vs lessons needed per week (from "Lessons per Week").</small>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="form-row">
+    <div class="col-md-6 mb-2">
+      <select name="timetable" class="form-control">
+        {% for tt in timetables %}<option value="{{ tt.pk }}" {% if timetable and timetable.pk == tt.pk %}selected{% endif %}>{{ tt.display_name }} ({{ tt.get_status_display }})</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 mb-2">
+      <select name="show" class="form-control">
+        <option value="all" {% if show == "all" %}selected{% endif %}>All subjects</option>
+        <option value="problems" {% if show == "problems" %}selected{% endif %}>Only short / over</option>
+      </select>
+    </div>
+    <div class="col-md-2 mb-2"><button class="btn btn-primary w-100">Show</button></div>
+  </form>
+</div></div>
+
+{% if not has_loads %}
+  <div class="alert alert-info">No lesson requirements yet. <a class="alert-link" href="{% url 'timetable_setup_list' 'subject_load' %}">Set lessons per week</a> for each class and subject.</div>
+{% elif timetable %}
+<div class="row mb-3">
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Coverage</div><div class="h4 mb-0">{{ totals.percent }}%</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Placed / needed</div><div class="h4 mb-0">{{ totals.placed }} / {{ totals.required }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Short</div><div class="h4 mb-0 text-danger">{{ totals.short }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Over</div><div class="h4 mb-0 text-warning">{{ totals.over }}</div></div></div></div>
+</div>
+<div class="card"><div class="card-body table-responsive p-0">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Class</th><th>Stream / Group</th><th>Subject</th><th>Placed</th><th>Needed</th><th>Doubles</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.class_ref }}</td><td>{{ r.target }}</td><td>{{ r.subject }}</td>
+        <td>{{ r.placed }}</td><td>{{ r.required }}</td>
+        <td>{{ r.doubles_placed }} / {{ r.doubles_required }}</td>
+        <td>
+          {% if r.status == "ok" %}<span class="badge badge-success">OK</span>
+          {% elif r.status == "short" %}<span class="badge badge-danger">{{ r.missing }} missing</span>
+          {% else %}<span class="badge badge-warning">Too many</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted">Nothing to show.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endif %}
+{% endblock %}

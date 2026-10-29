@@ -1,0 +1,450 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<style>
+  .section-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .help-box {
+    background: #f8fbff;
+    border: 1px solid #d9e8ff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #315478;
+  }
+
+  .form-check-input {
+    margin-left: 0;
+    position: relative;
+  }
+
+  .deleted-row {
+    opacity: .45;
+    text-decoration: line-through;
+  }
+
+  /* Better grading table input widths */
+  #gradeTable {
+    min-width: 1150px;
+    table-layout: fixed;
+  }
+
+  #gradeTable th,
+  #gradeTable td {
+    vertical-align: middle;
+  }
+
+  #gradeTable input[type="text"],
+  #gradeTable input[type="number"],
+  #gradeTable select {
+    width: 100% !important;
+    min-width: 100%;
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  #gradeTable .grade-col {
+    width: 140px;
+  }
+
+  #gradeTable .name-col {
+    width: 190px;
+  }
+
+  #gradeTable .score-col {
+    width: 170px;
+  }
+
+  #gradeTable .points-col {
+    width: 140px;
+  }
+
+  #gradeTable .descriptor-col {
+    width: 280px;
+  }
+
+  #gradeTable .pass-col {
+    width: 90px;
+  }
+
+  #gradeTable .delete-col {
+    width: 90px;
+  }
+
+  /* Better subject table too */
+  #subjectTable {
+    min-width: 1050px;
+    table-layout: fixed;
+  }
+
+  #subjectTable input[type="text"],
+  #subjectTable input[type="number"],
+  #subjectTable select {
+    width: 100% !important;
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+</style>
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-graduation-cap"></i> {{ title }}
+    </h3>
+    <small class="text-muted">
+      Configure New UACE grade bands and subject categories.
+    </small>
+  </div>
+
+  <div>
+    <a href="{% url back_url %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>New UACE Grading Scale Details</strong>
+    </div>
+
+    <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger">{{ form.errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>Name <span class="text-danger">*</span></label>
+          {{ form.name }}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label>Principal Subjects</label>
+          {{ form.required_principal_subjects }}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label>Subsidiary Subjects</label>
+          {{ form.required_subsidiary_subjects }}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label>Max Total Points</label>
+          {{ form.max_total_points }}
+        </div>
+
+        <div class="form-group col-md-2 d-flex align-items-end">
+          <div>
+            <div class="form-check mb-2">
+              {{ form.require_general_paper }}
+              <label class="form-check-label ml-1" for="{{ form.require_general_paper.id_for_label }}">
+                Require GP
+              </label>
+            </div>
+
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label ml-1" for="{{ form.is_active.id_for_label }}">
+                Active
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="help-box mt-2">
+        <strong>New UACE setup:</strong>
+        create grade bands, then manage how UACE subjects are categorized.
+        When you save a new scale, all UACE subjects are automatically seeded as <strong>Principal</strong>.
+        You can later change any subject category below.
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>New UACE Grade Bands</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" data-add-row="grade">
+        <i class="fas fa-plus mr-1"></i> Add Grade Band
+      </button>
+    </div>
+
+    <div class="card-body">
+      {% if grade_formset.non_form_errors %}
+        <div class="alert alert-danger">{{ grade_formset.non_form_errors }}</div>
+      {% endif %}
+
+      {{ grade_formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped" id="gradeTable">
+<thead>
+  <tr>
+    <th class="grade-col">Grade</th>
+    <th class="name-col">Name</th>
+    <th class="score-col">Min Score</th>
+    <th class="score-col">Max Score</th>
+    <th class="points-col">Points</th>
+    <th class="descriptor-col">Descriptor</th>
+    <th class="pass-col">Pass</th>
+    <th class="delete-col">Del</th>
+  </tr>
+</thead>
+
+          <tbody id="gradeTbody">
+            {% for f in grade_formset %}
+              <tr class="grade-row">
+                <td>{{ f.grade_code }} {{ f.id }}</td>
+                <td>{{ f.grade_name }}</td>
+                <td>{{ f.min_score }}</td>
+                <td>{{ f.max_score }}</td>
+                <td>{{ f.points }}</td>
+                <td>{{ f.descriptor }}</td>
+                <td class="text-center">{{ f.is_pass }}</td>
+                <td class="text-center">
+                  {% if f.instance.pk %}
+                    {{ f.DELETE }}
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-danger removeRowBtn">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+
+              {% if f.errors %}
+                <tr>
+                  <td colspan="8">
+                    <div class="alert alert-danger mb-0">{{ f.errors }}</div>
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <small class="text-muted">
+        Example: A = 80–100, B = 70–79, C = 60–69. Ranges must not overlap.
+      </small>
+
+      <template id="gradeEmptyForm">
+        <tr class="grade-row">
+          <td>{{ grade_formset.empty_form.grade_code }} {{ grade_formset.empty_form.id }}</td>
+          <td>{{ grade_formset.empty_form.grade_name }}</td>
+          <td>{{ grade_formset.empty_form.min_score }}</td>
+          <td>{{ grade_formset.empty_form.max_score }}</td>
+          <td>{{ grade_formset.empty_form.points }}</td>
+          <td>{{ grade_formset.empty_form.descriptor }}</td>
+          <td class="text-center">{{ grade_formset.empty_form.is_pass }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger removeRowBtn">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>New UACE Subject Configurations</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" data-add-row="subject">
+        <i class="fas fa-plus mr-1"></i> Add Subject
+      </button>
+    </div>
+
+    <div class="card-body">
+      {% if subject_formset.non_form_errors %}
+        <div class="alert alert-danger">{{ subject_formset.non_form_errors }}</div>
+      {% endif %}
+
+      {{ subject_formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped" id="subjectTable">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th style="width:180px;">Category</th>
+              <th style="width:120px;">Compulsory</th>
+              <th style="width:140px;">Total Points</th>
+              <th style="width:120px;">Average</th>
+              <th style="width:80px;">Del</th>
+            </tr>
+          </thead>
+
+          <tbody id="subjectTbody">
+            {% for f in subject_formset %}
+              <tr class="subject-row">
+                <td>{{ f.subject }} {{ f.id }}</td>
+                <td>{{ f.category }}</td>
+                <td class="text-center">{{ f.is_compulsory }}</td>
+                <td class="text-center">{{ f.include_in_total_points }}</td>
+                <td class="text-center">{{ f.include_in_average }}</td>
+                <td class="text-center">
+                  {% if f.instance.pk %}
+                    {{ f.DELETE }}
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-danger removeRowBtn">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+
+              {% if f.errors %}
+                <tr>
+                  <td colspan="6">
+                    <div class="alert alert-danger mb-0">{{ f.errors }}</div>
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <small class="text-muted">
+        Only UACE subjects are loaded in the Subject dropdown. Missing UACE subjects are automatically added as Principal.
+      </small>
+
+      <template id="subjectEmptyForm">
+        <tr class="subject-row">
+          <td>{{ subject_formset.empty_form.subject }} {{ subject_formset.empty_form.id }}</td>
+          <td>{{ subject_formset.empty_form.category }}</td>
+          <td class="text-center">{{ subject_formset.empty_form.is_compulsory }}</td>
+          <td class="text-center">{{ subject_formset.empty_form.include_in_total_points }}</td>
+          <td class="text-center">{{ subject_formset.empty_form.include_in_average }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger removeRowBtn">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-footer d-flex justify-content-end">
+      <button class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save New UACE Grading Scale
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  function setupDynamicFormset(config) {
+    const tbody = document.getElementById(config.tbodyId);
+    const template = document.getElementById(config.templateId);
+    const addBtn = document.querySelector(`[data-add-row="${config.key}"]`);
+    const totalFormsEl = document.querySelector(`input[name="${config.prefix}-TOTAL_FORMS"]`);
+
+    if (!tbody || !template || !addBtn || !totalFormsEl) return;
+
+    function addBootstrap(row) {
+      row.querySelectorAll("input, select, textarea").forEach(el => {
+        if (el.type !== "checkbox" && !el.classList.contains("form-control")) {
+          el.classList.add("form-control");
+        }
+      });
+    }
+
+    function addRow() {
+      const idx = parseInt(totalFormsEl.value, 10);
+      const html = template.innerHTML.replaceAll("__prefix__", String(idx));
+
+      const temp = document.createElement("tbody");
+      temp.innerHTML = html.trim();
+
+      const row = temp.firstElementChild;
+      addBootstrap(row);
+
+      tbody.appendChild(row);
+      totalFormsEl.value = String(idx + 1);
+    }
+
+    function reindexRows() {
+      const rows = Array.from(tbody.querySelectorAll(`tr.${config.rowClass}`));
+
+      rows.forEach((row, i) => {
+        row.querySelectorAll("input, select, textarea, label").forEach(el => {
+          if (el.name) {
+            el.name = el.name.replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-");
+          }
+
+          if (el.id) {
+            el.id = el.id.replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-");
+          }
+
+          if (el.getAttribute && el.getAttribute("for")) {
+            el.setAttribute(
+              "for",
+              el.getAttribute("for").replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-")
+            );
+          }
+        });
+      });
+
+      totalFormsEl.value = String(rows.length);
+    }
+
+    addBtn.addEventListener("click", addRow);
+
+    tbody.addEventListener("click", function (e) {
+      const btn = e.target.closest(".removeRowBtn");
+
+      if (!btn) return;
+
+      const tr = btn.closest("tr");
+
+      if (!tr) return;
+
+      const delCheckbox = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+
+      if (delCheckbox) {
+        delCheckbox.checked = true;
+        tr.classList.add("deleted-row");
+        return;
+      }
+
+      tr.remove();
+      reindexRows();
+    });
+  }
+
+  setupDynamicFormset({
+    key: "grade",
+    prefix: "grades",
+    tbodyId: "gradeTbody",
+    templateId: "gradeEmptyForm",
+    rowClass: "grade-row"
+  });
+
+  setupDynamicFormset({
+    key: "subject",
+    prefix: "subjects",
+    tbodyId: "subjectTbody",
+    templateId: "subjectEmptyForm",
+    rowClass: "subject-row"
+  });
+})();
+</script>
+{% endblock %}

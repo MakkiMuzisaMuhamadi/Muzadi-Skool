@@ -1,0 +1,153 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mt-4">Sync Settings</h1>
+            <p class="text-muted">Configure synchronization with remote MySQL database</p>
+            
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Database Connection</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>Remote DB Host</label>
+                                    <input type="text" name="remote_db_host" class="form-control" 
+                                           value="{{ settings.remote_db_host|default:'localhost' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>Remote DB Port</label>
+                                    <input type="number" name="remote_db_port" class="form-control" 
+                                           value="{{ settings.remote_db_port|default:3306 }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>Database Name</label>
+                                    <input type="text" name="remote_db_name" class="form-control" 
+                                           value="{{ settings.remote_db_name|default:'' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>Username</label>
+                                    <input type="text" name="remote_db_user" class="form-control" 
+                                           value="{{ settings.remote_db_user|default:'' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label>Password</label>
+                            <input type="password" name="remote_db_password" class="form-control" 
+                                   value="{{ settings.remote_db_password|default:'' }}" required>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h5 class="mb-3">Sync Behavior</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="auto_sync_enabled" class="form-check-input" 
+                                               id="auto_sync" {% if settings.auto_sync_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="auto_sync">Enable Auto Sync</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label>Sync Interval (hours)</label>
+                                    <input type="number" name="sync_interval_hours" class="form-control" 
+                                           value="{{ settings.sync_interval_hours|default:24 }}" min="1" max="168">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label>Batch Size</label>
+                                    <input type="number" name="batch_size" class="form-control" 
+                                           value="{{ settings.batch_size|default:100 }}" min="1" max="1000">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h5 class="mb-3">Models to Sync</h5>
+                        <div class="row">
+                            {% for model in available_models %}
+                            <div class="col-md-3">
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" name="models_to_sync" value="{{ model }}" 
+                                           class="form-check-input" id="model_{{ model }}"
+                                           {% if model in settings.models_to_sync %}checked{% endif %}>
+                                    <label class="form-check-label" for="model_{{ model }}">
+                                        {{ model }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-outline-success">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            <a href="{% url 'sync_dashboard' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Test Connection</h5>
+                </div>
+                <div class="card-body">
+                    <p>Test if the connection settings are correct:</p>
+                    <a href="#" class="btn btn-outline-success" id="testConnection">
+                        <i class="fas fa-plug"></i> Test Connection
+                    </a>
+                    <div id="testResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('testConnection').addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    const resultDiv = document.getElementById('testResult');
+    resultDiv.innerHTML = '<div class="alert alert-info">Testing connection...</div>';
+    
+    // You would typically make an AJAX call here to test the connection
+    // For now, we'll just show a message
+    setTimeout(function() {
+        resultDiv.innerHTML = `
+            <div class="alert alert-warning">
+                Connection test requires backend implementation.
+                Save settings first, then test from the dashboard.
+            </div>
+        `;
+    }, 1000);
+});
+</script>
+{% endblock %}

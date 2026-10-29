@@ -1,0 +1,50 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <h3 class="page-title">
+    {% if scale %}Edit{% else %}Create{% endif %} Grading Scale
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'grading_scales_list' %}">Grading Scales</a></li>
+      <li class="breadcrumb-item active">{% if scale %}Edit{% else %}Create{% endif %}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          
+          <div class="form-group">
+            <label>Scale Name *</label>
+            <input type="text" class="form-control" name="name" 
+                   value="{{ scale.name|default:'' }}" required>
+          </div>
+
+          <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" name="is_active" 
+                     {% if scale.is_active %}checked{% endif %}>
+              <label class="form-check-label">Set as active grading scale</label>
+            </div>
+            <small class="form-text text-muted">
+              Only one grading scale can be active at a time.
+            </small>
+          </div>
+
+          <button type="submit" class="btn btn-outline-success">
+            {% if scale %}Update{% else %}Create{% endif %} Scale
+          </button>
+          <a href="{% url 'grading_scales_list' %}" class="btn btn-info">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

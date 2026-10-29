@@ -1,0 +1,253 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2 class="mt-4">
+                <i class="fas fa-sync"></i> Data Sync to umtaeresults.org
+            </h2>
+            <p class="text-muted">Sync local data to your cPanel MySQL database</p>
+        </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card {% if not settings.last_sync %}border-warning{% endif %}">
+                <div class="card-body">
+                    <h5>Connection Status</h5>
+                    <p>
+                        <strong>API Endpoint:</strong> {{ settings.api_url|default:"https://umtaeresults.org/sync_api.php" }}<br>
+                        <strong>Last Sync:</strong> {{ settings.last_sync|date:"M d, Y H:i"|default:"Never" }}<br>
+                        <strong>Schools with PDFs:</strong> {{ schools_with_pdf }}
+                    </p>
+                    <div class="mt-2">
+                        <a href="{% url 'test_connection' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plug"></i> Test Connection
+                        </a>
+                        <a href="{% url 'sync_settings' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Actions -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket"></i> Manual Sync
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="alert alert-info">
+                                <h6>Pending Items</h6>
+                                <h2>{{ pending_count }}</h2>
+                                <small>Waiting to sync</small>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <form method="post" action="{% url 'trigger_sync' %}">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Batch Size</label>
+                                            <input type="number" name="batch_size" class="form-control" 
+                                                   value="{{ settings.batch_size|default:50 }}" min="1" max="100">
+                                            <small class="text-muted">Items to sync at once</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="mt-4">
+                                            <button type="submit" class="btn btn-outline-success-success btn-lg">
+                                                <i class="fas fa-play"></i> Start Sync
+                                            </button>
+                                            <a href="{% url 'clear_sync_queue' %}" class="btn btn-outline-danger" 
+                                               onclick="return confirm('Clear all pending items?')">
+                                                <i class="fas fa-trash"></i> Clear Queue
+                                            </a>
+                                            <a href="{% url 'retry_failed' %}" class="btn btn-outline-warning">
+                                                <i class="fas fa-redo"></i> Retry Failed
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Items -->
+    {% if queue_items %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Pending Items (First 10)</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>ID</th>
+                                <th>Action</th>
+                                <th>Queued</th>
+                                <th>Retries</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in queue_items %}
+                            <tr>
+                                <td>{{ item.model_name }}</td>
+                                <td>#{{ item.object_id }}</td>
+                                <td>
+                                    {% if item.action == 'CREATE' %}
+                                    <span class="badge bg-success">Create</span>
+                                    {% elif item.action == 'UPDATE' %}
+                                    <span class="badge bg-info">Update</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Delete</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.created_at|timesince }} ago</td>
+                                <td>
+                                    {% if item.retry_count > 0 %}
+                                    <span class="badge bg-warning">{{ item.retry_count }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pending by Model -->
+    {% if pending_by_model %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Pending by Model</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for item in pending_by_model %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ item.model_name }}
+                            <span class="badge {% if item.count > 20 %}bg-danger{% elif item.count > 5 %}bg-warning{% else %}bg-primary{% endif %} rounded-pill">
+                                {{ item.count }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Syncs -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Syncs</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_syncs %}
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Records</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sync in recent_syncs %}
+                            <tr>
+                                <td>{{ sync.started_at|date:"H:i" }}</td>
+                                <td>
+                                    {{ sync.records_synced }}
+                                    {% if sync.records_failed > 0 %}
+                                    <small class="text-danger">({{ sync.records_failed }} failed)</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if sync.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">Completed</span>
+                                    {% elif sync.status == 'PARTIAL' %}
+                                    <span class="badge bg-warning">Partial</span>
+                                    {% elif sync.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-info">In Progress</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted text-center">No syncs yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Auto-sync Info -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        All data will be synced to: <strong>https://umtaeresults.org/</strong>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh script -->
+<script>
+    // Refresh every 30 seconds
+    setTimeout(() => {
+        location.reload();
+    }, 30000);
+    
+    // Update pending count via AJAX every 10 seconds
+    setInterval(() => {
+        fetch("{% url 'sync_status_json' %}")
+            .then(response => response.json())
+            .then(data => {
+                // Update pending count if element exists
+                const pendingElement = document.querySelector('.alert-info h2');
+                if (pendingElement && data.pending_count !== undefined) {
+                    pendingElement.textContent = data.pending_count;
+                }
+            })
+            .catch(error => console.log('Error fetching status:', error));
+    }, 10000);
+</script>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load humanize %} 
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title">
+                        Full Report - {{ entrant.get_full_name|default:entrant.username }}
+                    </h4>
+                    <a href="{% url 'all_entrants_today' %}" class="btn btn-outline-success btn-sm">
+                        Back to Today's View
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Period Info -->
+                {% if first_session_date and last_session_date %}
+                <div class="alert alert-info">
+                    <strong>Period Covered:</strong> {{ first_session_date }} to {{ last_session_date }}
+                    | <strong>Rate:</strong> UGX {{ current_rate }} per mark entry
+                </div>
+                {% endif %}
+
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ total_sessions }}</h3>
+                                <p class="mb-0">Working Days</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ total_entries_all_time|intcomma }}</h3>
+                                <p class="mb-0">Total Entries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3>UGX {{ total_amount_all_time|floatformat:0|intcomma }}</h3>
+                                <p class="mb-0">Total Amount</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ current_rate }}</h3>
+                                <p class="mb-0">Current Rate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Statistics -->
+                {% if subject_stats %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Subject Statistics</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Entries</th>
+                                        <th>Last Worked</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subject in subject_stats %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ subject.paper__subject__name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ subject.paper__subject__short_name }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-primary">{{ subject.total_entries }}</span>
+                                        </td>
+                                        <td>
+                                            <small>{{ subject.latest_entry|date:"M d, Y" }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>School Statistics</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>School</th>
+                                        <th>Entries</th>
+                                        <th>Last Worked</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for school in school_stats %}
+                                    <tr>
+                                        <td>{{ school.school__name }}</td>
+                                        <td>
+                                            <span class="badge badge-info">{{ school.total_entries }}</span>
+                                        </td>
+                                        <td>
+                                            <small>{{ school.latest_work|date:"M d, Y" }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- All Mark Entries Table -->
+                <h5>All Mark Entries ({{ all_mark_entries.count }} total)</h5>
+                <div class="table-responsive">
+                    <table id="allEntriesTable" class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>School</th>
+                                <th>Level</th>
+                                <th>Subject</th>
+                                <th>Paper</th>
+                                <th>Candidate</th>
+                                <th>Marks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in all_mark_entries %}
+                            <tr>
+                                <td>{{ entry.session.date }}</td>
+                                <td>{{ entry.entered_at|time:"H:i:s" }}</td>
+                                <td>{{ entry.school.name }}</td>
+                                <td>{{ entry.level.name }}</td>
+                                <td>
+                                    <strong>{{ entry.paper.subject.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ entry.paper.subject.short_name }}</small>
+                                </td>
+                                <td>
+                                    {{ entry.paper.paper_name }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.paper.paper_code }}</small>
+                                </td>
+                                <td>
+                                    {{ entry.candidate.name }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.candidate.candidate_id }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <strong>{{ entry.marks_entered }}</strong>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    No mark entries found
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#allEntriesTable').DataTable({
+        "pageLength": 50,
+        "order": [[0, 'desc'], [1, 'desc']],
+        "responsive": true
+    });
+});
+</script>
+{% endblock %}

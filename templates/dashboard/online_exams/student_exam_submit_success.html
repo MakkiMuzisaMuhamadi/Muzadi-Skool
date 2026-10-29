@@ -1,0 +1,73 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <div class="mb-3">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success text-white" style="width:80px;height:80px;font-size:2rem;">
+            <i class="fas fa-check"></i>
+          </span>
+        </div>
+
+        <h3 class="mb-2">Exam Submitted Successfully</h3>
+        <p class="text-muted mb-4">
+          Your attempt for <strong>{{ exam.title }}</strong> has been received.
+        </p>
+
+        <div class="alert alert-light border text-left mx-auto" style="max-width: 520px;">
+          <div class="row">
+            <div class="col-sm-5 text-muted">Subject</div>
+            <div class="col-sm-7 font-weight-bold">{{ exam.subject.name }}</div>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-sm-5 text-muted">Attempt</div>
+            <div class="col-sm-7 font-weight-bold">{{ attempt.attempt_no }}</div>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-sm-5 text-muted">Status</div>
+            <div class="col-sm-7">
+              {% if attempt.status == "TIMED_OUT" %}
+                <span class="badge badge-danger">Timed Out</span>
+              {% else %}
+                <span class="badge badge-success">Submitted</span>
+              {% endif %}
+            </div>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-sm-5 text-muted">Submitted At</div>
+            <div class="col-sm-7 font-weight-bold">
+              {% if attempt.submitted_at %}
+                {{ attempt.submitted_at|date:"d M Y, H:i" }}
+              {% else %}
+                -
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-center flex-wrap" style="gap:.6rem;">
+          <a href="{% url 'student_exam_list' %}" class="btn btn-primary">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Exams
+          </a>
+
+          {% if can_view_result %}
+            <a href="{% url 'student_exam_result' attempt.id %}" class="btn btn-outline-success">
+              <i class="fas fa-chart-bar mr-1"></i> View Result
+            </a>
+          {% else %}
+            <button class="btn btn-outline-secondary" disabled>
+              <i class="fas fa-clock mr-1"></i> Await Teacher Release
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

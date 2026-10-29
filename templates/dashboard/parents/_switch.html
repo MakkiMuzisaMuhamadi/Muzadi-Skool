@@ -1,0 +1,6 @@
+<div class="custom-control custom-switch mb-2">
+  {{ field }}
+  <label class="custom-control-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {% if hint %}<small class="d-block text-muted">{{ hint }}</small>{% endif %}
+  {% for e in field.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+</div>

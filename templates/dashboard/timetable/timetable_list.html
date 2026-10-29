@@ -1,0 +1,113 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-1">
+      <i class="fas fa-calendar-week mr-2 text-primary"></i> Timetables
+    </h3>
+    <small class="text-muted">Create and manage timetable configurations for each term.</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'timetable_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus-circle mr-1"></i> Add Timetable
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get">
+      <div class="row">
+        <div class="col-md-7 mb-2">
+          <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search by timetable name, year or term">
+        </div>
+        <div class="col-md-3 mb-2">
+          <select name="status" class="form-control">
+            <option value="">All statuses</option>
+            <option value="DRAFT" {% if status == "DRAFT" %}selected{% endif %}>Draft</option>
+            <option value="PUBLISHED" {% if status == "PUBLISHED" %}selected{% endif %}>Published</option>
+            <option value="ARCHIVED" {% if status == "ARCHIVED" %}selected{% endif %}>Archived</option>
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <button class="btn btn-outline-primary w-100">Search</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="alert alert-light border small">
+  <strong>How it works:</strong> build a timetable as a <span class="badge badge-warning">Draft</span>,
+  run <em>Check</em>, then <em>Publish</em>. Only published timetables are shown to teachers and students.
+  Publishing archives the older published timetable of the same level for the same term.
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Year / Terms</th>
+          <th>Level</th>
+          <th>Bell schedule</th>
+          <th>Lessons</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <strong>{{ item.name }}</strong>
+            {% if not item.is_active %}<span class="badge badge-secondary">Disabled</span>{% endif %}
+            {% if item.notes %}<br><small class="text-muted">{{ item.notes|truncatechars:70 }}</small>{% endif %}
+          </td>
+          <td>{{ item.academic_year }}<br><small class="text-muted">{{ item.term_names }}</small></td>
+          <td>{{ item.level|default:"Whole school" }}</td>
+          <td>{{ item.bell_schedule|default:"-" }}</td>
+          <td>{{ item.lessons_count }}</td>
+          <td>
+            {% if item.status == "PUBLISHED" %}<span class="badge badge-success">Published</span>
+            {% elif item.status == "DRAFT" %}<span class="badge badge-warning">Draft</span>
+            {% else %}<span class="badge badge-secondary">Archived</span>{% endif %}
+          </td>
+          <td class="text-right text-nowrap">
+            <a href="{% url 'class_timetable_view' %}?timetable={{ item.id }}" class="btn btn-outline-dark btn-sm">View</a>
+            {% if item.status != "ARCHIVED" %}
+              <a href="{% url 'timetable_update' item.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>
+              <a href="{% url 'timetable_conflicts' item.pk %}" class="btn btn-outline-info btn-sm">Check</a>
+            {% endif %}
+            <div class="btn-group">
+              <button type="button" class="btn btn-light border btn-sm dropdown-toggle" data-toggle="dropdown">More</button>
+              <div class="dropdown-menu dropdown-menu-right">
+                {% if item.status == "DRAFT" %}
+                  <form method="post" action="{% url 'timetable_publish' item.pk %}">{% csrf_token %}
+                    <button class="dropdown-item"><i class="fas fa-check mr-1 text-success"></i> Publish</button>
+                  </form>
+                {% endif %}
+                <a class="dropdown-item" href="{% url 'timetable_copy' item.pk %}"><i class="fas fa-copy mr-1"></i> Copy to new term / year</a>
+                <a class="dropdown-item" href="{% url 'timetable_master_print' item.pk %}" target="_blank"><i class="fas fa-print mr-1"></i> Print all classes</a>
+                <a class="dropdown-item" href="{% url 'timetable_coverage_report' %}?timetable={{ item.pk }}"><i class="fas fa-tasks mr-1"></i> Coverage report</a>
+                {% if item.status != "ARCHIVED" %}
+                  <div class="dropdown-divider"></div>
+                  <form method="post" action="{% url 'timetable_archive' item.pk %}" onsubmit="return confirm('Archive this timetable?');">{% csrf_token %}
+                    <button class="dropdown-item text-danger"><i class="fas fa-archive mr-1"></i> Archive</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted">No timetables found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

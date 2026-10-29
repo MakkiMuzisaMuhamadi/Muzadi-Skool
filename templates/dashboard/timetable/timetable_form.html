@@ -1,0 +1,233 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-1">
+      <i class="fas fa-calendar-plus mr-2 text-primary"></i> {{ title }}
+    </h3>
+    <small class="text-muted">Create one timetable and assign it to one or more terms in the same academic year.</small>
+  </div>
+  <a href="{% url 'timetable_list' %}" class="btn btn-light btn-sm border">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>Name <span class="text-danger">*</span></label>
+          {{ form.name }}
+          <div class="text-danger small">{{ form.name.errors|striptags }}</div>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label>Academic Year <span class="text-danger">*</span></label>
+          {{ form.academic_year }}
+          <div class="text-danger small">{{ form.academic_year.errors|striptags }}</div>
+        </div>
+
+        <div class="form-group col-md-12">
+          <label>Terms <span class="text-danger">*</span></label>
+          {{ form.terms }}
+          {% if form.terms.help_text %}
+            <small class="form-text text-muted">{{ form.terms.help_text }}</small>
+          {% endif %}
+          <div class="text-danger small">{{ form.terms.errors|striptags }}</div>
+        </div>
+
+        <div class="form-group col-md-6">
+          {% include "dashboard/timetable/_field.html" with f=form.level %}
+        </div>
+
+        <div class="form-group col-md-6">
+          {% include "dashboard/timetable/_field.html" with f=form.bell_schedule %}
+          {% if not has_schedules %}<small class="text-danger">No bell schedules yet. <a href="{% url 'timetable_setup_create' 'bell_schedule' %}">Create one first.</a></small>{% endif %}
+        </div>
+
+        <div class="form-group col-md-12">
+          <label>Notes</label>
+          {{ form.notes }}
+          <div class="text-danger small">{{ form.notes.errors|striptags }}</div>
+        </div>
+      </div>
+
+      <div class="border rounded p-3 mb-3 bg-light">
+        <h6 class="mb-3">Overlap / Clash Rules</h6>
+
+        <div class="form-row">
+          <div class="form-group col-md-3 mb-2">
+            <div class="form-check">
+              {{ form.enforce_teacher_clash }}
+              <label class="form-check-label" for="{{ form.enforce_teacher_clash.id_for_label }}">
+                Prevent teacher clash
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-3 mb-2">
+            <div class="form-check">
+              {{ form.enforce_class_clash }}
+              <label class="form-check-label" for="{{ form.enforce_class_clash.id_for_label }}">
+                Prevent class clash
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-3 mb-2">
+            <div class="form-check">
+              {{ form.enforce_room_clash }}
+              <label class="form-check-label" for="{{ form.enforce_room_clash.id_for_label }}">
+                Prevent room clash
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-3 mb-2">
+            <div class="form-check">
+              {{ form.allow_parallel_same_subject }}
+              <label class="form-check-label" for="{{ form.allow_parallel_same_subject.id_for_label }}">
+                Allow same subject in parallel streams
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-6 mb-2">
+            <div class="form-check">
+              {{ form.require_teacher_allocation }}
+              <label class="form-check-label" for="{{ form.require_teacher_allocation.id_for_label }}">
+                Teacher must be allocated to the class &amp; subject
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-6 mb-2">
+            <div class="form-check">
+              {{ form.enforce_teacher_limits }}
+              <label class="form-check-label" for="{{ form.enforce_teacher_limits.id_for_label }}">
+                Respect teacher availability and lesson limits
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 mb-0 mt-2">
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                Active timetable
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border rounded p-3 mb-3">
+        <h6 class="mb-1">Different bell schedule on some days <small class="text-muted">(optional)</small></h6>
+        <small class="text-muted d-block mb-3">e.g. Short Friday, Saturday classes. Leave as "Default schedule" otherwise.</small>
+        <div class="form-row">
+          {% for f in form.override_fields %}
+          <div class="form-group col-md-3 mb-2">
+            <label class="small mb-1" for="{{ f.id_for_label }}">{{ f.label }}</label>
+            {{ f }}
+            <div class="text-danger small">{{ f.errors|striptags }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save Timetable
+      </button>
+      <a href="{% url 'timetable_list' %}" class="btn btn-light border">Cancel</a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const yearSelect = document.getElementById("id_academic_year");
+  const termsSelect = document.getElementById("id_terms");
+
+  if (!yearSelect || !termsSelect) return;
+
+  function resetTerms(placeholder = "Select academic year first", disabled = true) {
+    termsSelect.innerHTML = "";
+
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = placeholder;
+    opt.disabled = true;
+    opt.selected = true;
+    termsSelect.appendChild(opt);
+
+    if (disabled) {
+      termsSelect.setAttribute("disabled", "disabled");
+    } else {
+      termsSelect.removeAttribute("disabled");
+    }
+  }
+
+  function loadTerms(yearId, selectedValues = []) {
+    if (!yearId) {
+      resetTerms("Select academic year first", true);
+      return;
+    }
+
+    resetTerms("Loading terms...", true);
+
+    fetch(`{% url 'ajax_terms' %}?year_id=${encodeURIComponent(yearId)}`)
+      .then(response => response.json())
+      .then(data => {
+        const results = data.results || [];
+        termsSelect.innerHTML = "";
+
+        if (!results.length) {
+          resetTerms("No terms available", true);
+          return;
+        }
+
+        termsSelect.removeAttribute("disabled");
+
+        results.forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.id;
+          opt.textContent = item.text;
+          if (selectedValues.includes(String(item.id))) {
+            opt.selected = true;
+          }
+          termsSelect.appendChild(opt);
+        });
+      })
+      .catch(() => {
+        resetTerms("Failed to load terms", true);
+      });
+  }
+
+  const initialYear = yearSelect.value || "";
+  const initialSelectedTerms = Array.from(termsSelect.options)
+    .filter(opt => opt.selected && opt.value)
+    .map(opt => String(opt.value));
+
+  if (initialYear) {
+    loadTerms(initialYear, initialSelectedTerms);
+  } else {
+    resetTerms("Select academic year first", true);
+  }
+
+  yearSelect.addEventListener("change", function () {
+    loadTerms(this.value, []);
+  });
+})();
+</script>
+{% endblock %}

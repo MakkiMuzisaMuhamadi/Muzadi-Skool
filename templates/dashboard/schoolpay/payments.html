@@ -1,0 +1,100 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-mobile-alt"></i> SchoolPay Payments</h3>
+    <small class="text-muted">Last check: {% if config.last_sync_at %}{{ config.last_sync_at|timesince }} ago - {{ config.last_sync_message }}{% else %}never{% endif %}</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <form method="post" action="{% url 'schoolpay_sync_now' %}" class="form-inline">
+      {% csrf_token %}
+      {{ sync_form.start }}<span class="mx-1">to</span>{{ sync_form.end }}
+      <button class="btn btn-primary btn-sm ml-1"><i class="fas fa-sync mr-1"></i> Check SchoolPay now</button>
+    </form>
+  </div>
+</div>
+
+<div class="alert {% if today_summary.difference %}alert-warning{% else %}alert-light border{% endif %}">
+  <strong>Today:</strong> SchoolPay received UGX {{ today_summary.schoolpay_total|floatformat:0|intcomma }} in {{ today_summary.count }} payment(s);
+  posted to student accounts UGX {{ today_summary.posted_total|floatformat:0|intcomma }}.
+  {% if today_summary.difference %}<strong>Difference UGX {{ today_summary.difference|floatformat:0|intcomma }}</strong> - see "Needs attention".{% endif %}
+</div>
+
+<ul class="nav nav-tabs mb-3">
+  {% for key, label, count in tabs %}
+  <li class="nav-item"><a class="nav-link {% if key == tab %}active{% endif %}" href="?tab={{ key }}">{{ label }} <span class="badge {% if key == 'attention' and count %}badge-danger{% else %}badge-light{% endif %}">{{ count }}</span></a></li>
+  {% endfor %}
+</ul>
+
+<form method="get" class="form-inline mb-3">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm mr-2" placeholder="Name, receipt, code or phone">
+  <button class="btn btn-light btn-sm">Search</button>
+</form>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light"><tr><th>Paid</th><th>SchoolPay receipt</th><th>As sent by SchoolPay</th><th class="text-right">Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for t in rows %}
+          <tr>
+            <td>{{ t.paid_at|date:"Y-m-d H:i"|default:"-" }}<small class="d-block text-muted">{{ t.channel }}</small></td>
+            <td>{{ t.receipt_number }}<small class="d-block text-muted">{{ t.get_source_display }}{% if t.verified_by_sync %}, confirmed{% endif %}</small></td>
+            <td>{{ t.student_name|default:"-" }}<small class="d-block text-muted">Code {{ t.student_payment_code|default:"-" }} / Reg {{ t.student_registration_number|default:"-" }}{% if t.student_class %} / {{ t.student_class }}{% endif %}</small>
+              {% if t.supplementary_fee_description %}<small class="d-block">For: {{ t.supplementary_fee_description }}</small>{% endif %}</td>
+            <td class="text-right">{{ t.amount|floatformat:0|intcomma }}{% if t.synced_amount is not None and t.synced_amount != t.amount %}<small class="d-block text-danger">SchoolPay: {{ t.synced_amount|floatformat:0|intcomma }}</small>{% endif %}</td>
+            <td>
+              {% if t.status == "POSTED" %}<span class="badge badge-success">Posted</span>
+                {% if t.fee_payment %}<small class="d-block"><a href="{% url 'fee_payment_receipt' t.fee_payment_id %}" target="_blank">{{ t.fee_payment.receipt_no }}</a> - <a href="{% url 'student_fee_statement' t.student_id %}">{{ t.student }}</a></small>{% endif %}
+              {% elif t.status == "PENDING" %}<span class="badge badge-info">{{ t.get_status_display }}</span>
+              {% elif t.status == "IGNORED" %}<span class="badge badge-secondary">Ignored</span>
+              {% else %}<span class="badge badge-danger">{{ t.get_status_display }}</span>{% endif %}
+              <small class="d-block text-muted">{{ t.status_message }}</small>
+            </td>
+            <td style="min-width:260px">
+              {% if t.status == "UNMATCHED" or t.status == "FAILED" %}
+                <form method="post" action="{% url 'schoolpay_assign' t.pk %}" class="mb-1">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="remember_code" value="1">
+                  {% if t.suggestions %}
+                  <select name="student_id" class="form-control form-control-sm mb-1">
+                    {% for s in t.suggestions %}<option value="{{ s.pk }}">{{ s.admission_number }} - {{ s.first_name }} {{ s.last_name }} ({{ s.current_class.name|default:"-" }})</option>{% endfor %}
+                  </select>
+                  <button class="btn btn-sm btn-success">Post to this student</button>
+                  <small class="d-block text-muted">Or type an admission number:</small>
+                  {% endif %}
+                </form>
+                <form method="post" action="{% url 'schoolpay_assign' t.pk %}" class="form-inline mb-1">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="remember_code" value="1">
+                  <input type="text" name="admission_number" class="form-control form-control-sm mr-1" placeholder="Admission no." required style="width:130px">
+                  <button class="btn btn-sm btn-outline-success">Post</button>
+                </form>
+                <form method="post" action="{% url 'schoolpay_retry' t.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-sm btn-light">Try again</button></form>
+              {% endif %}
+              {% if t.status == "MISMATCH" and request.user.profile.role != "BURSAR" %}
+                <form method="post" action="{% url 'schoolpay_fix_mismatch' t.pk %}" onsubmit="return confirm('Reverse the receipt and post it again with SchoolPay\'s amount?');">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button class="btn btn-sm btn-warning">Use SchoolPay's amount</button>
+                </form>
+              {% endif %}
+              {% if t.status != "POSTED" and t.status != "IGNORED" and request.user.profile.role != "BURSAR" %}
+                <form method="post" action="{% url 'schoolpay_dismiss' t.pk %}" class="form-inline mt-1">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <input type="text" name="reason" class="form-control form-control-sm mr-1" placeholder="Reason to ignore" required style="width:130px">
+                  <button class="btn btn-sm btn-outline-secondary">Ignore</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted">No payments here.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if rows|length == 300 %}<p class="small text-muted mb-0">Showing the latest 300. Use search to find older ones.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

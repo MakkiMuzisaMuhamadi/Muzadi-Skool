@@ -1,0 +1,179 @@
+<!-- templates/admin/performance_stats.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n static humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .stats-panel {
+        max-width: 1200px;
+        margin: 40px auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 30px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+    }
+    
+    .stat-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        border-left: 4px solid;
+    }
+    
+    .stat-value {
+        font-size: 36px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 1px;
+    }
+    
+    .level-table {
+        width: 100%;
+        margin-top: 40px;
+        border-collapse: collapse;
+    }
+    
+    .level-table th {
+        background: #343a40;
+        color: white;
+        padding: 12px;
+        text-align: left;
+    }
+    
+    .level-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .level-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-panel">
+    <h1 style="color: #343a40; margin-bottom: 30px;">
+        <i class="fas fa-chart-bar"></i> Performance Statistics
+    </h1>
+    
+    <div class="stats-grid">
+        <div class="stat-card" style="border-color: #007bff;">
+            <div class="stat-value">{{ stats.total_candidates|intcomma }}</div>
+            <div class="stat-label">Total Candidates</div>
+            <div><i class="fas fa-users fa-2x" style="color: #007bff;"></i></div>
+        </div>
+        
+        <div class="stat-card" style="border-color: #28a745;">
+            <div class="stat-value">{{ stats.total_performances|intcomma }}</div>
+            <div class="stat-label">Computed Performances</div>
+            <div><i class="fas fa-calculator fa-2x" style="color: #28a745;"></i></div>
+        </div>
+        
+        <div class="stat-card" style="border-color: #ffc107;">
+            <div class="stat-value">{{ stats.complete_performances|intcomma }}</div>
+            <div class="stat-label">Complete Performances</div>
+            <div><i class="fas fa-check-circle fa-2x" style="color: #ffc107;"></i></div>
+        </div>
+        
+        <div class="stat-card" style="border-color: #17a2b8;">
+            <div class="stat-value">{{ stats.total_schools|intcomma }}</div>
+            <div class="stat-label">Total Schools</div>
+            <div><i class="fas fa-school fa-2x" style="color: #17a2b8;"></i></div>
+        </div>
+    </div>
+    
+    <h2 style="color: #495057; margin-top: 50px;">
+        <i class="fas fa-layer-group"></i> Level-wise Statistics
+    </h2>
+    
+    <table class="level-table">
+        <thead>
+            <tr>
+                <th>Education Level</th>
+                <th>Candidates Computed</th>
+                <th>Complete Performances</th>
+                <th>Schools Computed</th>
+                <th>Last Computation</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in level_stats %}
+            <tr>
+                <td>
+                    <strong>{{ data.level.name }}</strong><br>
+                    <small style="color: #6c757d;">{{ data.level.code }}</small>
+                </td>
+                <td>
+                    <span class="badge" style="background: #007bff; color: white;">
+                        {{ data.candidate_count|intcomma }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge" style="background: #28a745; color: white;">
+                        {{ data.complete_count|intcomma }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge" style="background: #17a2b8; color: white;">
+                        {{ data.school_count|intcomma }}
+                    </span>
+                </td>
+                <td>
+                    {% if data.last_computed %}
+                        {{ data.last_computed|timesince }} ago
+                    {% else %}
+                        <span style="color: #dc3545;">Never</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'performance_admin:compute_level_performance' data.level.code %}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Compute
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #6c757d; padding: 40px;">
+                    <i class="fas fa-info-circle fa-2x"></i><br>
+                    No performance data available
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="{% url 'performance_admin:compute_performance' %}" class="btn btn-outline-success">
+            <i class="fas fa-cogs"></i> Compute All Performance
+        </a>
+        <a href="{% url 'admin:index' %}" class="btn btn-info" style="margin-left: 10px;">
+            <i class="fas fa-arrow-left"></i> Back to Admin
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{# HR sections shared by enrolment step 1, teacher edit and non-teaching staff forms #}
+<h6 class="text-muted mt-2 mb-3"><i class="fas fa-id-card mr-1"></i> Personal details</h6>
+<div class="form-row">
+  {% include "dashboard/partials/_field.html" with field=form.title col="col-md-3" %}
+  {% include "dashboard/partials/_field.html" with field=form.gender col="col-md-3" %}
+  {% include "dashboard/partials/_field.html" with field=form.date_of_birth col="col-md-3" %}
+  {% include "dashboard/partials/_field.html" with field=form.staff_no col="col-md-3" %}
+</div>
+<div class="form-row">
+  {% include "dashboard/partials/_field.html" with field=form.contact1 col="col-md-4" %}
+  {% include "dashboard/partials/_field.html" with field=form.contact2 col="col-md-4" %}
+  {% include "dashboard/partials/_field.html" with field=form.email col="col-md-4" %}
+</div>
+<div class="form-row">
+  {% include "dashboard/partials/_field.html" with field=form.address col="col-md-12" %}
+</div>
+
+<h6 class="text-muted mt-3 mb-3"><i class="fas fa-briefcase mr-1"></i> Employment</h6>
+<div class="form-row">
+  {% include "dashboard/partials/_field.html" with field=form.date_joined col="col-md-4" %}
+  {% include "dashboard/partials/_field.html" with field=form.employment_type col="col-md-4" %}
+  {% include "dashboard/partials/_field.html" with field=form.qualification col="col-md-4" %}
+</div>
+<div class="form-row">
+  {% include "dashboard/partials/_field.html" with field=form.specialisation col="col-md-4" %}
+  {% if form.registration_no %}
+    {% include "dashboard/partials/_field.html" with field=form.registration_no col="col-md-4" %}
+  {% endif %}
+  {% include "dashboard/partials/_field.html" with field=form.payroll_no col="col-md-4" %}
+</div>
+
+<h6 class="text-muted mt-3 mb-3"><i class="fas fa-user-friends mr-1"></i> Next of kin</h6>
+<div class="form-row">
+  {% include "dashboard/partials/_field.html" with field=form.next_of_kin_name col="col-md-4" %}
+  {% include "dashboard/partials/_field.html" with field=form.next_of_kin_phone col="col-md-4" %}
+  {% include "dashboard/partials/_field.html" with field=form.next_of_kin_relationship col="col-md-4" %}
+</div>

@@ -1,0 +1,79 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-route mr-1"></i> {{ title|default:"Route" }}</h3>
+    <small class="text-muted">Create or update route details.</small>
+  </div>
+  <div>
+    <a href="{% url 'transport_route_list' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>Route Name</label>
+          {{ form.route_name }}
+          <small class="text-danger">{{ form.route_name.errors }}</small>
+        </div>
+        <div class="form-group col-md-6">
+          <label>Vehicle</label>
+          {{ form.vehicle }}
+          <small class="text-danger">{{ form.vehicle.errors }}</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>Driver</label>
+          {{ form.driver }}
+          <small class="text-danger">{{ form.driver.errors }}</small>
+        </div>
+        <div class="form-group col-md-3">
+          <label>Monthly Fee</label>
+          {{ form.monthly_fee }}
+          <small class="text-danger">{{ form.monthly_fee.errors }}</small>
+        </div>
+        <div class="form-group col-md-3 d-flex align-items-end">
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label">Active</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Route Details</label>
+        {{ form.route_details }}
+        <small class="text-danger">{{ form.route_details.errors }}</small>
+      </div>
+
+      <div class="form-group">
+        <label>Stops (JSON)</label>
+        {{ form.stops }}
+        <small class="text-muted d-block">Optional. You can later upgrade this to a UI stop editor.</small>
+        <small class="text-danger">{{ form.stops.errors }}</small>
+      </div>
+
+      <div class="d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+        <a href="{% url 'transport_route_list' %}" class="btn btn-light">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

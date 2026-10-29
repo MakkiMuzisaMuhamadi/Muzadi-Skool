@@ -1,0 +1,38 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4>Add Data Entry Error</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="entrant">Select Data Entrant</label>
+                        <select name="entrant" id="entrant" class="form-control" required>
+                            <option value="">-- Select Entrant --</option>
+                            {% for user in entrants %}
+                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description (Optional)</label>
+                        <textarea name="description" id="description" class="form-control" rows="3"
+                                  placeholder="Describe the error (optional)"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger">Save Error</button>
+                    <a href="{% url 'simple_payment_report' %}" class="btn btn-info">Back</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

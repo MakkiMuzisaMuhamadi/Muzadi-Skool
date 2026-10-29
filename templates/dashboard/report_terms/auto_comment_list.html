@@ -1,0 +1,368 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  .comments-page-header {
+    background: linear-gradient(135deg, #f8fbff, #ffffff);
+    border: 1px solid #e5edf7;
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+
+  .comments-page-header h4 {
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  .comments-page-header small {
+    font-size: 13px;
+  }
+
+  .level-tabs {
+    border-bottom: 0;
+    gap: 8px;
+  }
+
+  .level-tabs .nav-link {
+    border: 1px solid #dbe5f1;
+    background: #ffffff;
+    color: #334155;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 15px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+
+  .level-tabs .nav-link.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+  }
+
+  .rule-card {
+    border: 1px solid #e5edf7;
+    border-radius: 16px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
+
+  .rule-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rule-section-title .pill {
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 4px 9px;
+    background: #eef4ff;
+    color: #2563eb;
+  }
+
+  .rule-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    border-bottom: 1px solid #e5edf7;
+    white-space: nowrap;
+  }
+
+  .rule-table td {
+    vertical-align: middle;
+    font-size: 13px;
+  }
+
+  .rule-badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-weight: 700;
+    font-size: 12px;
+    background: #eef2ff;
+    color: #3730a3;
+  }
+
+  .range-badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-weight: 600;
+    font-size: 12px;
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  .status-badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-inactive {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+
+  .empty-box {
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    color: #64748b;
+    background: #f8fafc;
+  }
+
+  .comment-cell {
+    max-width: 520px;
+    white-space: normal;
+    line-height: 1.45;
+  }
+
+  .level-summary {
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    .comments-page-header {
+      padding: 15px;
+    }
+
+    .comments-page-header .d-flex {
+      gap: 12px;
+      align-items: flex-start !important;
+      flex-direction: column;
+    }
+
+    .level-tabs .nav-link {
+      margin-bottom: 8px;
+    }
+  }
+</style>
+
+<div class="comments-page-header">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-1">Auto Report Card Comments</h4>
+      <small class="text-muted">
+        Class Teacher and Head Teacher comment rules grouped by education level.
+        UCE uses grade/percentage rules. PLE uses aggregate division rules.
+      </small>
+    </div>
+
+    <a class="btn btn-primary" href="{% url 'report_auto_comment_add' %}">
+      <i class="fas fa-plus mr-1"></i> Add Rule
+    </a>
+  </div>
+</div>
+
+{% regroup rows by level as level_groups %}
+
+{% if level_groups %}
+
+  <ul class="nav nav-tabs level-tabs mb-3" id="commentLevelTabs" role="tablist">
+    {% for group in level_groups %}
+      <li class="nav-item" role="presentation">
+        <a
+          class="nav-link {% if forloop.first %}active{% endif %}"
+          id="level-tab-{{ forloop.counter }}"
+          data-toggle="tab"
+          href="#level-pane-{{ forloop.counter }}"
+          role="tab"
+          aria-controls="level-pane-{{ forloop.counter }}"
+          aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+          {{ group.grouper }}
+          <span class="ml-1 badge badge-light">{{ group.list|length }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <div class="tab-content" id="commentLevelTabsContent">
+    {% for group in level_groups %}
+      <div
+        class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+        id="level-pane-{{ forloop.counter }}"
+        role="tabpanel"
+        aria-labelledby="level-tab-{{ forloop.counter }}">
+
+        <div class="card rule-card mb-4">
+          <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h5 class="mb-1 font-weight-bold">{{ group.grouper }}</h5>
+                <div class="level-summary">
+                  {{ group.list|length }} auto comment rule{{ group.list|length|pluralize }} configured for this level.
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="rule-section-title">
+                <i class="fas fa-chalkboard-teacher text-primary"></i>
+                Class Teacher Comments
+                <span class="pill">CLASS TEACHER</span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover table-sm rule-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Rule</th>
+                      <th>Range</th>
+                      <th>Comment</th>
+                      <th>Status</th>
+                      <th class="text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in group.list %}
+                      {% if r.comment_for == "CLASS_TEACHER" %}
+                        <tr>
+                          <td>
+                            {% if r.grade_letter %}
+                              <span class="rule-badge">{{ r.grade_letter }}</span>
+                            {% else %}
+                              <span class="text-muted">Range Rule</span>
+                            {% endif %}
+                          </td>
+
+                          <td>
+                            {% if r.min_percentage != None %}
+                              <span class="range-badge">{{ r.min_percentage }} - {{ r.max_percentage }}</span>
+                            {% else %}
+                              <span class="text-muted">-</span>
+                            {% endif %}
+                          </td>
+
+                          <td class="comment-cell">{{ r.comment_text }}</td>
+
+                          <td>
+                            {% if r.is_active %}
+                              <span class="status-badge status-active">Active</span>
+                            {% else %}
+                              <span class="status-badge status-inactive">Inactive</span>
+                            {% endif %}
+                          </td>
+
+                          <td class="text-right">
+                            <a class="btn btn-sm btn-outline-info" href="{% url 'report_auto_comment_edit' r.id %}">
+                              <i class="fas fa-edit mr-1"></i> Edit
+                            </a>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'report_auto_comment_delete' r.id %}">
+                              <i class="fas fa-trash mr-1"></i> Delete
+                            </a>
+                          </td>
+                        </tr>
+                      {% endif %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div class="rule-section-title">
+                <i class="fas fa-user-tie text-success"></i>
+                Head Teacher Comments
+                <span class="pill">HEAD TEACHER</span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover table-sm rule-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Rule</th>
+                      <th>Range</th>
+                      <th>Comment</th>
+                      <th>Status</th>
+                      <th class="text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in group.list %}
+                      {% if r.comment_for == "HEAD_TEACHER" %}
+                        <tr>
+                          <td>
+                            {% if r.grade_letter %}
+                              <span class="rule-badge">{{ r.grade_letter }}</span>
+                            {% else %}
+                              <span class="text-muted">Range Rule</span>
+                            {% endif %}
+                          </td>
+
+                          <td>
+                            {% if r.min_percentage != None %}
+                              <span class="range-badge">{{ r.min_percentage }} - {{ r.max_percentage }}</span>
+                            {% else %}
+                              <span class="text-muted">-</span>
+                            {% endif %}
+                          </td>
+
+                          <td class="comment-cell">{{ r.comment_text }}</td>
+
+                          <td>
+                            {% if r.is_active %}
+                              <span class="status-badge status-active">Active</span>
+                            {% else %}
+                              <span class="status-badge status-inactive">Inactive</span>
+                            {% endif %}
+                          </td>
+
+                          <td class="text-right">
+                            <a class="btn btn-sm btn-outline-info" href="{% url 'report_auto_comment_edit' r.id %}">
+                              <i class="fas fa-edit mr-1"></i> Edit
+                            </a>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'report_auto_comment_delete' r.id %}">
+                              <i class="fas fa-trash mr-1"></i> Delete
+                            </a>
+                          </td>
+                        </tr>
+                      {% endif %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+
+  <div class="empty-box">
+    <div class="mb-2">
+      <i class="fas fa-comments fa-2x text-muted"></i>
+    </div>
+    <h6 class="font-weight-bold mb-1">No auto comment rules yet</h6>
+    <p class="mb-3">Create Class Teacher and Head Teacher comment rules for UCE or PLE.</p>
+    <a class="btn btn-primary btn-sm" href="{% url 'report_auto_comment_add' %}">
+      <i class="fas fa-plus mr-1"></i> Add First Rule
+    </a>
+  </div>
+
+{% endif %}
+
+{% endblock %}

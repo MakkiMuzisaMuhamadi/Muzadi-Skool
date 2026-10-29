@@ -1,0 +1,117 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load role_tags %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-sliders-h"></i> Exam Types & Weights
+    </h3>
+    <small class="text-muted">
+      BOT, MOT, EOT, Activities, Exam — define weights and maximum marks
+    </small>
+  </div>
+
+  {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+  <a href="{% url 'exam_type_create' %}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> Add Exam Type
+  </a>
+  {% endif %}
+</div>
+
+{% if scheme_totals %}
+<div class="card mb-3 {% if has_weight_problem %}border-warning{% endif %}">
+  <div class="card-body py-2">
+    <div class="small text-muted mb-1">
+      Active exam type weights in each Exam Setup should add up to exactly 100%.
+    </div>
+    <div class="d-flex flex-wrap" style="gap:.5rem;">
+      {% for s in scheme_totals %}
+        <span class="badge {% if s.status == 'OK' %}badge-success{% elif s.status == 'UNDER' %}badge-warning{% else %}badge-danger{% endif %} p-2">
+          {{ s.scheme.level.code }} • {{ s.scheme.name }}: {{ s.total|floatformat:"-2" }}%
+          {% if s.status == "UNDER" %}(needs more){% elif s.status == "OVER" %}(too high){% endif %}
+        </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm align-middle">
+        <thead class="thead-light">
+          <tr>
+            <th>Exam Setup</th>
+            <th>Level</th>
+            <th>Exam Type</th>
+            <th>Code</th>
+            <th>Applies To</th>
+            <th>Weight %</th>
+            <th>Max Mark</th>
+            <th>Status</th>
+            {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+            <th style="width: 130px;" class="text-center">Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for t in types %}
+          <tr>
+            <td>{{ t.scheme.name }}</td>
+            <td>{{ t.scheme.level.code }}</td>
+            <td>{{ t.name }}</td>
+            <td>
+              <span class="badge badge-light border">{{ t.code }}</span>
+            </td>
+            <td>
+              {% if t.applies_to == "SUBJECT" %}
+                <span class="badge badge-info">Subject (PLE)</span>
+              {% else %}
+                <span class="badge badge-warning">Paper (UCE/UACE)</span>
+              {% endif %}
+            </td>
+            <td>{{ t.weight_percent }}</td>
+            <td>{{ t.max_mark }}</td>
+            <td>
+              {% if t.is_active %}
+                <span class="badge badge-success">Active</span>
+              {% else %}
+                <span class="badge badge-secondary">Inactive</span>
+              {% endif %}
+            </td>
+
+            {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+            <td class="text-center">
+              <a href="{% url 'exam_type_edit' t.pk %}"
+                 class="btn btn-outline-primary btn-sm"
+                 title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+
+              <a href="{% url 'exam_type_delete' t.pk %}"
+                 class="btn btn-outline-danger btn-sm"
+                 title="Delete">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if request.user|has_role:'SUPER_ADMIN,ADMIN' %}9{% else %}8{% endif %}"
+                class="text-center text-muted py-4">
+              No Exam Types found.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

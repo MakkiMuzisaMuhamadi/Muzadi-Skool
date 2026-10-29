@@ -1,0 +1,267 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h3 class="page-title">
+            <i class="fas fa-umbrella-beach mr-2"></i>
+            {% if object %}Edit{% else %}Add New{% endif %} Holiday
+        </h3>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'academic_calendar' %}">Academic Calendar</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {% if object %}Edit Holiday{% else %}Add Holiday{% endif %}
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Holiday Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_name">Holiday Name *</label>
+                                    <input type="text" class="form-control" id="id_name" name="name" 
+                                           value="{{ form.name.value|default:'' }}" 
+                                           placeholder="e.g., Christmas Holiday" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_academic_year">Academic Year *</label>
+                                    <select class="form-control" id="id_academic_year" name="academic_year" required>
+                                        <option value="">Select Academic Year</option>
+                                        {% for year in academic_years %}
+                                        <option value="{{ year.id }}" 
+                                            {% if form.academic_year.value == year.id %}selected{% endif %}>
+                                            {{ year.year }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_holiday_type">Holiday Type</label>
+                                    <select class="form-control" id="id_holiday_type" name="holiday_type">
+                                        <option value="">Select Type</option>
+                                        {% for type in holiday_types %}
+                                        <option value="{{ type.id }}" 
+                                            {% if form.holiday_type.value == type.id %}selected{% endif %}
+                                            data-color="{{ type.color }}">
+                                            {{ type.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_status">Status *</label>
+                                    <select class="form-control" id="id_status" name="status" required>
+                                        {% for value, label in form.fields.status.choices %}
+                                        <option value="{{ value }}" 
+                                            {% if form.status.value == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_date">Date *</label>
+                                    <input type="date" class="form-control" id="id_date" name="date" 
+                                           value="{{ form.date.value|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_end_date">End Date (for multi-day)</label>
+                                    <input type="date" class="form-control" id="id_end_date" name="end_date" 
+                                           value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}">
+                                    <small class="form-text text-muted">Leave empty for single-day holiday</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_duration" class="d-block">Duration</label>
+                                    <div id="duration" class="badge badge-info p-2">
+                                        {% if object and object.is_multi_day %}
+                                        {{ object.duration_days }} days
+                                        {% else %}
+                                        1 day
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_description">Description</label>
+                                    <textarea class="form-control" id="id_description" name="description" 
+                                              rows="3" placeholder="Optional description">{{ form.description.value|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="id_affects_school" 
+                                           name="affects_school" {% if form.affects_school.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_affects_school">
+                                        Affects School Activities
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="id_affects_exams" 
+                                           name="affects_exams" {% if form.affects_exams.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_affects_exams">
+                                        Affects Examinations
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-outline-success">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if object %}Update{% else %}Create{% endif %} Holiday
+                                </button>
+                                <a href="{% url 'academic_calendar' %}" class="btn btn-info">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Quick Tips
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb mr-2"></i>Holiday Types:</h6>
+                        <ul class="mb-0">
+                            <li><strong>Public Holiday:</strong> National holidays affecting everyone</li>
+                            <li><strong>School Holiday:</strong> School-specific breaks</li>
+                            <li><strong>Examination Period:</strong> Times when exams are scheduled</li>
+                            <li><strong>Sports Day:</strong> School sports events</li>
+                            <li><strong>Other:</strong> Miscellaneous holidays</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle mr-2"></i>Important:</h6>
+                        <ul class="mb-0">
+                            <li>Holidays affect term working day calculations</li>
+                            <li>Uncheck "Affects School" for optional holidays</li>
+                            <li>Check "Affects Exams" to reschedule exams</li>
+                            <li>Multi-day holidays span from start to end date</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Preview Color</label>
+                        <div id="colorPreview" class="p-3 rounded" 
+                             style="background-color: {% if form.holiday_type.value %}#{{ form.holiday_type.color }}{% else %}#FF6B6B{% endif %};">
+                            Holiday color in calendar
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(document).ready(function() {
+    // Calculate duration
+    $('#id_date, #id_end_date').on('change', function() {
+        var startDate = $('#id_date').val();
+        var endDate = $('#id_end_date').val();
+        
+        if (startDate && endDate) {
+            var start = new Date(startDate);
+            var end = new Date(endDate);
+            if (end < start) {
+                alert('End date cannot be before start date');
+                $('#id_end_date').val('');
+                $('#duration').text('1 day');
+                return;
+            }
+            
+            var diffTime = Math.abs(end - start);
+            var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            $('#duration').text(diffDays + ' days');
+        } else if (startDate) {
+            $('#duration').text('1 day');
+        }
+    });
+    
+    // Update color preview
+    $('#id_holiday_type').on('change', function() {
+        var selectedOption = $(this).find('option:selected');
+        var color = selectedOption.data('color') || '#FF6B6B';
+        $('#colorPreview').css('background-color', color);
+    });
+    
+    // Auto-set end date for single-day holidays
+    $('#id_date').on('change', function() {
+        if (!$('#id_end_date').val()) {
+            $('#id_end_date').val($(this).val());
+        }
+    });
+});
+</script>
+{% endblock %}

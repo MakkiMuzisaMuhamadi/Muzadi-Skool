@@ -1,0 +1,552 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  .signature-page-header {
+    background: linear-gradient(135deg, #f7fbff, #edf6ff);
+    border: 1px solid #dce8f7;
+    border-radius: 18px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 28px rgba(15, 45, 90, 0.07);
+  }
+
+  .signature-title {
+    font-weight: 800;
+    color: #173b63;
+    letter-spacing: -0.4px;
+  }
+
+  .signature-subtitle {
+    color: #6c757d;
+    font-size: 13px;
+  }
+
+  .signature-main-card {
+    border: 1px solid #dde8f3;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(20, 50, 90, 0.08);
+  }
+
+  .signature-main-card .card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e6eef7;
+    padding: 17px 20px;
+  }
+
+  .signature-help {
+    background: #f7fbff;
+    border: 1px dashed #c9d9ea;
+    border-radius: 14px;
+    padding: 12px 14px;
+    color: #53657a;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
+  .signature-role-panel {
+    border: 1px solid #e2ebf5;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 7px 20px rgba(31, 61, 90, 0.06);
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+
+  .signature-role-panel-header {
+    background: #f8fbff;
+    border-bottom: 1px solid #e2ebf5;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .signature-role-number {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #173b63;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    margin-right: 8px;
+  }
+
+  .signature-panel-body {
+    padding: 15px;
+  }
+
+  .signature-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #425466;
+    margin-bottom: 6px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+
+  .signature-preview-box {
+    min-height: 92px;
+    background: #ffffff;
+    border: 1px solid #dfe9f3;
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .signature-preview-box img {
+    max-height: 74px;
+    max-width: 260px;
+    object-fit: contain;
+  }
+
+  .signature-empty {
+    color: #9aa8b6;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .signature-workspace {
+    background: #f8fbff;
+    border: 1px solid #dce8f3;
+    border-radius: 16px;
+    padding: 13px;
+  }
+
+  .signature-pad-canvas {
+    width: 100%;
+    height: 135px;
+    border: 1px dashed #9fb5ca;
+    border-radius: 13px;
+    background: #ffffff;
+    touch-action: none;
+    display: block;
+  }
+
+  .signature-file-input {
+    display: none;
+  }
+
+  .signature-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-import-signature {
+    background: #eef6ff;
+    border: 1px solid #bdd7f2;
+    color: #185a96;
+    font-weight: 700;
+  }
+
+  .btn-import-signature:hover {
+    background: #dfefff;
+    color: #123f66;
+  }
+
+  .delete-box {
+    background: #fff5f5;
+    border: 1px solid #ffd0d0;
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+
+  .signature-status-pill {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .signature-status-ok {
+    background: #e8f8ef;
+    color: #167347;
+    border: 1px solid #bfe8d0;
+  }
+
+  .signature-status-empty {
+    background: #fff7e6;
+    color: #9a6500;
+    border: 1px solid #f5d89b;
+  }
+
+  .form-control {
+    border-radius: 10px;
+  }
+
+  .custom-control-label {
+    cursor: pointer;
+  }
+
+  @media (max-width: 767px) {
+    .signature-page-header {
+      display: block !important;
+    }
+
+    .signature-page-header .btn {
+      margin-top: 12px;
+    }
+
+    .signature-role-panel-header {
+      display: block;
+    }
+
+    .signature-role-panel-header .text-right {
+      text-align: left !important;
+      margin-top: 10px;
+    }
+  }
+</style>
+
+<div class="signature-page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-1 signature-title">
+      <i class="fas fa-signature mr-2"></i> {{ title }}
+    </h3>
+    <div class="signature-subtitle">
+      Import scanned signatures or draw new signatures for report card signatories.
+    </div>
+  </div>
+
+  <a href="{% url 'report_template_list' %}" class="btn btn-light btn-sm border">
+    <i class="fas fa-arrow-left mr-1"></i> Back to Templates
+  </a>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="signatureRolesForm">
+  {% csrf_token %}
+  {{ signature_formset.management_form }}
+
+  {% if signature_formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {% for err in signature_formset.non_form_errors %}
+        <div>{{ err }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card signature-main-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <strong class="text-dark">Signature Roles</strong>
+        <div class="text-muted small">
+          Saved signatures will appear on generated report cards.
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save Signatures
+      </button>
+    </div>
+
+    <div class="card-body">
+      <div class="signature-help">
+        <i class="fas fa-info-circle mr-1"></i>
+        Use <strong>Import Signature</strong> to upload a scanned image. Use <strong>Draw Signature</strong> to capture a fresh signature. If both are provided, the drawn signature will be saved last and will replace the uploaded one.
+      </div>
+
+      {% for f in signature_formset %}
+        <div class="signature-role-panel">
+          {{ f.id }}
+
+          <div class="signature-role-panel-header">
+            <div>
+              <span class="signature-role-number">{{ forloop.counter }}</span>
+              <strong>
+                {% if f.instance.pk %}
+                  {{ f.instance.role_name|default:"Signature Role" }}
+                {% else %}
+                  New Signature Role
+                {% endif %}
+              </strong>
+
+              {% if f.instance.signature_image %}
+                <span class="signature-status-pill signature-status-ok ml-2">
+                  <i class="fas fa-check-circle mr-1"></i> Signature Saved
+                </span>
+              {% else %}
+                <span class="signature-status-pill signature-status-empty ml-2">
+                  <i class="fas fa-exclamation-circle mr-1"></i> No Signature
+                </span>
+              {% endif %}
+            </div>
+
+            <div class="text-right">
+              {% if f.DELETE %}
+                <div class="delete-box d-inline-block">
+                  <div class="custom-control custom-checkbox">
+                    {{ f.DELETE }}
+                    <label class="custom-control-label text-danger" for="{{ f.DELETE.id_for_label }}">
+                      Delete Role
+                    </label>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="signature-panel-body">
+            <div class="row">
+              <div class="col-lg-3 col-md-6 mb-3">
+                <label class="signature-label">Role Name</label>
+                {{ f.role_name }}
+                {% for err in f.role_name.errors %}
+                  <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-lg-3 col-md-6 mb-3">
+                <label class="signature-label">Person Name</label>
+                {{ f.person_name }}
+                {% for err in f.person_name.errors %}
+                  <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-lg-2 col-md-4 mb-3">
+                <label class="signature-label">Order</label>
+                {{ f.sort_order }}
+                {% for err in f.sort_order.errors %}
+                  <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-lg-2 col-md-4 mb-3">
+                <label class="signature-label">Visible</label>
+                <div class="pt-2">
+                  <div class="custom-control custom-checkbox">
+                    {{ f.is_visible }}
+                    <label class="custom-control-label" for="{{ f.is_visible.id_for_label }}">
+                      Show on report
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-2 col-md-4 mb-3">
+                <label class="signature-label">Remove</label>
+                <div class="pt-2">
+                  {% if f.clear_signature %}
+                    <div class="custom-control custom-checkbox">
+                      {{ f.clear_signature }}
+                      <label class="custom-control-label text-danger" for="{{ f.clear_signature.id_for_label }}">
+                        Remove image
+                      </label>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="row signature-workspace">
+              <div class="col-lg-5 mb-3 mb-lg-0">
+                <label class="signature-label">Current / Imported Signature</label>
+
+                <div class="signature-preview-box signature-preview-target">
+                  {% if f.instance.pk and f.instance.signature_image %}
+                    <img src="{{ f.instance.signature_image.url }}?v={{ f.instance.updated_at|default:f.instance.pk }}" alt="Current Signature">
+                  {% else %}
+                    <div class="signature-empty">
+                      <i class="fas fa-image d-block mb-1"></i>
+                      No signature imported yet
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="signature-actions">
+                  <button type="button" class="btn btn-sm btn-import-signature trigger-signature-upload">
+                    <i class="fas fa-file-import mr-1"></i> Import Signature
+                  </button>
+
+                  <span class="text-muted small align-self-center">
+                    PNG, JPG, JPEG recommended.
+                  </span>
+                </div>
+
+                <div class="signature-file-input">
+                  {{ f.signature_image }}
+                </div>
+
+                {% for err in f.signature_image.errors %}
+                  <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-lg-7">
+                <label class="signature-label">Draw Signature</label>
+
+                <canvas
+                  class="signature-pad-canvas"
+                  width="620"
+                  height="150">
+                </canvas>
+
+                {{ f.signature_pad_data }}
+
+                <div class="signature-actions">
+                  <button type="button" class="btn btn-sm btn-outline-danger clear-signature-pad">
+                    <i class="fas fa-eraser mr-1"></i> Clear Pad
+                  </button>
+
+                  <span class="text-muted small align-self-center">
+                    Draw with mouse, touchpad, or finger.
+                  </span>
+                </div>
+
+                {% for err in f.signature_pad_data.errors %}
+                  <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <a href="{% url 'report_template_list' %}" class="btn btn-light border">
+          <i class="fas fa-times mr-1"></i> Cancel
+        </a>
+
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i> Save Signature Roles
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  function setupImportButton(panel) {
+    const trigger = panel.querySelector(".trigger-signature-upload");
+    const fileInput = panel.querySelector("input[type='file']");
+    const preview = panel.querySelector(".signature-preview-target");
+
+    if (!trigger || !fileInput) return;
+
+    trigger.addEventListener("click", function () {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files && fileInput.files[0];
+
+      if (!file || !preview) return;
+
+      if (!file.type.startsWith("image/")) {
+        alert("Please select an image file for the signature.");
+        fileInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        preview.innerHTML = "";
+
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.alt = "Imported Signature Preview";
+
+        preview.appendChild(img);
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setupSignaturePad(panel) {
+    const canvas = panel.querySelector(".signature-pad-canvas");
+    const input = panel.querySelector("input[type='hidden'][name$='signature_pad_data']");
+    const clearBtn = panel.querySelector(".clear-signature-pad");
+
+    if (!canvas || !input) return;
+
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let hasDrawing = false;
+
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#111";
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches && e.touches.length ? e.touches[0] : e;
+
+      return {
+        x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+        y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      drawing = true;
+
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
+
+    function draw(e) {
+      if (!drawing) return;
+
+      e.preventDefault();
+
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+
+      hasDrawing = true;
+      input.value = canvas.toDataURL("image/png");
+    }
+
+    function endDraw(e) {
+      if (!drawing) return;
+
+      e.preventDefault();
+      drawing = false;
+
+      if (hasDrawing) {
+        input.value = canvas.toDataURL("image/png");
+      }
+    }
+
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mouseleave", endDraw);
+
+    canvas.addEventListener("touchstart", startDraw, { passive: false });
+    canvas.addEventListener("touchmove", draw, { passive: false });
+    canvas.addEventListener("touchend", endDraw, { passive: false });
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        input.value = "";
+        hasDrawing = false;
+      });
+    }
+  }
+
+  document.querySelectorAll(".signature-role-panel").forEach(function (panel) {
+    setupImportButton(panel);
+    setupSignaturePad(panel);
+  });
+});
+</script>
+
+{% endblock %}

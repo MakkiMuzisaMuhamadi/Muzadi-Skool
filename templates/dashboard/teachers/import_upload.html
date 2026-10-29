@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-file-excel"></i> {{ title }}</h3>
+      <small class="text-muted">{{ subtitle }}</small>
+    </div>
+    <a href="{% url back_url_name %}" class="btn btn-light btn-sm mt-2 mt-md-0"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-5 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3">1. Get the template</h5>
+        <p class="text-muted">Fill one row per line. Keep the columns in the same order and do not rename the header row.</p>
+        <a href="{% url template_url_name %}" class="btn btn-outline-success">
+          <i class="fas fa-download mr-1"></i> Download Excel template
+        </a>
+
+        <h5 class="mt-4 mb-3">2. Upload the filled file</h5>
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          <div class="form-row">
+            {% if form.academic_year %}
+              {% include "dashboard/partials/_field.html" with field=form.academic_year col="col-12" %}
+            {% endif %}
+            {% include "dashboard/partials/_field.html" with field=form.file col="col-12" %}
+          </div>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-upload mr-1"></i> Upload and check
+          </button>
+          <small class="d-block text-muted mt-2">Nothing is saved until you confirm on the next page.</small>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3">Columns in the template</h5>
+        <table class="table table-sm mb-0">
+          <thead><tr><th style="width:50px;">Col</th><th>Heading</th></tr></thead>
+          <tbody>
+            {% for key, label in columns %}
+              <tr><td class="text-muted">{{ forloop.counter }}</td><td>{{ label }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <small class="text-muted d-block mt-2">Columns marked * are required.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

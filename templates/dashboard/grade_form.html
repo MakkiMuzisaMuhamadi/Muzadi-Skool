@@ -1,0 +1,102 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <h3 class="page-title">
+    {% if grade %}Edit{% else %}Add{% endif %} Grade
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'grading_scales_list' %}">Grading Scales</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'grading_scale_detail' grading_scale.pk %}">{{ grading_scale.name }}</a></li>
+      <li class="breadcrumb-item active">{% if grade %}Edit{% else %}Add{% endif %} Grade</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Grade Letter *</label>
+                <input type="text" class="form-control" name="grade_letter" 
+                       value="{{ grade.grade_letter|default:'' }}" maxlength="5" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Grade Name *</label>
+                <input type="text" class="form-control" name="grade_name" 
+                       value="{{ grade.grade_name|default:'' }}" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <label>Scaled Score Range *</label>
+              <div class="row">
+                <div class="col-6">
+                  <input type="number" class="form-control" name="min_scaled_score" 
+                         step="0.01" placeholder="Min" value="{{ grade.min_scaled_score|default:'' }}" required>
+                </div>
+                <div class="col-6">
+                  <input type="number" class="form-control" name="max_scaled_score" 
+                         step="0.01" placeholder="Max" value="{{ grade.max_scaled_score|default:'' }}" required>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label>Percentage Range *</label>
+              <div class="row">
+                <div class="col-6">
+                  <input type="number" class="form-control" name="min_percentage" 
+                         step="0.01" placeholder="Min %" value="{{ grade.min_percentage|default:'' }}" required>
+                </div>
+                <div class="col-6">
+                  <input type="number" class="form-control" name="max_percentage" 
+                         step="0.01" placeholder="Max %" value="{{ grade.max_percentage|default:'' }}" required>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Points *</label>
+                <input type="number" class="form-control" name="points" 
+                       step="0.1" value="{{ grade.points|default:'' }}" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Order</label>
+                <input type="number" class="form-control" name="order" 
+                       value="{{ grade.order|default:'0' }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea class="form-control" name="description" rows="2">{{ grade.description|default:'' }}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-outline-success">
+            {% if grade %}Update{% else %}Create{% endif %} Grade
+          </button>
+          <a href="{% url 'grading_scale_detail' grading_scale.pk %}" class="btn btn-info">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

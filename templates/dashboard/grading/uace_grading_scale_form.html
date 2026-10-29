@@ -1,0 +1,378 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-graduation-cap"></i> {{ title }}</h3>
+    <small class="text-muted">Configure UACE paper grades, subject types, and paper-balancing rules.</small>
+  </div>
+  <div>
+    <a href="{% url 'uace_grading_scale_list' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert alert-danger">Please correct the form errors below.</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>Name</label>
+          {{ form.name }}
+          {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label>Principal Required</label>
+          {{ form.required_principal_subjects }}
+          {% for error in form.required_principal_subjects.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label>Subsidiary Required</label>
+          {{ form.required_subsidiary_subjects }}
+          {% for error in form.required_subsidiary_subjects.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group col-md-2 d-flex align-items-end">
+          <div class="form-check mb-2">
+            {{ form.require_general_paper }}
+            <label class="form-check-label ml-2">Require GP</label>
+          </div>
+        </div>
+
+        <div class="form-group col-md-2 d-flex align-items-end">
+          <div class="form-check mb-2">
+            {{ form.is_active }}
+            <label class="form-check-label ml-2">Active</label>
+          </div>
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-0">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Paper Grade Boundaries</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addPaperGradeBtn">
+        <i class="fas fa-plus mr-1"></i> Add Row
+      </button>
+    </div>
+    <div class="card-body">
+      {% if paper_formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in paper_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      {{ paper_formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Value</th>
+              <th>Min %</th>
+              <th>Max %</th>
+              <th style="width: 80px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="paperGradeTbody">
+            {% for f in paper_formset %}
+            <tr class="paper-grade-row">
+              {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+              <td>{{ f.grade_code }}{% for error in f.grade_code.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.grade_name }}{% for error in f.grade_name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.grade_value }}{% for error in f.grade_value.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.min_percentage }}{% for error in f.min_percentage.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.max_percentage }}{% for error in f.max_percentage.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td class="text-center">
+                {% if f.instance.pk %}
+                  <div class="d-none">{{ f.DELETE }}</div>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-existing-paper-btn"><i class="fas fa-trash"></i></button>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-new-paper-btn"><i class="fas fa-trash"></i></button>
+                {% endif %}
+              </td>
+            </tr>
+            {% if f.non_field_errors %}
+            <tr><td colspan="6">{% for error in f.non_field_errors %}<div class="alert alert-danger py-1 mb-1">{{ error }}</div>{% endfor %}</td></tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <template id="paperGradeEmptyTemplate">
+        <tr class="paper-grade-row">
+          {% for hidden in paper_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+          <td>{{ paper_formset.empty_form.grade_code }}</td>
+          <td>{{ paper_formset.empty_form.grade_name }}</td>
+          <td>{{ paper_formset.empty_form.grade_value }}</td>
+          <td>{{ paper_formset.empty_form.min_percentage }}</td>
+          <td>{{ paper_formset.empty_form.max_percentage }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-new-paper-btn"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Subject Configuration</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addSubjectConfigBtn">
+        <i class="fas fa-plus mr-1"></i> Add Row
+      </button>
+    </div>
+    <div class="card-body">
+      {% if subject_config_formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in subject_config_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      {{ subject_config_formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Category</th>
+              <th>Compulsory</th>
+              <th style="width: 80px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="subjectConfigTbody">
+            {% for f in subject_config_formset %}
+            <tr class="subject-config-row">
+              {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+              <td>{{ f.subject }}{% for error in f.subject.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.category }}{% for error in f.category.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.is_compulsory }}</td>
+              <td class="text-center">
+                {% if f.instance.pk %}
+                  <div class="d-none">{{ f.DELETE }}</div>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-existing-config-btn"><i class="fas fa-trash"></i></button>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-new-config-btn"><i class="fas fa-trash"></i></button>
+                {% endif %}
+              </td>
+            </tr>
+            {% if f.non_field_errors %}
+            <tr><td colspan="4">{% for error in f.non_field_errors %}<div class="alert alert-danger py-1 mb-1">{{ error }}</div>{% endfor %}</td></tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <template id="subjectConfigEmptyTemplate">
+        <tr class="subject-config-row">
+          {% for hidden in subject_config_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+          <td>{{ subject_config_formset.empty_form.subject }}</td>
+          <td>{{ subject_config_formset.empty_form.category }}</td>
+          <td>{{ subject_config_formset.empty_form.is_compulsory }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-new-config-btn"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Final Subject Grade Rules</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addSubjectRuleBtn">
+        <i class="fas fa-plus mr-1"></i> Add Row
+      </button>
+    </div>
+    <div class="card-body">
+      {% if subject_rule_formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in subject_rule_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      {{ subject_rule_formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Paper Count</th>
+              <th>Final Grade</th>
+              <th>Pattern</th>
+              <th>Points</th>
+              <th>Remarks</th>
+              <th style="width: 80px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="subjectRuleTbody">
+            {% for f in subject_rule_formset %}
+            <tr class="subject-rule-row">
+              {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+              <td>{{ f.paper_count }}{% for error in f.paper_count.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.final_grade }}{% for error in f.final_grade.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.pattern }}{% for error in f.pattern.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.points }}{% for error in f.points.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td>{{ f.remarks }}{% for error in f.remarks.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</td>
+              <td class="text-center">
+                {% if f.instance.pk %}
+                  <div class="d-none">{{ f.DELETE }}</div>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-existing-rule-btn"><i class="fas fa-trash"></i></button>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-new-rule-btn"><i class="fas fa-trash"></i></button>
+                {% endif %}
+              </td>
+            </tr>
+            {% if f.non_field_errors %}
+            <tr><td colspan="6">{% for error in f.non_field_errors %}<div class="alert alert-danger py-1 mb-1">{{ error }}</div>{% endfor %}</td></tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <template id="subjectRuleEmptyTemplate">
+        <tr class="subject-rule-row">
+          {% for hidden in subject_rule_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+          <td>{{ subject_rule_formset.empty_form.paper_count }}</td>
+          <td>{{ subject_rule_formset.empty_form.final_grade }}</td>
+          <td>{{ subject_rule_formset.empty_form.pattern }}</td>
+          <td>{{ subject_rule_formset.empty_form.points }}</td>
+          <td>{{ subject_rule_formset.empty_form.remarks }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-new-rule-btn"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="text-right">
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save mr-1"></i> Save UACE Scale
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  function setupDynamicFormset(config) {
+    const tbody = document.getElementById(config.tbodyId);
+    const addBtn = document.getElementById(config.addBtnId);
+    const tpl = document.getElementById(config.templateId);
+    const totalFormsEl = document.querySelector(`input[name="${config.prefix}-TOTAL_FORMS"]`);
+    if (!tbody || !addBtn || !tpl || !totalFormsEl) return;
+
+    function addRow() {
+      const idx = parseInt(totalFormsEl.value, 10);
+      const html = tpl.innerHTML.replaceAll("__prefix__", String(idx));
+      const temp = document.createElement("tbody");
+      temp.innerHTML = html.trim();
+      const row = temp.firstElementChild;
+
+      row.querySelectorAll("input, select, textarea").forEach(el => {
+        if (!el.classList.contains("form-control") && el.type !== "checkbox" && el.type !== "hidden") {
+          el.classList.add("form-control");
+        }
+      });
+
+      tbody.appendChild(row);
+      totalFormsEl.value = String(idx + 1);
+    }
+
+    function reindexRows() {
+      const rows = Array.from(tbody.querySelectorAll(config.rowSelector));
+      rows.forEach((row, i) => {
+        row.querySelectorAll("input, select, textarea, label").forEach(el => {
+          if (el.name) el.name = el.name.replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-");
+          if (el.id) el.id = el.id.replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-");
+          if (el.getAttribute && el.getAttribute("for")) {
+            el.setAttribute("for", el.getAttribute("for").replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-"));
+          }
+        });
+      });
+      totalFormsEl.value = String(rows.length);
+    }
+
+    addBtn.addEventListener("click", addRow);
+
+    tbody.addEventListener("click", function (e) {
+      const removeNewBtn = e.target.closest(config.removeNewBtnSelector);
+      const deleteExistingBtn = e.target.closest(config.deleteExistingBtnSelector);
+
+      if (removeNewBtn) {
+        const row = removeNewBtn.closest(config.rowSelector);
+        if (row) {
+          row.remove();
+          reindexRows();
+        }
+      }
+
+      if (deleteExistingBtn) {
+        const row = deleteExistingBtn.closest(config.rowSelector);
+        if (!row) return;
+        const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        if (deleteCheckbox) {
+          deleteCheckbox.checked = true;
+          row.style.opacity = "0.45";
+          row.style.backgroundColor = "#f8d7da";
+        }
+      }
+    });
+  }
+
+  setupDynamicFormset({
+    prefix: "papergrades",
+    tbodyId: "paperGradeTbody",
+    addBtnId: "addPaperGradeBtn",
+    templateId: "paperGradeEmptyTemplate",
+    rowSelector: ".paper-grade-row",
+    removeNewBtnSelector: ".remove-new-paper-btn",
+    deleteExistingBtnSelector: ".delete-existing-paper-btn"
+  });
+
+  setupDynamicFormset({
+    prefix: "subjectconfigs",
+    tbodyId: "subjectConfigTbody",
+    addBtnId: "addSubjectConfigBtn",
+    templateId: "subjectConfigEmptyTemplate",
+    rowSelector: ".subject-config-row",
+    removeNewBtnSelector: ".remove-new-config-btn",
+    deleteExistingBtnSelector: ".delete-existing-config-btn"
+  });
+
+  setupDynamicFormset({
+    prefix: "subjectrules",
+    tbodyId: "subjectRuleTbody",
+    addBtnId: "addSubjectRuleBtn",
+    templateId: "subjectRuleEmptyTemplate",
+    rowSelector: ".subject-rule-row",
+    removeNewBtnSelector: ".remove-new-rule-btn",
+    deleteExistingBtnSelector: ".delete-existing-rule-btn"
+  });
+})();
+</script>
+{% endblock %}

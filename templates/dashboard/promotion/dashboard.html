@@ -1,0 +1,251 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-exchange-alt"></i> Student Promotions
+      </h3>
+      <small class="text-muted">Load a class, mark decisions, and save immediately.</small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'promotion_setup' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-project-diagram mr-1"></i> Promotion Setup
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+    <strong>Promote All Students</strong>
+    <form method="post" action="{% url 'promotion_promote_all_students' %}" class="form-inline">
+      {% csrf_token %}
+      <label class="small text-muted mr-2 mb-0">Academic Year</label>
+      <select name="academic_year" id="bulkAcademicYear" class="form-control form-control-sm mr-2">
+        {% for y in form.academic_year.field.queryset %}
+          <option value="{{ y.id }}">{{ y.year }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-danger btn-sm">
+        <i class="fas fa-arrow-up mr-1"></i> Promote All Students
+      </button>
+    </form>
+  </div>
+  <div class="card-body">
+    <small class="text-muted d-block">
+      This button processes all active students in the school using their class progression setup.
+    </small>
+    <small class="text-danger d-block mt-2">
+      Promotion should only work when the selected term is allowed for promotion and marks entry has already been finalized.
+    </small>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Load Students By Class</strong>
+  </div>
+  <div class="card-body">
+    <div class="form-row align-items-end">
+      <div class="col-md-4 mb-2">
+        <label class="small text-muted mb-1">Academic Year</label>
+        {{ form.academic_year }}
+      </div>
+      <div class="col-md-4 mb-2">
+        <label class="small text-muted mb-1">Level</label>
+        {{ form.level }}
+      </div>
+      <div class="col-md-4 mb-2">
+        <label class="small text-muted mb-1">Class</label>
+        {{ form.class_ref }}
+      </div>
+      <div class="col-md-12 mt-2">
+        <button type="button" id="loadPromotionStudents" class="btn btn-success btn-sm">
+          <i class="fas fa-users mr-1"></i> Load Students
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <strong>Promotion Decisions</strong><br>
+      <small class="text-muted">Mark all promoted first, then change only the exceptions.</small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" id="markAllPromoted" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-check-double mr-1"></i> Mark All Promoted
+      </button>
+      <button type="button" id="markAllRetained" class="btn btn-outline-warning btn-sm">
+        <i class="fas fa-undo mr-1"></i> Mark All Retained
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <form method="post" action="{% url 'promotion_bulk_save' %}" id="promotionBulkSaveForm">
+      {% csrf_token %}
+      <input type="hidden" name="academic_year" id="saveAcademicYear">
+      <input type="hidden" name="class_ref" id="saveClassRef">
+      <input type="hidden" name="decisions_json" id="decisionsJson">
+
+      <div class="table-responsive">
+        <table id="promotionStudentsTable" class="table table-striped table-bordered w-100">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Admission</th>
+              <th>Name</th>
+              <th>Level</th>
+              <th>Class</th>
+              <th>Stream</th>
+              <th>Decision</th>
+              <th>Target</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="mt-3">
+        <button type="button" id="savePromotionDecisions" class="btn btn-primary btn-sm">
+          <i class="fas fa-save mr-1"></i> Save Decisions
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>Awaiting Readmission</strong>
+  </div>
+  <div class="card-body">
+    {% if awaiting_readmission %}
+      <div class="list-group">
+        {% for s in awaiting_readmission %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ s.name }}</strong><br>
+            <small class="text-muted">
+              {{ s.admission_number }} • {{ s.level.name|default:"-" }}
+              {% if s.current_class %} • {{ s.current_class.name }}{% endif %}
+            </small>
+          </div>
+          <a href="{% url 'readmit_student_view' s.id %}" class="btn btn-primary btn-sm">
+            Readmit
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted mb-0">No students awaiting readmission.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  function loadClasses(levelId, selectedValue = "") {
+    const $class = $('#id_class_ref');
+
+    if (!levelId) {
+      return;
+    }
+
+    $class.html('<option value="">---------</option>');
+
+    $.get("{% url 'ajax_classes_by_level' %}", { level_id: levelId })
+      .done(function (resp) {
+        (resp.results || []).forEach(function (c) {
+          const selected = String(selectedValue) === String(c.id) ? 'selected' : '';
+          $class.append(`<option value="${c.id}" ${selected}>${c.name}</option>`);
+        });
+      });
+  }
+
+  $('#id_level').on('change', function () {
+    loadClasses($(this).val());
+  });
+
+  const initialLevel = $('#id_level').val();
+  const initialClass = $('#id_class_ref').val();
+  if (initialLevel) {
+    loadClasses(initialLevel, initialClass);
+  }
+
+  const table = $('#promotionStudentsTable').DataTable({
+    processing: true,
+    serverSide: true,
+    pageLength: 25,
+    searching: true,
+    ajax: {
+      url: "{% url 'promotion_students_data' %}",
+      data: function (d) {
+        d.academic_year = $('#id_academic_year').val();
+        d.class_ref = $('#id_class_ref').val();
+      }
+    },
+    columns: [
+      { data: 'counter', orderable: false, searchable: false },
+      { data: 'admission' },
+      { data: 'name' },
+      { data: 'level' },
+      { data: 'class_name' },
+      { data: 'stream' },
+      { data: 'decision', orderable: false, searchable: false },
+      { data: 'target', orderable: false, searchable: false }
+    ]
+  });
+
+  $('#loadPromotionStudents').on('click', function () {
+    const year = $('#id_academic_year').val();
+    const classRef = $('#id_class_ref').val();
+
+    if (!year) {
+      alert('Please select Academic Year first.');
+      return;
+    }
+
+    if (!classRef) {
+      alert('Please select Class first.');
+      return;
+    }
+
+    table.ajax.reload();
+  });
+
+  $('#markAllPromoted').on('click', function () {
+    $('.js-decision').val('PROMOTED');
+  });
+
+  $('#markAllRetained').on('click', function () {
+    $('.js-decision').val('RETAINED');
+  });
+
+  $('#savePromotionDecisions').on('click', function () {
+    const decisions = [];
+
+    $('#promotionStudentsTable .js-decision').each(function () {
+      decisions.push({
+        student_id: parseInt($(this).data('student')),
+        status: $(this).val()
+      });
+    });
+
+    $('#saveAcademicYear').val($('#id_academic_year').val());
+    $('#saveClassRef').val($('#id_class_ref').val());
+    $('#decisionsJson').val(JSON.stringify(decisions));
+
+    $('#promotionBulkSaveForm').submit();
+  });
+})();
+</script>
+{% endblock %}

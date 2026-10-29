@@ -1,0 +1,332 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-calendar-check"></i> Take Attendance</h3>
+    <small class="text-muted">
+      Choose the register, then adjust absentees and late arrivals. Everyone starts as Present on a new register.
+      {% if not is_admin %}You can record attendance for today and the last {{ edit_days }} days.{% endif %}
+    </small>
+  </div>
+  <div>
+    <a href="{% url 'attendance_history' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-history mr-1"></i> History
+    </a>
+    <a href="{% url 'attendance_qr_take' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-qrcode mr-1"></i> QR Mode
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="post" id="attForm">
+      {% csrf_token %}
+
+      <div class="form-row">
+        <div class="form-group col-md-3">{{ form.reg_type.label_tag }} {{ form.reg_type }}</div>
+        <div class="form-group col-md-2">{{ form.date.label_tag }} {{ form.date }}</div>
+        <div class="form-group col-md-3">{{ form.class_ref.label_tag }} {{ form.class_ref }}</div>
+        <div class="form-group col-md-2">{{ form.stream.label_tag }} {{ form.stream }}</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-3" id="subjectGroup">{{ form.subject.label_tag }} {{ form.subject }}</div>
+        <div class="form-group col-md-2" id="paperGroup">{{ form.paper.label_tag }} {{ form.paper }}</div>
+        <div class="form-group col-md-4 d-flex align-items-end">
+          <span class="text-muted small" id="termLabel"></span>
+        </div>
+      </div>
+
+      <div id="sessionInfo"></div>
+
+      <div class="mb-2 d-flex flex-wrap align-items-center" style="gap:.5rem;">
+        <button type="button" class="btn btn-success btn-sm" id="markAllPresent">
+          <i class="fas fa-check mr-1"></i> Mark All Present
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" id="markAllLate">
+          <i class="fas fa-clock mr-1"></i> Mark All Late
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm" id="markAllAbsent">
+          <i class="fas fa-times mr-1"></i> Mark All Absent
+        </button>
+        <span class="ml-auto small font-weight-bold" id="counts"></span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover" id="attTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Adm</th>
+              <th>Name</th>
+              <th style="width: 220px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="attBody">
+            <tr><td colspan="4" class="text-muted">Select the register details to load students.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary" id="saveBtn" disabled>
+          <i class="fas fa-save mr-1"></i> Save Attendance
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const rosterUrl   = "{% url 'attendance_roster' %}";
+  const streamsUrl  = "{% url 'ajax_streams_for_class' %}";
+  const subjectsUrl = "{% url 'ajax_subjects_for_class' %}";
+  const papersUrl   = "{% url 'ajax_papers_for_subject' %}";
+
+  const STATUS_LABELS = {P: "Present", A: "Absent", L: "Late"};
+  const $ = (id) => document.getElementById(id);
+
+  const body    = $("attBody");
+  const saveBtn = $("saveBtn");
+  const info    = $("sessionInfo");
+  let rosterRequest = 0;   // ignores slow responses for an old selection
+
+  // Escape anything that came from the database before putting it in HTML
+  function esc(v){
+    const d = document.createElement("div");
+    d.textContent = (v === null || v === undefined) ? "" : String(v);
+    return d.innerHTML;
+  }
+
+  function isDaily(){ return $("id_reg_type").value === "daily"; }
+
+  function setMessage(html, cls){
+    body.innerHTML = `<tr><td colspan="4" class="${cls || "text-muted"}">${html}</td></tr>`;
+  }
+
+  function clearRoster(msg){
+    setMessage(esc(msg || "Select the register details to load students."));
+    saveBtn.disabled = true;
+    info.innerHTML = "";
+    $("termLabel").textContent = "";
+    $("counts").textContent = "";
+  }
+
+  function toggleRegType(){
+    const daily = isDaily();
+    $("subjectGroup").classList.toggle("d-none", daily);
+    $("paperGroup").classList.toggle("d-none", daily);
+  }
+
+  function resetSelect(selectEl, firstLabel){
+    if(!selectEl) return;
+    selectEl.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = firstLabel;
+    selectEl.appendChild(opt);
+  }
+
+  function addOptions(selectEl, items, labelKey){
+    (items || []).forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item[labelKey] || item.name || "";
+      selectEl.appendChild(opt);
+    });
+  }
+
+  async function fetchJson(url){
+    const res = await fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}});
+    let data;
+    try { data = await res.json(); }
+    catch(e){ throw new Error(`Server error (${res.status}). Please try again.`); }
+    return data;
+  }
+
+  async function loadStreamsForClass(){
+    const classId = $("id_class_ref").value;
+    resetSelect($("id_stream"), "All streams");
+    if(!classId) return;
+    const data = await fetchJson(`${streamsUrl}?class_id=${encodeURIComponent(classId)}`);
+    addOptions($("id_stream"), data.streams, "name");
+  }
+
+  async function loadSubjectsForClass(){
+    const classId = $("id_class_ref").value;
+    resetSelect($("id_subject"), "Select subject...");
+    resetSelect($("id_paper"), "All papers");
+    if(!classId) return;
+    const data = await fetchJson(`${subjectsUrl}?class_id=${encodeURIComponent(classId)}`);
+    addOptions($("id_subject"), data.subjects, "name");
+  }
+
+  async function loadPapersForSubject(){
+    const subjectId = $("id_subject").value;
+    resetSelect($("id_paper"), "All papers");
+    if(!subjectId) return;
+    const data = await fetchJson(`${papersUrl}?subject_id=${encodeURIComponent(subjectId)}`);
+    addOptions($("id_paper"), data.papers, "paper_name");
+  }
+
+  function statusSelect(studentId, value){
+    const id = parseInt(studentId, 10);
+    const opts = Object.keys(STATUS_LABELS).map(code =>
+      `<option value="${code}" ${value === code ? "selected" : ""}>${STATUS_LABELS[code]}</option>`
+    ).join("");
+    return `<select name="status_${id}" class="form-control form-control-sm statusSel">${opts}</select>`;
+  }
+
+  function updateCounts(){
+    const c = {P: 0, A: 0, L: 0};
+    document.querySelectorAll(".statusSel").forEach(sel => { c[sel.value] = (c[sel.value] || 0) + 1; });
+    const total = c.P + c.A + c.L;
+    $("counts").textContent = total
+      ? `Present ${c.P} · Absent ${c.A} · Late ${c.L} · Total ${total}`
+      : "";
+  }
+
+  async function loadRoster(){
+    const date     = $("id_date").value;
+    const classId  = $("id_class_ref").value;
+    const streamId = $("id_stream").value;
+    const subjectId = $("id_subject").value;
+    const paperId   = $("id_paper").value;
+
+    if(!date || !classId){ clearRoster(); return; }
+    if(!isDaily() && !subjectId){ clearRoster("Select a subject, or switch to Daily register."); return; }
+
+    const qs = new URLSearchParams({
+      reg_type: isDaily() ? "daily" : "subject",
+      date: date,
+      class_id: classId
+    });
+    if(streamId) qs.append("stream_id", streamId);
+    if(!isDaily()){
+      qs.append("subject_id", subjectId);
+      if(paperId) qs.append("paper_id", paperId);
+    }
+
+    const reqId = ++rosterRequest;
+    setMessage("Loading register…");
+    saveBtn.disabled = true;
+    info.innerHTML = "";
+
+    let data;
+    try {
+      data = await fetchJson(`${rosterUrl}?${qs.toString()}`);
+    } catch(e){
+      if(reqId !== rosterRequest) return;
+      setMessage(esc(e.message), "text-danger");
+      return;
+    }
+    if(reqId !== rosterRequest) return;   // selection changed while loading
+
+    if(!data.ok){
+      setMessage(esc(data.error || "Could not load the register."), "text-danger");
+      return;
+    }
+
+    $("termLabel").textContent = data.term ? `Term: ${data.term}` : "No term found for this date.";
+
+    if(data.session){
+      const s = data.session;
+      info.innerHTML = `
+        <div class="alert alert-info py-2 mb-2">
+          This register was already taken (${esc(s.method)}), last saved
+          <strong>${esc(s.submitted_at || "—")}</strong> by <strong>${esc(s.submitted_by || "—")}</strong>.
+          Saving will update it.
+          ${s.unmarked ? `<br><strong>${parseInt(s.unmarked, 10)}</strong> student(s) not yet marked are shown as Absent.` : ""}
+        </div>`;
+    }
+
+    if(!data.students || data.students.length === 0){
+      setMessage("No active students found for this selection.");
+      return;
+    }
+
+    body.innerHTML = data.students.map((s, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${esc(s.adm)}</td>
+        <td>${esc(s.name)}${(data.session && !s.marked) ? ' <span class="badge badge-secondary">not marked</span>' : ""}</td>
+        <td>${statusSelect(s.id, s.status)}</td>
+      </tr>`).join("");
+
+    saveBtn.disabled = false;
+    updateCounts();
+  }
+
+  function setAll(code){
+    document.querySelectorAll(".statusSel").forEach(sel => sel.value = code);
+    updateCounts();
+  }
+
+  // ---- Events ----
+  $("id_reg_type").addEventListener("change", () => {
+    toggleRegType();
+    if(isDaily()){
+      $("id_subject").value = "";
+      resetSelect($("id_paper"), "All papers");
+    }
+    loadRoster();
+  });
+
+  $("id_date").addEventListener("change", loadRoster);
+
+  $("id_class_ref").addEventListener("change", async () => {
+    clearRoster("Loading class…");
+    try {
+      await loadStreamsForClass();
+      await loadSubjectsForClass();
+    } catch(e){
+      clearRoster(e.message);
+      return;
+    }
+    loadRoster();
+  });
+
+  $("id_stream").addEventListener("change", loadRoster);
+
+  $("id_subject").addEventListener("change", async () => {
+    clearRoster("Loading…");
+    try { await loadPapersForSubject(); } catch(e){ clearRoster(e.message); return; }
+    loadRoster();
+  });
+
+  $("id_paper").addEventListener("change", loadRoster);
+
+  body.addEventListener("change", (e) => {
+    if(e.target.classList.contains("statusSel")) updateCounts();
+  });
+
+  $("markAllPresent").addEventListener("click", () => setAll("P"));
+  $("markAllLate").addEventListener("click", () => setAll("L"));
+  $("markAllAbsent").addEventListener("click", () => setAll("A"));
+
+  $("attForm").addEventListener("submit", (e) => {
+    if(saveBtn.disabled || !document.querySelector(".statusSel")){
+      e.preventDefault();
+      return;
+    }
+    saveBtn.disabled = true;   // stop double submission
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving…';
+  });
+
+  // ---- Initial state ----
+  toggleRegType();
+  if($("id_class_ref").value){
+    (async () => {
+      try {
+        await loadStreamsForClass();
+        await loadSubjectsForClass();
+      } catch(e){ clearRoster(e.message); return; }
+      loadRoster();
+    })();
+  }
+})();
+</script>
+{% endblock %}

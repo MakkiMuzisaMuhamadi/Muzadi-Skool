@@ -1,0 +1,534 @@
+<!-- templates/uce/top_students_ranking.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}UCE Top Students - UMTA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-card {
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .student-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .top-3-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        z-index: 1;
+    }
+    
+    .top-1-badge { background-color: #FFD700; color: #000; }
+    .top-2-badge { background-color: #C0C0C0; color: #000; }
+    .top-3-badge-bg { background-color: #CD7F32; color: #000; }
+    
+    .avatar-student {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #dee2e6;
+    }
+    
+    .grade-badge {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.5rem;
+    }
+    
+    .progress-thin {
+        height: 6px;
+        border-radius: 3px;
+    }
+    
+    .filter-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .filter-tabs .nav-link.active {
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
+        background: transparent;
+    }
+    
+    .subject-chip {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        margin: 0.1rem;
+        background: #f8f9fa;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-primary">
+                <i class="fas fa-user-graduate me-2"></i>Top Performing Students
+            </h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-graduation-cap me-1"></i>Uganda Certificate of Education (UCE) - Top 100 Students
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" style="width: 150px;" id="sortBy">
+                <option value="percentage">By Percentage</option>
+                <option value="distinctions">By Distinctions</option>
+                <option value="grade">By Grade</option>
+            </select>
+            <button class="btn btn-outline-success" onclick="toggleView()" id="viewToggle">
+                <i class="fas fa-th-list" id="viewIcon"></i>
+                <span id="viewText">List View</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card student-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Top Average</h6>
+                            <h4 class="fw-bold text-success">
+                                {% if student_rankings.0.average_percentage %}
+                                    {{ student_rankings.0.average_percentage|floatformat:1 }}%
+                                {% else %}0%{% endif %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-success rounded-circle">
+                                <i class="fas fa-chart-line fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card student-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Distinctions</h6>
+                            <h4 class="fw-bold text-warning">
+                                {% with total_distinctions=0 %}
+                                    {% for student in student_rankings %}
+                                        {% widthratio student.distinction_count 1 1 as student_dist %}
+                                        {{ total_distinctions|add:student_dist }}
+                                    {% endfor %}
+                                    {{ total_distinctions|intcomma }}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-warning rounded-circle">
+                                <i class="fas fa-star fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card student-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Grade A Students</h6>
+                            <h4 class="fw-bold text-primary">
+                                {% with grade_a_count=0 %}
+                                    {% for student in student_rankings %}
+                                        {% if student.overall_grade == 'A' %}
+                                            {% widthratio 1 1 1 as student_a %}
+                                            {{ grade_a_count|add:student_a }}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ grade_a_count }}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-primary rounded-circle">
+                                <i class="fas fa-award fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card student-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Complete Students</h6>
+                            <h4 class="fw-bold text-info">
+                                {% with complete_count=0 %}
+                                    {% for student in student_rankings %}
+                                        {% if student.is_complete %}
+                                            {% widthratio 1 1 1 as student_complete %}
+                                            {{ complete_count|add:student_complete }}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ complete_count }}
+                                {% endwith %}
+                            </h4>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-info rounded-circle">
+                                <i class="fas fa-check-circle fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="card student-card mb-4">
+        <div class="card-body">
+            <ul class="nav nav-tabs filter-tabs" id="gradeFilter" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-filter="all">All Grades</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-filter="A">Grade A</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-filter="B">Grade B</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-filter="C">Grade C</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-filter="D">Grade D</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Students Grid/List View -->
+    <div class="row" id="studentsView">
+        {% for student in student_rankings %}
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-4 student-item" 
+             data-grade="{{ student.overall_grade }}"
+             data-percentage="{{ student.average_percentage }}"
+             data-distinctions="{{ student.distinction_count }}">
+            <div class="card student-card h-100 position-relative">
+                {% if student.position <= 3 %}
+                <div class="top-3-badge {% if student.position == 1 %}top-1-badge{% elif student.position == 2 %}top-2-badge{% else %}top-3-badge-bg{% endif %}">
+                    {{ student.position }}
+                </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="position-relative d-inline-block">
+                            <div class="avatar-student bg-light d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-graduate fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                        <h5 class="mt-3 mb-1">{{ student.candidate.name }}</h5>
+                        <p class="text-muted mb-2">
+                            {{ student.candidate.candidate_id }}
+                        </p>
+                        <div class="mb-2">
+                            <span class="badge bg-light text-dark border">
+                                <i class="fas fa-school me-1"></i>
+                                {{ student.school.name|truncatechars:20 }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="student-stats">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Position:</span>
+                            <span class="fw-bold">#{{ student.position }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Average:</span>
+                            <span class="fw-bold {% if student.average_percentage >= 80 %}text-success{% elif student.average_percentage >= 60 %}text-info{% elif student.average_percentage >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ student.average_percentage|floatformat:1 }}%
+                            </span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Overall Grade:</span>
+                                <span class="fw-bold">
+                                    {% if student.overall_grade == 'A' %}
+                                        <span class="badge bg-success grade-badge">A</span>
+                                    {% elif student.overall_grade == 'B' %}
+                                        <span class="badge bg-info grade-badge">B</span>
+                                    {% elif student.overall_grade == 'C' %}
+                                        <span class="badge bg-primary grade-badge">C</span>
+                                    {% elif student.overall_grade == 'D' %}
+                                        <span class="badge bg-warning grade-badge">D</span>
+                                    {% elif student.overall_grade == 'E' %}
+                                        <span class="badge bg-danger grade-badge">E</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary grade-badge">{{ student.overall_grade }}</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="progress progress-thin">
+                                <div class="progress-bar 
+                                    {% if student.average_percentage >= 80 %}bg-success
+                                    {% elif student.average_percentage >= 60 %}bg-info
+                                    {% elif student.average_percentage >= 40 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    style="width: {{ student.average_percentage }}%">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Distinctions:</span>
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-star me-1"></i>{{ student.distinction_count }}
+                            </span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Merits:</span>
+                            <span class="badge bg-info text-white">
+                                <i class="fas fa-star-half-alt me-1"></i>{{ student.merit_count }}
+                            </span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subjects:</span>
+                            <span class="badge bg-secondary">{{ student.total_subjects_attempted }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Status:</span>
+                            <span class="badge {% if student.is_complete %}bg-success{% else %}bg-warning{% endif %}">
+                                {% if student.is_complete %}Complete{% else %}Incomplete{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <button class="btn btn-sm btn-outline-primary me-1" 
+                                onclick="viewStudentDetails('{{ student.candidate.id }}')">
+                            <i class="fas fa-eye me-1"></i>View
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" 
+                                onclick="downloadStudentReport('{{ student.candidate.id }}')">
+                            <i class="fas fa-download me-1"></i>Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card student-card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-user-graduate fa-4x text-muted mb-3"></i>
+                    <h5>No student rankings available</h5>
+                    <p class="text-muted">Please run performance computation to generate student rankings.</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if student_rankings|length > 0 %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="Student pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1">Previous</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let isListView = false;
+    
+    // Toggle between grid and list view
+    function toggleView() {
+        isListView = !isListView;
+        const view = document.getElementById('studentsView');
+        const toggleBtn = document.getElementById('viewToggle');
+        const viewIcon = document.getElementById('viewIcon');
+        const viewText = document.getElementById('viewText');
+        
+        if (isListView) {
+            view.classList.remove('row');
+            view.classList.add('list-view');
+            viewIcon.className = 'fas fa-th-large';
+            viewText.textContent = 'Grid View';
+            
+            // Convert to list view
+            document.querySelectorAll('.student-item').forEach(item => {
+                item.classList.remove('col-xl-3', 'col-lg-4', 'col-md-6', 'mb-4');
+                item.classList.add('list-item', 'mb-3');
+            });
+        } else {
+            view.classList.remove('list-view');
+            view.classList.add('row');
+            viewIcon.className = 'fas fa-th-list';
+            viewText.textContent = 'List View';
+            
+            // Convert back to grid view
+            document.querySelectorAll('.student-item').forEach(item => {
+                item.classList.add('col-xl-3', 'col-lg-4', 'col-md-6', 'mb-4');
+                item.classList.remove('list-item', 'mb-3');
+            });
+        }
+    }
+    
+    // Filter by grade
+    document.querySelectorAll('[data-filter]').forEach(button => {
+        button.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            
+            // Update active tab
+            document.querySelectorAll('[data-filter]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Filter students
+            document.querySelectorAll('.student-item').forEach(item => {
+                const grade = item.getAttribute('data-grade');
+                
+                if (filter === 'all' || grade === filter) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Sort students
+    document.getElementById('sortBy').addEventListener('change', function() {
+        const sortBy = this.value;
+        const container = document.getElementById('studentsView');
+        const items = Array.from(container.getElementsByClassName('student-item'));
+        
+        items.sort((a, b) => {
+            if (sortBy === 'percentage') {
+                const aVal = parseFloat(a.getAttribute('data-percentage'));
+                const bVal = parseFloat(b.getAttribute('data-percentage'));
+                return bVal - aVal;
+            } else if (sortBy === 'distinctions') {
+                const aVal = parseInt(a.getAttribute('data-distinctions'));
+                const bVal = parseInt(b.getAttribute('data-distinctions'));
+                return bVal - aVal;
+            } else if (sortBy === 'grade') {
+                const aVal = a.getAttribute('data-grade');
+                const bVal = b.getAttribute('data-grade');
+                return aVal.localeCompare(bVal);
+            }
+            return 0;
+        });
+        
+        // Reorder items
+        items.forEach(item => container.appendChild(item));
+        
+        // Update position numbers
+        updatePositions();
+    });
+    
+    function updatePositions() {
+        const positions = document.querySelectorAll('.student-item');
+        positions.forEach((item, index) => {
+            const positionBadge = item.querySelector('.top-3-badge');
+            if (positionBadge) {
+                positionBadge.textContent = index + 1;
+            }
+        });
+    }
+    
+    function viewStudentDetails(studentId) {
+        window.open(`/students/${studentId}/details/`, '_blank');
+    }
+    
+    function downloadStudentReport(studentId) {
+        window.open(`/reports/student/${studentId}/uce/`, '_blank');
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add list view styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .list-view .list-item {
+                width: 100%;
+            }
+            .list-view .card {
+                flex-direction: row;
+                align-items: center;
+            }
+            .list-view .card-body {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+            .list-view .avatar-student {
+                width: 50px;
+                height: 50px;
+                margin-right: 15px;
+            }
+            .list-view .student-stats {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+            }
+            .list-view .student-stats > div {
+                min-width: 120px;
+            }
+        `;
+        document.head.appendChild(style);
+    });
+</script>
+{% endblock %}

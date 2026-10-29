@@ -1,0 +1,19 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-3 text-danger"><i class="fas fa-trash"></i> Delete Subject</h5>
+    <p>
+      Delete <strong>{{ subject.name }}</strong> ({{ subject.code }})?
+      <br><small class="text-muted">This will also delete all papers under it.</small>
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'subject_list' %}" class="btn btn-light">Cancel</a>
+      <button type="submit" class="btn btn-danger">Yes, Delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,615 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+  .enroll-step-card {
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  }
+
+  .step-chip {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .step-chip.active {
+    background: #28a745;
+    color: #fff;
+  }
+
+  .step-chip.done {
+    background: #f8f9fa;
+    border: 1px solid #ced4da;
+    color: #28a745;
+  }
+
+  .step-chip.pending {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+  }
+
+  .step-line {
+    color: #adb5bd;
+    font-size: 1.2rem;
+  }
+
+  .student-summary-box {
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+    border: 1px solid #dff0e4;
+  }
+
+  .parent-select-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .parent-toolbar {
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    background: #fcfcfc;
+    padding: 14px;
+  }
+
+  .parent-search-wrap {
+    position: relative;
+  }
+
+  .parent-search-wrap .fa-search {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+  }
+
+  .parent-search-input {
+    padding-left: 38px;
+    border-radius: 12px;
+    height: 46px;
+  }
+
+  .parent-results-box {
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    background: #fff;
+    padding: 12px;
+    max-height: 460px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .parent-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .parent-card {
+    position: relative;
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    padding: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    min-width: 0;
+  }
+
+  .parent-card:hover {
+    border-color: #28a745;
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .parent-card.selected {
+    border-color: #28a745;
+    background: #f6fff8;
+    box-shadow: 0 8px 22px rgba(40, 167, 69, 0.10);
+  }
+
+  .parent-card.hidden-card {
+    display: none !important;
+  }
+
+  .parent-check {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    transform: scale(1.15);
+  }
+
+  .parent-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding-right: 28px;
+    min-width: 0;
+  }
+
+  .parent-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #eaf7ee;
+    color: #28a745;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .parent-main {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .parent-name {
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 3px;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .parent-meta {
+    font-size: 0.84rem;
+    color: #6c757d;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .parent-badges {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .parent-badge {
+    font-size: 0.74rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f1f3f5;
+    color: #495057;
+    max-width: 100%;
+  }
+
+  .selection-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f6fff8;
+    border: 1px solid #dff0e4;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 0.9rem;
+    color: #1f6f3d;
+    font-weight: 600;
+  }
+
+  .helper-card {
+    border-radius: 14px;
+    border: 1px solid #e9ecef;
+  }
+
+  .empty-parent-box {
+    border: 1px dashed #ced4da;
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    background: #fafafa;
+  }
+
+  .hidden-native-select {
+    display: none;
+  }
+
+  .no-search-results {
+    display: none;
+    text-align: center;
+    padding: 24px 12px;
+    color: #6c757d;
+  }
+
+  @media (max-width: 991.98px) {
+    .parent-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .parent-results-box {
+      max-height: 420px;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .parent-toolbar .btn {
+      margin-top: 8px;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-friends"></i> Enroll Student
+      </h3>
+      <small class="text-muted">Step 2 of 3 — Parent/Guardian</small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'enroll_student_step1_edit' draft.id %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Step 1
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card enroll-step-card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.85;">
+        <div class="step-chip done mr-2">
+          <i class="fas fa-check"></i>
+        </div>
+        <div>
+          <div class="font-weight-bold">Candidate Info</div>
+          <small class="text-muted">Saved as draft</small>
+        </div>
+      </div>
+
+      <div class="step-line d-none d-md-block">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <div class="step-chip active mr-2">2</div>
+        <div>
+          <div class="font-weight-bold">Parent/Guardian</div>
+          <small class="text-muted">Pick or add parent</small>
+        </div>
+      </div>
+
+      <div class="step-line d-none d-md-block">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center" style="opacity:.6;">
+        <div class="step-chip pending mr-2">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finish enrollment</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card student-summary-box mb-3">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+      <div>
+        <h5 class="mb-1">
+          <i class="fas fa-user mr-1"></i>
+          {{ draft.first_name }} {% if draft.middle_name %}{{ draft.middle_name }}{% endif %} {{ draft.last_name }}
+        </h5>
+        <small class="text-muted">
+          DOB: {{ draft.date_of_birth }} |
+          Level: {% if draft.level %}{{ draft.level }}{% else %}-{% endif %} |
+          Class: {% if draft.current_class %}{{ draft.current_class }}{% else %}-{% endif %}
+        </small>
+      </div>
+
+      <div class="mt-2 mt-md-0">
+        <a href="{% url 'enroll_student_step1_edit' draft.id %}" class="btn btn-outline-success btn-sm">
+          <i class="fas fa-edit mr-1"></i> Edit Step 1
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card enroll-step-card">
+        <div class="card-body">
+          <div class="parent-select-header mb-3">
+            <div>
+              <h5 class="mb-1">
+                <i class="fas fa-user-friends mr-2"></i> Select Parents/Guardians
+              </h5>
+              <small class="text-muted">
+                Search, tick, and select one or more existing parents without making the page too long.
+              </small>
+            </div>
+
+            {% url 'enroll_student_step2' draft.id as back_to_step2 %}
+            <a href="{% url 'parent_create' %}?next={{ back_to_step2|urlencode }}"
+               class="btn btn-outline-success">
+              <i class="fas fa-plus-circle mr-1"></i> Add New Parent/Guardian
+            </a>
+          </div>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          {% if form.parents.errors %}
+            <div class="alert alert-danger py-2">
+              {{ form.parents.errors }}
+            </div>
+          {% endif %}
+
+          <div class="parent-toolbar mb-3">
+            <div class="form-row align-items-center">
+              <div class="col-md-6 mb-2 mb-md-0">
+                <div class="parent-search-wrap">
+                  <i class="fas fa-search"></i>
+                  <input
+                    type="text"
+                    id="parentSearchInput"
+                    class="form-control parent-search-input"
+                    placeholder="Search parent by name..."
+                    autocomplete="off"
+                  >
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="d-flex align-items-center justify-content-md-end flex-wrap">
+                  <div class="selection-summary mr-md-2 mb-2 mb-md-0">
+                    <i class="fas fa-check-circle"></i>
+                    <span><span id="selectedParentCount">0</span> selected</span>
+                  </div>
+
+                  <button type="button" class="btn btn-sm btn-light border mr-2 mb-2 mb-md-0" id="selectVisibleParents">
+                    <i class="fas fa-check-square mr-1"></i> Select Visible
+                  </button>
+
+                  <button type="button" class="btn btn-sm btn-light border mb-2 mb-md-0" id="clearVisibleParents">
+                    <i class="fas fa-times-circle mr-1"></i> Clear Visible
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {{ form.parents }}
+
+          <div id="parentResultsBox" class="parent-results-box">
+            <div id="parentCardContainer" class="parent-grid"></div>
+            <div id="noSearchResults" class="no-search-results">
+              <i class="fas fa-search mb-2" style="font-size: 1.4rem;"></i>
+              <div class="font-weight-bold">No matching parents found</div>
+              <small>Try another name or add a new parent/guardian.</small>
+            </div>
+          </div>
+
+          <div id="noParentsBox" class="empty-parent-box mt-3" style="display:none;">
+            <div class="mb-2">
+              <i class="fas fa-user-plus fa-2x text-success"></i>
+            </div>
+            <h6 class="mb-1">No parents found</h6>
+            <p class="text-muted mb-3">
+              There are no existing parents to choose from yet. Add a parent/guardian first, then come back and select them.
+            </p>
+            <a href="{% url 'parent_create' %}?next={{ back_to_step2|urlencode }}"
+               class="btn btn-outline-success">
+              <i class="fas fa-plus-circle mr-1"></i> Add New Parent/Guardian
+            </a>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between flex-wrap mt-4">
+            <a href="{% url 'enroll_student_step1_edit' draft.id %}" class="btn btn-light">
+              <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+
+            <button type="submit" class="btn btn-outline-success mt-2 mt-md-0">
+              Continue <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card helper-card">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-lightbulb mr-2"></i> Tips</h5>
+          <ul class="text-muted pl-3 mb-0">
+            <li>Type in the search box to filter parents quickly.</li>
+            <li>Use <b>Select Visible</b> after filtering.</li>
+            <li>The parent list stays inside a scrollable box.</li>
+            <li>Click <b>Add New Parent/Guardian</b> if not found.</li>
+          </ul>
+
+          <hr>
+
+          <a href="{% url 'student_list' %}" class="btn btn-outline-danger btn-block mt-2">
+            Cancel Enrollment
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const selectEl = document.getElementById("id_parents");
+  const container = document.getElementById("parentCardContainer");
+  const noParentsBox = document.getElementById("noParentsBox");
+  const noSearchResults = document.getElementById("noSearchResults");
+  const searchInput = document.getElementById("parentSearchInput");
+  const selectedCountEl = document.getElementById("selectedParentCount");
+  const selectVisibleBtn = document.getElementById("selectVisibleParents");
+  const clearVisibleBtn = document.getElementById("clearVisibleParents");
+
+  if (!selectEl || !container) return;
+
+  selectEl.classList.add("hidden-native-select");
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text || "";
+    return div.innerHTML;
+  }
+
+  function getInitials(name) {
+    const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "P";
+    if (parts.length === 1) return parts[0].substring(0, 1).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  function updateSelectedCount() {
+    const selectedCount = Array.from(selectEl.options).filter(opt => opt.value && opt.selected).length;
+    selectedCountEl.textContent = selectedCount;
+  }
+
+  function createCard(option) {
+    const displayName = option.textContent.trim();
+
+    const card = document.createElement("label");
+    card.className = "parent-card";
+    card.setAttribute("data-value", option.value);
+    card.setAttribute("data-search", displayName.toLowerCase());
+
+    if (option.selected) {
+      card.classList.add("selected");
+    }
+
+    card.innerHTML = `
+      <input type="checkbox" class="parent-check" ${option.selected ? "checked" : ""}>
+      <div class="parent-top">
+        <div class="parent-avatar">${escapeHtml(getInitials(displayName))}</div>
+        <div class="parent-main">
+          <div class="parent-name">${escapeHtml(displayName)}</div>
+          <div class="parent-meta">Existing parent/guardian record</div>
+        </div>
+      </div>
+      <div class="parent-badges">
+        <span class="parent-badge">Selectable</span>
+        <span class="parent-badge">Guardian</span>
+      </div>
+    `;
+
+    const checkbox = card.querySelector(".parent-check");
+
+    function syncState(checked) {
+      checkbox.checked = checked;
+      option.selected = checked;
+      card.classList.toggle("selected", checked);
+      updateSelectedCount();
+    }
+
+    card.addEventListener("click", function (e) {
+      if (e.target.tagName.toLowerCase() === "input") {
+        syncState(e.target.checked);
+        return;
+      }
+      e.preventDefault();
+      syncState(!checkbox.checked);
+    });
+
+    return card;
+  }
+
+  function renderCards() {
+    container.innerHTML = "";
+    const options = Array.from(selectEl.options).filter(opt => opt.value);
+
+    if (!options.length) {
+      noParentsBox.style.display = "block";
+      noSearchResults.style.display = "none";
+      updateSelectedCount();
+      return;
+    }
+
+    noParentsBox.style.display = "none";
+
+    options.forEach(option => {
+      container.appendChild(createCard(option));
+    });
+
+    filterCards();
+    updateSelectedCount();
+  }
+
+  function filterCards() {
+    const query = (searchInput.value || "").trim().toLowerCase();
+    const cards = Array.from(container.querySelectorAll(".parent-card"));
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const haystack = card.getAttribute("data-search") || "";
+      const matched = !query || haystack.includes(query);
+      card.classList.toggle("hidden-card", !matched);
+      if (matched) visibleCount += 1;
+    });
+
+    noSearchResults.style.display = visibleCount === 0 && cards.length > 0 ? "block" : "none";
+  }
+
+  function getVisibleCards() {
+    return Array.from(container.querySelectorAll(".parent-card")).filter(card => !card.classList.contains("hidden-card"));
+  }
+
+  searchInput.addEventListener("input", filterCards);
+
+  selectVisibleBtn?.addEventListener("click", function () {
+    getVisibleCards().forEach(card => {
+      const optionValue = card.getAttribute("data-value");
+      const option = Array.from(selectEl.options).find(opt => opt.value === optionValue);
+      if (option) {
+        option.selected = true;
+        card.classList.add("selected");
+        const checkbox = card.querySelector(".parent-check");
+        if (checkbox) checkbox.checked = true;
+      }
+    });
+    updateSelectedCount();
+  });
+
+  clearVisibleBtn?.addEventListener("click", function () {
+    getVisibleCards().forEach(card => {
+      const optionValue = card.getAttribute("data-value");
+      const option = Array.from(selectEl.options).find(opt => opt.value === optionValue);
+      if (option) {
+        option.selected = false;
+        card.classList.remove("selected");
+        const checkbox = card.querySelector(".parent-check");
+        if (checkbox) checkbox.checked = false;
+      }
+    });
+    updateSelectedCount();
+  });
+
+  renderCards();
+})();
+</script>
+{% endblock %}

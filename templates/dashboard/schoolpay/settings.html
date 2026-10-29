@@ -1,0 +1,125 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-plug"></i> SchoolPay Connection</h3>
+    <small class="text-muted">Parents pay with SchoolPay; the payments appear here as receipts on their child's account.</small>
+  </div>
+  {% if config.pk %}
+  <a href="{% url 'schoolpay_payments' %}" class="btn btn-primary btn-sm">
+    SchoolPay payments {% if attention_count %}<span class="badge badge-light">{{ attention_count }} need attention</span>{% endif %}
+  </a>
+  {% endif %}
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Connection details</strong></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save">
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>SchoolPay school code</label>{{ form.school_code }}
+              {% if form.school_code.errors %}<div class="text-danger small">{{ form.school_code.errors|join:" " }}</div>{% endif %}
+            </div>
+            <div class="form-group col-md-6">
+              <label>{{ form.api_password.label }}</label>{{ form.api_password }}
+              <small class="text-muted">{% if config.has_password %}A password is saved. {% endif %}{{ form.api_password.help_text }}</small>
+              {% if form.api_password.errors %}<div class="text-danger small">{{ form.api_password.errors|join:" " }}</div>{% endif %}
+            </div>
+          </div>
+          <p class="small text-muted">Get the school code and API password from SchoolPay (support@schoolpay.co.ug or your SchoolPay account manager).</p>
+
+          <div class="form-check mb-2">{{ form.is_enabled }} <label class="form-check-label" for="{{ form.is_enabled.id_for_label }}">{{ form.is_enabled.label }}</label></div>
+          <div class="form-check mb-2">{{ form.sms_parent_on_payment }} <label class="form-check-label" for="{{ form.sms_parent_on_payment.id_for_label }}">{{ form.sms_parent_on_payment.label }}</label></div>
+
+          <details class="mb-3">
+            <summary class="text-muted">Advanced</summary>
+            <div class="form-check mt-2">{{ form.strict_mode }} <label class="form-check-label" for="{{ form.strict_mode.id_for_label }}">{{ form.strict_mode.label }}</label></div>
+            <small class="text-muted d-block mb-2">Leave off normally. Every payment is still confirmed against SchoolPay's records within the hour.</small>
+            <div class="form-group">
+              <label>Days to re-check each hour</label>{{ form.sync_days_back }}
+              {% if form.sync_days_back.errors %}<div class="text-danger small">{{ form.sync_days_back.errors|join:" " }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label>Only accept notifications from these IP addresses</label>{{ form.allowed_ips }}
+              {% if form.allowed_ips.errors %}<div class="text-danger small">{{ form.allowed_ips.errors|join:" " }}</div>{% endif %}
+            </div>
+          </details>
+          <button class="btn btn-primary">Save and connect</button>
+        </form>
+
+        {% if config.pk %}
+        <hr>
+        <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="test">
+          <button class="btn btn-outline-secondary btn-sm">Test connection</button></form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if config.pk %}
+    <div class="card mb-3">
+      <div class="card-header"><strong>Instant payment notifications</strong></div>
+      <div class="card-body">
+        <p class="mb-2">Give this address to SchoolPay so payments appear within seconds. Without it, payments still arrive within an hour.</p>
+        <div class="input-group mb-2">
+          <input type="text" class="form-control" id="webhookUrl" value="{{ webhook_url }}" readonly>
+          <div class="input-group-append"><button class="btn btn-outline-primary" type="button"
+            onclick="navigator.clipboard.writeText(document.getElementById('webhookUrl').value); this.textContent='Copied';">Copy</button></div>
+        </div>
+        <form method="post" onsubmit="return confirm('The old address will stop working. You must give SchoolPay the new one. Continue?');">
+          {% csrf_token %}<input type="hidden" name="action" value="regenerate_token">
+          <button class="btn btn-link btn-sm text-danger p-0">Create a new address (if the old one leaked)</button>
+        </form>
+      </div>
+    </div>
+
+    {% if mappings %}
+    <div class="card mb-3">
+      <div class="card-header"><strong>Other fees paid through SchoolPay</strong></div>
+      <div class="card-body">
+        <p class="small text-muted">Choose which fee each SchoolPay item pays. Unmapped items pay the oldest fees first, like school fees.</p>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="save_mappings">
+          <table class="table table-sm">
+            {% for m in mappings %}
+            <tr><td>{{ m.description|default:m.supplementary_fee_id }}</td>
+              <td><select name="mapping_{{ m.pk }}" class="form-control form-control-sm">
+                <option value="">Oldest fees first</option>
+                {% for c in fee_categories %}<option value="{{ c.pk }}" {% if m.fee_category_id == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+              </select></td></tr>
+            {% endfor %}
+          </table>
+          <button class="btn btn-outline-primary btn-sm">Save</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><strong>Checklist</strong></div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">{% if config.school_code and config.has_password %}<i class="fas fa-check text-success mr-2"></i>{% else %}<i class="far fa-circle text-muted mr-2"></i>{% endif %}School code and API password saved</li>
+        <li class="list-group-item">{% if config.is_enabled %}<i class="fas fa-check text-success mr-2"></i>Connection switched on{% else %}<i class="far fa-circle text-muted mr-2"></i>Connection off{% endif %}</li>
+        <li class="list-group-item">
+          {% if config.last_sync_at %}{% if config.last_sync_ok %}<i class="fas fa-check text-success mr-2"></i>{% else %}<i class="fas fa-times text-danger mr-2"></i>{% endif %}
+            Last check {{ config.last_sync_at|timesince }} ago<small class="d-block text-muted">{{ config.last_sync_message }}</small>
+          {% else %}<i class="far fa-circle text-muted mr-2"></i>Not checked with SchoolPay yet{% endif %}
+        </li>
+        <li class="list-group-item">{% if config.last_webhook_at %}<i class="fas fa-check text-success mr-2"></i>Instant notifications working (last {{ config.last_webhook_at|timesince }} ago){% else %}<i class="far fa-circle text-muted mr-2"></i>No instant notification received yet{% endif %}</li>
+        <li class="list-group-item">{% if students_with_code == students_total and students_total %}<i class="fas fa-check text-success mr-2"></i>{% else %}<i class="far fa-circle text-muted mr-2"></i>{% endif %}
+          {{ students_with_code }} of {{ students_total }} students have a SchoolPay code
+          <small class="d-block text-muted">Codes are learnt automatically when SchoolPay's registration number matches the admission number. <a href="{% url 'schoolpay_import_codes' %}">Import codes</a></small></li>
+        <li class="list-group-item">{% if has_current_term %}<i class="fas fa-check text-success mr-2"></i>Current term set{% else %}<i class="fas fa-exclamation-triangle text-warning mr-2"></i>No current term set (payments use the term matching their date){% endif %}</li>
+        {% if unmapped_fees %}<li class="list-group-item"><i class="fas fa-exclamation-triangle text-warning mr-2"></i>{{ unmapped_fees }} SchoolPay item(s) not linked to a fee</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

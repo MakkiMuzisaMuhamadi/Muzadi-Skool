@@ -1,0 +1,135 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-exclamation-circle"></i> Fee Defaulters</h3>
+    <small class="text-muted">One line per student. Any credit the student has is already subtracted.</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'fee_defaulters_report_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger btn-sm" target="_blank">
+      <i class="fas fa-file-pdf mr-1"></i> Print PDF
+    </a>
+    {% if rows %}
+    <button class="btn btn-primary btn-sm" data-toggle="collapse" data-target="#smsBox">
+      <i class="fas fa-sms mr-1"></i> SMS parents
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="form-row align-items-end">
+      <div class="col-md-3"><label>Academic year</label>
+        <select name="academic_year" id="filter_academic_year" class="form-control"><option value="">All</option>
+          {% for year in academic_years %}<option value="{{ year.id }}" {% if request.GET.academic_year == year.id|stringformat:"s" %}selected{% endif %}>{{ year.year }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2"><label>Term</label>
+        <select name="term" id="filter_term" class="form-control"><option value="">All</option>
+          {% for t in terms %}<option value="{{ t.id }}" {% if request.GET.term == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-3"><label>Class (current)</label>
+        <select name="class_ref" class="form-control"><option value="">All</option>
+          {% for cls in classes %}<option value="{{ cls.id }}" {% if request.GET.class_ref == cls.id|stringformat:"s" %}selected{% endif %}>{{ cls.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2"><label>Stream</label>
+        <select name="stream" class="form-control"><option value="">All</option>
+          {% for st in streams %}<option value="{{ st.id }}" {% if request.GET.stream == st.id|stringformat:"s" %}selected{% endif %}>{{ st.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2">
+        <button class="btn btn-primary btn-sm btn-block">Filter</button>
+        <a href="{% url 'fee_defaulters_report' %}" class="btn btn-light btn-sm btn-block">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row text-center mb-3">
+  <div class="col-md-4"><div class="border rounded p-3 bg-white"><small class="text-muted d-block">Students owing</small><strong>{{ totals.count }}</strong></div></div>
+  <div class="col-md-4"><div class="border rounded p-3 bg-white"><small class="text-muted d-block">Total owed</small><strong class="text-danger">UGX {{ totals.balance|floatformat:0|intcomma }}</strong></div></div>
+  <div class="col-md-4"><div class="border rounded p-3 bg-white"><small class="text-muted d-block">No parent phone</small><strong>{{ totals.no_phone }}</strong></div></div>
+</div>
+
+<form method="post" action="{% url 'fee_defaulters_sms' %}" id="smsForm">
+  {% csrf_token %}
+  <input type="hidden" name="academic_year" value="{{ request.GET.academic_year }}">
+  <input type="hidden" name="term" value="{{ request.GET.term }}">
+  <input type="hidden" name="class_ref" value="{{ request.GET.class_ref }}">
+  <input type="hidden" name="stream" value="{{ request.GET.stream }}">
+
+  <div class="collapse mb-3" id="smsBox">
+    <div class="card border-primary"><div class="card-body">
+      <label>Message</label>
+      {{ reminder_form.message }}
+      <small class="text-muted d-block mb-2">{{ reminder_form.message.help_text }} Tick students below to remind only them; tick none to remind everyone on this list.</small>
+      <button class="btn btn-primary" onclick="return confirm('Send fee reminders now? SMS charges apply.');">
+        <i class="fas fa-paper-plane mr-1"></i> Send reminders
+      </button>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm" id="defaultersTable">
+          <thead class="thead-light">
+            <tr>
+              <th><input type="checkbox" id="checkAll" title="Select all"></th>
+              <th>Adm No</th><th>Student</th><th>Class</th><th>Terms owing</th>
+              <th class="text-right">Owing</th><th class="text-right">Credit</th><th class="text-right">Balance</th>
+              <th>Parent phone</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              <td><input type="checkbox" name="student_ids" value="{{ row.student_id }}" class="row-check"></td>
+              <td>{{ row.student__admission_number }}</td>
+              <td>{{ row.student__name }}</td>
+              <td>{{ row.class_ref__name|default:"-" }} {{ row.stream_name }}</td>
+              <td>{{ row.terms_owing }}</td>
+              <td class="text-right">{{ row.owing|floatformat:0|intcomma }}</td>
+              <td class="text-right">{{ row.credit|floatformat:0|intcomma }}</td>
+              <td class="text-right" data-order="{{ row.balance }}"><strong class="text-danger">{{ row.balance|floatformat:0|intcomma }}</strong></td>
+              <td>{% if row.parent_phone %}<a href="tel:{{ row.parent_phone }}">{{ row.parent_phone }}</a><small class="d-block text-muted">{{ row.parent_name }}</small>{% else %}<span class="text-muted">None</span>{% endif %}</td>
+              <td class="text-nowrap">
+                <a href="{% url 'student_fee_statement' row.student_id %}" class="btn btn-sm btn-outline-primary">Statement</a>
+                <a href="{% url 'fees_collect' %}?student_id={{ row.student_id }}" class="btn btn-sm btn-outline-success">Pay</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted">Nobody owes fees for this selection.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    {% if rows %}$('#defaultersTable').DataTable({ pageLength: 50, order: [[7, 'desc']], columnDefs: [{ orderable: false, targets: [0, 9] }] });{% endif %}
+    $('#checkAll').on('change', function () { $('.row-check').prop('checked', this.checked); });
+
+    const initialTerm = "{{ request.GET.term|default:'' }}";
+    function loadTerms(yearId, selectedValue) {
+      const $term = $('#filter_term');
+      $term.empty().append('<option value="">All</option>');
+      if (!yearId) return;
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const opt = $('<option>').val(item.id).text(item.text);
+          if (selectedValue && String(selectedValue) === String(item.id)) opt.prop('selected', true);
+          $term.append(opt);
+        });
+      });
+    }
+    $('#filter_academic_year').on('change', function () { loadTerms($(this).val()); });
+  });
+</script>
+{% endblock %}

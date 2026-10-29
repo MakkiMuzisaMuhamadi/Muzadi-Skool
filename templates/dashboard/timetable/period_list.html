@@ -1,0 +1,64 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-clock mr-2 text-primary"></i> Bell Schedules &amp; Periods</h3>
+    <small class="text-muted">Each bell schedule is one kind of school day. A timetable uses a default schedule and can override single days.</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'timetable_setup_list' 'bell_schedule' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-bell mr-1"></i> Manage Schedules</a>
+    <a href="{% url 'timetable_period_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add Period</a>
+  </div>
+</div>
+
+{% for schedule in schedules %}
+<div class="card mb-3">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <strong>{{ schedule.name }}</strong>
+      {% if schedule.is_default %}<span class="badge badge-primary ml-1">Default</span>{% endif %}
+      {% if not schedule.is_active %}<span class="badge badge-secondary ml-1">Inactive</span>{% endif %}
+      {% if schedule.description %}<small class="text-muted ml-2">{{ schedule.description }}</small>{% endif %}
+    </div>
+    <a href="{% url 'timetable_period_create' %}?bell_schedule={{ schedule.pk }}" class="btn btn-light btn-sm border"><i class="fas fa-plus"></i> Period</a>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>#</th><th>Name</th><th>Start</th><th>End</th><th>Duration</th><th>Type</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+      <tbody>
+        {% for item in schedule.periods.all %}
+        <tr>
+          <td>{{ item.order }}</td>
+          <td><strong>{{ item.name }}</strong></td>
+          <td>{{ item.start_time|time:"H:i" }}</td>
+          <td>{{ item.end_time|time:"H:i" }}</td>
+          <td>{{ item.duration_minutes }} mins</td>
+          <td><span class="badge {% if item.is_lesson %}badge-light border{% else %}badge-warning{% endif %}">{{ item.get_period_type_display }}</span></td>
+          <td>{% if item.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-secondary">Inactive</span>{% endif %}</td>
+          <td class="text-right"><a href="{% url 'timetable_period_update' item.pk %}" class="btn btn-outline-primary btn-sm">Edit</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted">No periods in this schedule yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% empty %}
+<div class="alert alert-info">No bell schedules yet. <a href="{% url 'timetable_setup_create' 'bell_schedule' %}" class="alert-link">Create the first one</a> (e.g. "Normal Day").</div>
+{% endfor %}
+
+{% if unassigned %}
+<div class="card border-warning">
+  <div class="card-header bg-white"><strong>Periods without a bell schedule</strong> <small class="text-muted">Edit each one and choose a schedule.</small></div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      {% for item in unassigned %}
+      <tr><td>{{ item.name }}</td><td>{{ item.start_time|time:"H:i" }} - {{ item.end_time|time:"H:i" }}</td>
+        <td class="text-right"><a href="{% url 'timetable_period_update' item.pk %}" class="btn btn-outline-primary btn-sm">Edit</a></td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

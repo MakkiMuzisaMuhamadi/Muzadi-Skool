@@ -1,0 +1,102 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-calendar-day"></i> Attendance Register</h3>
+    <small class="text-muted">{{ session.register_label }} — {{ session.date|date:"l, d M Y" }}</small>
+  </div>
+  <div>
+    <a href="{% url 'attendance_take' %}" class="btn btn-outline-success btn-sm">
+      <i class="fas fa-edit mr-1"></i> Take Attendance
+    </a>
+    <a href="{% url 'attendance_history' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> History
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">Summary</h6>
+        <div class="d-flex justify-content-between"><span>Present</span><strong class="text-success">{{ stats.P }}</strong></div>
+        <div class="d-flex justify-content-between"><span>Absent</span><strong class="text-danger">{{ stats.A }}</strong></div>
+        <div class="d-flex justify-content-between"><span>Late</span><strong class="text-warning">{{ stats.L }}</strong></div>
+        <div class="d-flex justify-content-between"><span>Not marked</span><strong>{{ unmarked|length }}</strong></div>
+
+        <hr>
+        <div class="small text-muted">
+          <div>Register: {% if session.subject %}{{ session.subject.name }}{% if session.paper %} ({{ session.paper.paper_name }}){% endif %}{% else %}Daily register{% endif %}</div>
+          <div>Term: {% if session.term %}{{ session.term }}{% else %}—{% endif %}</div>
+          <div>Method: {{ session.get_method_display }}</div>
+          <div>Taken by: {% if session.taken_by %}{{ session.taken_by.get_full_name|default:session.taken_by.username }}{% else %}—{% endif %}</div>
+          <div>Last saved:
+            {% if session.submitted_at %}{{ session.submitted_at|date:"d M Y H:i" }}
+              {% if session.submitted_by %}by {{ session.submitted_by.get_full_name|default:session.submitted_by.username }}{% endif %}
+            {% else %}—{% endif %}
+          </div>
+          {% if session.closed_at %}
+            <div>Closed: {{ session.closed_at|date:"d M Y H:i" }}{% if session.closed_by %} by {{ session.closed_by.get_full_name|default:session.closed_by.username }}{% endif %}</div>
+          {% endif %}
+        </div>
+
+        {% if can_edit and unmarked %}
+          <hr>
+          <form method="post" action="{% url 'attendance_session_close' session.id %}"
+                onsubmit="return confirm('Mark the {{ unmarked|length }} unmarked student(s) as Absent?');">
+            {% csrf_token %}
+            <button class="btn btn-danger btn-sm btn-block">
+              <i class="fas fa-lock mr-1"></i> Close register (mark {{ unmarked|length }} Absent)
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead><tr><th>#</th><th>Adm</th><th>Name</th><th>Status</th><th>Marked</th></tr></thead>
+            <tbody>
+              {% for r in records %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ r.student.admission_number }}</td>
+                <td>{{ r.student.name|default:r.student.first_name }}{% if not r.student.name %} {{ r.student.last_name }}{% endif %}</td>
+                <td>
+                  {% if r.status == "P" %}<span class="badge badge-success">Present</span>
+                  {% elif r.status == "A" %}<span class="badge badge-danger">Absent</span>
+                  {% else %}<span class="badge badge-warning">Late</span>{% endif %}
+                </td>
+                <td class="small text-muted">
+                  {{ r.marked_at|date:"d M H:i" }}{% if r.marked_by %} · {{ r.marked_by.get_full_name|default:r.marked_by.username }}{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+
+              {% for s in unmarked %}
+              <tr class="table-light">
+                <td>—</td>
+                <td>{{ s.admission_number }}</td>
+                <td>{{ s.name|default:s.first_name }}{% if not s.name %} {{ s.last_name }}{% endif %}</td>
+                <td><span class="badge badge-secondary">Not marked</span></td>
+                <td></td>
+              </tr>
+              {% endfor %}
+
+              {% if not records and not unmarked %}
+              <tr><td colspan="5" class="text-muted">No students on this register.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

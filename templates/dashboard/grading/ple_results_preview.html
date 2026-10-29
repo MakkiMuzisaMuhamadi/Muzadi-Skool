@@ -1,0 +1,94 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-eye"></i> {{ title }}</h3>
+    <small class="text-muted">View PLE grading scale details.</small>
+  </div>
+  <div>
+    <a href="{% url back_url %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3"><b>Name:</b> {{ scale.name }}</div>
+      <div class="col-md-2"><b>Required:</b> {{ scale.required_subjects }}</div>
+      <div class="col-md-2"><b>Best Of:</b> {{ scale.best_of_subjects }}</div>
+      <div class="col-md-3"><b>Missing Subject Rule:</b> {{ scale.ungraded_if_missing_subject|yesno:"Yes,No" }}</div>
+      <div class="col-md-2">
+        <b>Status:</b>
+        {% if scale.is_active %}
+          <span class="badge badge-success">ACTIVE</span>
+        {% else %}
+          <span class="badge badge-secondary">INACTIVE</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><h5 class="mb-0">Subject Grades</h5></div>
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Grade</th>
+          <th>Name</th>
+          <th>Min %</th>
+          <th>Max %</th>
+          <th>Aggregate</th>
+          <th>Ungraded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in grades %}
+        <tr>
+          <td>{{ g.grade_letter }}</td>
+          <td>{{ g.grade_name }}</td>
+          <td>{{ g.min_percentage }}</td>
+          <td>{{ g.max_percentage }}</td>
+          <td>{{ g.aggregate_point }}</td>
+          <td>{{ g.is_ungraded|yesno:"Yes,No" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted">No subject grades defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Final Divisions</h5></div>
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Division</th>
+          <th>Min Aggregate</th>
+          <th>Max Aggregate</th>
+          <th>Ungraded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in divisions %}
+        <tr>
+          <td>{{ d.division }}</td>
+          <td>{{ d.min_aggregate }}</td>
+          <td>{{ d.max_aggregate }}</td>
+          <td>{{ d.is_ungraded|yesno:"Yes,No" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted">No division rules defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

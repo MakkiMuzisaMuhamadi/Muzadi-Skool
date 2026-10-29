@@ -1,0 +1,649 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  .rc-card {
+    border: 1px solid #e9ecef;
+    border-radius: .9rem;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+  }
+
+  .rc-card .card-body {
+    padding: 1.1rem;
+  }
+
+  .rc-section-title {
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .rc-stat-box {
+    background: #f8f9fa;
+    border: 1px solid #edf0f2;
+    border-radius: .75rem;
+    padding: .85rem;
+    height: 100%;
+  }
+
+  .rc-stat-label {
+    font-size: .78rem;
+    color: #6c757d;
+    margin-bottom: .2rem;
+  }
+
+  .rc-stat-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #212529;
+  }
+
+  .badge-soft-success,
+  .badge-soft-danger,
+  .badge-soft-warning,
+  .badge-soft-primary,
+  .badge-soft-secondary {
+    padding: .38rem .62rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+  }
+
+  .badge-soft-success {
+    background: rgba(40, 167, 69, .13);
+    color: #198754;
+  }
+
+  .badge-soft-danger {
+    background: rgba(220, 53, 69, .13);
+    color: #dc3545;
+  }
+
+  .badge-soft-warning {
+    background: rgba(255, 193, 7, .2);
+    color: #946200;
+  }
+
+  .badge-soft-primary {
+    background: rgba(13, 110, 253, .12);
+    color: #0d6efd;
+  }
+
+  .badge-soft-secondary {
+    background: rgba(108, 117, 125, .13);
+    color: #6c757d;
+  }
+
+  .table td,
+  .table th {
+    vertical-align: middle;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: .5rem;
+  }
+
+  .help-box {
+    background: #eef6ff;
+    border: 1px solid #d8eaff;
+    border-radius: .75rem;
+    padding: .85rem;
+    color: #275276;
+  }
+</style>
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-desktop text-primary"></i> Report Command Center
+    </h3>
+    <small class="text-muted">
+      Class-based report generation with batched performance computation, positions, PDF generation and ZIP downloads.
+    </small>
+  </div>
+
+  <div class="d-flex mt-2 mt-md-0" style="gap:.5rem;">
+    <a href="{% url 'report_run_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-history mr-1"></i> Runs History
+    </a>
+  </div>
+</div>
+
+<div class="card rc-card mb-3">
+  <div class="card-body">
+    <div class="rc-section-title">
+      <i class="fas fa-sliders-h text-primary"></i>
+      <span>Step 1: Select Class / Stream</span>
+    </div>
+
+
+
+    <form method="post" id="reportCommandForm">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-3 mb-3">
+          <label><b>Academic Year</b></label>
+          <select name="academic_year_id" id="academic_year_id" class="form-control" required>
+            <option value="">Select year</option>
+            {% for y in academic_years %}
+              <option value="{{ y.id }}" {% if filters.academic_year_id|stringformat:"s" == y.id|stringformat:"s" %}selected{% endif %}>
+                {{ y }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label><b>Term</b></label>
+          <select name="term_id" id="term_id" class="form-control" required>
+            <option value="">Select term</option>
+            {% for t in terms %}
+              <option value="{{ t.id }}" {% if filters.term_id|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>
+                {{ t.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label><b>Level</b></label>
+          <select name="level_scope" id="level_scope" class="form-control">
+            {% for value,label in level_choices %}
+              <option value="{{ value }}" {% if filters.level_scope == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label><b>Class</b></label>
+          <select name="class_ref_id" id="class_ref_id" class="form-control" required>
+            <option value="">Select class</option>
+            {% for c in classes %}
+              <option value="{{ c.id }}" {% if filters.class_ref_id|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                {{ c.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label><b>Stream</b> <small class="text-muted">optional</small></label>
+          <select name="stream_id" id="stream_id" class="form-control">
+            <option value="">All streams in class</option>
+            {% for s in streams %}
+              <option value="{{ s.id }}" {% if filters.stream_id|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>
+                {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-3" id="studentWrap" style="display:none;">
+          <label><b>Student</b></label>
+          <select name="student_id" id="student_id" class="form-control">
+            <option value="">Select student</option>
+            {% for s in students %}
+              <option value="{{ s.id }}" {% if filters.student_id|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>
+                {{ s }}{% if s.admission_number %} ({{ s.admission_number }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-12 d-flex flex-wrap align-items-center" style="gap:.5rem;">
+          <button type="submit" name="action" value="check" class="btn btn-warning btn-sm">
+            <i class="fas fa-search mr-1"></i> Check Readiness
+          </button>
+
+          <button type="submit" name="action" value="start" class="btn btn-primary btn-sm"
+                  onclick="return confirm('Start report-card generation for this class/stream?');">
+            <i class="fas fa-play mr-1"></i> Generate Report Cards
+          </button>
+
+          <a href="{% url 'report_command_center' %}" class="btn btn-light btn-sm">
+            <i class="fas fa-sync-alt mr-1"></i> Reset
+          </a>
+
+          <span class="text-muted small ml-2">
+            Scope is automatic: Class if no stream, Stream if stream is selected.
+          </span>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if readiness %}
+<div class="card rc-card mb-3">
+  <div class="card-body">
+    <div class="rc-section-title">
+      <i class="fas fa-clipboard-check text-success"></i>
+      <span>Step 2: Readiness Result</span>
+    </div>
+
+    <div class="alert alert-{{ readiness.status_color }} mb-3">
+      <strong>{{ readiness.title }}</strong>
+      {% if readiness.can_generate %}
+        — You can generate report cards.
+      {% else %}
+        — Fix the red issues before generating.
+      {% endif %}
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-3 mb-2">
+        <div class="rc-stat-box">
+          <div class="rc-stat-label">Students</div>
+          <div class="rc-stat-value">{{ readiness.summary.students }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-2">
+        <div class="rc-stat-box">
+          <div class="rc-stat-label">Levels</div>
+          <div class="rc-stat-value">
+            {% for level in readiness.summary.levels %}
+              {{ level }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+              -
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-2">
+        <div class="rc-stat-box">
+          <div class="rc-stat-label">Errors</div>
+          <div class="rc-stat-value text-danger">{{ readiness.summary.errors }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-2">
+        <div class="rc-stat-box">
+          <div class="rc-stat-label">Warnings</div>
+          <div class="rc-stat-value text-warning">{{ readiness.summary.warnings }}</div>
+        </div>
+      </div>
+    </div>
+
+    {% if readiness.issues %}
+      <div class="table-responsive">
+        <table id="readinessTable" class="table table-bordered table-hover table-sm w-100">
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Issue</th>
+              <th>Student</th>
+              <th>Class</th>
+              <th>Stream</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in readiness.issues %}
+              <tr>
+                <td>
+                  {% if item.level == "ERROR" %}
+                    <span class="badge-soft-danger">Red</span>
+                  {% elif item.level == "WARNING" %}
+                    <span class="badge-soft-warning">Yellow</span>
+                  {% else %}
+                    <span class="badge-soft-primary">Info</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.message }}</td>
+                <td>{{ item.student|default:"-" }}</td>
+                <td>{{ item.class_name|default:"-" }}</td>
+                <td>{{ item.stream_name|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if current_run %}
+<div class="card rc-card mb-3">
+  <div class="card-body">
+    <div class="rc-section-title">
+      <i class="fas fa-cogs text-primary"></i>
+      <span>Current Run</span>
+    </div>
+
+    <div id="runProgressBox" data-progress-url="{% url 'report_run_progress' current_run.id %}">
+      <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+        <div>
+          <strong>Status:</strong>
+          <span id="runStatus" class="badge-soft-warning">{{ current_run.status }}</span>
+          <span id="runMessage" class="text-muted ml-2">{{ current_run.message }}</span>
+        </div>
+
+        <div class="d-flex mt-2 mt-md-0" style="gap:.5rem;">
+          <a href="{% url 'report_run_detail' current_run.id %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-eye mr-1"></i> Open Progress Page
+          </a>
+        </div>
+      </div>
+
+      <div class="progress mb-3" style="height: 20px;">
+        <div id="runProgressBar"
+             class="progress-bar progress-bar-striped progress-bar-animated"
+             style="width: {{ current_run.percent }}%;">
+          {{ current_run.percent }}%
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-2 mb-2">
+          <div class="rc-stat-box">
+            <div class="rc-stat-label">Total</div>
+            <div class="rc-stat-value" id="runTotal">{{ current_run.total_students }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-2 mb-2">
+          <div class="rc-stat-box">
+            <div class="rc-stat-label">Done</div>
+            <div class="rc-stat-value" id="runDone">{{ current_run.done_students }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-2 mb-2">
+          <div class="rc-stat-box">
+            <div class="rc-stat-label">Success</div>
+            <div class="rc-stat-value" id="runProcessed">{{ current_run.processed_students }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-2 mb-2">
+          <div class="rc-stat-box">
+            <div class="rc-stat-label">Failed</div>
+            <div class="rc-stat-value text-danger" id="runFailed">{{ current_run.failed_students }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-2 mb-2">
+          <div class="rc-stat-box">
+            <div class="rc-stat-label">Skipped</div>
+            <div class="rc-stat-value" id="runSkipped">{{ current_run.skipped_students }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-2 mb-2">
+          <div class="rc-stat-box">
+            <div class="rc-stat-label">ETA</div>
+            <div class="rc-stat-value" id="runEta">{{ current_run.eta_human }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card rc-card mb-3">
+  <div class="card-body">
+    <div class="rc-section-title">
+      <i class="fas fa-file-pdf text-danger"></i>
+      <span>Latest Generated Report Cards</span>
+    </div>
+
+    <div class="table-responsive">
+      <table id="snapshotsTable" class="table table-bordered table-hover w-100">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Year</th>
+            <th>Term</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for snap in snapshots %}
+            <tr>
+              <td>{{ snap.student }}</td>
+              <td>{{ snap.class_ref|default:"-" }}</td>
+              <td>{{ snap.stream|default:"-" }}</td>
+              <td>{{ snap.academic_year }}</td>
+              <td>{{ snap.term }}</td>
+              <td>
+                {% if snap.pdf %}
+                  <div class="d-flex flex-wrap" style="gap:.35rem;">
+                    <a href="{% url 'view_report_pdf_admin' snap.id %}"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-info">
+                      <i class="fas fa-eye mr-1"></i> View
+                    </a>
+
+                    <a href="{% url 'download_report_pdf_admin' snap.id %}"
+                       class="btn btn-sm btn-outline-danger">
+                      <i class="fas fa-download mr-1"></i> PDF
+                    </a>
+                  </div>
+                {% else %}
+                  <span class="badge-soft-warning">No PDF</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">No generated report cards found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card rc-card">
+  <div class="card-body">
+    <div class="rc-section-title">
+      <i class="fas fa-history text-success"></i>
+      <span>Recent Runs</span>
+    </div>
+
+    <div class="table-responsive">
+      <table id="runsTable" class="table table-bordered table-hover w-100">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Level</th>
+            <th>Scope</th>
+            <th>Target</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for run in recent_runs %}
+            <tr>
+              <td>{{ run.created_at|date:"Y-m-d H:i" }}</td>
+              <td><span class="badge-soft-primary">{{ run.level_scope }}</span></td>
+              <td><span class="badge-soft-danger">{{ run.scope }}</span></td>
+              <td>
+                {{ run.class_ref|default:"-" }}{% if run.stream %} / {{ run.stream }}{% endif %}
+              </td>
+              <td>
+                {% if run.status == "SUCCESS" %}
+                  <span class="badge-soft-success">{{ run.status }}</span>
+                {% elif run.status == "PARTIAL" %}
+                  <span class="badge-soft-warning">{{ run.status }}</span>
+                {% elif run.status == "FAILED" or run.status == "CANCELLED" %}
+                  <span class="badge-soft-danger">{{ run.status }}</span>
+                {% else %}
+                  <span class="badge-soft-primary">{{ run.status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {{ run.done_students }}/{{ run.total_students }} — {{ run.percent }}%
+              </td>
+              <td>
+                <div class="d-flex flex-wrap" style="gap:.35rem;">
+                  <a href="{% url 'report_run_detail' run.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye mr-1"></i> View
+                  </a>
+
+                  <a href="{% url 'report_run_download_zip' run.id %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-archive mr-1"></i> ZIP
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">No recent report runs found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const academicYearEl = document.getElementById("academic_year_id");
+  const termEl = document.getElementById("term_id");
+  const classEl = document.getElementById("class_ref_id");
+  const streamEl = document.getElementById("stream_id");
+
+  if (academicYearEl && termEl) {
+    academicYearEl.addEventListener("change", function () {
+      const yearId = this.value;
+      termEl.innerHTML = '<option value="">Loading terms...</option>';
+
+      if (!yearId) {
+        termEl.innerHTML = '<option value="">Select term</option>';
+        return;
+      }
+
+      fetch("{% url 'ajax_report_terms' %}?academic_year_id=" + encodeURIComponent(yearId))
+        .then(res => res.json())
+        .then(data => {
+          termEl.innerHTML = '<option value="">Select term</option>';
+          (data.results || []).forEach(item => {
+            termEl.innerHTML += `<option value="${item.id}">${item.text}</option>`;
+          });
+        })
+        .catch(() => {
+          termEl.innerHTML = '<option value="">Select term</option>';
+        });
+    });
+  }
+
+  if (classEl && streamEl) {
+    classEl.addEventListener("change", function () {
+      const classId = this.value;
+      streamEl.innerHTML = '<option value="">Loading streams...</option>';
+
+      if (!classId) {
+        streamEl.innerHTML = '<option value="">All streams in class</option>';
+        return;
+      }
+
+      fetch("{% url 'ajax_report_streams' %}?class_ref_id=" + encodeURIComponent(classId))
+        .then(res => res.json())
+        .then(data => {
+          streamEl.innerHTML = '<option value="">All streams in class</option>';
+          (data.results || []).forEach(item => {
+            streamEl.innerHTML += `<option value="${item.id}">${item.text}</option>`;
+          });
+        })
+        .catch(() => {
+          streamEl.innerHTML = '<option value="">All streams in class</option>';
+        });
+    });
+  }
+
+  function badgeClass(status) {
+    if (status === "SUCCESS") return "badge-soft-success";
+    if (status === "PARTIAL") return "badge-soft-warning";
+    if (status === "FAILED" || status === "CANCELLED") return "badge-soft-danger";
+    return "badge-soft-primary";
+  }
+
+  const progressBox = document.getElementById("runProgressBox");
+  if (progressBox) {
+    const progressUrl = progressBox.getAttribute("data-progress-url");
+
+    function refreshProgress() {
+      fetch(progressUrl)
+        .then(res => res.json())
+        .then(data => {
+          const statusEl = document.getElementById("runStatus");
+          const messageEl = document.getElementById("runMessage");
+
+          statusEl.textContent = data.status || "-";
+          statusEl.className = badgeClass(data.status || "");
+          messageEl.textContent = data.message || "";
+
+          document.getElementById("runTotal").textContent = data.total || 0;
+          document.getElementById("runDone").textContent = data.done || 0;
+          document.getElementById("runProcessed").textContent = data.processed || 0;
+          document.getElementById("runFailed").textContent = data.failed || 0;
+          document.getElementById("runSkipped").textContent = data.skipped || 0;
+          document.getElementById("runEta").textContent = data.eta_human || "-";
+
+          const bar = document.getElementById("runProgressBar");
+          const percent = data.percent || 0;
+          bar.style.width = `${percent}%`;
+          bar.textContent = `${percent}%`;
+
+          if (!["SUCCESS", "PARTIAL", "FAILED", "CANCELLED"].includes(data.status)) {
+            setTimeout(refreshProgress, 3000);
+          }
+        })
+        .catch(() => {
+          setTimeout(refreshProgress, 5000);
+        });
+    }
+
+    refreshProgress();
+  }
+
+  function initDataTable(selector, orderIndex = 0, orderDir = "desc", pageLength = 10) {
+    if (typeof $ === "undefined" || !$.fn.DataTable) return;
+
+    const $table = $(selector);
+    if (!$table.length) return;
+
+    const hasRealRows = $table.find("tbody tr").length > 0 &&
+      $table.find("tbody tr td[colspan]").length === 0;
+
+    if (!hasRealRows) return;
+
+    $table.DataTable({
+      pageLength: pageLength,
+      lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+      order: [[orderIndex, orderDir]],
+      responsive: true,
+      autoWidth: false
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initDataTable("#readinessTable", 0, "asc", 10);
+    initDataTable("#snapshotsTable", 0, "desc", 10);
+    initDataTable("#runsTable", 0, "desc", 10);
+  });
+})();
+</script>
+
+{% endblock %}

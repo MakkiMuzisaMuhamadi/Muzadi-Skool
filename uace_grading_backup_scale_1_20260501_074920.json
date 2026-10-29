@@ -1,0 +1,6435 @@
+{
+  "scale_id": 1,
+  "scale_name": "Default UACE Scale",
+  "created_at": "2026-05-01T07:49:20.821644+00:00",
+  "paper_grades": [
+    {
+      "id": 1,
+      "order": 1,
+      "grade_code": "D1",
+      "grade_name": "Division 1",
+      "grade_value": 1,
+      "min_percentage": "85.00",
+      "max_percentage": "100.00"
+    },
+    {
+      "id": 2,
+      "order": 2,
+      "grade_code": "D2",
+      "grade_name": "Division 2",
+      "grade_value": 2,
+      "min_percentage": "80.00",
+      "max_percentage": "84.99"
+    },
+    {
+      "id": 3,
+      "order": 3,
+      "grade_code": "C3",
+      "grade_name": "Credit 3",
+      "grade_value": 3,
+      "min_percentage": "75.00",
+      "max_percentage": "79.99"
+    },
+    {
+      "id": 4,
+      "order": 4,
+      "grade_code": "C4",
+      "grade_name": "Credit 4",
+      "grade_value": 4,
+      "min_percentage": "70.00",
+      "max_percentage": "74.99"
+    },
+    {
+      "id": 5,
+      "order": 5,
+      "grade_code": "C5",
+      "grade_name": "Credit 5",
+      "grade_value": 5,
+      "min_percentage": "60.00",
+      "max_percentage": "69.99"
+    },
+    {
+      "id": 6,
+      "order": 6,
+      "grade_code": "C6",
+      "grade_name": "Credit 6",
+      "grade_value": 6,
+      "min_percentage": "50.00",
+      "max_percentage": "59.99"
+    },
+    {
+      "id": 7,
+      "order": 7,
+      "grade_code": "P7",
+      "grade_name": "Pass 7",
+      "grade_value": 7,
+      "min_percentage": "45.00",
+      "max_percentage": "49.99"
+    },
+    {
+      "id": 8,
+      "order": 8,
+      "grade_code": "P8",
+      "grade_name": "Pass 8",
+      "grade_value": 8,
+      "min_percentage": "40.00",
+      "max_percentage": "44.99"
+    },
+    {
+      "id": 9,
+      "order": 9,
+      "grade_code": "F9",
+      "grade_name": "Fail 9",
+      "grade_value": 9,
+      "min_percentage": "0.00",
+      "max_percentage": "39.99"
+    }
+  ],
+  "subject_rules": [
+    {
+      "id": 1,
+      "paper_count": 2,
+      "pattern": "1,1",
+      "final_grade": "A",
+      "points": 6,
+      "order": 1,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 2,
+      "paper_count": 2,
+      "pattern": "1,2",
+      "final_grade": "A",
+      "points": 6,
+      "order": 2,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 3,
+      "paper_count": 2,
+      "pattern": "1,3",
+      "final_grade": "B",
+      "points": 5,
+      "order": 3,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 4,
+      "paper_count": 2,
+      "pattern": "1,4",
+      "final_grade": "C",
+      "points": 4,
+      "order": 4,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 5,
+      "paper_count": 2,
+      "pattern": "1,5",
+      "final_grade": "D",
+      "points": 3,
+      "order": 5,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 6,
+      "paper_count": 2,
+      "pattern": "1,6",
+      "final_grade": "E",
+      "points": 2,
+      "order": 6,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 7,
+      "paper_count": 2,
+      "pattern": "1,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 7,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 8,
+      "paper_count": 2,
+      "pattern": "1,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 8,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 9,
+      "paper_count": 2,
+      "pattern": "1,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 9,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 10,
+      "paper_count": 2,
+      "pattern": "2,2",
+      "final_grade": "A",
+      "points": 6,
+      "order": 10,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 11,
+      "paper_count": 2,
+      "pattern": "2,3",
+      "final_grade": "B",
+      "points": 5,
+      "order": 11,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 12,
+      "paper_count": 2,
+      "pattern": "2,4",
+      "final_grade": "C",
+      "points": 4,
+      "order": 12,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 13,
+      "paper_count": 2,
+      "pattern": "2,5",
+      "final_grade": "D",
+      "points": 3,
+      "order": 13,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 14,
+      "paper_count": 2,
+      "pattern": "2,6",
+      "final_grade": "E",
+      "points": 2,
+      "order": 14,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 15,
+      "paper_count": 2,
+      "pattern": "2,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 15,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 16,
+      "paper_count": 2,
+      "pattern": "2,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 16,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 17,
+      "paper_count": 2,
+      "pattern": "2,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 17,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 18,
+      "paper_count": 2,
+      "pattern": "3,3",
+      "final_grade": "B",
+      "points": 5,
+      "order": 18,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 19,
+      "paper_count": 2,
+      "pattern": "3,4",
+      "final_grade": "C",
+      "points": 4,
+      "order": 19,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 20,
+      "paper_count": 2,
+      "pattern": "3,5",
+      "final_grade": "D",
+      "points": 3,
+      "order": 20,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 21,
+      "paper_count": 2,
+      "pattern": "3,6",
+      "final_grade": "E",
+      "points": 2,
+      "order": 21,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 22,
+      "paper_count": 2,
+      "pattern": "3,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 22,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 23,
+      "paper_count": 2,
+      "pattern": "3,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 23,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 24,
+      "paper_count": 2,
+      "pattern": "3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 24,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 25,
+      "paper_count": 2,
+      "pattern": "4,4",
+      "final_grade": "C",
+      "points": 4,
+      "order": 25,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 26,
+      "paper_count": 2,
+      "pattern": "4,5",
+      "final_grade": "D",
+      "points": 3,
+      "order": 26,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 27,
+      "paper_count": 2,
+      "pattern": "4,6",
+      "final_grade": "E",
+      "points": 2,
+      "order": 27,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 28,
+      "paper_count": 2,
+      "pattern": "4,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 28,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 29,
+      "paper_count": 2,
+      "pattern": "4,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 29,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 30,
+      "paper_count": 2,
+      "pattern": "4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 30,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 31,
+      "paper_count": 2,
+      "pattern": "5,5",
+      "final_grade": "D",
+      "points": 3,
+      "order": 31,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 32,
+      "paper_count": 2,
+      "pattern": "5,6",
+      "final_grade": "E",
+      "points": 2,
+      "order": 32,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 33,
+      "paper_count": 2,
+      "pattern": "5,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 33,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 34,
+      "paper_count": 2,
+      "pattern": "5,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 34,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 35,
+      "paper_count": 2,
+      "pattern": "5,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 35,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 36,
+      "paper_count": 2,
+      "pattern": "6,6",
+      "final_grade": "E",
+      "points": 2,
+      "order": 36,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 37,
+      "paper_count": 2,
+      "pattern": "6,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 37,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 38,
+      "paper_count": 2,
+      "pattern": "6,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 38,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 39,
+      "paper_count": 2,
+      "pattern": "6,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 39,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 40,
+      "paper_count": 2,
+      "pattern": "7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 40,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 41,
+      "paper_count": 2,
+      "pattern": "7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 41,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 42,
+      "paper_count": 2,
+      "pattern": "7,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 42,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 43,
+      "paper_count": 2,
+      "pattern": "8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 43,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 44,
+      "paper_count": 2,
+      "pattern": "8,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 44,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 45,
+      "paper_count": 2,
+      "pattern": "9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 45,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 46,
+      "paper_count": 3,
+      "pattern": "1,1,1",
+      "final_grade": "A",
+      "points": 6,
+      "order": 1,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 47,
+      "paper_count": 3,
+      "pattern": "1,1,2",
+      "final_grade": "A",
+      "points": 6,
+      "order": 2,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 48,
+      "paper_count": 3,
+      "pattern": "1,1,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 3,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 49,
+      "paper_count": 3,
+      "pattern": "1,1,4",
+      "final_grade": "B",
+      "points": 5,
+      "order": 4,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 50,
+      "paper_count": 3,
+      "pattern": "1,1,5",
+      "final_grade": "C",
+      "points": 4,
+      "order": 5,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 51,
+      "paper_count": 3,
+      "pattern": "1,1,6",
+      "final_grade": "D",
+      "points": 3,
+      "order": 6,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 52,
+      "paper_count": 3,
+      "pattern": "1,1,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 7,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 53,
+      "paper_count": 3,
+      "pattern": "1,1,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 8,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 54,
+      "paper_count": 3,
+      "pattern": "1,1,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 9,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 55,
+      "paper_count": 3,
+      "pattern": "1,2,2",
+      "final_grade": "A",
+      "points": 6,
+      "order": 10,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 56,
+      "paper_count": 3,
+      "pattern": "1,2,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 11,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 57,
+      "paper_count": 3,
+      "pattern": "1,2,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 12,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 58,
+      "paper_count": 3,
+      "pattern": "1,2,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 13,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 59,
+      "paper_count": 3,
+      "pattern": "1,2,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 14,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 60,
+      "paper_count": 3,
+      "pattern": "1,2,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 15,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 61,
+      "paper_count": 3,
+      "pattern": "1,2,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 16,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 62,
+      "paper_count": 3,
+      "pattern": "1,2,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 17,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 63,
+      "paper_count": 3,
+      "pattern": "1,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 18,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 64,
+      "paper_count": 3,
+      "pattern": "1,3,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 19,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 65,
+      "paper_count": 3,
+      "pattern": "1,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 20,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 66,
+      "paper_count": 3,
+      "pattern": "1,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 21,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 67,
+      "paper_count": 3,
+      "pattern": "1,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 22,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 68,
+      "paper_count": 3,
+      "pattern": "1,3,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 23,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 69,
+      "paper_count": 3,
+      "pattern": "1,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 24,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 70,
+      "paper_count": 3,
+      "pattern": "1,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 25,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 71,
+      "paper_count": 3,
+      "pattern": "1,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 26,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 72,
+      "paper_count": 3,
+      "pattern": "1,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 27,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 73,
+      "paper_count": 3,
+      "pattern": "1,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 28,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 74,
+      "paper_count": 3,
+      "pattern": "1,4,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 29,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 75,
+      "paper_count": 3,
+      "pattern": "1,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 30,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 76,
+      "paper_count": 3,
+      "pattern": "1,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 31,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 77,
+      "paper_count": 3,
+      "pattern": "1,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 32,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 78,
+      "paper_count": 3,
+      "pattern": "1,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 33,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 79,
+      "paper_count": 3,
+      "pattern": "1,5,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 34,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 80,
+      "paper_count": 3,
+      "pattern": "1,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 35,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 81,
+      "paper_count": 3,
+      "pattern": "1,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 36,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 82,
+      "paper_count": 3,
+      "pattern": "1,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 37,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 83,
+      "paper_count": 3,
+      "pattern": "1,6,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 38,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 84,
+      "paper_count": 3,
+      "pattern": "1,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 39,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 85,
+      "paper_count": 3,
+      "pattern": "1,7,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 40,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 86,
+      "paper_count": 3,
+      "pattern": "1,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 41,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 87,
+      "paper_count": 3,
+      "pattern": "1,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 42,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 88,
+      "paper_count": 3,
+      "pattern": "1,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 43,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 89,
+      "paper_count": 3,
+      "pattern": "1,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 44,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 90,
+      "paper_count": 3,
+      "pattern": "1,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 45,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 91,
+      "paper_count": 3,
+      "pattern": "2,2,2",
+      "final_grade": "F",
+      "points": 0,
+      "order": 46,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 92,
+      "paper_count": 3,
+      "pattern": "2,2,3",
+      "final_grade": "A",
+      "points": 6,
+      "order": 47,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 93,
+      "paper_count": 3,
+      "pattern": "2,2,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 48,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 94,
+      "paper_count": 3,
+      "pattern": "2,2,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 49,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 95,
+      "paper_count": 3,
+      "pattern": "2,2,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 50,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 96,
+      "paper_count": 3,
+      "pattern": "2,2,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 51,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 97,
+      "paper_count": 3,
+      "pattern": "2,2,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 52,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 98,
+      "paper_count": 3,
+      "pattern": "2,2,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 53,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 99,
+      "paper_count": 3,
+      "pattern": "2,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 54,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 100,
+      "paper_count": 3,
+      "pattern": "2,3,4",
+      "final_grade": "B",
+      "points": 5,
+      "order": 55,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 101,
+      "paper_count": 3,
+      "pattern": "2,3,5",
+      "final_grade": "C",
+      "points": 4,
+      "order": 56,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 102,
+      "paper_count": 3,
+      "pattern": "2,3,6",
+      "final_grade": "D",
+      "points": 3,
+      "order": 57,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 103,
+      "paper_count": 3,
+      "pattern": "2,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 58,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 104,
+      "paper_count": 3,
+      "pattern": "2,3,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 59,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 105,
+      "paper_count": 3,
+      "pattern": "2,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 60,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 106,
+      "paper_count": 3,
+      "pattern": "2,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 61,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 107,
+      "paper_count": 3,
+      "pattern": "2,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 62,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 108,
+      "paper_count": 3,
+      "pattern": "2,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 63,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 109,
+      "paper_count": 3,
+      "pattern": "2,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 64,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 110,
+      "paper_count": 3,
+      "pattern": "2,4,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 65,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 111,
+      "paper_count": 3,
+      "pattern": "2,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 66,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 112,
+      "paper_count": 3,
+      "pattern": "2,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 67,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 113,
+      "paper_count": 3,
+      "pattern": "2,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 68,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 114,
+      "paper_count": 3,
+      "pattern": "2,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 69,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 115,
+      "paper_count": 3,
+      "pattern": "2,5,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 70,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 116,
+      "paper_count": 3,
+      "pattern": "2,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 71,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 117,
+      "paper_count": 3,
+      "pattern": "2,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 72,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 118,
+      "paper_count": 3,
+      "pattern": "2,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 73,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 119,
+      "paper_count": 3,
+      "pattern": "2,6,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 74,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 120,
+      "paper_count": 3,
+      "pattern": "2,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 75,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 121,
+      "paper_count": 3,
+      "pattern": "2,7,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 76,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 122,
+      "paper_count": 3,
+      "pattern": "2,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 77,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 123,
+      "paper_count": 3,
+      "pattern": "2,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 78,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 124,
+      "paper_count": 3,
+      "pattern": "2,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 79,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 125,
+      "paper_count": 3,
+      "pattern": "2,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 80,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 126,
+      "paper_count": 3,
+      "pattern": "2,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 81,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 127,
+      "paper_count": 3,
+      "pattern": "3,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 82,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 128,
+      "paper_count": 3,
+      "pattern": "3,3,4",
+      "final_grade": "B",
+      "points": 5,
+      "order": 83,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 129,
+      "paper_count": 3,
+      "pattern": "3,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 84,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 130,
+      "paper_count": 3,
+      "pattern": "3,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 85,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 131,
+      "paper_count": 3,
+      "pattern": "3,3,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 86,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 132,
+      "paper_count": 3,
+      "pattern": "3,3,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 87,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 133,
+      "paper_count": 3,
+      "pattern": "3,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 88,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 134,
+      "paper_count": 3,
+      "pattern": "3,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 89,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 135,
+      "paper_count": 3,
+      "pattern": "3,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 90,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 136,
+      "paper_count": 3,
+      "pattern": "3,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 91,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 137,
+      "paper_count": 3,
+      "pattern": "3,4,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 92,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 138,
+      "paper_count": 3,
+      "pattern": "3,4,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 93,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 139,
+      "paper_count": 3,
+      "pattern": "3,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 94,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 140,
+      "paper_count": 3,
+      "pattern": "3,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 95,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 141,
+      "paper_count": 3,
+      "pattern": "3,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 96,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 142,
+      "paper_count": 3,
+      "pattern": "3,5,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 97,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 143,
+      "paper_count": 3,
+      "pattern": "3,5,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 98,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 144,
+      "paper_count": 3,
+      "pattern": "3,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 99,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 145,
+      "paper_count": 3,
+      "pattern": "3,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 100,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 146,
+      "paper_count": 3,
+      "pattern": "3,6,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 101,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 147,
+      "paper_count": 3,
+      "pattern": "3,6,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 102,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 148,
+      "paper_count": 3,
+      "pattern": "3,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 103,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 149,
+      "paper_count": 3,
+      "pattern": "3,7,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 104,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 150,
+      "paper_count": 3,
+      "pattern": "3,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 105,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 151,
+      "paper_count": 3,
+      "pattern": "3,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 106,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 152,
+      "paper_count": 3,
+      "pattern": "3,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 107,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 153,
+      "paper_count": 3,
+      "pattern": "3,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 108,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 154,
+      "paper_count": 3,
+      "pattern": "3,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 109,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 155,
+      "paper_count": 3,
+      "pattern": "4,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 110,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 156,
+      "paper_count": 3,
+      "pattern": "4,4,5",
+      "final_grade": "C",
+      "points": 4,
+      "order": 111,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 157,
+      "paper_count": 3,
+      "pattern": "4,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 112,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 158,
+      "paper_count": 3,
+      "pattern": "4,4,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 113,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 159,
+      "paper_count": 3,
+      "pattern": "4,4,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 114,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 160,
+      "paper_count": 3,
+      "pattern": "4,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 115,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 161,
+      "paper_count": 3,
+      "pattern": "4,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 116,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 162,
+      "paper_count": 3,
+      "pattern": "4,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 117,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 163,
+      "paper_count": 3,
+      "pattern": "4,5,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 118,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 164,
+      "paper_count": 3,
+      "pattern": "4,5,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 119,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 165,
+      "paper_count": 3,
+      "pattern": "4,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 120,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 166,
+      "paper_count": 3,
+      "pattern": "4,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 121,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 167,
+      "paper_count": 3,
+      "pattern": "4,6,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 122,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 168,
+      "paper_count": 3,
+      "pattern": "4,6,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 123,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 169,
+      "paper_count": 3,
+      "pattern": "4,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 124,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 170,
+      "paper_count": 3,
+      "pattern": "4,7,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 125,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 171,
+      "paper_count": 3,
+      "pattern": "4,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 126,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 172,
+      "paper_count": 3,
+      "pattern": "4,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 127,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 173,
+      "paper_count": 3,
+      "pattern": "4,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 128,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 174,
+      "paper_count": 3,
+      "pattern": "4,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 129,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 175,
+      "paper_count": 3,
+      "pattern": "4,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 130,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 176,
+      "paper_count": 3,
+      "pattern": "5,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 131,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 177,
+      "paper_count": 3,
+      "pattern": "5,5,6",
+      "final_grade": "D",
+      "points": 3,
+      "order": 132,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 178,
+      "paper_count": 3,
+      "pattern": "5,5,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 133,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 179,
+      "paper_count": 3,
+      "pattern": "5,5,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 134,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 180,
+      "paper_count": 3,
+      "pattern": "5,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 135,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 181,
+      "paper_count": 3,
+      "pattern": "5,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 136,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 182,
+      "paper_count": 3,
+      "pattern": "5,6,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 137,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 183,
+      "paper_count": 3,
+      "pattern": "5,6,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 138,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 184,
+      "paper_count": 3,
+      "pattern": "5,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 139,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 185,
+      "paper_count": 3,
+      "pattern": "5,7,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 140,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 186,
+      "paper_count": 3,
+      "pattern": "5,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 141,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 187,
+      "paper_count": 3,
+      "pattern": "5,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 142,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 188,
+      "paper_count": 3,
+      "pattern": "5,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 143,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 189,
+      "paper_count": 3,
+      "pattern": "5,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 144,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 190,
+      "paper_count": 3,
+      "pattern": "5,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 145,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 191,
+      "paper_count": 3,
+      "pattern": "6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 146,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 192,
+      "paper_count": 3,
+      "pattern": "6,6,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 147,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 193,
+      "paper_count": 3,
+      "pattern": "6,6,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 148,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 194,
+      "paper_count": 3,
+      "pattern": "6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 149,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 195,
+      "paper_count": 3,
+      "pattern": "6,7,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 150,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 196,
+      "paper_count": 3,
+      "pattern": "6,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 151,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 197,
+      "paper_count": 3,
+      "pattern": "6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 152,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 198,
+      "paper_count": 3,
+      "pattern": "6,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 153,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 199,
+      "paper_count": 3,
+      "pattern": "6,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 154,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 200,
+      "paper_count": 3,
+      "pattern": "6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 155,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 201,
+      "paper_count": 3,
+      "pattern": "7,7,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 156,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 202,
+      "paper_count": 3,
+      "pattern": "7,7,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 157,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 203,
+      "paper_count": 3,
+      "pattern": "7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 158,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 204,
+      "paper_count": 3,
+      "pattern": "7,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 159,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 205,
+      "paper_count": 3,
+      "pattern": "7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 160,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 206,
+      "paper_count": 3,
+      "pattern": "7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 161,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 207,
+      "paper_count": 3,
+      "pattern": "8,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 162,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 208,
+      "paper_count": 3,
+      "pattern": "8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 163,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 209,
+      "paper_count": 3,
+      "pattern": "8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 164,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 210,
+      "paper_count": 3,
+      "pattern": "9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 165,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 211,
+      "paper_count": 4,
+      "pattern": "1,1,1,1",
+      "final_grade": "F",
+      "points": 0,
+      "order": 1,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 212,
+      "paper_count": 4,
+      "pattern": "1,1,1,2",
+      "final_grade": "F",
+      "points": 0,
+      "order": 2,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 213,
+      "paper_count": 4,
+      "pattern": "1,1,1,3",
+      "final_grade": "A",
+      "points": 6,
+      "order": 3,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 214,
+      "paper_count": 4,
+      "pattern": "1,1,1,4",
+      "final_grade": "B",
+      "points": 5,
+      "order": 4,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 215,
+      "paper_count": 4,
+      "pattern": "1,1,1,5",
+      "final_grade": "C",
+      "points": 4,
+      "order": 5,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 216,
+      "paper_count": 4,
+      "pattern": "1,1,1,6",
+      "final_grade": "D",
+      "points": 3,
+      "order": 6,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 217,
+      "paper_count": 4,
+      "pattern": "1,1,1,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 7,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 218,
+      "paper_count": 4,
+      "pattern": "1,1,1,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 8,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 219,
+      "paper_count": 4,
+      "pattern": "1,1,1,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 9,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 220,
+      "paper_count": 4,
+      "pattern": "1,1,2,2",
+      "final_grade": "F",
+      "points": 0,
+      "order": 10,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 221,
+      "paper_count": 4,
+      "pattern": "1,1,2,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 11,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 222,
+      "paper_count": 4,
+      "pattern": "1,1,2,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 12,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 223,
+      "paper_count": 4,
+      "pattern": "1,1,2,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 13,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 224,
+      "paper_count": 4,
+      "pattern": "1,1,2,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 14,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 225,
+      "paper_count": 4,
+      "pattern": "1,1,2,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 15,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 226,
+      "paper_count": 4,
+      "pattern": "1,1,2,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 16,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 227,
+      "paper_count": 4,
+      "pattern": "1,1,2,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 17,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 228,
+      "paper_count": 4,
+      "pattern": "1,1,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 18,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 229,
+      "paper_count": 4,
+      "pattern": "1,1,3,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 19,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 230,
+      "paper_count": 4,
+      "pattern": "1,1,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 20,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 231,
+      "paper_count": 4,
+      "pattern": "1,1,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 21,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 232,
+      "paper_count": 4,
+      "pattern": "1,1,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 22,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 233,
+      "paper_count": 4,
+      "pattern": "1,1,3,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 23,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 234,
+      "paper_count": 4,
+      "pattern": "1,1,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 24,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 235,
+      "paper_count": 4,
+      "pattern": "1,1,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 25,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 236,
+      "paper_count": 4,
+      "pattern": "1,1,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 26,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 237,
+      "paper_count": 4,
+      "pattern": "1,1,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 27,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 238,
+      "paper_count": 4,
+      "pattern": "1,1,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 28,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 239,
+      "paper_count": 4,
+      "pattern": "1,1,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 29,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 240,
+      "paper_count": 4,
+      "pattern": "1,1,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 30,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 241,
+      "paper_count": 4,
+      "pattern": "1,1,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 31,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 242,
+      "paper_count": 4,
+      "pattern": "1,1,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 32,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 243,
+      "paper_count": 4,
+      "pattern": "1,1,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 33,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 244,
+      "paper_count": 4,
+      "pattern": "1,1,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 34,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 245,
+      "paper_count": 4,
+      "pattern": "1,1,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 35,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 246,
+      "paper_count": 4,
+      "pattern": "1,1,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 36,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 247,
+      "paper_count": 4,
+      "pattern": "1,1,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 37,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 248,
+      "paper_count": 4,
+      "pattern": "1,1,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 38,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 249,
+      "paper_count": 4,
+      "pattern": "1,1,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 39,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 250,
+      "paper_count": 4,
+      "pattern": "1,1,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 40,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 251,
+      "paper_count": 4,
+      "pattern": "1,1,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 41,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 252,
+      "paper_count": 4,
+      "pattern": "1,1,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 42,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 253,
+      "paper_count": 4,
+      "pattern": "1,1,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 43,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 254,
+      "paper_count": 4,
+      "pattern": "1,1,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 44,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 255,
+      "paper_count": 4,
+      "pattern": "1,1,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 45,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 256,
+      "paper_count": 4,
+      "pattern": "1,2,2,2",
+      "final_grade": "F",
+      "points": 0,
+      "order": 46,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 257,
+      "paper_count": 4,
+      "pattern": "1,2,2,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 47,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 258,
+      "paper_count": 4,
+      "pattern": "1,2,2,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 48,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 259,
+      "paper_count": 4,
+      "pattern": "1,2,2,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 49,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 260,
+      "paper_count": 4,
+      "pattern": "1,2,2,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 50,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 261,
+      "paper_count": 4,
+      "pattern": "1,2,2,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 51,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 262,
+      "paper_count": 4,
+      "pattern": "1,2,2,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 52,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 263,
+      "paper_count": 4,
+      "pattern": "1,2,2,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 53,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 264,
+      "paper_count": 4,
+      "pattern": "1,2,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 54,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 265,
+      "paper_count": 4,
+      "pattern": "1,2,3,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 55,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 266,
+      "paper_count": 4,
+      "pattern": "1,2,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 56,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 267,
+      "paper_count": 4,
+      "pattern": "1,2,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 57,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 268,
+      "paper_count": 4,
+      "pattern": "1,2,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 58,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 269,
+      "paper_count": 4,
+      "pattern": "1,2,3,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 59,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 270,
+      "paper_count": 4,
+      "pattern": "1,2,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 60,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 271,
+      "paper_count": 4,
+      "pattern": "1,2,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 61,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 272,
+      "paper_count": 4,
+      "pattern": "1,2,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 62,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 273,
+      "paper_count": 4,
+      "pattern": "1,2,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 63,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 274,
+      "paper_count": 4,
+      "pattern": "1,2,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 64,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 275,
+      "paper_count": 4,
+      "pattern": "1,2,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 65,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 276,
+      "paper_count": 4,
+      "pattern": "1,2,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 66,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 277,
+      "paper_count": 4,
+      "pattern": "1,2,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 67,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 278,
+      "paper_count": 4,
+      "pattern": "1,2,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 68,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 279,
+      "paper_count": 4,
+      "pattern": "1,2,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 69,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 280,
+      "paper_count": 4,
+      "pattern": "1,2,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 70,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 281,
+      "paper_count": 4,
+      "pattern": "1,2,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 71,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 282,
+      "paper_count": 4,
+      "pattern": "1,2,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 72,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 283,
+      "paper_count": 4,
+      "pattern": "1,2,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 73,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 284,
+      "paper_count": 4,
+      "pattern": "1,2,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 74,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 285,
+      "paper_count": 4,
+      "pattern": "1,2,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 75,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 286,
+      "paper_count": 4,
+      "pattern": "1,2,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 76,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 287,
+      "paper_count": 4,
+      "pattern": "1,2,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 77,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 288,
+      "paper_count": 4,
+      "pattern": "1,2,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 78,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 289,
+      "paper_count": 4,
+      "pattern": "1,2,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 79,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 290,
+      "paper_count": 4,
+      "pattern": "1,2,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 80,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 291,
+      "paper_count": 4,
+      "pattern": "1,2,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 81,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 292,
+      "paper_count": 4,
+      "pattern": "1,3,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 82,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 293,
+      "paper_count": 4,
+      "pattern": "1,3,3,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 83,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 294,
+      "paper_count": 4,
+      "pattern": "1,3,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 84,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 295,
+      "paper_count": 4,
+      "pattern": "1,3,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 85,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 296,
+      "paper_count": 4,
+      "pattern": "1,3,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 86,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 297,
+      "paper_count": 4,
+      "pattern": "1,3,3,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 87,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 298,
+      "paper_count": 4,
+      "pattern": "1,3,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 88,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 299,
+      "paper_count": 4,
+      "pattern": "1,3,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 89,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 300,
+      "paper_count": 4,
+      "pattern": "1,3,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 90,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 301,
+      "paper_count": 4,
+      "pattern": "1,3,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 91,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 302,
+      "paper_count": 4,
+      "pattern": "1,3,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 92,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 303,
+      "paper_count": 4,
+      "pattern": "1,3,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 93,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 304,
+      "paper_count": 4,
+      "pattern": "1,3,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 94,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 305,
+      "paper_count": 4,
+      "pattern": "1,3,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 95,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 306,
+      "paper_count": 4,
+      "pattern": "1,3,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 96,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 307,
+      "paper_count": 4,
+      "pattern": "1,3,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 97,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 308,
+      "paper_count": 4,
+      "pattern": "1,3,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 98,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 309,
+      "paper_count": 4,
+      "pattern": "1,3,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 99,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 310,
+      "paper_count": 4,
+      "pattern": "1,3,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 100,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 311,
+      "paper_count": 4,
+      "pattern": "1,3,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 101,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 312,
+      "paper_count": 4,
+      "pattern": "1,3,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 102,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 313,
+      "paper_count": 4,
+      "pattern": "1,3,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 103,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 314,
+      "paper_count": 4,
+      "pattern": "1,3,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 104,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 315,
+      "paper_count": 4,
+      "pattern": "1,3,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 105,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 316,
+      "paper_count": 4,
+      "pattern": "1,3,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 106,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 317,
+      "paper_count": 4,
+      "pattern": "1,3,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 107,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 318,
+      "paper_count": 4,
+      "pattern": "1,3,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 108,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 319,
+      "paper_count": 4,
+      "pattern": "1,3,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 109,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 320,
+      "paper_count": 4,
+      "pattern": "1,4,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 110,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 321,
+      "paper_count": 4,
+      "pattern": "1,4,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 111,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 322,
+      "paper_count": 4,
+      "pattern": "1,4,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 112,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 323,
+      "paper_count": 4,
+      "pattern": "1,4,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 113,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 324,
+      "paper_count": 4,
+      "pattern": "1,4,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 114,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 325,
+      "paper_count": 4,
+      "pattern": "1,4,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 115,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 326,
+      "paper_count": 4,
+      "pattern": "1,4,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 116,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 327,
+      "paper_count": 4,
+      "pattern": "1,4,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 117,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 328,
+      "paper_count": 4,
+      "pattern": "1,4,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 118,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 329,
+      "paper_count": 4,
+      "pattern": "1,4,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 119,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 330,
+      "paper_count": 4,
+      "pattern": "1,4,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 120,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 331,
+      "paper_count": 4,
+      "pattern": "1,4,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 121,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 332,
+      "paper_count": 4,
+      "pattern": "1,4,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 122,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 333,
+      "paper_count": 4,
+      "pattern": "1,4,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 123,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 334,
+      "paper_count": 4,
+      "pattern": "1,4,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 124,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 335,
+      "paper_count": 4,
+      "pattern": "1,4,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 125,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 336,
+      "paper_count": 4,
+      "pattern": "1,4,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 126,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 337,
+      "paper_count": 4,
+      "pattern": "1,4,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 127,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 338,
+      "paper_count": 4,
+      "pattern": "1,4,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 128,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 339,
+      "paper_count": 4,
+      "pattern": "1,4,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 129,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 340,
+      "paper_count": 4,
+      "pattern": "1,4,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 130,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 341,
+      "paper_count": 4,
+      "pattern": "1,5,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 131,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 342,
+      "paper_count": 4,
+      "pattern": "1,5,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 132,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 343,
+      "paper_count": 4,
+      "pattern": "1,5,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 133,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 344,
+      "paper_count": 4,
+      "pattern": "1,5,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 134,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 345,
+      "paper_count": 4,
+      "pattern": "1,5,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 135,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 346,
+      "paper_count": 4,
+      "pattern": "1,5,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 136,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 347,
+      "paper_count": 4,
+      "pattern": "1,5,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 137,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 348,
+      "paper_count": 4,
+      "pattern": "1,5,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 138,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 349,
+      "paper_count": 4,
+      "pattern": "1,5,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 139,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 350,
+      "paper_count": 4,
+      "pattern": "1,5,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 140,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 351,
+      "paper_count": 4,
+      "pattern": "1,5,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 141,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 352,
+      "paper_count": 4,
+      "pattern": "1,5,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 142,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 353,
+      "paper_count": 4,
+      "pattern": "1,5,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 143,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 354,
+      "paper_count": 4,
+      "pattern": "1,5,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 144,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 355,
+      "paper_count": 4,
+      "pattern": "1,5,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 145,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 356,
+      "paper_count": 4,
+      "pattern": "1,6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 146,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 357,
+      "paper_count": 4,
+      "pattern": "1,6,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 147,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 358,
+      "paper_count": 4,
+      "pattern": "1,6,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 148,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 359,
+      "paper_count": 4,
+      "pattern": "1,6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 149,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 360,
+      "paper_count": 4,
+      "pattern": "1,6,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 150,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 361,
+      "paper_count": 4,
+      "pattern": "1,6,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 151,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 362,
+      "paper_count": 4,
+      "pattern": "1,6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 152,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 363,
+      "paper_count": 4,
+      "pattern": "1,6,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 153,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 364,
+      "paper_count": 4,
+      "pattern": "1,6,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 154,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 365,
+      "paper_count": 4,
+      "pattern": "1,6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 155,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 366,
+      "paper_count": 4,
+      "pattern": "1,7,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 156,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 367,
+      "paper_count": 4,
+      "pattern": "1,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 157,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 368,
+      "paper_count": 4,
+      "pattern": "1,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 158,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 369,
+      "paper_count": 4,
+      "pattern": "1,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 159,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 370,
+      "paper_count": 4,
+      "pattern": "1,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 160,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 371,
+      "paper_count": 4,
+      "pattern": "1,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 161,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 372,
+      "paper_count": 4,
+      "pattern": "1,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 162,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 373,
+      "paper_count": 4,
+      "pattern": "1,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 163,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 374,
+      "paper_count": 4,
+      "pattern": "1,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 164,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 375,
+      "paper_count": 4,
+      "pattern": "1,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 165,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 376,
+      "paper_count": 4,
+      "pattern": "2,2,2,2",
+      "final_grade": "F",
+      "points": 0,
+      "order": 166,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 377,
+      "paper_count": 4,
+      "pattern": "2,2,2,3",
+      "final_grade": "A",
+      "points": 6,
+      "order": 167,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 378,
+      "paper_count": 4,
+      "pattern": "2,2,2,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 168,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 379,
+      "paper_count": 4,
+      "pattern": "2,2,2,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 169,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 380,
+      "paper_count": 4,
+      "pattern": "2,2,2,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 170,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 381,
+      "paper_count": 4,
+      "pattern": "2,2,2,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 171,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 382,
+      "paper_count": 4,
+      "pattern": "2,2,2,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 172,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 383,
+      "paper_count": 4,
+      "pattern": "2,2,2,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 173,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 384,
+      "paper_count": 4,
+      "pattern": "2,2,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 174,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 385,
+      "paper_count": 4,
+      "pattern": "2,2,3,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 175,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 386,
+      "paper_count": 4,
+      "pattern": "2,2,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 176,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 387,
+      "paper_count": 4,
+      "pattern": "2,2,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 177,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 388,
+      "paper_count": 4,
+      "pattern": "2,2,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 178,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 389,
+      "paper_count": 4,
+      "pattern": "2,2,3,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 179,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 390,
+      "paper_count": 4,
+      "pattern": "2,2,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 180,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 391,
+      "paper_count": 4,
+      "pattern": "2,2,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 181,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 392,
+      "paper_count": 4,
+      "pattern": "2,2,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 182,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 393,
+      "paper_count": 4,
+      "pattern": "2,2,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 183,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 394,
+      "paper_count": 4,
+      "pattern": "2,2,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 184,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 395,
+      "paper_count": 4,
+      "pattern": "2,2,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 185,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 396,
+      "paper_count": 4,
+      "pattern": "2,2,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 186,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 397,
+      "paper_count": 4,
+      "pattern": "2,2,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 187,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 398,
+      "paper_count": 4,
+      "pattern": "2,2,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 188,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 399,
+      "paper_count": 4,
+      "pattern": "2,2,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 189,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 400,
+      "paper_count": 4,
+      "pattern": "2,2,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 190,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 401,
+      "paper_count": 4,
+      "pattern": "2,2,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 191,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 402,
+      "paper_count": 4,
+      "pattern": "2,2,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 192,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 403,
+      "paper_count": 4,
+      "pattern": "2,2,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 193,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 404,
+      "paper_count": 4,
+      "pattern": "2,2,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 194,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 405,
+      "paper_count": 4,
+      "pattern": "2,2,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 195,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 406,
+      "paper_count": 4,
+      "pattern": "2,2,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 196,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 407,
+      "paper_count": 4,
+      "pattern": "2,2,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 197,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 408,
+      "paper_count": 4,
+      "pattern": "2,2,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 198,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 409,
+      "paper_count": 4,
+      "pattern": "2,2,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 199,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 410,
+      "paper_count": 4,
+      "pattern": "2,2,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 200,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 411,
+      "paper_count": 4,
+      "pattern": "2,2,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 201,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 412,
+      "paper_count": 4,
+      "pattern": "2,3,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 202,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 413,
+      "paper_count": 4,
+      "pattern": "2,3,3,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 203,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 414,
+      "paper_count": 4,
+      "pattern": "2,3,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 204,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 415,
+      "paper_count": 4,
+      "pattern": "2,3,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 205,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 416,
+      "paper_count": 4,
+      "pattern": "2,3,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 206,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 417,
+      "paper_count": 4,
+      "pattern": "2,3,3,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 207,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 418,
+      "paper_count": 4,
+      "pattern": "2,3,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 208,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 419,
+      "paper_count": 4,
+      "pattern": "2,3,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 209,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 420,
+      "paper_count": 4,
+      "pattern": "2,3,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 210,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 421,
+      "paper_count": 4,
+      "pattern": "2,3,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 211,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 422,
+      "paper_count": 4,
+      "pattern": "2,3,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 212,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 423,
+      "paper_count": 4,
+      "pattern": "2,3,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 213,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 424,
+      "paper_count": 4,
+      "pattern": "2,3,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 214,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 425,
+      "paper_count": 4,
+      "pattern": "2,3,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 215,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 426,
+      "paper_count": 4,
+      "pattern": "2,3,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 216,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 427,
+      "paper_count": 4,
+      "pattern": "2,3,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 217,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 428,
+      "paper_count": 4,
+      "pattern": "2,3,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 218,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 429,
+      "paper_count": 4,
+      "pattern": "2,3,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 219,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 430,
+      "paper_count": 4,
+      "pattern": "2,3,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 220,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 431,
+      "paper_count": 4,
+      "pattern": "2,3,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 221,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 432,
+      "paper_count": 4,
+      "pattern": "2,3,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 222,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 433,
+      "paper_count": 4,
+      "pattern": "2,3,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 223,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 434,
+      "paper_count": 4,
+      "pattern": "2,3,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 224,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 435,
+      "paper_count": 4,
+      "pattern": "2,3,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 225,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 436,
+      "paper_count": 4,
+      "pattern": "2,3,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 226,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 437,
+      "paper_count": 4,
+      "pattern": "2,3,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 227,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 438,
+      "paper_count": 4,
+      "pattern": "2,3,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 228,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 439,
+      "paper_count": 4,
+      "pattern": "2,3,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 229,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 440,
+      "paper_count": 4,
+      "pattern": "2,4,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 230,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 441,
+      "paper_count": 4,
+      "pattern": "2,4,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 231,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 442,
+      "paper_count": 4,
+      "pattern": "2,4,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 232,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 443,
+      "paper_count": 4,
+      "pattern": "2,4,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 233,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 444,
+      "paper_count": 4,
+      "pattern": "2,4,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 234,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 445,
+      "paper_count": 4,
+      "pattern": "2,4,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 235,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 446,
+      "paper_count": 4,
+      "pattern": "2,4,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 236,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 447,
+      "paper_count": 4,
+      "pattern": "2,4,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 237,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 448,
+      "paper_count": 4,
+      "pattern": "2,4,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 238,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 449,
+      "paper_count": 4,
+      "pattern": "2,4,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 239,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 450,
+      "paper_count": 4,
+      "pattern": "2,4,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 240,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 451,
+      "paper_count": 4,
+      "pattern": "2,4,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 241,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 452,
+      "paper_count": 4,
+      "pattern": "2,4,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 242,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 453,
+      "paper_count": 4,
+      "pattern": "2,4,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 243,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 454,
+      "paper_count": 4,
+      "pattern": "2,4,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 244,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 455,
+      "paper_count": 4,
+      "pattern": "2,4,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 245,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 456,
+      "paper_count": 4,
+      "pattern": "2,4,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 246,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 457,
+      "paper_count": 4,
+      "pattern": "2,4,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 247,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 458,
+      "paper_count": 4,
+      "pattern": "2,4,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 248,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 459,
+      "paper_count": 4,
+      "pattern": "2,4,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 249,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 460,
+      "paper_count": 4,
+      "pattern": "2,4,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 250,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 461,
+      "paper_count": 4,
+      "pattern": "2,5,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 251,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 462,
+      "paper_count": 4,
+      "pattern": "2,5,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 252,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 463,
+      "paper_count": 4,
+      "pattern": "2,5,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 253,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 464,
+      "paper_count": 4,
+      "pattern": "2,5,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 254,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 465,
+      "paper_count": 4,
+      "pattern": "2,5,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 255,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 466,
+      "paper_count": 4,
+      "pattern": "2,5,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 256,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 467,
+      "paper_count": 4,
+      "pattern": "2,5,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 257,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 468,
+      "paper_count": 4,
+      "pattern": "2,5,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 258,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 469,
+      "paper_count": 4,
+      "pattern": "2,5,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 259,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 470,
+      "paper_count": 4,
+      "pattern": "2,5,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 260,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 471,
+      "paper_count": 4,
+      "pattern": "2,5,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 261,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 472,
+      "paper_count": 4,
+      "pattern": "2,5,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 262,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 473,
+      "paper_count": 4,
+      "pattern": "2,5,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 263,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 474,
+      "paper_count": 4,
+      "pattern": "2,5,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 264,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 475,
+      "paper_count": 4,
+      "pattern": "2,5,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 265,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 476,
+      "paper_count": 4,
+      "pattern": "2,6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 266,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 477,
+      "paper_count": 4,
+      "pattern": "2,6,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 267,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 478,
+      "paper_count": 4,
+      "pattern": "2,6,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 268,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 479,
+      "paper_count": 4,
+      "pattern": "2,6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 269,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 480,
+      "paper_count": 4,
+      "pattern": "2,6,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 270,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 481,
+      "paper_count": 4,
+      "pattern": "2,6,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 271,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 482,
+      "paper_count": 4,
+      "pattern": "2,6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 272,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 483,
+      "paper_count": 4,
+      "pattern": "2,6,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 273,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 484,
+      "paper_count": 4,
+      "pattern": "2,6,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 274,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 485,
+      "paper_count": 4,
+      "pattern": "2,6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 275,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 486,
+      "paper_count": 4,
+      "pattern": "2,7,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 276,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 487,
+      "paper_count": 4,
+      "pattern": "2,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 277,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 488,
+      "paper_count": 4,
+      "pattern": "2,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 278,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 489,
+      "paper_count": 4,
+      "pattern": "2,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 279,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 490,
+      "paper_count": 4,
+      "pattern": "2,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 280,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 491,
+      "paper_count": 4,
+      "pattern": "2,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 281,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 492,
+      "paper_count": 4,
+      "pattern": "2,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 282,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 493,
+      "paper_count": 4,
+      "pattern": "2,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 283,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 494,
+      "paper_count": 4,
+      "pattern": "2,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 284,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 495,
+      "paper_count": 4,
+      "pattern": "2,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 285,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 496,
+      "paper_count": 4,
+      "pattern": "3,3,3,3",
+      "final_grade": "F",
+      "points": 0,
+      "order": 286,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 497,
+      "paper_count": 4,
+      "pattern": "3,3,3,4",
+      "final_grade": "B",
+      "points": 5,
+      "order": 287,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 498,
+      "paper_count": 4,
+      "pattern": "3,3,3,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 288,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 499,
+      "paper_count": 4,
+      "pattern": "3,3,3,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 289,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 500,
+      "paper_count": 4,
+      "pattern": "3,3,3,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 290,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 501,
+      "paper_count": 4,
+      "pattern": "3,3,3,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 291,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 502,
+      "paper_count": 4,
+      "pattern": "3,3,3,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 292,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 503,
+      "paper_count": 4,
+      "pattern": "3,3,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 293,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 504,
+      "paper_count": 4,
+      "pattern": "3,3,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 294,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 505,
+      "paper_count": 4,
+      "pattern": "3,3,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 295,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 506,
+      "paper_count": 4,
+      "pattern": "3,3,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 296,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 507,
+      "paper_count": 4,
+      "pattern": "3,3,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 297,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 508,
+      "paper_count": 4,
+      "pattern": "3,3,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 298,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 509,
+      "paper_count": 4,
+      "pattern": "3,3,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 299,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 510,
+      "paper_count": 4,
+      "pattern": "3,3,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 300,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 511,
+      "paper_count": 4,
+      "pattern": "3,3,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 301,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 512,
+      "paper_count": 4,
+      "pattern": "3,3,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 302,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 513,
+      "paper_count": 4,
+      "pattern": "3,3,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 303,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 514,
+      "paper_count": 4,
+      "pattern": "3,3,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 304,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 515,
+      "paper_count": 4,
+      "pattern": "3,3,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 305,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 516,
+      "paper_count": 4,
+      "pattern": "3,3,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 306,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 517,
+      "paper_count": 4,
+      "pattern": "3,3,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 307,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 518,
+      "paper_count": 4,
+      "pattern": "3,3,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 308,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 519,
+      "paper_count": 4,
+      "pattern": "3,3,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 309,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 520,
+      "paper_count": 4,
+      "pattern": "3,3,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 310,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 521,
+      "paper_count": 4,
+      "pattern": "3,3,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 311,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 522,
+      "paper_count": 4,
+      "pattern": "3,3,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 312,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 523,
+      "paper_count": 4,
+      "pattern": "3,3,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 313,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 524,
+      "paper_count": 4,
+      "pattern": "3,4,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 314,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 525,
+      "paper_count": 4,
+      "pattern": "3,4,4,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 315,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 526,
+      "paper_count": 4,
+      "pattern": "3,4,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 316,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 527,
+      "paper_count": 4,
+      "pattern": "3,4,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 317,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 528,
+      "paper_count": 4,
+      "pattern": "3,4,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 318,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 529,
+      "paper_count": 4,
+      "pattern": "3,4,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 319,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 530,
+      "paper_count": 4,
+      "pattern": "3,4,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 320,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 531,
+      "paper_count": 4,
+      "pattern": "3,4,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 321,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 532,
+      "paper_count": 4,
+      "pattern": "3,4,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 322,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 533,
+      "paper_count": 4,
+      "pattern": "3,4,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 323,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 534,
+      "paper_count": 4,
+      "pattern": "3,4,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 324,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 535,
+      "paper_count": 4,
+      "pattern": "3,4,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 325,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 536,
+      "paper_count": 4,
+      "pattern": "3,4,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 326,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 537,
+      "paper_count": 4,
+      "pattern": "3,4,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 327,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 538,
+      "paper_count": 4,
+      "pattern": "3,4,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 328,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 539,
+      "paper_count": 4,
+      "pattern": "3,4,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 329,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 540,
+      "paper_count": 4,
+      "pattern": "3,4,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 330,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 541,
+      "paper_count": 4,
+      "pattern": "3,4,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 331,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 542,
+      "paper_count": 4,
+      "pattern": "3,4,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 332,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 543,
+      "paper_count": 4,
+      "pattern": "3,4,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 333,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 544,
+      "paper_count": 4,
+      "pattern": "3,4,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 334,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 545,
+      "paper_count": 4,
+      "pattern": "3,5,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 335,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 546,
+      "paper_count": 4,
+      "pattern": "3,5,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 336,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 547,
+      "paper_count": 4,
+      "pattern": "3,5,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 337,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 548,
+      "paper_count": 4,
+      "pattern": "3,5,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 338,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 549,
+      "paper_count": 4,
+      "pattern": "3,5,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 339,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 550,
+      "paper_count": 4,
+      "pattern": "3,5,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 340,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 551,
+      "paper_count": 4,
+      "pattern": "3,5,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 341,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 552,
+      "paper_count": 4,
+      "pattern": "3,5,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 342,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 553,
+      "paper_count": 4,
+      "pattern": "3,5,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 343,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 554,
+      "paper_count": 4,
+      "pattern": "3,5,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 344,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 555,
+      "paper_count": 4,
+      "pattern": "3,5,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 345,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 556,
+      "paper_count": 4,
+      "pattern": "3,5,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 346,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 557,
+      "paper_count": 4,
+      "pattern": "3,5,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 347,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 558,
+      "paper_count": 4,
+      "pattern": "3,5,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 348,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 559,
+      "paper_count": 4,
+      "pattern": "3,5,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 349,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 560,
+      "paper_count": 4,
+      "pattern": "3,6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 350,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 561,
+      "paper_count": 4,
+      "pattern": "3,6,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 351,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 562,
+      "paper_count": 4,
+      "pattern": "3,6,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 352,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 563,
+      "paper_count": 4,
+      "pattern": "3,6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 353,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 564,
+      "paper_count": 4,
+      "pattern": "3,6,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 354,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 565,
+      "paper_count": 4,
+      "pattern": "3,6,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 355,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 566,
+      "paper_count": 4,
+      "pattern": "3,6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 356,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 567,
+      "paper_count": 4,
+      "pattern": "3,6,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 357,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 568,
+      "paper_count": 4,
+      "pattern": "3,6,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 358,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 569,
+      "paper_count": 4,
+      "pattern": "3,6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 359,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 570,
+      "paper_count": 4,
+      "pattern": "3,7,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 360,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 571,
+      "paper_count": 4,
+      "pattern": "3,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 361,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 572,
+      "paper_count": 4,
+      "pattern": "3,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 362,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 573,
+      "paper_count": 4,
+      "pattern": "3,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 363,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 574,
+      "paper_count": 4,
+      "pattern": "3,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 364,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 575,
+      "paper_count": 4,
+      "pattern": "3,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 365,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 576,
+      "paper_count": 4,
+      "pattern": "3,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 366,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 577,
+      "paper_count": 4,
+      "pattern": "3,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 367,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 578,
+      "paper_count": 4,
+      "pattern": "3,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 368,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 579,
+      "paper_count": 4,
+      "pattern": "3,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 369,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 580,
+      "paper_count": 4,
+      "pattern": "4,4,4,4",
+      "final_grade": "F",
+      "points": 0,
+      "order": 370,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 581,
+      "paper_count": 4,
+      "pattern": "4,4,4,5",
+      "final_grade": "C",
+      "points": 4,
+      "order": 371,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 582,
+      "paper_count": 4,
+      "pattern": "4,4,4,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 372,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 583,
+      "paper_count": 4,
+      "pattern": "4,4,4,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 373,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 584,
+      "paper_count": 4,
+      "pattern": "4,4,4,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 374,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 585,
+      "paper_count": 4,
+      "pattern": "4,4,4,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 375,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 586,
+      "paper_count": 4,
+      "pattern": "4,4,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 376,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 587,
+      "paper_count": 4,
+      "pattern": "4,4,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 377,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 588,
+      "paper_count": 4,
+      "pattern": "4,4,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 378,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 589,
+      "paper_count": 4,
+      "pattern": "4,4,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 379,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 590,
+      "paper_count": 4,
+      "pattern": "4,4,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 380,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 591,
+      "paper_count": 4,
+      "pattern": "4,4,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 381,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 592,
+      "paper_count": 4,
+      "pattern": "4,4,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 382,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 593,
+      "paper_count": 4,
+      "pattern": "4,4,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 383,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 594,
+      "paper_count": 4,
+      "pattern": "4,4,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 384,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 595,
+      "paper_count": 4,
+      "pattern": "4,4,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 385,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 596,
+      "paper_count": 4,
+      "pattern": "4,4,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 386,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 597,
+      "paper_count": 4,
+      "pattern": "4,4,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 387,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 598,
+      "paper_count": 4,
+      "pattern": "4,4,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 388,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 599,
+      "paper_count": 4,
+      "pattern": "4,4,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 389,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 600,
+      "paper_count": 4,
+      "pattern": "4,4,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 390,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 601,
+      "paper_count": 4,
+      "pattern": "4,5,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 391,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 602,
+      "paper_count": 4,
+      "pattern": "4,5,5,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 392,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 603,
+      "paper_count": 4,
+      "pattern": "4,5,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 393,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 604,
+      "paper_count": 4,
+      "pattern": "4,5,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 394,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 605,
+      "paper_count": 4,
+      "pattern": "4,5,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 395,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 606,
+      "paper_count": 4,
+      "pattern": "4,5,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 396,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 607,
+      "paper_count": 4,
+      "pattern": "4,5,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 397,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 608,
+      "paper_count": 4,
+      "pattern": "4,5,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 398,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 609,
+      "paper_count": 4,
+      "pattern": "4,5,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 399,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 610,
+      "paper_count": 4,
+      "pattern": "4,5,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 400,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 611,
+      "paper_count": 4,
+      "pattern": "4,5,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 401,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 612,
+      "paper_count": 4,
+      "pattern": "4,5,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 402,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 613,
+      "paper_count": 4,
+      "pattern": "4,5,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 403,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 614,
+      "paper_count": 4,
+      "pattern": "4,5,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 404,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 615,
+      "paper_count": 4,
+      "pattern": "4,5,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 405,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 616,
+      "paper_count": 4,
+      "pattern": "4,6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 406,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 617,
+      "paper_count": 4,
+      "pattern": "4,6,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 407,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 618,
+      "paper_count": 4,
+      "pattern": "4,6,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 408,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 619,
+      "paper_count": 4,
+      "pattern": "4,6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 409,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 620,
+      "paper_count": 4,
+      "pattern": "4,6,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 410,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 621,
+      "paper_count": 4,
+      "pattern": "4,6,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 411,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 622,
+      "paper_count": 4,
+      "pattern": "4,6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 412,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 623,
+      "paper_count": 4,
+      "pattern": "4,6,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 413,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 624,
+      "paper_count": 4,
+      "pattern": "4,6,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 414,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 625,
+      "paper_count": 4,
+      "pattern": "4,6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 415,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 626,
+      "paper_count": 4,
+      "pattern": "4,7,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 416,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 627,
+      "paper_count": 4,
+      "pattern": "4,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 417,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 628,
+      "paper_count": 4,
+      "pattern": "4,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 418,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 629,
+      "paper_count": 4,
+      "pattern": "4,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 419,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 630,
+      "paper_count": 4,
+      "pattern": "4,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 420,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 631,
+      "paper_count": 4,
+      "pattern": "4,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 421,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 632,
+      "paper_count": 4,
+      "pattern": "4,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 422,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 633,
+      "paper_count": 4,
+      "pattern": "4,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 423,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 634,
+      "paper_count": 4,
+      "pattern": "4,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 424,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 635,
+      "paper_count": 4,
+      "pattern": "4,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 425,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 636,
+      "paper_count": 4,
+      "pattern": "5,5,5,5",
+      "final_grade": "F",
+      "points": 0,
+      "order": 426,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 637,
+      "paper_count": 4,
+      "pattern": "5,5,5,6",
+      "final_grade": "D",
+      "points": 3,
+      "order": 427,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 638,
+      "paper_count": 4,
+      "pattern": "5,5,5,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 428,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 639,
+      "paper_count": 4,
+      "pattern": "5,5,5,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 429,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 640,
+      "paper_count": 4,
+      "pattern": "5,5,5,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 430,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 641,
+      "paper_count": 4,
+      "pattern": "5,5,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 431,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 642,
+      "paper_count": 4,
+      "pattern": "5,5,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 432,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 643,
+      "paper_count": 4,
+      "pattern": "5,5,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 433,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 644,
+      "paper_count": 4,
+      "pattern": "5,5,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 434,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 645,
+      "paper_count": 4,
+      "pattern": "5,5,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 435,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 646,
+      "paper_count": 4,
+      "pattern": "5,5,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 436,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 647,
+      "paper_count": 4,
+      "pattern": "5,5,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 437,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 648,
+      "paper_count": 4,
+      "pattern": "5,5,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 438,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 649,
+      "paper_count": 4,
+      "pattern": "5,5,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 439,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 650,
+      "paper_count": 4,
+      "pattern": "5,5,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 440,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 651,
+      "paper_count": 4,
+      "pattern": "5,6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 441,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 652,
+      "paper_count": 4,
+      "pattern": "5,6,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 442,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 653,
+      "paper_count": 4,
+      "pattern": "5,6,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 443,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 654,
+      "paper_count": 4,
+      "pattern": "5,6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 444,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 655,
+      "paper_count": 4,
+      "pattern": "5,6,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 445,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 656,
+      "paper_count": 4,
+      "pattern": "5,6,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 446,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 657,
+      "paper_count": 4,
+      "pattern": "5,6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 447,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 658,
+      "paper_count": 4,
+      "pattern": "5,6,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 448,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 659,
+      "paper_count": 4,
+      "pattern": "5,6,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 449,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 660,
+      "paper_count": 4,
+      "pattern": "5,6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 450,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 661,
+      "paper_count": 4,
+      "pattern": "5,7,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 451,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 662,
+      "paper_count": 4,
+      "pattern": "5,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 452,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 663,
+      "paper_count": 4,
+      "pattern": "5,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 453,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 664,
+      "paper_count": 4,
+      "pattern": "5,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 454,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 665,
+      "paper_count": 4,
+      "pattern": "5,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 455,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 666,
+      "paper_count": 4,
+      "pattern": "5,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 456,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 667,
+      "paper_count": 4,
+      "pattern": "5,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 457,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 668,
+      "paper_count": 4,
+      "pattern": "5,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 458,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 669,
+      "paper_count": 4,
+      "pattern": "5,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 459,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 670,
+      "paper_count": 4,
+      "pattern": "5,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 460,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 671,
+      "paper_count": 4,
+      "pattern": "6,6,6,6",
+      "final_grade": "F",
+      "points": 0,
+      "order": 461,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 672,
+      "paper_count": 4,
+      "pattern": "6,6,6,7",
+      "final_grade": "E",
+      "points": 2,
+      "order": 462,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 673,
+      "paper_count": 4,
+      "pattern": "6,6,6,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 463,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 674,
+      "paper_count": 4,
+      "pattern": "6,6,6,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 464,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 675,
+      "paper_count": 4,
+      "pattern": "6,6,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 465,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 676,
+      "paper_count": 4,
+      "pattern": "6,6,7,8",
+      "final_grade": "E",
+      "points": 2,
+      "order": 466,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 677,
+      "paper_count": 4,
+      "pattern": "6,6,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 467,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 678,
+      "paper_count": 4,
+      "pattern": "6,6,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 468,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 679,
+      "paper_count": 4,
+      "pattern": "6,6,8,9",
+      "final_grade": "E",
+      "points": 2,
+      "order": 469,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 680,
+      "paper_count": 4,
+      "pattern": "6,6,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 470,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 681,
+      "paper_count": 4,
+      "pattern": "6,7,7,7",
+      "final_grade": "F",
+      "points": 0,
+      "order": 471,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 682,
+      "paper_count": 4,
+      "pattern": "6,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 472,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 683,
+      "paper_count": 4,
+      "pattern": "6,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 473,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 684,
+      "paper_count": 4,
+      "pattern": "6,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 474,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 685,
+      "paper_count": 4,
+      "pattern": "6,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 475,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 686,
+      "paper_count": 4,
+      "pattern": "6,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 476,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 687,
+      "paper_count": 4,
+      "pattern": "6,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 477,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 688,
+      "paper_count": 4,
+      "pattern": "6,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 478,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 689,
+      "paper_count": 4,
+      "pattern": "6,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 479,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 690,
+      "paper_count": 4,
+      "pattern": "6,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 480,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 691,
+      "paper_count": 4,
+      "pattern": "7,7,7,7",
+      "final_grade": "O",
+      "points": 1,
+      "order": 481,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 692,
+      "paper_count": 4,
+      "pattern": "7,7,7,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 482,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 693,
+      "paper_count": 4,
+      "pattern": "7,7,7,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 483,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 694,
+      "paper_count": 4,
+      "pattern": "7,7,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 484,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 695,
+      "paper_count": 4,
+      "pattern": "7,7,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 485,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 696,
+      "paper_count": 4,
+      "pattern": "7,7,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 486,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 697,
+      "paper_count": 4,
+      "pattern": "7,8,8,8",
+      "final_grade": "F",
+      "points": 0,
+      "order": 487,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 698,
+      "paper_count": 4,
+      "pattern": "7,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 488,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 699,
+      "paper_count": 4,
+      "pattern": "7,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 489,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 700,
+      "paper_count": 4,
+      "pattern": "7,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 490,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 701,
+      "paper_count": 4,
+      "pattern": "8,8,8,8",
+      "final_grade": "O",
+      "points": 1,
+      "order": 491,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 702,
+      "paper_count": 4,
+      "pattern": "8,8,8,9",
+      "final_grade": "O",
+      "points": 1,
+      "order": 492,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 703,
+      "paper_count": 4,
+      "pattern": "8,8,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 493,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 704,
+      "paper_count": 4,
+      "pattern": "8,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 494,
+      "remarks": "Auto-generated default rule"
+    },
+    {
+      "id": 705,
+      "paper_count": 4,
+      "pattern": "9,9,9,9",
+      "final_grade": "F",
+      "points": 0,
+      "order": 495,
+      "remarks": "Auto-generated default rule"
+    }
+  ]
+}

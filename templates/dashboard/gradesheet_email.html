@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background: #046b2b; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background: #f8f9fa; padding: 15px; text-align: center; font-size: 14px; }
+        .school-info { background: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>UGANDA MUSLIM TEACHERS' ASSOCIATION (UMTA)</h1>
+        <h2>UMTA JOINT MOCK EXAMINATIONS</h2>
+    </div>
+    
+    <div class="content">
+        <h3>Dear School Administration,</h3>
+        
+        <p>We are pleased to attach the gradesheet for your school's Uganda Certificate of Education (UCE) mock examination results for the year {{ year }}.</p>
+        
+        <div class="school-info">
+            <strong>School:</strong> {{ school.name }}<br>
+            <strong>Year:</strong> {{ year }}<br>
+            <strong>Examination:</strong> UCE Mock Examinations
+        </div>
+        
+        <p>The attached PDF contains:</p>
+        <ul>
+            <li>Detailed student performance by subject</li>
+            <li>Overall grades and rankings</li>
+            <li>Performance summary statistics</li>
+            <li>Grading scale information</li>
+        </ul>
+        
+        <p>If you have any questions or require further clarification, please don't hesitate to contact us.</p>
+        
+        <p>Best regards,<br>
+        <strong>UMTA Examination Board</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>Uganda Muslim Teachers' Association (UMTA)<br>
+        Email: ibfo.umtaug.org<br>
+        This is an automated message. Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,815 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-book-reader"></i> Library Issue / Return</h3>
+    <small class="text-muted">Search/scan book tag + borrower (Student/Teacher). USB scanner recommended. Camera optional.</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'inv_transactions' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-list mr-1"></i> Transactions
+    </a>
+
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+
+    <ul class="nav nav-tabs" id="loanTabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" id="issue-tab" data-toggle="tab" href="#issuePane" role="tab">
+          <i class="fas fa-arrow-right mr-1"></i> Issue
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="return-tab" data-toggle="tab" href="#returnPane" role="tab">
+          <i class="fas fa-undo mr-1"></i> Return
+        </a>
+      </li>
+    </ul>
+
+    <div class="tab-content border-left border-right border-bottom p-3">
+
+      <!-- ================= ISSUE ================= -->
+      <div class="tab-pane fade show active" id="issuePane" role="tabpanel">
+
+        <!-- CSRF token holder for AJAX POST -->
+        <form id="csrfForm">{% csrf_token %}</form>
+
+        <div class="alert alert-info mb-3">
+          <strong>Tip:</strong> Click inside an input then scan. USB scanners type fast (often with Enter).
+          Camera scanners are optional on the bottom.
+        </div>
+
+        <div class="row">
+
+          <!-- BOOK -->
+          <div class="col-lg-6">
+            <div class="d-flex align-items-center justify-content-between">
+              <h5 class="mb-2"><i class="fas fa-book mr-1"></i> Book</h5>
+              <span class="text-muted small" data-toggle="tooltip" title="Type book tag or title. Pick from suggestions OR scan QR/barcode to load details.">
+                <i class="fas fa-question-circle"></i>
+              </span>
+            </div>
+
+            <div class="form-group position-relative">
+              <label class="font-weight-semibold">Book (Tag / Title / Author / ISBN)</label>
+              <input id="bookInput" class="form-control" placeholder="Type tag (LIB-000123) or title (Biology)..." autocomplete="off">
+              <div id="bookSuggest" class="list-group mt-1" style="display:none; max-height:260px; overflow:auto;"></div>
+              <small class="text-muted">Choose from dropdown or scan to load.</small>
+            </div>
+
+            <input type="hidden" id="bookTagHidden">
+
+            <div id="bookCard" class="border rounded p-3 bg-light" style="display:none;">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="pr-2">
+                  <div class="font-weight-bold" id="bookTitle">—</div>
+                  <div class="text-muted small" id="bookMeta">—</div>
+                </div>
+                <span class="badge badge-success" id="bookStatusBadge">AVAILABLE</span>
+              </div>
+              <hr class="my-2">
+              <div class="small text-muted">
+                <div><strong>Tag:</strong> <span id="bookTag">—</span></div>
+                <div><strong>Location:</strong> <span id="bookLoc">—</span></div>
+              </div>
+            </div>
+
+            <div id="bookError" class="alert alert-danger mt-2" style="display:none;"></div>
+          </div>
+
+          <!-- BORROWER -->
+          <div class="col-lg-6">
+            <div class="d-flex align-items-center justify-content-between">
+              <h5 class="mb-2"><i class="fas fa-user mr-1"></i> Borrower</h5>
+              <span class="text-muted small" data-toggle="tooltip" title="Type student admission number/name OR teacher name. Pick from suggestions OR scan QR (student card).">
+                <i class="fas fa-question-circle"></i>
+              </span>
+            </div>
+
+            <div class="form-group position-relative">
+              <label class="font-weight-semibold">Borrower (Student / Teacher)</label>
+              <input id="borrowerInput" class="form-control" placeholder="Type student adm/name OR teacher name..." autocomplete="off">
+              <div id="borrowerSuggest" class="list-group mt-1" style="display:none; max-height:260px; overflow:auto;"></div>
+              <small class="text-muted">Pick from dropdown (supports Students + Teachers).</small>
+            </div>
+
+            <input type="hidden" id="borrowerTypeHidden">
+            <input type="hidden" id="borrowerIdHidden">
+
+            <div id="borrowerCard" class="border rounded p-3 bg-light" style="display:none;">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <div class="font-weight-bold" id="borrowerName">—</div>
+                  <div class="text-muted small" id="borrowerMeta">—</div>
+                </div>
+                <span class="badge badge-secondary" id="borrowerBadge">—</span>
+              </div>
+            </div>
+
+            <div id="borrowerError" class="alert alert-danger mt-2" style="display:none;"></div>
+          </div>
+
+        </div>
+
+        <hr>
+
+        <div class="row align-items-end">
+          <div class="col-md-4">
+            <label class="font-weight-semibold">Due Date</label>
+            <input id="dueDate" type="date" class="form-control">
+            <small class="text-muted">Default: +14 days (your policy can override on backend).</small>
+          </div>
+
+          <div class="col-md-8 d-flex justify-content-end" style="gap:.5rem;">
+            <button type="button" class="btn btn-light" id="btnIssueClear">Clear</button>
+            <button type="button" class="btn btn-success" id="btnIssue">
+              <i class="fas fa-check mr-1"></i> Issue Book
+            </button>
+          </div>
+        </div>
+
+        <div id="issueResult" class="mt-3"></div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="border rounded p-2">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <strong>Book Scanner (Camera Optional)</strong>
+                <span class="badge badge-secondary">Auto fill</span>
+              </div>
+              <div id="bookQrReader" style="width:100%;"></div>
+              <small class="text-muted d-block mt-2">Scan book QR/barcode to load immediately.</small>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="border rounded p-2">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <strong>Borrower Scanner (Camera Optional)</strong>
+                <span class="badge badge-secondary">Auto fill</span>
+              </div>
+              <div id="borrowerQrReader" style="width:100%;"></div>
+              <small class="text-muted d-block mt-2">Scan student QR (adm/token). Teachers can be selected from dropdown.</small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= RETURN ================= -->
+      <div class="tab-pane fade" id="returnPane" role="tabpanel">
+
+        <div class="alert alert-info mb-3">
+          <strong>Return:</strong> Only currently borrowed items are searchable here (ISSUED / ALLOCATED).
+          Type a tag/title OR scan the book QR.
+        </div>
+
+        <div class="row">
+          <div class="col-lg-7">
+
+            <div class="d-flex align-items-center justify-content-between">
+              <h5 class="mb-2"><i class="fas fa-undo mr-1"></i> Return Book</h5>
+              <span class="text-muted small" data-toggle="tooltip" title="Type tag/title to search ONLY borrowed items. Or scan QR to load instantly.">
+                <i class="fas fa-question-circle"></i>
+              </span>
+            </div>
+
+            <!-- RETURN SEARCH (like issue book search) -->
+            <div class="form-group position-relative">
+              <label class="font-weight-semibold">Book (Tag / Title)</label>
+              <input id="returnInput" class="form-control" placeholder="Type tag (LIB-000123) or title..." autocomplete="off">
+              <div id="returnSuggest" class="list-group mt-1" style="display:none; max-height:260px; overflow:auto;"></div>
+              <small class="text-muted">Shows borrowed items only.</small>
+            </div>
+
+            <input type="hidden" id="returnTagHidden">
+
+            <div id="returnCard" class="border rounded p-3 bg-light" style="display:none;">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <div class="font-weight-bold" id="retTitle">—</div>
+                  <div class="text-muted small" id="retMeta">—</div>
+                </div>
+                <span class="badge badge-warning" id="retStatus">ISSUED</span>
+              </div>
+              <hr class="my-2">
+              <div class="small text-muted">
+                <div><strong>Tag:</strong> <span id="retTag">—</span></div>
+                <div><strong>Borrower:</strong> <span id="retBorrower">—</span></div>
+                <div><strong>Due:</strong> <span id="retDue">—</span> <span id="retOverdue"></span></div>
+              </div>
+            </div>
+
+            <div id="returnError" class="alert alert-danger mt-2" style="display:none;"></div>
+
+            <div class="border rounded p-2 mt-3">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <strong>Return Scanner (Camera Optional)</strong>
+                <span class="badge badge-secondary">Auto fill</span>
+              </div>
+              <div id="returnQrReader" style="width:100%;"></div>
+              <small class="text-muted d-block mt-2">Scan book tag to load details.</small>
+            </div>
+
+          </div>
+
+          <div class="col-lg-5">
+            <h5 class="mb-2">&nbsp;</h5>
+
+            <div class="form-group">
+              <label class="font-weight-semibold">Condition (optional)</label>
+              <select id="returnCondition" class="form-control">
+                <option value="">— keep current —</option>
+                <option value="NEW">New</option>
+                <option value="GOOD">Good</option>
+                <option value="FAIR">Fair</option>
+                <option value="DAMAGED">Damaged</option>
+              </select>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block" id="btnReturn">
+              <i class="fas fa-check mr-1"></i> Confirm Return
+            </button>
+
+            <button type="button" class="btn btn-light btn-block mt-2" id="btnReturnClear">
+              Clear
+            </button>
+
+            <div id="returnResult" class="mt-3"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+  // tooltips (safe)
+  try { $(function(){ $('[data-toggle="tooltip"]').tooltip(); }); } catch(e){}
+
+  const UNIT_LOOKUP_URL        = "{% url 'inv_ajax_unit_lookup' %}";
+  const BOOK_SEARCH_URL        = "{% url 'inv_ajax_book_search' %}";
+  const BORROWER_SEARCH_URL    = "{% url 'inv_ajax_borrower_search' %}";
+  const RETURN_SEARCH_URL      = "{% url 'inv_ajax_return_search' %}";  // borrowed-only dropdown
+  const ISSUE_URL              = "{% url 'inv_ajax_issue' %}";
+  const RETURN_URL             = "{% url 'inv_ajax_return' %}";
+
+  function csrfToken(){
+    return document.querySelector("#csrfForm input[name=csrfmiddlewaretoken]")?.value || "";
+  }
+  function show(el, yes=true){ if(el) el.style.display = yes ? "" : "none"; }
+  function esc(s){
+    return (s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // =========================================================
+  // ISSUE
+  // =========================================================
+  let bookTag = "";
+  let borrowerType = "";
+  let borrowerId = "";
+
+  async function lookupBookByTag(tag){
+    tag = (tag || "").trim();
+    if(!tag) return;
+
+    const err  = document.getElementById("bookError");
+    const card = document.getElementById("bookCard");
+
+    try{
+      const res = await fetch(`${UNIT_LOOKUP_URL}?tag=${encodeURIComponent(tag)}`);
+      const data = await res.json();
+
+      if(!data.ok){
+        bookTag = "";
+        const hid = document.getElementById("bookTagHidden");
+        if(hid) hid.value = "";
+        show(card,false);
+        if(err){ err.textContent = data.error || "Book not found"; show(err,true); }
+        return;
+      }
+
+      show(err,false);
+
+      const u = data.unit || {};
+      bookTag = u.tag_code || u.tag || tag;
+
+      const hid = document.getElementById("bookTagHidden");
+      if(hid) hid.value = bookTag;
+
+      document.getElementById("bookTitle").textContent = u.title || u.display_title || "—";
+      document.getElementById("bookMeta").textContent  = u.meta  || u.display_meta  || "—";
+      document.getElementById("bookTag").textContent   = bookTag || "—";
+      document.getElementById("bookLoc").textContent   = u.location || "—";
+
+      const badge = document.getElementById("bookStatusBadge");
+      badge.textContent = u.status || "—";
+      badge.className = "badge " + ((u.status === "AVAILABLE") ? "badge-success" : "badge-danger");
+
+      show(card,true);
+    }catch(e){
+      bookTag = "";
+      const hid = document.getElementById("bookTagHidden");
+      if(hid) hid.value = "";
+      show(card,false);
+      if(err){ err.textContent = "Network/Server error while loading book."; show(err,true); }
+      console.error(e);
+    }
+  }
+
+  async function searchBooks(q){
+    q = (q || "").trim();
+    const list = document.getElementById("bookSuggest");
+    if(!list) return;
+
+    list.innerHTML = "";
+    show(list,false);
+    if(q.length < 2) return;
+
+    try{
+      const res = await fetch(`${BOOK_SEARCH_URL}?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const results = data.results || [];
+      if(!data.ok || !results.length) return;
+
+      results.forEach(b=>{
+        const a = document.createElement("a");
+        a.href="#";
+        a.className="list-group-item list-group-item-action";
+
+        const badgeClass = (b.status === "AVAILABLE") ? "badge-success" : "badge-danger";
+        a.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="pr-2">
+              <div class="font-weight-bold">${esc(b.title)}</div>
+              <div class="small text-muted">${esc(b.meta || "")}</div>
+              <div class="small text-muted"><strong>${esc(b.tag_code)}</strong>${b.location ? " • " + esc(b.location) : ""}</div>
+            </div>
+            <span class="badge ${badgeClass}">${esc(b.status)}</span>
+          </div>
+        `;
+        a.onclick = (ev)=>{
+          ev.preventDefault();
+          document.getElementById("bookInput").value = b.tag_code;
+          show(list,false);
+          lookupBookByTag(b.tag_code);
+        };
+        list.appendChild(a);
+      });
+
+      show(list,true);
+    }catch(e){ console.error(e); }
+  }
+
+  function selectBorrower(b){
+    borrowerType = b.type;
+    borrowerId = String(b.id);
+
+    const ht = document.getElementById("borrowerTypeHidden");
+    const hi = document.getElementById("borrowerIdHidden");
+    if(ht) ht.value = borrowerType;
+    if(hi) hi.value = borrowerId;
+
+    document.getElementById("borrowerInput").value = `${b.code} - ${b.name}`;
+
+    document.getElementById("borrowerName").textContent = b.name || "—";
+
+    if(b.type === "STUDENT"){
+      document.getElementById("borrowerMeta").textContent =
+        `Adm: ${b.code || "—"} • ${b.class_name || ""}${b.stream ? " - " + b.stream : ""}`;
+      document.getElementById("borrowerBadge").className = "badge badge-primary";
+      document.getElementById("borrowerBadge").textContent = "Student";
+    }else{
+      document.getElementById("borrowerMeta").textContent = `Teacher • ${b.code || ""}`;
+      document.getElementById("borrowerBadge").className = "badge badge-info";
+      document.getElementById("borrowerBadge").textContent = "Teacher";
+    }
+
+    show(document.getElementById("borrowerCard"), true);
+    show(document.getElementById("borrowerError"), false);
+  }
+
+  async function searchBorrowers(q){
+    q = (q || "").trim();
+    const list = document.getElementById("borrowerSuggest");
+    if(!list) return;
+
+    list.innerHTML = "";
+    show(list,false);
+    if(q.length < 2) return;
+
+    try{
+      const res = await fetch(`${BORROWER_SEARCH_URL}?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const results = data.results || [];
+      if(!data.ok || !results.length) return;
+
+      results.forEach(b=>{
+        const a = document.createElement("a");
+        a.href="#";
+        a.className="list-group-item list-group-item-action";
+
+        const typeBadge = (b.type === "STUDENT")
+          ? `<span class="badge badge-primary ml-2">Student</span>`
+          : `<span class="badge badge-info ml-2">Teacher</span>`;
+
+        const sub = (b.type === "STUDENT")
+          ? `<span class="text-muted">• ${esc(b.class_name || "")}${b.stream ? " - " + esc(b.stream) : ""}</span>`
+          : `<span class="text-muted">• Teacher</span>`;
+
+        a.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <strong>${esc(b.name)}</strong>
+              <span class="text-muted">(${esc(b.code || "")})</span>
+              ${sub}
+            </div>
+            <div>${typeBadge}</div>
+          </div>
+        `;
+        a.onclick = (ev)=>{
+          ev.preventDefault();
+          selectBorrower(b);
+          show(list,false);
+        };
+        list.appendChild(a);
+      });
+
+      show(list,true);
+    }catch(e){ console.error(e); }
+  }
+
+  function clearIssueUI(){
+    bookTag = ""; borrowerType=""; borrowerId="";
+
+    const bth = document.getElementById("bookTagHidden");
+    const bt = document.getElementById("borrowerTypeHidden");
+    const bi = document.getElementById("borrowerIdHidden");
+    if(bth) bth.value = "";
+    if(bt) bt.value = "";
+    if(bi) bi.value = "";
+
+    document.getElementById("bookInput").value = "";
+    document.getElementById("borrowerInput").value = "";
+
+    show(document.getElementById("bookCard"), false);
+    show(document.getElementById("borrowerCard"), false);
+    show(document.getElementById("bookError"), false);
+    show(document.getElementById("borrowerError"), false);
+
+    document.getElementById("issueResult").innerHTML = "";
+    document.getElementById("bookInput").focus();
+  }
+
+  let bookTimer=null, borTimer=null;
+
+  document.getElementById("bookInput").addEventListener("input",(e)=>{
+    clearTimeout(bookTimer);
+    bookTimer = setTimeout(()=>searchBooks(e.target.value), 220);
+  });
+  document.getElementById("bookInput").addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); lookupBookByTag(e.target.value); }
+  });
+  document.getElementById("borrowerInput").addEventListener("input",(e)=>{
+    clearTimeout(borTimer);
+    borTimer = setTimeout(()=>searchBorrowers(e.target.value), 220);
+  });
+
+  document.getElementById("btnIssueClear").addEventListener("click", clearIssueUI);
+
+  document.getElementById("btnIssue").addEventListener("click", async ()=>{
+    const out = document.getElementById("issueResult");
+    out.innerHTML = "";
+
+    const tag_code = document.getElementById("bookTagHidden").value || bookTag;
+    const bType = document.getElementById("borrowerTypeHidden").value || borrowerType;
+    const bId   = document.getElementById("borrowerIdHidden").value || borrowerId;
+    const due   = document.getElementById("dueDate").value;
+
+    if(!tag_code){ out.innerHTML = `<div class="alert alert-danger">Select/scan a book first.</div>`; return; }
+    if(!bType || !bId){ out.innerHTML = `<div class="alert alert-danger">Select a borrower first.</div>`; return; }
+
+    try{
+      const res = await fetch(ISSUE_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: new URLSearchParams({
+          csrfmiddlewaretoken: csrfToken(),
+          tag_code: tag_code,
+          borrower_type: bType,
+          borrower_id: bId,
+          due_date: due,
+          remark: ""
+        })
+      });
+      const data = await res.json();
+      if(!data.ok){ out.innerHTML = `<div class="alert alert-danger">${esc(data.error||"Issue failed")}</div>`; return; }
+
+      out.innerHTML = `<div class="alert alert-success">
+        Issued <strong>${esc(data.tx.tag_code || tag_code)}</strong> to <strong>${esc(data.tx.borrower || "")}</strong>.
+        Due: <strong>${esc(data.tx.due_date || "—")}</strong>
+      </div>`;
+
+      // clear after success
+      setTimeout(clearIssueUI, 600);
+    }catch(e){
+      out.innerHTML = `<div class="alert alert-danger">Network/Server error while issuing.</div>`;
+      console.error(e);
+    }
+  });
+
+  // =========================================================
+  // RETURN (borrowed-only dropdown + FIXED scanner)
+  // =========================================================
+  let returnTag = "";
+
+  function clearReturnUI(){
+    returnTag = "";
+    const hid = document.getElementById("returnTagHidden");
+    if(hid) hid.value = "";
+
+    document.getElementById("returnInput").value = "";
+    show(document.getElementById("returnSuggest"), false);
+    show(document.getElementById("returnCard"), false);
+    show(document.getElementById("returnError"), false);
+    document.getElementById("returnResult").innerHTML = "";
+    document.getElementById("returnInput").focus();
+  }
+
+  document.getElementById("btnReturnClear").addEventListener("click", clearReturnUI);
+
+  async function lookupReturnByTag(tag){
+    tag = (tag||"").trim();
+    if(!tag) return;
+
+    const err  = document.getElementById("returnError");
+    const card = document.getElementById("returnCard");
+
+    try{
+      const res = await fetch(`${UNIT_LOOKUP_URL}?tag=${encodeURIComponent(tag)}&mode=RETURN`);
+      const data = await res.json();
+
+      if(!data.ok){
+        returnTag = "";
+        const hid = document.getElementById("returnTagHidden");
+        if(hid) hid.value = "";
+        show(card,false);
+        if(err){ err.textContent = data.error || "Tag not found"; show(err,true); }
+        return;
+      }
+
+      show(err,false);
+
+      const u = data.unit || {};
+      const loan = u.loan || {};
+
+      returnTag = u.tag_code || u.tag || tag;
+      const hid = document.getElementById("returnTagHidden");
+      if(hid) hid.value = returnTag;
+
+      document.getElementById("retTitle").textContent = u.title || u.display_title || "—";
+      document.getElementById("retMeta").textContent  = u.meta  || u.display_meta  || "—";
+      document.getElementById("retStatus").textContent = u.status || "—";
+      const rt = document.getElementById("retTag");
+      if(rt) rt.textContent = returnTag;
+
+      document.getElementById("retBorrower").textContent = loan.borrower || "—";
+      document.getElementById("retDue").textContent = loan.due_date || "—";
+
+      const od = Number(loan.overdue_days || 0);
+      document.getElementById("retOverdue").innerHTML =
+        (od > 0) ? `<span class="badge badge-danger ml-2">Overdue ${od} days</span>` : "";
+
+      show(card,true);
+    }catch(e){
+      returnTag = "";
+      const hid = document.getElementById("returnTagHidden");
+      if(hid) hid.value = "";
+      show(card,false);
+      if(err){ err.textContent = "Network/Server error while loading return tag."; show(err,true); }
+      console.error(e);
+    }
+  }
+
+  async function searchBorrowedForReturn(q){
+    q = (q || "").trim();
+    const list = document.getElementById("returnSuggest");
+    if(!list) return;
+
+    list.innerHTML = "";
+    show(list,false);
+    if(q.length < 2) return;
+
+    try{
+      const res = await fetch(`${RETURN_SEARCH_URL}?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const results = data.results || [];
+      if(!data.ok || !results.length) return;
+
+      results.forEach(b=>{
+        const a = document.createElement("a");
+        a.href="#";
+        a.className="list-group-item list-group-item-action";
+
+        const od = Number(b.overdue_days || 0);
+        const odBadge = od > 0 ? `<span class="badge badge-danger ml-2">Overdue ${od}d</span>` : "";
+
+        a.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="pr-2">
+              <div class="font-weight-bold">${esc(b.title)}</div>
+              <div class="small text-muted">${esc(b.meta || "")}</div>
+              <div class="small text-muted">
+                <strong>${esc(b.tag_code)}</strong>
+                ${b.borrower ? " • " + esc(b.borrower) : ""}
+                ${b.due_date ? " • Due " + esc(b.due_date) : ""}
+              </div>
+            </div>
+            <div>
+              <span class="badge badge-warning">${esc(b.status || "ISSUED")}</span>
+              ${odBadge}
+            </div>
+          </div>
+        `;
+        a.onclick = (ev)=>{
+          ev.preventDefault();
+          document.getElementById("returnInput").value = b.tag_code;
+          show(list,false);
+          lookupReturnByTag(b.tag_code);
+        };
+        list.appendChild(a);
+      });
+
+      show(list,true);
+    }catch(e){ console.error(e); }
+  }
+
+  let returnTimer=null;
+  document.getElementById("returnInput").addEventListener("input",(e)=>{
+    clearTimeout(returnTimer);
+    returnTimer = setTimeout(()=>searchBorrowedForReturn(e.target.value), 220);
+  });
+  document.getElementById("returnInput").addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); lookupReturnByTag(e.target.value); }
+  });
+
+  document.getElementById("btnReturn").addEventListener("click", async ()=>{
+    const out = document.getElementById("returnResult");
+    out.innerHTML = "";
+
+    const tag_code = document.getElementById("returnTagHidden").value || returnTag;
+    if(!tag_code){ out.innerHTML = `<div class="alert alert-danger">Select/scan a borrowed book first.</div>`; return; }
+
+    const cond = document.getElementById("returnCondition").value;
+
+    try{
+      const res = await fetch(RETURN_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: new URLSearchParams({
+          csrfmiddlewaretoken: csrfToken(),
+          tag_code: tag_code,
+          condition: cond,
+          remark: ""
+        })
+      });
+
+      const data = await res.json();
+      if(!data.ok){ out.innerHTML = `<div class="alert alert-danger">${esc(data.error||"Return failed")}</div>`; return; }
+
+      out.innerHTML = `<div class="alert alert-success">
+        Returned <strong>${esc(data.tx.tag_code || tag_code)}</strong> successfully.
+      </div>`;
+
+      setTimeout(clearReturnUI, 650);
+    }catch(e){
+      out.innerHTML = `<div class="alert alert-danger">Network/Server error while returning.</div>`;
+      console.error(e);
+    }
+  });
+
+  // =========================================================
+  // CAMERA SCANNERS (Issue starts on load; Return starts on tab open)
+  // =========================================================
+  let qrBook = null, qrBorrower = null, qrReturn = null;
+  let issueStarted = false;
+  let returnStarted = false;
+
+  async function startIssueScanners(){
+    if(issueStarted) return;
+    issueStarted = true;
+
+    // Book scanner
+    try{
+      qrBook = new Html5Qrcode("bookQrReader");
+      const devices = await Html5Qrcode.getCameras();
+      if(devices && devices.length){
+        await qrBook.start({ facingMode:"environment" }, { fps:10, qrbox:230 }, (txt)=>{
+          txt = (txt || "").trim(); if(!txt) return;
+          document.getElementById("bookInput").value = txt;
+          show(document.getElementById("bookSuggest"), false);
+          lookupBookByTag(txt);
+        });
+      }
+    }catch(e){ console.warn("book scanner:", e); }
+
+    // Borrower scanner
+    try{
+      qrBorrower = new Html5Qrcode("borrowerQrReader");
+      const devices = await Html5Qrcode.getCameras();
+      if(devices && devices.length){
+        await qrBorrower.start({ facingMode:"environment" }, { fps:10, qrbox:230 }, (txt)=>{
+          txt = (txt || "").trim(); if(!txt) return;
+          document.getElementById("borrowerInput").value = txt;
+          show(document.getElementById("borrowerSuggest"), false);
+          searchBorrowers(txt);
+        });
+      }
+    }catch(e){ console.warn("borrower scanner:", e); }
+  }
+
+  async function startReturnScanner(){
+    if(returnStarted) return;
+    returnStarted = true;
+
+    // IMPORTANT: return tab must be visible (not display:none) when this runs
+    try{
+      qrReturn = new Html5Qrcode("returnQrReader");
+      const devices = await Html5Qrcode.getCameras();
+      if(devices && devices.length){
+        await qrReturn.start({ facingMode:"environment" }, { fps:10, qrbox:230 }, (txt)=>{
+          txt = (txt || "").trim(); if(!txt) return;
+          document.getElementById("returnInput").value = txt;
+          show(document.getElementById("returnSuggest"), false);
+          lookupReturnByTag(txt);
+        });
+      }
+    }catch(e){ console.warn("return scanner:", e); }
+  }
+
+  async function stopReturnScanner(){
+    if(!qrReturn || !returnStarted) return;
+    try{
+      await qrReturn.stop();
+      await qrReturn.clear();
+    }catch(e){}
+    returnStarted = false;
+    qrReturn = null;
+  }
+
+  document.addEventListener("DOMContentLoaded", async ()=>{
+    // Default due date: today + 14 days
+    const d = new Date(); d.setDate(d.getDate()+14);
+    const iso = d.toISOString().slice(0,10);
+    const due = document.getElementById("dueDate");
+    if(due && !due.value) due.value = iso;
+
+    // focus first field
+    const bi = document.getElementById("bookInput");
+    if(bi) bi.focus();
+
+    // start issue scanners (issue tab is visible)
+    await startIssueScanners();
+  });
+
+  // Bootstrap tab events: start return scanner ONLY when return tab is shown
+  try{
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+      const target = $(e.target).attr("href"); // "#issuePane" or "#returnPane"
+      if(target === "#returnPane"){
+        setTimeout(startReturnScanner, 250); // delay helps layout
+        document.getElementById("returnInput").focus();
+      }else if(target === "#issuePane"){
+        // optional: stop return scanner to free camera
+        stopReturnScanner();
+      }
+    });
+  }catch(e){
+    // no jQuery: return scanner won't auto-start, typing/USB still works
+  }
+
+  // hide dropdowns on outside click
+  document.addEventListener("click",(e)=>{
+    const a = document.getElementById("bookSuggest");
+    if(a && !a.contains(e.target) && e.target.id !== "bookInput") show(a,false);
+
+    const b = document.getElementById("borrowerSuggest");
+    if(b && !b.contains(e.target) && e.target.id !== "borrowerInput") show(b,false);
+
+    const c = document.getElementById("returnSuggest");
+    if(c && !c.contains(e.target) && e.target.id !== "returnInput") show(c,false);
+  });
+</script>
+{% endblock%}

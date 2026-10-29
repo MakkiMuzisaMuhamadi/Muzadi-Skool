@@ -1,0 +1,50 @@
+{% comment %} Print/PDF grid. Same context as _grid.html (mode, grid). {% endcomment %}
+<table>
+  <thead>
+    <tr>
+      <th class="day-col">Day</th>
+      {% for period in grid.columns %}
+        <th class="period-head">
+          {% if period %}{{ period.name }}<br><span class="muted">{{ period.start_time|time:"H:i" }} - {{ period.end_time|time:"H:i" }}</span>{% endif %}
+        </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in grid.rows %}
+      <tr>
+        <th class="day-col">{{ row.label }}</th>
+        {% for cell in row.cells %}
+          <td class="{% if cell.period and not cell.period.is_lesson %}break{% endif %}">
+            {% if cell.period and cell.time_differs %}<div class="muted center">{{ cell.period.start_time|time:"H:i" }}-{{ cell.period.end_time|time:"H:i" }}</div>{% endif %}
+            {% for item in cell.items %}
+              {% with e=item.entry %}
+                {% if e.period.is_break %}
+                  <div class="break-box">{{ e.period.name }}</div>
+                {% else %}
+                  <div class="lesson-box">
+                    <div class="subject-name">{{ e.subject.short_name|default:e.subject.name }}{% if item.is_continuation %} (cont.){% endif %}</div>
+                    {% if not item.is_continuation %}
+                      {% if mode == "teacher" %}
+                        <div class="muted">{{ e.class_ref.name }}{% if e.stream_id or e.teaching_group_id %} - {{ e.group_label }}{% endif %}</div>
+                      {% else %}
+                        <div class="muted">{{ e.teacher.initials|default:e.teacher|default:"" }}{% if e.stream_id or e.teaching_group_id %} | {{ e.group_label }}{% endif %}</div>
+                      {% endif %}
+                      {% if e.venue_label %}<div class="muted">{{ e.venue_label }}</div>{% endif %}
+                    {% endif %}
+                  </div>
+                {% endif %}
+              {% endwith %}
+            {% empty %}
+              {% if cell.period and not cell.period.is_lesson %}
+                <div class="break-box">{{ cell.period.name }}</div>
+              {% elif cell.period %}
+                <div class="center muted">-</div>
+              {% endif %}
+            {% endfor %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

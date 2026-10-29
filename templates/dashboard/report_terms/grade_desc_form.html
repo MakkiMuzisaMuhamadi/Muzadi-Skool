@@ -1,0 +1,94 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h4 class="mb-1">Grade Descriptor</h4>
+        <small class="text-muted">Long descriptor per grade letter and percentage range.</small>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'report_grade_desc_list' %}">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+
+    <hr>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.level.label }}</label>
+            {{ form.level }}
+            {% for e in form.level.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.grade_letter.label }}</label>
+            {{ form.grade_letter }}
+            {% for e in form.grade_letter.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.min_percentage.label }}</label>
+            {{ form.min_percentage }}
+            {% for e in form.min_percentage.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.max_percentage.label }}</label>
+            {{ form.max_percentage }}
+            {% for e in form.max_percentage.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.descriptor.label }}</label>
+            {{ form.descriptor }}
+            {% for e in form.descriptor.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-group mb-0">
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label font-weight-bold ml-1" for="{{ form.is_active.id_for_label }}">
+                {{ form.is_active.label }}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-user-shield"></i> Marks Audit</h3>
+    <small class="text-muted">Filter, monitor marks entry, and identify missing candidates.</small>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" id="marksFilter"
+          data-terms-url="{% url 'ajax_terms' %}"
+          data-classes-url="{% url 'ajax_teacher_classes' %}"
+          data-streams-url="{% url 'ajax_teacher_streams' %}"
+          data-examtypes-url="{% url 'ajax_exam_types_for_class' %}"
+          data-subjects-url="{% url 'ajax_teacher_subjects' %}"
+          data-papers-url="{% url 'ajax_teacher_papers' %}">
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label>Academic Year</label>{{ filter_form.academic_year }}
+        </div>
+        <div class="form-group col-md-3">
+          <label>Term</label>{{ filter_form.term }}
+        </div>
+        <div class="form-group col-md-3">
+          <label>Class</label>{{ filter_form.class_ref }}
+        </div>
+        <div class="form-group col-md-3">
+          <label>Stream</label>{{ filter_form.stream }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>Exam Type</label>{{ filter_form.exam_type }}
+        </div>
+        <div class="form-group col-md-4">
+          <label>Subject</label>{{ filter_form.subject }}
+        </div>
+        <div class="form-group col-md-4">
+          <label>Paper</label>{{ filter_form.paper }}
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap" style="gap:.5rem;">
+        <button class="btn btn-primary">
+          <i class="fas fa-filter mr-1"></i> Filter
+        </button>
+        <a href="{% url 'marks_audit' %}" class="btn btn-light">
+          <i class="fas fa-sync-alt mr-1"></i> Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if summary.total_students %}
+<div class="row mb-3">
+  <div class="col-md-3 mb-2">
+    <div class="card border-left-primary h-100 shadow-sm">
+      <div class="card-body py-3">
+        <div class="small text-muted">Total Candidates</div>
+        <div class="h5 mb-0 font-weight-bold">{{ summary.total_students }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-2">
+    <div class="card border-left-success h-100 shadow-sm">
+      <div class="card-body py-3">
+        <div class="small text-muted">Candidates with Marks</div>
+        <div class="h5 mb-0 font-weight-bold">{{ summary.entered_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-2">
+    <div class="card border-left-danger h-100 shadow-sm">
+      <div class="card-body py-3">
+        <div class="small text-muted">Candidates without Marks</div>
+        <div class="h5 mb-0 font-weight-bold">{{ summary.missing_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-2">
+    <div class="card border-left-info h-100 shadow-sm">
+      <div class="card-body py-3">
+        <div class="small text-muted">Exam / Target</div>
+        <div class="small font-weight-bold">
+          {{ summary.exam_type_name|default:"-" }}
+          {% if summary.target_name %}<br>{{ summary.target_name }}{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>Entered Marks</strong>
+    <span class="badge badge-primary">{{ summary.entered_count|default:0 }}</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped table-sm w-100" id="enteredMarksTable">
+        <thead class="thead-light">
+          <tr>
+            <th>Updated</th>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Exam Type</th>
+            <th>Subject / Paper</th>
+            <th>Marks</th>
+            <th>Absent</th>
+            <th>Entered By</th>
+            <th>Window</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in marks %}
+          <tr>
+            <td>{{ m.updated_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ m.student.last_name }} {{ m.student.first_name }}</td>
+            <td>{{ m.marksheet.class_ref.name }}</td>
+            <td>{{ m.marksheet.stream.name|default:"-" }}</td>
+            <td>{{ m.marksheet.exam_type.name }}</td>
+            <td>
+              {% if m.paper %}
+                {{ m.paper.subject.name }} - {{ m.paper.paper_name }}
+              {% elif m.subject %}
+                {{ m.subject.name }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ m.marks|default:"-" }}</td>
+            <td>
+              {% if m.is_absent %}
+                <span class="badge badge-warning">Yes</span>
+              {% else %}
+                <span class="badge badge-success">No</span>
+              {% endif %}
+            </td>
+            <td>{{ m.entered_by.get_full_name|default:m.entered_by.username|default:"-" }}</td>
+            <td>
+              {% if m.marksheet.is_locked %}
+                <span class="badge badge-danger">CLOSED</span>
+              {% else %}
+                <span class="badge badge-success">OPEN</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="text-center text-muted">No entered marks found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>Missing Candidates</strong>
+    <span class="badge badge-danger">{{ summary.missing_count|default:0 }}</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped table-sm w-100" id="missingMarksTable">
+        <thead class="thead-light">
+          <tr>
+            <th>Student</th>
+            <th>Admission No.</th>
+            <th>Stream</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in missing_students %}
+          <tr>
+            <td>{{ item.student_name }}</td>
+            <td>{{ item.admission_number|default:"-" }}</td>
+            <td>{{ item.stream }}</td>
+            <td><span class="badge badge-danger">Missing Marks</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted">No missing candidates.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const form = document.getElementById("marksFilter");
+  if (!form) return;
+
+  const urls = {
+    terms: form.dataset.termsUrl,
+    classes: form.dataset.classesUrl,
+    streams: form.dataset.streamsUrl,
+    examtypes: form.dataset.examtypesUrl,
+    subjects: form.dataset.subjectsUrl,
+    papers: form.dataset.papersUrl,
+  };
+
+  const yearEl = document.getElementById("id_academic_year");
+  const termEl = document.getElementById("id_term");
+  const classEl = document.getElementById("id_class_ref");
+  const streamEl = document.getElementById("id_stream");
+  const examTypeEl = document.getElementById("id_exam_type");
+  const subjectEl = document.getElementById("id_subject");
+  const paperEl = document.getElementById("id_paper");
+
+  function reset(el, label, disabled=true) {
+    if (!el) return;
+    el.innerHTML = `<option value="">${label}</option>`;
+    el.disabled = disabled;
+  }
+
+  async function load(url, el, label, textKey) {
+    reset(el, label, true);
+    const res = await fetch(url, {headers: {"X-Requested-With":"XMLHttpRequest"}});
+    const data = await res.json();
+    reset(el, label, false);
+    (data.results || []).forEach(x => {
+      const opt = document.createElement("option");
+      opt.value = String(x.id);
+      opt.textContent = String(x[textKey]);
+      el.appendChild(opt);
+    });
+  }
+
+  reset(termEl, "-- Select Term --", true);
+  reset(classEl, "-- Select Class --", true);
+  reset(streamEl, "-- All Streams --", true);
+  reset(examTypeEl, "-- Select Exam Type --", true);
+  reset(subjectEl, "-- Select Subject --", true);
+  reset(paperEl, "-- Select Paper --", true);
+
+  yearEl.addEventListener("change", async () => {
+    reset(termEl, "-- Select Term --", true);
+    reset(classEl, "-- Select Class --", true);
+    reset(streamEl, "-- All Streams --", true);
+    reset(examTypeEl, "-- Select Exam Type --", true);
+    reset(subjectEl, "-- Select Subject --", true);
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!yearEl.value) return;
+    await load(`${urls.terms}?year_id=${encodeURIComponent(yearEl.value)}`, termEl, "-- Select Term --", "text");
+    await load(`${urls.classes}`, classEl, "-- Select Class --", "name");
+  });
+
+  classEl.addEventListener("change", async () => {
+    reset(streamEl, "-- All Streams --", true);
+    reset(examTypeEl, "-- Select Exam Type --", true);
+    reset(subjectEl, "-- Select Subject --", true);
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!classEl.value) return;
+
+    await load(`${urls.streams}?class_id=${encodeURIComponent(classEl.value)}`, streamEl, "-- All Streams --", "name");
+    await load(`${urls.examtypes}?class_id=${encodeURIComponent(classEl.value)}`, examTypeEl, "-- Select Exam Type --", "name");
+    await load(`${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`, subjectEl, "-- Select Subject --", "name");
+  });
+
+  streamEl.addEventListener("change", async () => {
+    reset(subjectEl, "-- Select Subject --", true);
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!classEl.value) return;
+    let u = `${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`;
+    if (streamEl.value) u += `&stream_id=${encodeURIComponent(streamEl.value)}`;
+    await load(u, subjectEl, "-- Select Subject --", "name");
+  });
+
+  subjectEl.addEventListener("change", async () => {
+    reset(paperEl, "-- Select Paper --", true);
+    if (!classEl.value || !subjectEl.value) return;
+
+    let u = `${urls.papers}?class_id=${encodeURIComponent(classEl.value)}&subject_id=${encodeURIComponent(subjectEl.value)}`;
+    if (streamEl.value) u += `&stream_id=${encodeURIComponent(streamEl.value)}`;
+    await load(u, paperEl, "-- Select Paper --", "paper_name");
+  });
+
+})();
+</script>
+
+<script>
+(function () {
+  if (!window.jQuery || !$.fn.DataTable) return;
+
+  $("#enteredMarksTable").DataTable({
+    pageLength: 25,
+    lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "All"]],
+    ordering: true,
+    responsive: true,
+    autoWidth: false,
+    order: [[0, "desc"]],
+    language: {
+      search: "Search entered marks:",
+      lengthMenu: "Show _MENU_ records",
+      info: "Showing _START_ to _END_ of _TOTAL_ records",
+      emptyTable: "No entered marks found"
+    }
+  });
+
+  $("#missingMarksTable").DataTable({
+    pageLength: 25,
+    lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "All"]],
+    ordering: true,
+    responsive: true,
+    autoWidth: false,
+    order: [[0, "asc"]],
+    language: {
+      search: "Search missing candidates:",
+      lengthMenu: "Show _MENU_ records",
+      info: "Showing _START_ to _END_ of _TOTAL_ records",
+      emptyTable: "No missing candidates"
+    }
+  });
+})();
+</script>
+{% endblock %}

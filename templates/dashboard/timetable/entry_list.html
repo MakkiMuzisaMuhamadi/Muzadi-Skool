@@ -1,0 +1,120 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-list mr-2 text-primary"></i> Timetable Planner</h3>
+    <small class="text-muted">Manage lesson entries with clash protection.</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'timetable_entry_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Add Entry
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get">
+      <div class="row">
+        <div class="col-md-3 mb-2">
+          <select name="timetable" class="form-select">
+            <option value="">All Timetables</option>
+            {% for tt in timetables %}
+            <option value="{{ tt.id }}" {% if request.GET.timetable == tt.id|stringformat:"s" %}selected{% endif %}>{{ tt.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 mb-2">
+          <select name="class_ref" class="form-select">
+            <option value="">All Classes</option>
+            {% for cls in classes %}
+            <option value="{{ cls.id }}" {% if request.GET.class_ref == cls.id|stringformat:"s" %}selected{% endif %}>{{ cls.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 mb-2">
+          <select name="teacher" class="form-select">
+            <option value="">All Teachers</option>
+            {% for teacher in teachers %}
+            <option value="{{ teacher.id }}" {% if request.GET.teacher == teacher.id|stringformat:"s" %}selected{% endif %}>
+              {{ teacher.user.get_full_name|default:teacher.user.username }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2 mb-2">
+          <select name="day" class="form-select">
+            <option value="">All Days</option>
+            {% for code, label in days %}
+            <option value="{{ code }}" {% if request.GET.day == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-1 mb-2">
+          <button class="btn btn-outline-primary w-100">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Timetable</th>
+          <th>Class</th>
+          <th>Day</th>
+          <th>Period</th>
+          <th>Subject</th>
+          <th>Teacher</th>
+          <th>Room</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.timetable.name }}</td>
+          <td>
+            <strong>{{ item.class_ref.name }}</strong>
+            <br><small class="text-muted">{{ item.group_label }}</small>
+          </td>
+          <td>{{ item.get_day_display }}</td>
+          <td>
+            {{ item.period.name }}{% if item.span > 1 %} <span class="badge badge-light border">x{{ item.span }}</span>{% endif %}
+            <br><small class="text-muted">{{ item.period.start_time|time:"H:i" }} - {{ item.period.end_time|time:"H:i" }}</small>
+          </td>
+          <td>{{ item.subject|default:"-" }}</td>
+          <td>{% if item.teacher %}{{ item.teacher.user.get_full_name|default:item.teacher }}{% else %}-{% endif %}</td>
+          <td>{{ item.venue_label|default:"-" }}</td>
+          <td>
+            {% if item.is_active %}
+              <span class="badge badge-success">Active</span>
+            {% else %}
+              <span class="badge badge-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="text-right">
+            <a href="{% url 'timetable_entry_update' item.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>
+            <a href="{% url 'timetable_entry_delete' item.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center text-muted">No timetable entries found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

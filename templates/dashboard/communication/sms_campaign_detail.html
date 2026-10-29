@@ -1,0 +1,200 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-bullhorn"></i> {{ campaign.title }}</h3>
+    <small class="text-muted">
+      Audience: <span class="badge badge-info">{{ campaign.get_audience_display }}</span>
+      • Via:
+      {% if campaign.channel == "SMS" %}<span class="badge badge-secondary">SMS</span>
+      {% else %}<span class="badge" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> {{ campaign.get_channel_display }}</span>{% endif %}
+      • Created {{ campaign.queued_at|date:"d M Y" }} at {{ campaign.queued_at|time:"H:i" }}
+      {% if campaign.created_by %}by {{ campaign.created_by.get_full_name|default:campaign.created_by.username }}{% endif %}
+    </small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'sms_campaign_list' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+    {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+      <a href="{% url 'sms_compose' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus mr-1"></i> New SMS
+      </a>
+      {% if campaign.failed_msgs or can_resume %}
+      <!-- POST form: a link (GET) could re-send SMS by accident -->
+      <form method="post" action="{% url 'sms_resend_failed' campaign.pk %}" class="d-inline"
+            onsubmit="return confirm('Retry failed and unsent messages? This uses SMS credit.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+          <i class="fas fa-redo mr-1"></i> Retry failed / unsent
+        </button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+
+<div class="row mb-3">
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">Total</div>
+      <h4 class="mb-0">{{ campaign.total_msgs }}</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">Delivered</div>
+      <h4 class="mb-0 text-success">{{ campaign.delivered_msgs }}</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">Sent</div>
+      <h4 class="mb-0 text-info">{{ campaign.sent_msgs }}</h4>
+      <small class="text-muted">Not yet confirmed by the network</small>
+    </div></div>
+  </div>
+  {% if campaign.whatsapp_msgs %}
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">Read <i class="fab fa-whatsapp" style="color:#25D366;"></i></div>
+      <h4 class="mb-0" style="color:#25D366;">{{ campaign.read_msgs }}</h4>
+    </div></div>
+  </div>
+  {% endif %}
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">Failed</div>
+      <h4 class="mb-0 text-danger">{{ campaign.failed_msgs }}</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">Unsent</div>
+      <h4 class="mb-0 text-warning">{{ campaign.pending_msgs }}</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md mb-2">
+    <div class="card"><div class="card-body text-center">
+      <div class="text-muted">SMS units</div>
+      <h4 class="mb-0">{{ total_units|intcomma }}</h4>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    {% if campaign.wa_template %}
+      <h6 class="mb-2"><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp template: {{ campaign.wa_template.name }}</h6>
+      <div class="alert alert-light mb-2" style="white-space: pre-wrap;">{{ campaign.wa_template.body }}</div>
+      {% if campaign.wa_params %}
+        <div class="small text-muted mb-3">Blanks: {% for p in campaign.wa_params %}<code>{{ p }}</code>{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+      {% endif %}
+    {% endif %}
+    {% if campaign.message_body %}
+      <h6 class="mb-2">{% if campaign.channel == "WHATSAPP_SMS" %}SMS text (for parents not on WhatsApp){% else %}Message{% endif %} — before names were filled in</h6>
+      <div class="alert alert-light mb-0" style="white-space: pre-wrap;">{{ campaign.message_body }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped" id="smsLogsTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Parent</th>
+            <th>Student</th>
+            <th>Via</th>
+            <th>To</th>
+            <th>Status</th>
+            <th>Text sent</th>
+            <th>Units</th>
+            <th>Cost</th>
+            <th>Sent</th>
+            <th>Delivered</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in sms_messages %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>
+              {% if m.parent %}{{ m.parent.full_name }}
+              {% elif m.student and m.to_number %}{{ m.student.emergency_contact_name }}
+                <div class="small text-muted">Emergency contact</div>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if m.student %}{{ m.student.name|default:m.student.first_name }}
+                <div class="small text-muted">{{ m.student.current_class.name|default:"" }}</div>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if m.channel == "WHATSAPP" %}<i class="fab fa-whatsapp" style="color:#25D366;" title="WhatsApp"></i>
+              {% else %}<i class="fas fa-sms text-secondary" title="SMS"></i>{% endif %}
+            </td>
+            <td>{{ m.to_number|default:"—" }}</td>
+            <td>
+              {% if m.status == "READ" %}
+                <span class="badge" style="background:#25D366;color:#fff;">READ</span>
+              {% elif m.status == "DELIVERED" %}
+                <span class="badge badge-success">DELIVERED</span>
+              {% elif m.status == "SENT" %}
+                <span class="badge badge-info">SENT</span>
+              {% elif m.status == "FAILED" or m.status == "UNDELIVERED" %}
+                <span class="badge badge-danger">{{ m.status }}</span>
+              {% elif m.status == "PENDING" or m.status == "SENDING" %}
+                <span class="badge badge-warning">{{ m.status }}</span>
+              {% else %}
+                <span class="badge badge-secondary">{{ m.status }}</span>
+              {% endif %}
+              {% if m.status_detail %}<div class="small text-muted">{{ m.status_detail }}</div>{% endif %}
+            </td>
+            <td style="max-width:280px;"><small style="white-space: pre-wrap;">{{ m.text|truncatechars:160 }}</small></td>
+            <td>{% if m.channel == "SMS" %}{{ m.units }}{% else %}—{% endif %}</td>
+            <td>{{ m.cost|default:"—" }}</td>
+            <td>{% if m.sent_at %}{{ m.sent_at|date:"d M Y H:i" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>
+              {% if m.delivered_at %}
+                {{ m.delivered_at|date:"d M Y H:i" }}
+                {% if m.read_at %}<div class="small" style="color:#25D366;">Read {{ m.read_at|date:"H:i" }}</div>{% endif %}
+              {% elif m.status == "SENT" %}
+                <span class="text-muted small">Waiting for confirmation</span>
+              {% elif m.status == "UNDELIVERED" %}
+                <span class="text-danger small">Not delivered</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted py-4">No message logs found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  (function(){
+    try {
+      if (window.$ && $.fn.DataTable && document.querySelectorAll("#smsLogsTable tbody tr td[colspan]").length === 0) {
+        $("#smsLogsTable").DataTable({ pageLength: 50, order: [[0, "asc"]] });
+      }
+    } catch(e){}
+  })();
+</script>
+{% endblock %}

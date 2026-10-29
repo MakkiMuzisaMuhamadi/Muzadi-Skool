@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-poll text-primary"></i> Exam Result
+    </h3>
+    <small class="text-muted">
+      {{ exam.title }} • Attempt {{ attempt.attempt_no }}
+    </small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'student_exam_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back to Exams
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+          <div>
+            <h5 class="mb-1">{{ exam.title }}</h5>
+            <div class="text-muted small">
+              {{ exam.subject.name }}
+              {% if exam.paper %} • {{ exam.paper.paper_name }}{% endif %}
+            </div>
+          </div>
+
+          <div class="mt-2 mt-md-0">
+            {% if attempt.is_manual_pending %}
+              <span class="badge badge-warning px-3 py-2">Pending Manual Marking</span>
+            {% else %}
+              <span class="badge badge-success px-3 py-2">Final Result Ready</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row text-center">
+          <div class="col-md-4 mb-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Auto Score</div>
+              <div class="h3 mb-0 text-primary">{{ attempt.auto_score }}</div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Manual Score</div>
+              <div class="h3 mb-0 text-info">{{ attempt.manual_score }}</div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Total Score</div>
+              <div class="h3 mb-0 text-success">{{ attempt.total_score }}</div>
+            </div>
+          </div>
+        </div>
+
+        {% if attempt.is_manual_pending %}
+          <div class="alert alert-warning mb-0">
+            <i class="fas fa-exclamation-circle mr-1"></i>
+            Some typed questions still need teacher marking. Your total score may change after marking is completed.
+          </div>
+        {% else %}
+          <div class="alert alert-success mb-0">
+            <i class="fas fa-check-circle mr-1"></i>
+            Your final marks are ready.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3"><i class="fas fa-info-circle mr-1"></i> Attempt Details</h6>
+
+        <div class="mb-2">
+          <div class="text-muted small">Status</div>
+          <div class="font-weight-bold">
+            {% if attempt.status == "TIMED_OUT" %}
+              Timed Out
+            {% elif attempt.status == "MARKED" %}
+              Marked
+            {% elif attempt.status == "SUBMITTED" %}
+              Submitted
+            {% else %}
+              {{ attempt.status }}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div class="text-muted small">Started At</div>
+          <div class="font-weight-bold">{{ attempt.started_at|date:"d M Y, H:i" }}</div>
+        </div>
+
+        <div class="mb-2">
+          <div class="text-muted small">Submitted At</div>
+          <div class="font-weight-bold">
+            {% if attempt.submitted_at %}
+              {{ attempt.submitted_at|date:"d M Y, H:i" }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div class="text-muted small">Marking</div>
+          <div class="font-weight-bold">
+            {% if attempt.is_manual_pending %}
+              Awaiting teacher review
+            {% else %}
+              Completed
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

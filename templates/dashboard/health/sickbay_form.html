@@ -1,0 +1,384 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-clipboard-list text-info"></i>
+      {{ action|default:"Save" }} Sick Bay Visit
+    </h3>
+    <small class="text-muted">Search student, capture symptoms, diagnosis and action taken.</small>
+  </div>
+  <div>
+    <a href="{% url 'health_sickbay_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="row">
+
+    <!-- LEFT: Student + Visit basics -->
+    <div class="col-lg-5 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2">
+            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
+                 style="width:40px;height:40px;">
+              <i class="fas fa-user-injured text-danger"></i>
+            </div>
+            <div>
+              <div class="font-weight-bold">Student & Visit</div>
+              <small class="text-muted">Search & pick student, date auto-fills to now.</small>
+            </div>
+          </div>
+          <hr class="mt-2 mb-3">
+
+          <!-- Student Search -->
+          <label class="small text-muted mb-1">Student Search</label>
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text bg-white">
+                <i class="fas fa-search text-muted"></i>
+              </span>
+            </div>
+            <input type="text" id="studentSearch" class="form-control"
+                   placeholder="Type name or admission number..."
+                   autocomplete="off">
+          </div>
+
+          <!-- Results dropdown (custom list group) -->
+          <div id="studentResults" class="list-group mt-1"
+               style="display:none; max-height:280px; overflow:auto; border-radius:.5rem;">
+          </div>
+
+          <!-- Hidden student id field (this is what Django receives) -->
+          <input type="hidden" name="student" id="id_student" value="{{ form.student.value|default:'' }}">
+          {% if form.student.errors %}<small class="text-danger">{{ form.student.errors }}</small>{% endif %}
+
+          <!-- Selected student box -->
+          <div id="studentSelected" class="mt-3" style="display:none;">
+            <div class="alert alert-light border mb-0" style="border-radius:.75rem;">
+              <div class="d-flex align-items-start justify-content-between">
+                <div class="mr-2">
+                  <div class="font-weight-bold mb-0" id="selName">—</div>
+                  <small class="text-muted" id="selMeta">—</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="clearStudent" title="Clear selection">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="mt-2 small text-muted" id="selHint" style="display:none;">
+                Tip: If class/stream are wrong, you can still change them manually.
+              </div>
+            </div>
+          </div>
+
+          <!-- Visit datetime -->
+          <div class="mt-3">
+            <label class="small text-muted mb-1">Visit Date/Time</label>
+            {{ form.visit_date }}
+            {% if form.visit_date.errors %}<small class="text-danger">{{ form.visit_date.errors }}</small>{% endif %}
+            <small class="text-muted d-block mt-1">Defaults to current date/time.</small>
+          </div>
+
+          <!-- Temperature + Admitted -->
+          <div class="row mt-3">
+            <div class="col-md-7">
+              <label class="small text-muted mb-1">Temperature (°C)</label>
+              {{ form.temperature_c }}
+              {% if form.temperature_c.errors %}<small class="text-danger">{{ form.temperature_c.errors }}</small>{% endif %}
+            </div>
+            <div class="col-md-5 d-flex align-items-end">
+              <div class="form-check mb-1">
+                {{ form.admitted }}
+                <label class="form-check-label" for="{{ form.admitted.id_for_label }}">Admitted</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- NOTE: Active removed from UI on purpose -->
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Class/Stream + Medical info -->
+    <div class="col-lg-7 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2">
+            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
+                 style="width:40px;height:40px;">
+              <i class="fas fa-notes-medical text-primary"></i>
+            </div>
+            <div>
+              <div class="font-weight-bold">Medical Details</div>
+              <small class="text-muted">Class → streams auto load. Fill symptoms, diagnosis, action, referral.</small>
+            </div>
+          </div>
+          <hr class="mt-2 mb-3">
+
+          <!-- Class + Stream -->
+          <div class="row">
+            <div class="col-md-6">
+              <label class="small text-muted mb-1">Class</label>
+              {{ form.class_ref }}
+              {% if form.class_ref.errors %}<small class="text-danger">{{ form.class_ref.errors }}</small>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="small text-muted mb-1">Stream</label>
+              {{ form.stream }}
+              {% if form.stream.errors %}<small class="text-danger">{{ form.stream.errors }}</small>{% endif %}
+            </div>
+          </div>
+
+          <!-- Symptoms + Diagnosis -->
+          <div class="row mt-3">
+            <div class="col-md-6">
+              <label class="small text-muted mb-1">Symptoms</label>
+              {{ form.symptoms }}
+              {% if form.symptoms.errors %}<small class="text-danger">{{ form.symptoms.errors }}</small>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="small text-muted mb-1">Diagnosis</label>
+              {{ form.diagnosis }}
+              {% if form.diagnosis.errors %}<small class="text-danger">{{ form.diagnosis.errors }}</small>{% endif %}
+            </div>
+          </div>
+
+          <!-- Action + Referred -->
+          <div class="row mt-3">
+            <div class="col-md-6">
+              <label class="small text-muted mb-1">Action Taken</label>
+              {{ form.action_taken }}
+              {% if form.action_taken.errors %}<small class="text-danger">{{ form.action_taken.errors }}</small>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="small text-muted mb-1">Referred To (optional)</label>
+              {{ form.referred_to }}
+              {% if form.referred_to.errors %}<small class="text-danger">{{ form.referred_to.errors }}</small>{% endif %}
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="mt-4 d-flex flex-wrap" style="gap:.5rem;">
+            <button class="btn btn-danger">
+              <i class="fas fa-save mr-1"></i> {{ action|default:"Save" }}
+            </button>
+            <a href="{% url 'health_sickbay_list' %}" class="btn btn-light">Cancel</a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // ✅ Make sure these URL names exist in your health_urls.py
+  const STREAMS_URL  = "{% url 'ajax_streams_by_class' %}";
+  const STUDENTS_URL = "{% url 'health_ajax_student_search' %}";
+
+  // -------------------------
+  // Streams loader (Class -> Streams)
+  // -------------------------
+  async function loadStreams(classId, selectedStream){
+    const streamSel = document.getElementById("id_stream");
+    if(!streamSel) return;
+
+    streamSel.innerHTML = '<option value="">Loading...</option>';
+
+    if(!classId){
+      streamSel.innerHTML = '<option value="">---------</option>';
+      return;
+    }
+
+    try{
+      const res = await fetch(`${STREAMS_URL}?class_id=${encodeURIComponent(classId)}`);
+      const data = await res.json();
+
+      streamSel.innerHTML = '<option value="">---------</option>';
+
+      (data.results || []).forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r.id;
+        opt.textContent = r.name;
+        streamSel.appendChild(opt);
+      });
+
+      if(selectedStream){
+        streamSel.value = String(selectedStream);
+      }
+    } catch(e){
+      streamSel.innerHTML = '<option value="">---------</option>';
+      console.error("Failed loading streams:", e);
+    }
+  }
+
+  // -------------------------
+  // Auto set visit datetime to now (if empty)
+  // -------------------------
+  function setNowIfEmpty(){
+    const el = document.getElementById("id_visit_date");
+    if(!el || el.value) return;
+
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    el.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // -------------------------
+  // Student search (AJAX typeahead)
+  // -------------------------
+  let searchTimer = null;
+
+  async function searchStudents(q){
+    const res = await fetch(`${STUDENTS_URL}?q=${encodeURIComponent(q)}`);
+    return await res.json();
+  }
+
+  function renderStudentResults(items){
+    const wrap = document.getElementById("studentResults");
+    wrap.innerHTML = "";
+
+    if(!items.length){
+      wrap.innerHTML = `<div class="list-group-item text-muted">No results...</div>`;
+      wrap.style.display = "";
+      return;
+    }
+
+    items.forEach(s => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action";
+      btn.style.cursor = "pointer";
+
+      btn.innerHTML = `
+        <div class="d-flex justify-content-between">
+          <div class="font-weight-bold">${escapeHtml(s.name)}</div>
+          <div class="text-muted small">${escapeHtml(s.adm || "")}</div>
+        </div>
+        <div class="text-muted small">
+          ${escapeHtml(s.class_name || "-")}${s.stream_name ? " • " + escapeHtml(s.stream_name) : ""}
+        </div>
+      `;
+
+      btn.addEventListener("click", () => selectStudent(s));
+      wrap.appendChild(btn);
+    });
+
+    wrap.style.display = "";
+  }
+
+  function selectStudent(s){
+    // set hidden field used by Django
+    document.getElementById("id_student").value = s.id;
+
+    // show selected card
+    document.getElementById("selName").textContent = s.name;
+    document.getElementById("selMeta").textContent =
+      `${s.adm ? s.adm + " • " : ""}${s.class_name || "-"}${s.stream_name ? " • " + s.stream_name : ""}`;
+    document.getElementById("studentSelected").style.display = "";
+    document.getElementById("selHint").style.display = "";
+
+    // hide results
+    const wrap = document.getElementById("studentResults");
+    wrap.style.display = "none";
+
+    // clear search input (optional feel)
+    // document.getElementById("studentSearch").value = "";
+
+    // auto-fill class/stream
+    const classSel = document.getElementById("id_class_ref");
+    if(classSel && s.class_id){
+      classSel.value = String(s.class_id);
+      loadStreams(s.class_id, s.stream_id || "");
+    }
+  }
+
+  function clearSelectedStudent(){
+    document.getElementById("id_student").value = "";
+    document.getElementById("studentSearch").value = "";
+    document.getElementById("studentSelected").style.display = "none";
+  }
+
+  // Escape for safety in HTML injection
+  function escapeHtml(str){
+    return (str || "").replace(/[&<>"']/g, m => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[m]));
+  }
+
+  // -------------------------
+  // Init
+  // -------------------------
+  document.addEventListener("DOMContentLoaded", function(){
+    setNowIfEmpty();
+
+    const searchInput = document.getElementById("studentSearch");
+    const resultsWrap = document.getElementById("studentResults");
+    const clearBtn = document.getElementById("clearStudent");
+
+    // class change => reload streams
+    const classSel = document.getElementById("id_class_ref");
+    const streamSel = document.getElementById("id_stream");
+    if(classSel){
+      // on load: if class already has value, ensure stream list is loaded
+      if(classSel.value){
+        loadStreams(classSel.value, streamSel ? streamSel.value : "");
+      }
+      classSel.addEventListener("change", function(){
+        loadStreams(this.value, "");
+      });
+    }
+
+    // typing search
+    if(searchInput){
+      searchInput.addEventListener("input", function(){
+        const q = this.value.trim();
+
+        if(searchTimer) clearTimeout(searchTimer);
+
+        if(q.length < 2){
+          resultsWrap.style.display = "none";
+          resultsWrap.innerHTML = "";
+          return;
+        }
+
+        searchTimer = setTimeout(async () => {
+          try{
+            const data = await searchStudents(q);
+            renderStudentResults(data.results || []);
+          } catch(e){
+            resultsWrap.innerHTML = `<div class="list-group-item text-danger">Search failed. Try again.</div>`;
+            resultsWrap.style.display = "";
+          }
+        }, 250);
+      });
+
+      // hide results when clicking outside
+      document.addEventListener("click", function(e){
+        const inside = e.target.closest("#studentResults") || e.target.closest("#studentSearch");
+        if(!inside){
+          resultsWrap.style.display = "none";
+        }
+      });
+    }
+
+    if(clearBtn){
+      clearBtn.addEventListener("click", clearSelectedStudent);
+    }
+  });
+</script>
+{% endblock %}

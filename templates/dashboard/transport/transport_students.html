@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-users mr-1"></i> Transport Students</h3>
+    <small class="text-muted">Assign students to routes and manage active riders.</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'transport_route_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-route mr-1"></i> Routes
+    </a>
+    <a href="{% url 'transport_vehicle_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-bus mr-1"></i> Vehicles
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="mb-3"><i class="fas fa-plus-circle mr-1"></i> Assign Student</h5>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-5">
+          <label>Student</label>
+          {{ form.student }}
+          <small class="text-danger">{{ form.student.errors }}</small>
+        </div>
+        <div class="form-group col-md-4">
+          <label>Route</label>
+          {{ form.route }}
+          <small class="text-danger">{{ form.route.errors }}</small>
+        </div>
+        <div class="form-group col-md-3">
+          <label>Bus Stop</label>
+          {{ form.bus_stop }}
+          <small class="text-danger">{{ form.bus_stop.errors }}</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label>Start Date</label>
+          {{ form.start_date }}
+          <small class="text-danger">{{ form.start_date.errors }}</small>
+        </div>
+        <div class="form-group col-md-3">
+          <label>End Date (optional)</label>
+          {{ form.end_date }}
+          <small class="text-danger">{{ form.end_date.errors }}</small>
+        </div>
+        <div class="form-group col-md-2 d-flex align-items-end">
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label">Active</label>
+          </div>
+        </div>
+        <div class="form-group col-md-4 d-flex align-items-end">
+          <button class="btn btn-primary">
+            <i class="fas fa-save mr-1"></i> Assign
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-3"><i class="fas fa-list mr-1"></i> Active Assignments</h5>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-striped" id="assignTable">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Route</th>
+            <th>Stop</th>
+            <th class="text-center">Start</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assignments %}
+          <tr>
+            <td class="font-weight-bold">{{ a.student }}</td>
+            <td>{{ a.route }}</td>
+            <td>{{ a.bus_stop|default:"—" }}</td>
+            <td class="text-center">{{ a.start_date }}</td>
+            <td class="text-right">
+              <a class="btn btn-outline-danger btn-sm"
+                 href="{% url 'transport_unassign' a.id %}"
+                 onclick="return confirm('Remove this student from transport?');">
+                <i class="fas fa-times"></i> Remove
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No active transport assignments.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  try {
+    $(function () {
+      if ($.fn.DataTable) {
+        $('#assignTable').DataTable({
+          pageLength: 25,
+          order: [[0, 'asc']]
+        });
+      }
+    });
+  } catch(e){}
+</script>
+{% endblock %}

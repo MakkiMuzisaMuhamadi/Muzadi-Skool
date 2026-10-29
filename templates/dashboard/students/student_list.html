@@ -1,0 +1,327 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-user-graduate"></i> Students</h3>
+      <small class="text-muted">Manage enrolled students</small>
+    </div>
+    <div>
+      <a href="{% url 'enroll_student_step1' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-user-plus mr-1"></i> Add Student
+      </a>
+      <a href="{% url 'student_bulk_upload' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-file-excel mr-1"></i> Bulk Upload
+      </a>
+      <a href="{% url 'parent_create' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-user-friends mr-1"></i> Add Parent
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="form-row align-items-end">
+
+      <div class="col-md-2 mb-2">
+        <label class="small text-muted mb-1">Level</label>
+        <select id="filterLevel" class="form-control form-control-sm">
+          <option value="">All</option>
+          {% for l in levels %}
+            <option value="{{ l.id }}" {% if selected_level|stringformat:"s" == l.id|stringformat:"s" %}selected{% endif %}>
+              {{ l.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <label class="small text-muted mb-1">Class</label>
+        <select id="filterClass" class="form-control form-control-sm">
+          <option value="">All</option>
+          {% for c in classes %}
+            <option value="{{ c.id }}" {% if selected_class|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <label class="small text-muted mb-1">Stream</label>
+        <select id="filterStream" class="form-control form-control-sm">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <label class="small text-muted mb-1">Gender</label>
+        <select id="filterGender" class="form-control form-control-sm">
+          <option value="">All</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <label class="small text-muted mb-1">Residence</label>
+        <select id="filterResidence" class="form-control form-control-sm">
+          <option value="">All</option>
+          {% for val,label in residence_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-1 mb-2">
+        <label class="small text-muted mb-1">Year</label>
+        <select id="filterYear" class="form-control form-control-sm">
+          <option value="">All</option>
+          {% for d in years %}
+            {% with y=d|date:"Y" %}
+              <option value="{{ y }}">{{ y }}</option>
+            {% endwith %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-1 mb-2">
+        <label class="small text-muted mb-1">Status</label>
+        <select id="filterActive" class="form-control form-control-sm">
+          <option value="">All</option>
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+        </select>
+      </div>
+
+      <div class="col-md-12 mt-2 text-right">
+        <button id="applyFilters" class="btn btn-outline-success btn-sm">
+          <i class="fas fa-filter mr-1"></i> Apply
+        </button>
+        <button id="resetFilters" class="btn btn-light btn-sm">
+          Reset
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+  <div>
+    <span class="badge badge-primary mr-2">
+      Total: <span id="totalCandidates">0</span>
+    </span>
+    <span class="badge badge-info">
+      Showing: <span id="filteredCandidates">0</span>
+    </span>
+  </div>
+
+  <small class="text-muted mt-2 mt-md-0">
+    <i class="fas fa-info-circle mr-1"></i>
+    Counts update with filters/search.
+  </small>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <!-- DataTables (scrollX) does the sideways scrolling, so no .table-responsive here -->
+    <div class="no-responsive-wrap">
+      <table id="studentsTable" class="table table-striped w-100 nowrap">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Admission</th>
+            <th>Name</th>
+            <th>Level</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Gender</th>
+            <th>Residence</th>
+            <th>Admission Date</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteStudentListModal" tabindex="-1" role="dialog" aria-labelledby="deleteStudentListModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form method="post" id="deleteStudentListForm">
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteStudentListModalLabel">
+            <i class="fas fa-exclamation-triangle text-danger mr-2"></i>Delete Student
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="mb-2">
+            Are you sure you want to delete <strong id="deleteStudentName"></strong>?
+          </p>
+          <p class="text-muted mb-0">
+            This will also remove the linked login account and profile if they exist.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash mr-1"></i> Yes, Delete
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  "use strict";
+
+  const initialClassId = "{{ selected_class|default:'' }}";
+  const initialStreamId = "{{ selected_stream|default:'' }}";
+
+  function loadStreams(classId, selectedStreamId = "") {
+    const $stream = $("#filterStream");
+    $stream.html('<option value="">All</option>');
+
+    if (!classId) return;
+
+    $.get("{% url 'streams_by_class' %}", { class_id: classId })
+      .done(function (resp) {
+        const items = resp.results || resp.streams || resp || [];
+
+        items.forEach(function (s) {
+          const text = s.name || s.text || "Unnamed";
+          const selected = String(selectedStreamId) === String(s.id) ? "selected" : "";
+          $stream.append(`<option value="${s.id}" ${selected}>${text}</option>`);
+        });
+      });
+  }
+
+  const table = $("#studentsTable").DataTable({
+    processing: true,
+    serverSide: true,
+    pageLength: 25,
+    order: [[8, "desc"]],
+    scrollX: true,      // only the table rows scroll sideways on small screens
+    autoWidth: false,
+    ajax: {
+      url: "{% url 'student_list_data' %}",
+      data: function (d) {
+        d.level = $("#filterLevel").val();
+        d.class = $("#filterClass").val();
+        d.stream = $("#filterStream").val();
+        d.gender = $("#filterGender").val();
+        d.residence = $("#filterResidence").val();
+        d.year = $("#filterYear").val();
+        d.active = $("#filterActive").val();
+      },
+      dataSrc: function (json) {
+        $("#totalCandidates").text(json.total_candidates ?? json.recordsTotal ?? 0);
+        $("#filteredCandidates").text(json.filtered_candidates ?? json.recordsFiltered ?? 0);
+        return json.data;
+      }
+    },
+
+    columns: [
+      { data: null, orderable: false, searchable: false },
+      { data: 0 },
+      { data: 1 },
+      { data: 2 },
+      { data: 3 },
+      { data: 4 },
+      { data: 5 },
+      { data: 6 },
+      { data: 7 },
+      { data: 8 },
+      { data: 9 }
+    ],
+
+    columnDefs: [
+      { targets: 0, className: "text-muted" },
+      { targets: 9, searchable: false },
+      { targets: 10, orderable: false, searchable: false, className: "text-right" }
+    ],
+
+    drawCallback: function () {
+      const api = this.api();
+      const start = api.page.info().start;
+
+      api.column(0, { page: "current" }).nodes().each(function (cell, i) {
+        cell.innerHTML = start + i + 1;
+      });
+
+      const info = api.page.info();
+      $("#filteredCandidates").text(info.recordsDisplay);
+      $("#totalCandidates").text(info.recordsTotal);
+    }
+  });
+
+  // Re-align header and body columns when the sidebar is collapsed/expanded
+  $(document).on("click", '[data-toggle="minimize"]', function () {
+    setTimeout(function () { table.columns.adjust(); }, 300);
+  });
+
+  if (initialClassId) {
+    $("#filterClass").val(initialClassId);
+    loadStreams(initialClassId, initialStreamId);
+
+    setTimeout(function () {
+      table.ajax.reload();
+    }, 300);
+  }
+
+  $("#filterClass").on("change", function () {
+    const classId = $(this).val();
+    loadStreams(classId);
+    $("#filterStream").val("");
+  });
+
+  $("#applyFilters").on("click", function (e) {
+    e.preventDefault();
+    table.ajax.reload();
+  });
+
+  $("#resetFilters").on("click", function (e) {
+    e.preventDefault();
+
+    $("#filterLevel").val("");
+    $("#filterClass").val("");
+    $("#filterStream").html('<option value="">All</option>');
+    $("#filterGender").val("");
+    $("#filterResidence").val("");
+    $("#filterYear").val("");
+    $("#filterActive").val("");
+
+    table.search("").draw();
+    table.ajax.reload();
+  });
+
+  $(document).on("click", ".js-delete-student", function () {
+    const studentId = $(this).data("id");
+    const studentName = $(this).data("name") || "this student";
+
+    $("#deleteStudentName").text(studentName);
+    $("#deleteStudentListForm").attr("action", `/students/${studentId}/delete/`);
+    $("#deleteStudentListModal").modal("show");
+  });
+
+})();
+</script>
+{% endblock %}

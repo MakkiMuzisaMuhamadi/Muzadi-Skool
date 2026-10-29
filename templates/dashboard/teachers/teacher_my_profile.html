@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-id-badge"></i> My profile</h3>
+  <small class="text-muted">Keep your contacts up to date. Ask the school office to change your name or employment details.</small>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-center mb-3">
+          {% if teacher.profile_photo %}
+            <img src="{{ teacher.profile_photo.url }}" class="rounded-circle border mb-2"
+                 style="width: 100px; height: 100px; object-fit: cover;" alt="{{ teacher }}">
+          {% endif %}
+          <h5 class="mb-0">{{ teacher.display_name }}</h5>
+          <small class="text-muted">Staff no. {{ teacher.staff_no|default:"—" }}</small>
+        </div>
+        <dl class="row small mb-3">
+          <dt class="col-5">Username</dt><dd class="col-7">{{ teacher.user.username }}</dd>
+          <dt class="col-5">Joined</dt><dd class="col-7">{{ teacher.date_joined|date:"d M Y"|default:"—" }}</dd>
+          <dt class="col-5">Qualification</dt><dd class="col-7">{{ teacher.get_qualification_display|default:"—" }}</dd>
+        </dl>
+        {% if class_teacher_of %}
+          <h6 class="text-muted">Class teacher of</h6>
+          {% for c in class_teacher_of %}<span class="badge badge-success mr-1">{{ c.class_label }}</span>{% endfor %}
+        {% endif %}
+        {% if responsibilities %}
+          <h6 class="text-muted mt-3">Responsibilities</h6>
+          {% for r in responsibilities %}<div>{{ r.label }}</div>{% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 mb-3">
+    <form method="post" enctype="multipart/form-data" class="card" novalidate>
+      {% csrf_token %}
+      <div class="card-body">
+        <div class="form-row">
+          {% include "dashboard/partials/_field.html" with field=form.contact1 col="col-md-4" %}
+          {% include "dashboard/partials/_field.html" with field=form.contact2 col="col-md-4" %}
+          {% include "dashboard/partials/_field.html" with field=form.email col="col-md-4" %}
+          {% include "dashboard/partials/_field.html" with field=form.address col="col-md-12" %}
+          {% include "dashboard/partials/_field.html" with field=form.next_of_kin_name col="col-md-4" %}
+          {% include "dashboard/partials/_field.html" with field=form.next_of_kin_phone col="col-md-4" %}
+          {% include "dashboard/partials/_field.html" with field=form.next_of_kin_relationship col="col-md-4" %}
+          {% include "dashboard/partials/_field.html" with field=form.profile_photo col="col-md-6" %}
+        </div>
+        <button type="submit" class="btn btn-success">Save my profile</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

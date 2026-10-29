@@ -1,0 +1,73 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-door-open"></i> Rooms</h3>
+    <small class="text-muted">Manage rooms for each hostel.</small>
+  </div>
+  <div>
+    <a href="{% url 'hostel_room_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Add Room
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table id="roomsTable" class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Hostel</th>
+          <th>Room No</th>
+          <th>Floor</th>
+          <th>Capacity</th>
+          <th>Status</th>
+          <th class="text-right" style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td class="fw-semibold">{{ r.hostel.name }}</td>
+            <td>{{ r.room_number }}</td>
+            <td>{{ r.floor|default:"-" }}</td>
+            <td>{{ r.capacity|default:"0" }}</td>
+            <td>
+              {% if r.is_active %}
+                <span class="badge bg-success text-white">Active</span>
+              {% else %}
+                <span class="badge bg-secondary text-white">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a href="{% url 'hostel_room_update' r.id %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'hostel_room_delete' r.id %}" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No rooms found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  (function(){
+    try {
+      if (window.$ && $.fn.DataTable) {
+        $('#roomsTable').DataTable({
+          pageLength: 25,
+          order: [[0,'asc'], [1,'asc']],
+          responsive: true
+        });
+      }
+    } catch(e) {}
+  })();
+</script>
+{% endblock %}

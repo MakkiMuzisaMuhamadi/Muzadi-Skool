@@ -1,0 +1,537 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper py-4 px-3">
+
+    <!-- Page Header -->
+    <div class="page-header-container mb-4 pb-3 border-bottom">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h2 class="fw-bold mb-1 text-primary">School Reports</h2>
+                <p class="text-muted mb-0">All Schools – {{ education_level.code }}</p>
+            </div>
+            <div class="text-muted small d-flex align-items-center">
+                <i class="fas fa-info-circle me-2"></i>
+                Click preview to view PDFs in new tabs
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-4 col-sm-6">
+            <div class="summary-card card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-circle bg-primary text-white me-3">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Total Schools</h6>
+                        <h4 class="fw-bold mb-0" id="total-schools">--</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="summary-card card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-circle bg-success text-white me-3">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Total Candidates</h6>
+                        <h4 class="fw-bold mb-0" id="totalCandidatesDisplay">--</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="summary-card card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-circle bg-info text-white me-3">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Report Types</h6>
+                        <h6 class="fw-bold mb-0">Marksheet & Gradesheet</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Type Explanation -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-start">
+            <i class="fas fa-info-circle me-2 mt-1"></i>
+            <div>
+                <strong>Report Types:</strong>
+                <ul class="mb-0 mt-1">
+                    <li><strong>Marksheet:</strong> Detailed marks for each subject</li>
+                    <li><strong>Gradesheet:</strong> Overall grades and performance summary</li>
+                    <li><strong>Result Slips:</strong> Individual student result slips with UMTA signatures</li>
+                    <li><strong>Excel Report:</strong> Downloadable data for further analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Downloads Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">
+                                <i class="fas fa-download me-2 text-primary"></i>
+                                Bulk Downloads
+                            </h6>
+                            <p class="text-muted mb-0">Download all school gradesheets and result slips at once as ZIP files</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="bulk-gradesheets-btn" class="btn btn-outline-success btn-lg">
+                                <i class="fas fa-file-archive me-2"></i>
+                                Download All Gradesheets
+                            </button>
+                            <button id="bulk-resultslips-btn" class="btn btn-success btn-lg">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Download All Result Slips
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Indicator -->
+                    <div id="bulk-download-progress" class="mt-3" style="display: none;">
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div id="bulk-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small id="bulk-progress-text" class="text-muted">
+                                Preparing download...
+                            </small>
+                            <small id="bulk-progress-count" class="text-muted">
+                                (0/0 schools)
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Download Ready Alert -->
+                    <div id="bulk-download-ready" class="alert alert-success mt-3" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span id="download-ready-text">Your download is ready!</span>
+                            </div>
+                            <a id="bulk-download-link" href="#" class="btn btn-success btn-sm">
+                                <i class="fas fa-download me-1"></i> Download ZIP
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Alert -->
+                    <div id="bulk-download-error" class="alert alert-danger mt-3" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="error-message">An error occurred during download generation.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schools Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-semibold">School Listing</h5>
+            <span class="text-muted small">
+                <i class="fas fa-database me-1"></i> 
+            </span>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="schools-table" class="table table-striped align-middle w-100 mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>School ID</th>
+                            <th>School Name</th>
+                            <th class="text-center">Candidates</th>
+                            <th class="text-center">Available Reports</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data loaded via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    const table = $('#schools-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{% url 'schools_ajax' education_level.code %}",
+            type: "GET",
+            dataSrc: function(json) {
+                // Update summary cards
+                $('#total-schools').text(json.total_schools ?? json.recordsTotal ?? '0');
+                $('#totalCandidatesDisplay').text(json.totalCandidates ?? '--');
+                return json.data || [];
+            }
+        },
+        columns: [
+            { data: "school_id", className: "text-nowrap fw-bold" },
+            { data: "name", className: "fw-semibold" },
+            { data: "candidate_count", className: "text-center" },
+            { 
+                data: "actions", 
+                orderable: false, 
+                className: "text-center", 
+                width: "350px"  // Wider to accommodate result slips buttons
+            }
+        ],
+        pageLength: 25,
+        language: {
+            processing: '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading...',
+            emptyTable: '<div class="text-center py-4"><i class="fas fa-school fa-2x text-muted mb-3"></i><p class="text-muted">No schools found</p></div>',
+            search: "Search schools:",
+            lengthMenu: "Show _MENU_ schools",
+            info: "Showing _START_ to _END_ of _TOTAL_ schools",
+            paginate: {
+                next: '<i class="fas fa-angle-right"></i>',
+                previous: '<i class="fas fa-angle-left"></i>'
+            }
+        },
+        drawCallback: function() {
+            $('.dataTables_info').addClass('text-muted small');
+        }
+    });
+
+    // Preview PDF - Updated to show proper loading text
+    $(document).on('click', '.preview-pdf-btn', function() {
+        const id = $(this).data('school-id');
+        const type = $(this).data('report-type');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        const urlMap = {
+            marksheet: "{% url 'uce_preview_marksheet' 0 %}".replace('0', id),
+            gradesheet: "{% url 'uce_preview_gradesheet' 0 %}".replace('0', id),
+            rawDatamarksheet: "{% url 'uce_download_raw_marksheet' 0 %}".replace('0', id),
+            gradecount: "{% url 'uce_download_grade_count' 0 %}".replace('0', id)
+        };
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Loading...');
+        setTimeout(() => {
+            window.open(urlMap[type], '_blank');
+            $btn.html(originalText).prop('disabled', false);
+        }, 600);
+    });
+
+    // Download PDF - Updated to show proper loading text
+    $(document).on('click', '.download-pdf-btn', function() {
+        const id = $(this).data('school-id');
+        const type = $(this).data('report-type');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        const urlMap = {
+            marksheet: "{% url 'uce_download_marksheet' 0 %}".replace('0', id),
+            gradesheet: "{% url 'uce_download_gradesheet' 0 %}".replace('0', id)
+        };
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Downloading...');
+        setTimeout(() => {
+            window.location.href = urlMap[type];
+            // Re-enable button after download starts
+            setTimeout(() => {
+                $btn.html(originalText).prop('disabled', false);
+            }, 2000);
+        }, 600);
+    });
+
+    // Preview All Result Slips
+    $(document).on('click', '.preview-resultslips-btn', function() {
+        const id = $(this).data('school-id');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Loading...');
+        
+        setTimeout(() => {
+            const url = "{% url 'uce_preview_school_result_slips' 0 %}".replace('0', id);
+            window.open(url, '_blank');
+            $btn.html(originalText).prop('disabled', false);
+        }, 600);
+    });
+
+    // Download All Result Slips
+    $(document).on('click', '.download-resultslips-btn', function() {
+        const id = $(this).data('school-id');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Generating...');
+        
+        setTimeout(() => {
+            const url = "{% url 'uce_download_result_slips' 0 %}".replace('0', id);
+            window.location.href = url;
+            
+            // Re-enable button after download starts
+            setTimeout(() => {
+                $btn.html(originalText).prop('disabled', false);
+            }, 3000);
+        }, 600);
+    });
+
+    // Download Excel
+    $(document).on('click', '.download-excel-btn', function() {
+        const id = $(this).data('school-id');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Generating...');
+        
+        setTimeout(() => {
+            const url = "{% url 'uce_download_gradesheet_excel' 0 %}".replace('0', id);
+            window.location.href = url;
+            
+            // Re-enable button after download starts
+            setTimeout(() => {
+                $btn.html(originalText).prop('disabled', false);
+            }, 3000);
+        }, 600);
+    });
+
+    // Bulk Downloads
+    $('#bulk-gradesheets-btn').click(function() {
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Preparing...');
+        
+        // Show loading state
+        setTimeout(() => {
+            // Simulate bulk download - you'll need to implement the actual endpoint
+            alert('Bulk gradesheets download feature will be implemented soon!');
+            $btn.html(originalText).prop('disabled', false);
+        }, 1000);
+    });
+
+    $('#bulk-resultslips-btn').click(function() {
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Preparing...');
+        
+        // Show loading state
+        setTimeout(() => {
+            // Simulate bulk download - you'll need to implement the actual endpoint
+            alert('Bulk result slips download feature will be implemented soon!');
+            $btn.html(originalText).prop('disabled', false);
+        }, 1000);
+    });
+});
+    // Send Email Functionality
+    $(document).on('click', '.send-email-btn', function() {
+        const schoolId = $(this).data('school-id');
+        const schoolName = $(this).data('school-name');
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        if (!$btn.is(':disabled')) {
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Sending...');
+            
+            $.ajax({
+                url: "{% url 'send_gradesheet_email' 0 %}".replace('0', schoolId),
+                type: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        $btn.html('<i class="fas fa-check me-1"></i>Sent');
+                        setTimeout(() => {
+                            $btn.html(originalText).prop('disabled', false);
+                        }, 3000);
+                    } else {
+                        showAlert('error', response.message);
+                        $btn.html(originalText).prop('disabled', false);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showAlert('error', 'Failed to send email: ' + error);
+                    $btn.html(originalText).prop('disabled', false);
+                }
+            });
+        }
+    });
+
+    // Bulk Email Button
+    $('#bulk-email-btn').click(function() {
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Preparing...');
+        
+        $.ajax({
+            url: "{% url 'bulk_send_gradesheets' education_level.code %}",
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showAlert('success', response.message);
+                } else {
+                    showAlert('error', response.message);
+                }
+                $btn.html(originalText).prop('disabled', false);
+            },
+            error: function(xhr, status, error) {
+                showAlert('error', 'Failed to initiate bulk email: ' + error);
+                $btn.html(originalText).prop('disabled', false);
+            }
+        });
+    });
+
+    // Alert function
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('.page-header-container').after(alertHtml);
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+
+</script>
+
+<style>
+/* Layout */
+.content-wrapper {
+    background: #f8f9fa;
+    min-height: calc(100vh - 100px);
+}
+
+/* Header */
+.page-header-container h2 {
+    font-weight: 700;
+}
+
+/* Cards */
+.summary-card {
+    border-left: 4px solid transparent;
+    transition: 0.3s ease;
+}
+.summary-card:hover {
+    transform: translateY(-3px);
+    border-left-color: #0d6efd;
+}
+.icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* Report Actions */
+.report-actions-container {
+    min-width: 250px;
+}
+.report-section {
+    text-align: left;
+}
+.report-section .btn-group {
+    width: 100%;
+}
+.report-section .btn {
+    flex: 1;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+}
+.report-section small {
+    font-size: 0.75rem;
+}
+
+/* Table */
+.table th {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+.table td {
+    font-size: 0.9rem;
+}
+
+/* Buttons */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Button Colors for Result Slips */
+.btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+.btn-outline-dark {
+    color: #343a40;
+    border-color: #343a40;
+}
+.btn-outline-dark:hover {
+    background-color: #343a40;
+    color: white;
+}
+
+/* Pagination */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.3rem 0.6rem;
+    margin: 0 2px;
+    border-radius: 4px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #0d6efd;
+    color: #fff !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #e9ecef;
+}
+
+/* Alert */
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .summary-card { text-align: center; }
+    .icon-circle { margin: 0 auto 0.5rem; }
+    .report-actions-container { min-width: 200px; }
+    .report-section .btn { font-size: 0.75rem; }
+    .btn-group .btn { padding: 0.25rem 0.4rem; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,213 @@
+<!-- templates/school/stream_form.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        
+        <!-- Left: Title + Breadcrumb -->
+        <div class="d-flex align-items-center flex-wrap">
+            <div class="mr-3">
+                <h3 class="page-title mb-1">
+                    <i class="fas fa-stream text-success mr-2"></i>
+                    {{ title }}
+                </h3>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'stream_list' %}">Streams</a>
+                        </li>
+                        <li class="breadcrumb-item active">
+                            {{ action }}
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+
+        </div>
+
+        <!-- Right: Back Button -->
+        <div class="ml-2">
+            <a href="{% url 'stream_list' %}" class="btn btn-success">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Streams
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title text-white mb-0">
+                   <i class="fas fa-stream text-white mr-2"></i>
+
+                    {{ title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="streamForm">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.class_ref.id_for_label }}">
+                            <i class="fas fa-chalkboard mr-1"></i> Class *
+                        </label>
+                        {{ form.class_ref }}
+                        {% if form.class_ref.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.class_ref.errors }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Select the class for this stream</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.name.id_for_label }}">
+                            <i class="fas fa-tag mr-1"></i> Stream Name *
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.name.errors }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">e.g., Science, Arts, North, Red, Blue, Green</small>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-success btn-lg btn-block">
+                            <i class="fas fa-save mr-2"></i>
+                            {{ action }} Stream
+                        </button>
+                        <a href="{% url 'stream_list' %}" class="btn btn-outline-danger btn-block mt-2">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Stream Suggestions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-lightbulb mr-2"></i>
+                    Popular Stream Names
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Science">
+                        Science
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Arts">
+                        Arts
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Commercial">
+                        Commercial
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="North">
+                        North
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="South">
+                        South
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="East">
+                        East
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="West">
+                        West
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Red">
+                        Red
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Blue">
+                        Blue
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Green">
+                        Green
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="Yellow">
+                        Yellow
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="A">
+                        A
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="B">
+                        B
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm stream-suggestion" data-name="C">
+                        C
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(document).ready(function() {
+    // Add form validation styling
+    $('input, select').addClass('form-control');
+    
+    // Stream name suggestions
+    $('.stream-suggestion').click(function() {
+        const streamName = $(this).data('name');
+        $('#id_name').val(streamName).focus();
+    });
+    
+    // Auto-filter classes based on selected level (if you have a level filter)
+    $('#id_level_filter').change(function() {
+        const levelId = $(this).val();
+        if (levelId) {
+            $('#id_class_ref option').hide();
+            $('#id_class_ref option[data-level="' + levelId + '"]').show();
+            $('#id_class_ref').val('');
+        } else {
+            $('#id_class_ref option').show();
+        }
+    });
+    
+    // Form validation
+    $('#streamForm').submit(function(e) {
+        const streamName = $('#id_name').val().trim();
+        const classRef = $('#id_class_ref').val();
+        
+        if (!streamName) {
+            e.preventDefault();
+            Swal.fire('Error!', 'Please enter a stream name.', 'error');
+            $('#id_name').focus();
+            return false;
+        }
+        
+        if (!classRef) {
+            e.preventDefault();
+            Swal.fire('Error!', 'Please select a class.', 'error');
+            $('#id_class_ref').focus();
+            return false;
+        }
+        
+        return true;
+    });
+});
+</script>
+
+
+{% endblock %}

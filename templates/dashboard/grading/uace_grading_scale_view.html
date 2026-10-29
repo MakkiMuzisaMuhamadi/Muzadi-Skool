@@ -1,0 +1,132 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-eye"></i> {{ scale.name }}</h3>
+    <small class="text-muted">UACE Grading Scale</small>
+  </div>
+  <div>
+    <a href="{% url back_url %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Status</strong><br>
+        {% if scale.is_active %}
+          <span class="badge badge-success">ACTIVE</span>
+        {% else %}
+          <span class="badge badge-secondary">INACTIVE</span>
+        {% endif %}
+      </div>
+      <div class="col-md-3">
+        <strong>Principal Subjects</strong><br>
+        {{ scale.required_principal_subjects }}
+      </div>
+      <div class="col-md-3">
+        <strong>Subsidiary Subjects</strong><br>
+        {{ scale.required_subsidiary_subjects }}
+      </div>
+      <div class="col-md-3">
+        <strong>General Paper Required</strong><br>
+        {{ scale.require_general_paper|yesno:"Yes,No" }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><strong>Paper Grade Boundaries</strong></div>
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Value</th>
+          <th>Min %</th>
+          <th>Max %</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in paper_grades %}
+        <tr>
+          <td>{{ g.order }}</td>
+          <td><strong>{{ g.grade_code }}</strong></td>
+          <td>{{ g.grade_name }}</td>
+          <td>{{ g.grade_value }}</td>
+          <td>{{ g.min_percentage }}</td>
+          <td>{{ g.max_percentage }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted">No paper grades defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><strong>Subject Configuration</strong></div>
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Subject</th>
+          <th>Category</th>
+          <th>Compulsory</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in subject_configs %}
+        <tr>
+          <td>{{ c.order }}</td>
+          <td>{{ c.subject.name }}</td>
+          <td>{{ c.category }}</td>
+          <td>{{ c.is_compulsory|yesno:"Yes,No" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted">No subject configs defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong>Subject Final Grade Rules</strong></div>
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Paper Count</th>
+          <th>Pattern</th>
+          <th>Final Grade</th>
+          <th>Points</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in subject_rules %}
+        <tr>
+          <td>{{ r.paper_count }}</td>
+          <td><code>{{ r.pattern }}</code></td>
+          <td><strong>{{ r.final_grade }}</strong></td>
+          <td>{{ r.points }}</td>
+          <td>{{ r.remarks }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted">No subject grade rules defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> Discounts waiting for approval</h3>
+  <small class="text-muted">Requested by bursars. Nothing changes on the student's account until you approve.</small>
+</div>
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light">
+          <tr><th>Requested</th><th>Student</th><th>Fee</th><th>Type</th><th class="text-right">Amount</th><th class="text-right">Unpaid now</th><th>Reason</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for adj in rows %}
+          <tr>
+            <td>{{ adj.created_at|date:"Y-m-d H:i" }}<small class="d-block text-muted">{{ adj.created_by.username|default:"-" }}</small></td>
+            <td><a href="{% url 'student_fee_statement' adj.charge.student_id %}">{{ adj.charge.student }}</a></td>
+            <td><a href="{% url 'student_fee_charge_detail' adj.charge_id %}">{{ adj.charge.fee_category.name }}</a> <small class="text-muted">{{ adj.charge.term }}</small></td>
+            <td>{{ adj.get_adjustment_type_display }}</td>
+            <td class="text-right">UGX {{ adj.amount|intcomma }}</td>
+            <td class="text-right">UGX {{ adj.charge.balance|intcomma }}</td>
+            <td>{{ adj.reason }}</td>
+            <td style="min-width:240px">
+              <form method="post" action="{% url 'fee_adjustment_decide' adj.id %}">
+                {% csrf_token %}
+                {{ decision_form.note }}
+                <div class="mt-1">
+                  <button name="decision" value="approve" class="btn btn-sm btn-success">Approve</button>
+                  <button name="decision" value="reject" class="btn btn-sm btn-outline-secondary">Reject</button>
+                </div>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted">No requests waiting.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

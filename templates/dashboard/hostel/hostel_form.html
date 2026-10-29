@@ -1,0 +1,81 @@
+{% extends "dashboard/base.html" %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-bed"></i>
+      {{ action|default:"Save" }} Hostel
+    </h3>
+    <small class="text-muted">Fill hostel details.</small>
+  </div>
+  <div>
+    <a href="{% url 'hostel_list' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">{{ form.name.label }}</label>
+          {{ form.name }}
+          <div class="text-danger small">{{ form.name.errors }}</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">{{ form.warden.label }}</label>
+          {{ form.warden }}
+          <div class="text-danger small">{{ form.warden.errors }}</div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label">{{ form.gender.label }}</label>
+          {{ form.gender }}
+          <div class="text-danger small">{{ form.gender.errors }}</div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label">{{ form.capacity.label }}</label>
+          {{ form.capacity }}
+          <div class="text-danger small">{{ form.capacity.errors }}</div>
+        </div>
+
+        <div class="col-md-12 mb-3">
+          <label class="form-label">{{ form.amenities.label }}</label>
+          {{ form.amenities }}
+          <div class="text-danger small">{{ form.amenities.errors }}</div>
+        </div>
+      </div>
+
+      <div class="d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+        <a href="{% url 'hostel_list' %}" class="btn btn-outline-danger">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // ensure checkboxes have bootstrap form-check-input class if not already
+  (function(){
+    try{
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+        cb.classList.add('form-check-input');
+      });
+    }catch(e){}
+  })();
+</script>
+{% endblock %}

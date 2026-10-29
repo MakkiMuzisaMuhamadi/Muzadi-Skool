@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4">
+  <h3 class="page-title mb-1"><i class="fas fa-user-check mr-2 text-primary"></i> Who Is Free?</h3>
+  <small class="text-muted">Teachers with no lesson, cover duty or unavailability at a given period. Least busy first.</small>
+</div>
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="form-row">
+    <div class="col-md-4 mb-2"><input type="date" name="date" value="{{ on_date|date:'Y-m-d' }}" class="form-control"></div>
+    <div class="col-md-6 mb-2">
+      <select name="period" class="form-control">
+        <option value="">Select period</option>
+        {% for p in periods %}<option value="{{ p.pk }}" {% if period and period.pk == p.pk %}selected{% endif %}>{% if p.bell_schedule %}{{ p.bell_schedule.name }}: {% endif %}{{ p }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 mb-2"><button class="btn btn-primary w-100">Find</button></div>
+  </form>
+</div></div>
+{% if period %}
+<div class="card"><div class="card-body table-responsive p-0">
+  <table class="table mb-0">
+    <thead><tr><th>Teacher</th><th>Lessons that day</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr><td>{{ r.name }}</td><td>{{ r.lessons_today }}</td></tr>
+      {% empty %}
+      <tr><td colspan="2" class="text-center text-muted">Nobody is free at {{ period.name }} on {{ on_date|date:"l d M" }}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endif %}
+{% endblock %}

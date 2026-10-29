@@ -1,0 +1,104 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-alt text-primary"></i> Student Exam Result
+    </h3>
+    <small class="text-muted">
+      {{ student.first_name }} {{ student.last_name }} • {{ student.admission_number }}
+    </small>
+  </div>
+  <div>
+    <a href="{% url 'teacher_exam_results' exam.id %}" class="btn btn-light btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back to Results
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3">
+        <div class="text-muted small">Exam</div>
+        <div class="font-weight-bold">{{ exam.title }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted small">Status</div>
+        <div>{{ attempt.status }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted small">Score</div>
+        <div>{{ attempt.total_score|default:"0" }} / {{ total_marks|default:"0" }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted small">Manual Pending</div>
+        <div>{% if attempt.is_manual_pending %}Yes{% else %}No{% endif %}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Submitted</div>
+        <div>{{ attempt.submitted_at|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% for ans in answers %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start flex-wrap mb-2" style="gap:.75rem;">
+        <div>
+          <div class="font-weight-bold">Question {{ forloop.counter }}</div>
+          <div style="white-space: pre-wrap;">{{ ans.question.prompt }}</div>
+        </div>
+        <div class="text-md-right">
+          <span class="badge badge-primary">{{ ans.question.marks }} mark{{ ans.question.marks|pluralize }}</span>
+          <span class="badge badge-success ml-1">{{ ans.awarded_marks }} awarded</span>
+        </div>
+      </div>
+
+      {% if ans.question.question_type == "MCQ_SINGLE" or ans.question.question_type == "MCQ_MULTI" or ans.question.question_type == "TRUE_FALSE" %}
+        <div class="mt-2">
+          <div class="font-weight-bold mb-2">Choices</div>
+          {% for ch in ans.question.choices.all %}
+            <div class="border rounded p-2 mb-2
+              {% if ch in ans.selected_choices.all and ch.is_correct %}border-success bg-light
+              {% elif ch in ans.selected_choices.all %}border-warning bg-light
+              {% endif %}">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>{{ ch.text }}</div>
+                <div>
+                  {% if ch in ans.selected_choices.all %}
+                    <span class="badge badge-info">Selected</span>
+                  {% endif %}
+                  {% if ch.is_correct %}
+                    <span class="badge badge-success">Correct</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mt-2">
+          <div class="font-weight-bold mb-1">Student Answer</div>
+          <div class="border rounded p-3 bg-light" style="white-space: pre-wrap;">
+            {{ ans.typed_answer|default:"—" }}
+          </div>
+
+          {% if ans.marker_comment %}
+            <div class="mt-3">
+              <div class="font-weight-bold mb-1">Teacher Comment</div>
+              <div class="border rounded p-3">{{ ans.marker_comment }}</div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% empty %}
+  <div class="alert alert-light">No answers found for this attempt.</div>
+{% endfor %}
+
+{% endblock %}

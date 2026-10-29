@@ -1,0 +1,219 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file-alt fa-lg me-3"></i> &nbsp;&nbsp;
+                        <div>
+                            <h4 class="card-title mb-0" style="color: white;">Select Subject and Paper for Marks Entry</h4>
+                            <small class="opacity-75">For {{ school.name }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Alert Box -->
+                    <div class="alert alert-info border-0 bg-light-info">
+                        <div class="d-flex">
+                            <i class="fas fa-info-circle fa-lg text-info me-3 mt-1"></i>
+                            <div>
+                                <h5 class="alert-heading mb-2">Instructions</h5>
+                                <p class="mb-0">Select a subject and paper to enter marks for candidates.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Section -->
+                    <div class="form-section mt-4">
+                        <!-- Subject Dropdown -->
+                        <div class="mb-4">
+                            <label for="subject-select" class="form-label fw-semibold">
+                                <i class="fas fa-book me-2 text-primary">&nbsp;&nbsp;</i> Select Subject
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-caret-down text-muted"></i>
+                                </span>
+                                <select id="subject-select" class="form-select border-start-0 ps-0">
+                                    <option value="">-- Choose a subject --</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Paper Dropdown -->
+                        <div class="mb-4 d-none" id="paper-box">
+                            <label for="paper-select" class="form-label fw-semibold">
+                                <i class="fas fa-file me-2 text-primary">&nbsp;&nbsp;</i>Select Paper
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-caret-down text-muted"></i>
+                                </span>
+                                <select id="paper-select" class="form-select border-start-0 ps-0"></select>
+                            </div>
+
+                            <!-- Max Marks Table -->
+                            <div id="paper-info" class="mt-2 p-2 bg-light rounded d-none">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Paper Name</th>
+                                            <th>Max Marks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paper-info-body">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Loading Indicator -->
+                        <div id="loading-indicator" class="text-center d-none my-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2">Loading papers...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light py-3">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'uce_mark_entry_dashboard' %}" class="btn btn-outline-success">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                        </a>
+                        <div class="d-flex align-items-center text-muted">
+                            <i class="fas fa-school me-2"></i>
+                            <small>{{ school.name }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card { border-radius: 12px; overflow: hidden; }
+.card-header { border-bottom: none; }
+.form-select { border-radius: 8px; transition: all 0.3s ease; }
+.form-select:focus { box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15); border-color: #86b7fe; }
+.input-group-text { border-radius: 8px 0 0 8px; transition: all 0.3s ease; }
+.input-group:focus-within .input-group-text { border-color: #86b7fe; background-color: #f8f9fa; }
+.alert { border-radius: 10px; border: none; }
+.btn { border-radius: 8px; padding: 8px 16px; font-weight: 500; transition: all 0.3s ease; }
+.badge { font-size: 0.8em; padding: 4px 8px; }
+.shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(235, 25, 25, 0.07) !important; }
+
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const subjectSelect = document.getElementById("subject-select");
+    const paperSelect = document.getElementById("paper-select");
+    const paperBox = document.getElementById("paper-box");
+    const paperInfoBox = document.getElementById("paper-info");
+    const paperInfoBody = document.getElementById("paper-info-body");
+    const loadingIndicator = document.getElementById("loading-indicator");
+
+    // ✅ Build correct base URL for fetch using Django's URL pattern
+    const schoolId = "{{ school.id }}";
+    const baseUrl = `/uce/schools/${schoolId}/marks/get-papers/`;
+
+    subjectSelect.addEventListener("change", function () {
+        const subjectId = this.value;
+        paperSelect.innerHTML = "";
+        paperBox.classList.add("d-none");
+        paperInfoBox.classList.add("d-none");
+        paperInfoBody.innerHTML = "";
+        loadingIndicator.classList.add("d-none");
+
+        if (!subjectId) return;
+
+        loadingIndicator.classList.remove("d-none");
+
+        // ✅ Correct dynamic fetch URL
+        fetch(`${baseUrl}${subjectId}/`)
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to fetch papers");
+                return response.json();
+            })
+            .then(data => {
+                loadingIndicator.classList.add("d-none");
+
+                // ✅ When papers exist
+                if (data.papers && data.papers.length > 0) {
+                    const placeholderOption = document.createElement("option");
+                    placeholderOption.value = "";
+                    placeholderOption.textContent = "-- Select a paper --";
+                    placeholderOption.disabled = true;
+                    placeholderOption.selected = true;
+                    paperSelect.appendChild(placeholderOption);
+
+                    data.papers.forEach(paper => {
+                        const option = document.createElement("option");
+                        option.value = paper.id;
+                        option.textContent = paper.paper_name;
+                        paperSelect.appendChild(option);
+                    });
+
+                    // ✅ Populate the max marks table
+                    paperInfoBody.innerHTML = "";
+                    data.papers.forEach(paper => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td style="font-size: 16px; font-weight: 600;">${paper.paper_name}</td>
+                            <td><span class="badge bg-danger text-white" style="font-size: 16px; padding: 6px 10px;">${paper.max_marks}</span></td>
+                        `;
+                        paperInfoBody.appendChild(row);
+                    });
+
+                    paperInfoBox.classList.remove("d-none");
+                    paperBox.classList.remove("d-none");
+
+                    // ✅ If only one paper, redirect directly
+                    if (data.papers.length === 1) {
+                        const paperId = data.papers[0].id;
+           window.location.href = `/uce/enter-marks/${schoolId}/${paperId}/`;
+                    }
+                } 
+                // ✅ When no papers exist
+                else {
+                    const opt = document.createElement("option");
+                    opt.textContent = "No papers available for this subject";
+                    opt.disabled = true;
+                    paperSelect.appendChild(opt);
+                    paperBox.classList.remove("d-none");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                loadingIndicator.classList.add("d-none");
+
+                // Show fallback message
+                const errorOpt = document.createElement("option");
+                errorOpt.textContent = "Error loading papers";
+                errorOpt.disabled = true;
+                paperSelect.appendChild(errorOpt);
+                paperBox.classList.remove("d-none");
+            });
+    });
+
+    // ✅ Handle paper selection → redirect to marks entry page
+    paperSelect.addEventListener("change", function () {
+        if (this.value) {
+            const paperId = this.value;
+           window.location.href = `/uce/enter-marks/${schoolId}/${paperId}/`;
+        }
+    });
+});
+</script>
+{% endblock %}

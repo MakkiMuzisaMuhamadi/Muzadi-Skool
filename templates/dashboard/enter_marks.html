@@ -1,0 +1,188 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="row">
+    <div class="col-lg-12 grid-margin stretch-card">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">{{ school.name }}</h4>
+            <div>
+              <strong>Subject:</strong> {{ paper.subject.name }} |
+              <strong>Paper:</strong> {{ paper.paper_name }} |
+              <strong>Max Marks:</strong> {{ paper.max_marks }}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- 🔍 Search box -->
+          <div class="mb-3">
+            <input type="text" id="searchInput" class="form-control" placeholder="Search candidate by name or ID...">
+          </div>
+
+          <table class="table table-bordered table-striped" id="candidates-table">
+            <thead class="thead-light">
+              <tr>
+                <th>Candidate ID</th>
+                <th>Candidate Name</th>
+                <th>Marks (0 - {{ paper.max_marks }})</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for candidate in candidates %}
+              <tr>
+                <td>{{ candidate.candidate_id }}</td>
+                <td>{{ candidate.name }}</td>
+                <td>
+                  <input type="number"
+                         data-candidate-id="{{ candidate.id }}"
+                         class="form-control marks-input"
+                         min="0"
+                         max="{{ paper.max_marks }}"
+                         step="1"
+                         value="{{ candidate.marks|default_if_none:'' }}">
+                </td>
+                <td class="status-cell" id="status-{{ candidate.id }}"
+                    style="color: {% if candidate.marks %}green{% else %}gray{% endif %};">
+                    {% if candidate.marks %}Saved{% else %}Pending{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== -->
+<!--  SEARCH + SAVE SCRIPTS   -->
+<!-- ======================== -->
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+// ===================
+// 🔍 Candidate Search
+// ===================
+document.getElementById('searchInput').addEventListener('keyup', function() {
+  const filter = this.value.toLowerCase();
+  const rows = document.querySelectorAll('#candidates-table tbody tr');
+
+  rows.forEach(row => {
+    const id = row.cells[0].textContent.toLowerCase();
+    const name = row.cells[1].textContent.toLowerCase();
+    row.style.display = (id.includes(filter) || name.includes(filter)) ? '' : 'none';
+  });
+});
+
+// =====================
+// 💾 Save Marks (same)
+// =====================
+// =====================
+// 💾 Save Marks (Fixed)
+// =====================
+function saveMark(candidateId, value, statusCell, inputElement) {
+    statusCell.innerText = 'Saving...';
+    statusCell.style.color = 'orange';
+
+    fetch("{% url 'uce_enter_marks' school.id paper.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            candidate_id: candidateId,
+            marks: value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (value === null) {
+                statusCell.innerText = 'Removed';
+                statusCell.style.color = 'gray';
+                // Clear the input field after successful removal
+                if (inputElement) {
+                    inputElement.value = '';
+                }
+            } else {
+                statusCell.innerText = 'Saved';
+                statusCell.style.color = 'green';
+            }
+        } else {
+            statusCell.innerText = 'Error';
+            statusCell.style.color = 'red';
+            // Revert to original value on error
+            if (inputElement && data.original_value !== undefined) {
+                inputElement.value = data.original_value;
+            }
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        statusCell.innerText = 'Error';
+        statusCell.style.color = 'red';
+    });
+}
+
+document.querySelectorAll('.marks-input').forEach(input => {
+    const candidateId = input.getAttribute('data-candidate-id');
+    const max = parseFloat(input.getAttribute('max'));
+    const statusCell = document.getElementById(`status-${candidateId}`);
+    let originalValue = input.value; // Store original value
+
+    input.addEventListener('focus', function() {
+        // Store original value when user starts editing
+        originalValue = this.value;
+    });
+
+    input.addEventListener('blur', function() {
+        const value = this.value.trim();
+        const floatValue = parseFloat(value);
+
+        // ✅ Handle empty (mark removal)
+        if (value === '') {
+            saveMark(candidateId, null, statusCell, this);
+            return;
+        }
+
+        // Validate numeric input
+        if (isNaN(floatValue)) {
+            alert('Please enter a valid number');
+            this.value = originalValue; // Revert to original value
+            return;
+        }
+
+        if (floatValue > max) {
+            alert(`Marks cannot exceed ${max}`);
+            this.value = originalValue; // Revert to original value
+            return;
+        }
+
+        if (floatValue < 0) {
+            alert('Marks cannot be negative');
+            this.value = originalValue; // Revert to original value
+            return;
+        }
+
+        saveMark(candidateId, floatValue, statusCell, this);
+    });
+
+    // Initialize status based on existing marks
+    if (input.value !== '') {
+        statusCell.innerText = 'Saved';
+        statusCell.style.color = 'green';
+    } else {
+        statusCell.innerText = 'Pending';
+        statusCell.style.color = 'gray';
+    }
+});
+
+</script>
+{% endblock %}

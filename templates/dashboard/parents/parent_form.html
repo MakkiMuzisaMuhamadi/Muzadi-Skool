@@ -1,0 +1,151 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-user-friends"></i> {{ title }}</h3>
+    {% if student %}
+      <small class="text-muted">They will be linked to <b>{{ student.name }}</b> when you save.</small>
+    {% elif parent %}
+      <small class="text-muted">{{ parent.parent_id }}</small>
+    {% else %}
+      <small class="text-muted">Search the list first, so the same parent isn't added twice.</small>
+    {% endif %}
+  </div>
+  <div class="mt-2 mt-md-0">
+    {% if next %}
+      <a href="{{ next }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+    {% elif parent %}
+      <a href="{% url 'parent_detail' parent.id %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+    {% else %}
+      <a href="{% url 'parent_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if form.duplicate_parent %}
+  <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <b>{{ form.duplicate_parent.full_name }}</b> ({{ form.duplicate_parent.parent_id }}) already uses this phone number.
+    </div>
+    <a href="{% url 'parent_link_students' form.duplicate_parent.id %}{% if student %}?student={{ student.id }}{% endif %}"
+       class="btn btn-sm btn-warning mt-2 mt-md-0">
+      <i class="fas fa-link mr-1"></i> Use this parent instead
+    </a>
+  </div>
+{% endif %}
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next|default:'' }}">
+  {% if student %}<input type="hidden" name="student" value="{{ student.id }}">{% endif %}
+
+  <div class="row">
+    <div class="col-lg-8">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Who they are</h5>
+          <div class="row">
+            {% include "dashboard/parents/_field.html" with field=form.first_name col="col-md-4" %}
+            {% include "dashboard/parents/_field.html" with field=form.middle_name col="col-md-4" %}
+            {% include "dashboard/parents/_field.html" with field=form.last_name col="col-md-4" %}
+            {% include "dashboard/parents/_field.html" with field=form.relationship col="col-md-6" %}
+            {% include "dashboard/parents/_field.html" with field=form.occupation col="col-md-6" %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title mb-3">How to reach them</h5>
+          <div class="row">
+            {% include "dashboard/parents/_field.html" with field=form.phone col="col-md-6" %}
+            {% include "dashboard/parents/_field.html" with field=form.alternate_phone col="col-md-6" %}
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="{{ form.whatsapp_number.id_for_label }}" class="d-flex justify-content-between">
+                  <span>{{ form.whatsapp_number.label }}</span>
+                  <a href="#" id="sameAsPhone" class="small">Same as main phone</a>
+                </label>
+                {{ form.whatsapp_number }}
+                {% for e in form.whatsapp_number.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+            {% include "dashboard/parents/_field.html" with field=form.email col="col-md-6" %}
+            {% include "dashboard/parents/_field.html" with field=form.preferred_language col="col-md-6" %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Where they live</h5>
+          <div class="row">
+            {% include "dashboard/parents/_field.html" with field=form.district col="col-md-4" %}
+            {% include "dashboard/parents/_field.html" with field=form.sub_county col="col-md-4" %}
+            {% include "dashboard/parents/_field.html" with field=form.village col="col-md-4" %}
+            {% include "dashboard/parents/_field.html" with field=form.city col="col-md-6" %}
+            {% include "dashboard/parents/_field.html" with field=form.country col="col-md-6" %}
+            {% include "dashboard/parents/_field.html" with field=form.address col="col-12" %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Messages</h5>
+          {% include "dashboard/parents/_switch.html" with field=form.sms_consent hint="School SMS: fees, reports, events." %}
+          {% include "dashboard/parents/_switch.html" with field=form.whatsapp_consent %}
+          {% if parent and parent.consent_date %}
+            <small class="text-muted">Consent recorded {{ parent.consent_date|date:"j M Y" }}.</small>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Photo</h5>
+          {% if parent and parent.profile_photo %}
+            <img src="{{ parent.profile_photo.url }}" alt="" class="rounded mb-2" style="width:72px;height:72px;object-fit:cover;">
+          {% endif %}
+          {{ form.profile_photo }}
+          {% for e in form.profile_photo.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          {% include "dashboard/parents/_switch.html" with field=form.is_active hint="Inactive parents stay on record but get no school messages." %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success btn-block">
+        <i class="fas fa-save mr-1"></i> {% if action == "Update" %}Save changes{% else %}Add parent{% endif %}
+      </button>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  (function () {
+    var link = document.getElementById("sameAsPhone");
+    if (!link) return;
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      var phone = document.getElementById("{{ form.phone.id_for_label }}");
+      var wa = document.getElementById("{{ form.whatsapp_number.id_for_label }}");
+      if (phone && wa) { wa.value = phone.value; wa.focus(); }
+    });
+  })();
+</script>
+{% endblock %}

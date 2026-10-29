@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-edit"></i> Edit Question</h3>
+    <small class="text-muted">{{ exam.title }}</small>
+  </div>
+  <div>
+    <a href="{% url 'teacher_exam_builder' exam.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="font-weight-bold mb-1">Question Type</label>
+        {{ form.question_type }}
+        {% if form.question_type.errors %}<small class="text-danger">{{ form.question_type.errors|striptags }}</small>{% endif %}
+
+        <div class="alert alert-light mt-2 py-2 mb-0">
+          <small class="text-muted">
+            <b>MCQ (Single)</b>: one correct option<br>
+            <b>MCQ (Multiple)</b>: multiple correct options<br>
+            <b>True/False</b>: two options<br>
+            <b>Short Text</b>: student types a short answer (teacher marks)<br>
+            <b>Essay</b>: long answer (teacher marks)
+          </small>
+        </div>
+      </div>
+
+      <div class="form-group mt-3">
+        <label class="font-weight-bold mb-1">Question</label>
+        {{ form.prompt }}
+        {% if form.prompt.errors %}<small class="text-danger">{{ form.prompt.errors|striptags }}</small>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="font-weight-bold mb-1">Marks</label>
+        {{ form.marks }}
+        {% if form.marks.errors %}<small class="text-danger">{{ form.marks.errors|striptags }}</small>{% endif %}
+      </div>
+
+      <div class="form-group" id="editMarkingGuideWrap" style="display:none;">
+        <label class="font-weight-bold mb-1">Marking guide (optional)</label>
+        {{ form.marking_guide }}
+        <small class="text-muted d-block">Visible to teacher during marking (Short Text / Essay only).</small>
+        {% if form.marking_guide.errors %}<small class="text-danger">{{ form.marking_guide.errors|striptags }}</small>{% endif %}
+      </div>
+
+
+      <div class="d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-save mr-1"></i> Save Changes
+        </button>
+        <a class="btn btn-outline-danger" href="{% url 'teacher_exam_builder' exam.pk %}">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const typeSel = document.getElementById("id_question_type");
+  const wrap = document.getElementById("editMarkingGuideWrap");
+
+  function toggle(){
+    if(!typeSel || !wrap) return;
+    const v = (typeSel.value || "").toUpperCase();
+    const show = (v === "SHORT_TEXT" || v === "LONG_TEXT");
+    wrap.style.display = show ? "" : "none";
+  }
+
+  if(typeSel){
+    typeSel.addEventListener("change", toggle);
+    toggle();
+  }
+})();
+</script>
+
+{% endblock %}

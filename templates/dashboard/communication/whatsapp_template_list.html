@@ -1,0 +1,95 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
+  <div>
+    <h3 class="page-title mb-0"><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp Templates</h3>
+    <small class="text-muted">Messages approved by WhatsApp. Create them in WhatsApp Manager, then sync here.</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'sms_campaign_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+    {% if can_sync %}
+    <form method="post" action="{% url 'whatsapp_template_sync' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success btn-sm">
+        <i class="fas fa-sync mr-1"></i> Sync from WhatsApp
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if not whatsapp_ready or not can_sync %}
+  <div class="alert alert-warning">
+    <b>WhatsApp is not fully set up.</b>
+    Add these to your <code>.env</code> file and restart the server:
+    {% if not whatsapp_ready %}<code>WHATSAPP_TOKEN</code>, <code>WHATSAPP_PHONE_NUMBER_ID</code>{% endif %}
+    {% if not can_sync %}{% if not whatsapp_ready %}, {% endif %}<code>WHATSAPP_BUSINESS_ACCOUNT_ID</code>{% endif %}.
+  </div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Language</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Text</th>
+            <th class="text-center">Blanks</th>
+            <th>Can send?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in templates %}
+          <tr {% if not t.is_active %}class="text-muted"{% endif %}>
+            <td class="font-weight-bold">{{ t.name }}</td>
+            <td>{{ t.language }}</td>
+            <td>{{ t.category|default:"—" }}</td>
+            <td>
+              {% if t.status == "APPROVED" %}<span class="badge badge-success">APPROVED</span>
+              {% elif t.status == "PENDING" %}<span class="badge badge-warning">PENDING</span>
+              {% else %}<span class="badge badge-danger">{{ t.status|default:"UNKNOWN" }}</span>{% endif %}
+            </td>
+            <td style="max-width:380px;"><small style="white-space: pre-wrap;">{{ t.body|truncatechars:220 }}</small></td>
+            <td class="text-center">{{ t.param_count }}</td>
+            <td>
+              {% if t.is_usable %}
+                <span class="text-success"><i class="fas fa-check"></i> Yes</span>
+              {% elif not t.is_active %}
+                <span class="text-muted">Removed from WhatsApp</span>
+              {% elif not t.is_supported %}
+                <span class="text-warning small">Not supported (image header or link button with a blank)</span>
+              {% else %}
+                <span class="text-muted small">Waiting for approval</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              No templates yet. Create one in WhatsApp Manager (category <b>Utility</b>), wait for approval,
+              then click <b>Sync from WhatsApp</b>.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body small">
+    <b>Tip:</b> a good school template has blanks for the details that change, for example:<br>
+    <code>Dear {% templatetag openvariable %}1{% templatetag closevariable %}, this is {% templatetag openvariable %}2{% templatetag closevariable %}. {% templatetag openvariable %}3{% templatetag closevariable %}</code><br>
+    When sending, fill the blanks with <code>{parent_name}</code>, <code>{school_name}</code> and your message,
+    and the system puts in each parent’s details.
+  </div>
+</div>
+{% endblock %}

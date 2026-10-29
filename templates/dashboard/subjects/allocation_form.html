@@ -1,0 +1,447 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css" rel="stylesheet">
+
+<style>
+  .select2-container--bootstrap4 .select2-selection {
+    min-height: 38px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+  }
+
+  .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+    line-height: 36px;
+    padding-left: 12px;
+  }
+
+  .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+  }
+
+  .select2-container {
+    width: 100% !important;
+  }
+
+  #papersBox {
+    min-height: 52px;
+  }
+</style>
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-random"></i> {{ title }}
+    </h3>
+    <small class="text-muted">
+      Choose the year, teacher, class, stream, subject and papers. Leave stream empty to cover the whole class.
+    </small>
+  </div>
+
+  <a href="{% url 'teacher_allocation_list' %}" class="btn btn-success btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+
+    <form method="post"
+          novalidate
+          id="allocationForm"
+          data-streams-url="{{ ajax_streams_url }}"
+          data-subjects-url="{{ ajax_subjects_url }}"
+          data-papers-url="{{ ajax_papers_url }}"
+          data-preselected-papers='{{ selected_paper_ids_json|default:"[]"|safe }}'>
+
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="{{ form.teacher.id_for_label }}">
+            Teacher <span class="text-danger">*</span>
+          </label>
+          {{ form.teacher }}
+          {% if form.teacher.errors %}
+            <small class="text-danger">{{ form.teacher.errors|striptags }}</small>
+          {% endif %}
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="{{ form.class_ref.id_for_label }}">
+            Class <span class="text-danger">*</span>
+          </label>
+          {{ form.class_ref }}
+          {% if form.class_ref.errors %}
+            <small class="text-danger">{{ form.class_ref.errors|striptags }}</small>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="{{ form.stream.id_for_label }}">
+            Stream <span class="text-muted">(optional)</span>
+          </label>
+          {{ form.stream }}
+          {% if form.stream.errors %}
+            <small class="text-danger">{{ form.stream.errors|striptags }}</small>
+          {% endif %}
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="{{ form.subject.id_for_label }}">
+            Subject <span class="text-danger">*</span>
+          </label>
+          {{ form.subject }}
+          {% if form.subject.errors %}
+            <small class="text-danger">{{ form.subject.errors|striptags }}</small>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          Papers <span class="text-muted">(optional)</span>
+        </label>
+
+        <div class="border rounded p-3 bg-light" id="papersBox">
+          <div class="text-muted">Select a subject to load papers.</div>
+        </div>
+
+        {% if form.papers.errors %}
+          <small class="text-danger">{{ form.papers.errors|striptags }}</small>
+        {% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-8">
+          <label for="{{ form.notes.id_for_label }}">
+            Notes
+          </label>
+          {{ form.notes }}
+          {% if form.notes.errors %}
+            <small class="text-danger">{{ form.notes.errors|striptags }}</small>
+          {% endif %}
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="{{ form.academic_year.id_for_label }}">
+            Academic year <span class="text-danger">*</span>
+          </label>
+          {{ form.academic_year }}
+          {% if form.academic_year.errors %}
+            <small class="text-danger">{{ form.academic_year.errors|striptags }}</small>
+          {% endif %}
+          <small class="form-text text-muted">Class teachers are set on the Class Teachers page.</small>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3">
+        <button type="submit" name="save_and_add" value="1" class="btn btn-outline-success mr-2">
+          Save and add another
+        </button>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save mr-1"></i> Save allocation
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  function initTeacherSearchDropdown() {
+    if (typeof jQuery === "undefined") {
+      console.error("jQuery is required for Select2. Make sure jQuery is loaded in base.html.");
+      return;
+    }
+
+    if (typeof jQuery.fn.select2 === "undefined") {
+      console.error("Select2 failed to load.");
+      return;
+    }
+
+    const teacherSelect = $("#{{ form.teacher.id_for_label }}");
+
+    teacherSelect.select2({
+      theme: "bootstrap4",
+      width: "100%",
+      placeholder: "Search and select teacher",
+      allowClear: true
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", initTeacherSearchDropdown);
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  const form = document.getElementById("allocationForm");
+  if (!form) return;
+
+  const streamsUrl = form.dataset.streamsUrl;
+  const subjectsUrl = form.dataset.subjectsUrl;
+  const papersUrl = form.dataset.papersUrl;
+
+  const classSelect = document.getElementById("{{ form.class_ref.id_for_label }}");
+  const streamSelect = document.getElementById("{{ form.stream.id_for_label }}");
+  const subjectSelect = document.getElementById("{{ form.subject.id_for_label }}");
+  const papersBox = document.getElementById("papersBox");
+
+  if (!classSelect || !streamSelect || !subjectSelect || !papersBox) {
+    console.error("Allocation form fields were not found. Check form field IDs.");
+    return;
+  }
+
+  let preselectedPapers = [];
+
+  try {
+    preselectedPapers = JSON.parse(form.dataset.preselectedPapers || "[]");
+  } catch (e) {
+    preselectedPapers = [];
+  }
+
+  const PRESELECTED_SET = new Set(preselectedPapers.map(String));
+
+  function getItemLabel(item) {
+    return item.name || item.text || item.paper_name || item.label || "Unnamed";
+  }
+
+  function normaliseList(json, preferredKey) {
+    if (!json) return [];
+
+    if (Array.isArray(json)) {
+      return json;
+    }
+
+    if (preferredKey && Array.isArray(json[preferredKey])) {
+      return json[preferredKey];
+    }
+
+    if (Array.isArray(json.results)) {
+      return json.results;
+    }
+
+    if (Array.isArray(json.streams)) {
+      return json.streams;
+    }
+
+    if (Array.isArray(json.subjects)) {
+      return json.subjects;
+    }
+
+    if (Array.isArray(json.papers)) {
+      return json.papers;
+    }
+
+    return [];
+  }
+
+  function setOptions(selectEl, items, placeholder, selectedValue) {
+    selectEl.innerHTML = "";
+
+    const firstOption = document.createElement("option");
+    firstOption.value = "";
+    firstOption.textContent = placeholder || "---------";
+    selectEl.appendChild(firstOption);
+
+    (items || []).forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = getItemLabel(item);
+
+      if (selectedValue && String(selectedValue) === String(item.id)) {
+        option.selected = true;
+      }
+
+      selectEl.appendChild(option);
+    });
+  }
+
+  function setSelectLoading(selectEl, message) {
+    selectEl.innerHTML = "";
+
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = message || "Loading...";
+    selectEl.appendChild(option);
+  }
+
+  function resetPapersBox(message) {
+    papersBox.innerHTML = `<div class="text-muted">${message}</div>`;
+  }
+
+  function renderPapersCheckboxes(papers) {
+    if (!papers || !papers.length) {
+      resetPapersBox("No papers found for this subject.");
+      return;
+    }
+
+    let html = "";
+
+    papers.forEach(function (paper) {
+      const paperId = String(paper.id);
+      const checked = PRESELECTED_SET.has(paperId) ? "checked" : "";
+      const label = getItemLabel(paper);
+
+      html += `
+        <div class="form-check mb-1">
+          <input class="form-check-input"
+                 type="checkbox"
+                 name="papers"
+                 value="${paperId}"
+                 id="paper_${paperId}"
+                 ${checked}>
+          <label class="form-check-label" for="paper_${paperId}">
+            ${label}
+          </label>
+        </div>
+      `;
+    });
+
+    papersBox.innerHTML = html;
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      credentials: "same-origin"
+    });
+
+    if (!response.ok) {
+      throw new Error("Request failed with status " + response.status);
+    }
+
+    return await response.json();
+  }
+
+  async function loadStreams(classId, selectedStreamId) {
+    setSelectLoading(streamSelect, "Loading streams...");
+
+    if (!classId) {
+      setOptions(streamSelect, [], "Select stream (optional)");
+      return;
+    }
+
+    try {
+      const url = `${streamsUrl}?class_id=${encodeURIComponent(classId)}`;
+      const json = await fetchJson(url);
+      const streams = normaliseList(json, "streams");
+
+      setOptions(streamSelect, streams, "Select stream (optional)", selectedStreamId);
+    } catch (error) {
+      console.error("Failed to load streams:", error);
+      setOptions(streamSelect, [], "Failed to load streams");
+    }
+  }
+
+  async function loadSubjects(classId, selectedSubjectId) {
+    setSelectLoading(subjectSelect, "Loading subjects...");
+
+    if (!classId) {
+      setOptions(subjectSelect, [], "Select subject");
+      return;
+    }
+
+    try {
+      const url = `${subjectsUrl}?class_id=${encodeURIComponent(classId)}`;
+      const json = await fetchJson(url);
+      const subjects = normaliseList(json, "subjects");
+
+      setOptions(subjectSelect, subjects, "Select subject", selectedSubjectId);
+    } catch (error) {
+      console.error("Failed to load subjects:", error);
+      setOptions(subjectSelect, [], "Failed to load subjects");
+    }
+  }
+
+  async function loadPapers(subjectId) {
+    if (!subjectId) {
+      resetPapersBox("Select a subject to load papers.");
+      return;
+    }
+
+    resetPapersBox("Loading papers...");
+
+    try {
+      const url = `${papersUrl}?subject_id=${encodeURIComponent(subjectId)}`;
+      const json = await fetchJson(url);
+      const papers = normaliseList(json, "papers");
+
+      renderPapersCheckboxes(papers);
+    } catch (error) {
+      console.error("Failed to load papers:", error);
+      resetPapersBox("Failed to load papers.");
+    }
+  }
+
+  async function loadClassDependents(classId, selectedStreamId, selectedSubjectId) {
+    setOptions(streamSelect, [], "Select stream (optional)");
+    setOptions(subjectSelect, [], "Select subject");
+    resetPapersBox("Select a subject to load papers.");
+
+    if (!classId) return;
+
+    await Promise.all([
+      loadStreams(classId, selectedStreamId),
+      loadSubjects(classId, selectedSubjectId)
+    ]);
+
+    if (selectedSubjectId) {
+      await loadPapers(selectedSubjectId);
+    }
+  }
+
+  classSelect.addEventListener("change", function () {
+    const classId = this.value;
+
+    PRESELECTED_SET.clear();
+
+    setOptions(streamSelect, [], "Select stream (optional)");
+    setOptions(subjectSelect, [], "Select subject");
+    resetPapersBox("Select a subject to load papers.");
+
+    loadClassDependents(classId, "", "");
+  });
+
+  subjectSelect.addEventListener("change", function () {
+    PRESELECTED_SET.clear();
+    loadPapers(this.value);
+  });
+
+  const initialClassId = classSelect.value;
+  const initialStreamId = streamSelect.value;
+  const initialSubjectId = subjectSelect.value;
+
+  if (initialClassId) {
+    loadClassDependents(initialClassId, initialStreamId, initialSubjectId);
+  } else {
+    setOptions(streamSelect, [], "Select stream (optional)");
+    setOptions(subjectSelect, [], "Select subject");
+    resetPapersBox("Select a subject to load papers.");
+  }
+
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-clipboard-check"></i> {{ title }}</h3>
+  <small class="text-muted">Rows with errors are skipped. Fix them in Excel and upload them again later.</small>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap align-items-center justify-content-between">
+    <div class="mb-2 mb-md-0">
+      <span class="badge badge-success p-2 mr-1">{{ ok_count }} ready to save</span>
+      {% if error_count %}<span class="badge badge-danger p-2 mr-1">{{ error_count }} with errors</span>{% endif %}
+      {% if warning_count %}<span class="badge badge-warning p-2">{{ warning_count }} with warnings</span>{% endif %}
+    </div>
+
+    <form method="post" class="d-flex flex-wrap align-items-center">
+      {% csrf_token %}
+      <div class="form-check mr-3">
+        <input class="form-check-input" type="checkbox" name="send_sms" id="send_sms" value="1">
+        <label class="form-check-label" for="send_sms">SMS login details</label>
+      </div>
+      <div class="form-check mr-3">
+        <input class="form-check-input" type="checkbox" name="send_email" id="send_email" value="1">
+        <label class="form-check-label" for="send_email">Email login details</label>
+      </div>
+      <button type="submit" name="action" value="cancel" class="btn btn-light mr-2">Cancel</button>
+      <button type="submit" name="action" value="save" class="btn btn-success" {% if not ok_count %}disabled{% endif %}>
+        Save {{ ok_count }} teacher{{ ok_count|pluralize }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Row</th><th>Name</th><th>Staff no.</th><th>Phone</th><th>Email</th>
+            <th>Joined</th><th>Qualification</th><th>Problems</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr class="{% if r.errors %}table-danger{% elif r.warnings %}table-warning{% endif %}">
+              <td class="text-muted">{{ r.line }}</td>
+              <td>{{ r.data.title }} {{ r.data.first_name }} {{ r.data.last_name }}</td>
+              <td>{{ r.data.staff_no|default:"auto" }}</td>
+              <td>{{ r.data.contact1|default:"—" }}</td>
+              <td>{{ r.data.email|default:"—" }}</td>
+              <td>{{ r.data.date_joined|default:"today" }}</td>
+              <td>{{ r.data.qualification|default:"—" }}</td>
+              <td class="small">
+                {% for e in r.errors %}<div class="text-danger"><i class="fas fa-times-circle mr-1"></i>{{ e }}</div>{% endfor %}
+                {% for w in r.warnings %}<div class="text-dark"><i class="fas fa-exclamation-triangle mr-1"></i>{{ w }}</div>{% endfor %}
+                {% if not r.errors and not r.warnings %}<span class="text-success"><i class="fas fa-check"></i></span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

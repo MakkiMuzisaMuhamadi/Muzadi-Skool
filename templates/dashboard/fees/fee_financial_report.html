@@ -1,0 +1,269 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-chart-line"></i> Financial Report
+    </h3>
+    <small class="text-muted">Collections, allocations, unapplied balances and printable receipts</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'fee_financial_report_pdf' %}?period={{ request.GET.period|default:'daily' }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.payment_method %}&payment_method={{ request.GET.payment_method }}{% endif %}{% if request.GET.academic_year %}&academic_year={{ request.GET.academic_year }}{% endif %}{% if request.GET.term %}&term={{ request.GET.term }}{% endif %}"
+       class="btn btn-danger btn-sm" target="_blank">
+      <i class="fas fa-file-pdf mr-1"></i> Print PDF
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="mb-0">
+      <div class="form-row align-items-end">
+        <div class="col-md-2">
+          <label>Period</label>
+          <select name="period" id="filter_period" class="form-control">
+            <option value="daily" {% if period == "daily" %}selected{% endif %}>Daily</option>
+            <option value="weekly" {% if period == "weekly" %}selected{% endif %}>Weekly</option>
+            <option value="monthly" {% if period == "monthly" %}selected{% endif %}>Monthly</option>
+            <option value="custom" {% if period == "custom" %}selected{% endif %}>Custom</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 custom-date-group">
+          <label>Date From</label>
+          <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="form-control">
+        </div>
+
+        <div class="col-md-2 custom-date-group">
+          <label>Date To</label>
+          <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="form-control">
+        </div>
+
+        <div class="col-md-2">
+          <label>Academic Year</label>
+          <select name="academic_year" id="filter_academic_year" class="form-control">
+            <option value="">All</option>
+            {% for year in academic_years %}
+              <option value="{{ year.id }}" {% if request.GET.academic_year == year.id|stringformat:"s" %}selected{% endif %}>
+                {{ year.year }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label>Term</label>
+          <select name="term" id="filter_term" class="form-control">
+            <option value="">All</option>
+            {% for term_obj in terms %}
+              <option value="{{ term_obj.id }}" {% if request.GET.term == term_obj.id|stringformat:"s" %}selected{% endif %}>
+                {{ term_obj.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label>Method</label>
+          <select name="payment_method" class="form-control">
+            <option value="">All</option>
+            <option value="CASH" {% if request.GET.payment_method == "CASH" %}selected{% endif %}>Cash</option>
+            <option value="BANK" {% if request.GET.payment_method == "BANK" %}selected{% endif %}>Bank</option>
+            <option value="MOBILE" {% if request.GET.payment_method == "MOBILE" %}selected{% endif %}>Mobile Money</option>
+            <option value="CHEQUE" {% if request.GET.payment_method == "CHEQUE" %}selected{% endif %}>Cheque</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 mt-2">
+          <button class="btn btn-primary btn-block">
+            <i class="fas fa-filter mr-1"></i> Filter
+          </button>
+        </div>
+
+        <div class="col-md-2 mt-2">
+          <a href="{% url 'fee_financial_report' %}" class="btn btn-light btn-block">
+            <i class="fas fa-sync-alt mr-1"></i> Reset
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row text-center mb-3">
+  <div class="col-md-4 mb-2">
+    <div class="card">
+      <div class="card-body">
+        <small class="text-muted d-block">Total Collected</small>
+        <h4 class="mb-0 text-success">UGX {{ summary.total_collected|intcomma }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card">
+      <div class="card-body">
+        <small class="text-muted d-block">Allocated</small>
+        <h4 class="mb-0 text-primary">UGX {{ total_allocated|intcomma }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card">
+      <div class="card-body">
+        <small class="text-muted d-block">Unapplied</small>
+        <h4 class="mb-0 text-warning">UGX {{ summary.total_unapplied|intcomma }}</h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Payment Method Summary</strong>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      {% for item in by_method %}
+      <div class="col-md-3 mb-2">
+        <div class="border rounded p-3 text-center">
+          <small class="text-muted d-block">{{ item.payment_method }}</small>
+          <strong>UGX {{ item.total|intcomma }}</strong>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-md-12 text-muted">No payment data found.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Cash-up by cashier</strong>
+    <small class="text-muted ml-2">What each person received, by method. Compare with the cash and bank slips handed in.</small>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm mb-0">
+        <thead class="thead-light">
+          <tr><th>Received by</th><th>Method</th><th class="text-right">Receipts</th><th class="text-right">Amount</th></tr>
+        </thead>
+        <tbody>
+          {% for row in by_cashier %}
+          <tr>
+            <td>{% if row.received_by__first_name %}{{ row.received_by__first_name }} {{ row.received_by__last_name }}{% else %}{{ row.received_by__username|default:"-" }}{% endif %}</td>
+            <td>{{ row.payment_method }}</td>
+            <td class="text-right">{{ row.count }}</td>
+            <td class="text-right">UGX {{ row.total|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted">No payments in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if reversed_in_period %}
+    <p class="small text-danger mt-2 mb-0">{{ reversed_in_period }} receipt(s) were reversed in this period and are not included above.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>Payment Entries</strong>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="financialReportTable">
+        <thead class="thead-light">
+          <tr>
+            <th>Date</th>
+            <th>Receipt No</th>
+            <th>Student</th>
+            <th>Year</th>
+            <th>Term</th>
+            <th>Amount</th>
+            <th>Unapplied</th>
+            <th>Method</th>
+            <th>Received By</th>
+            <th>Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in payments %}
+          <tr>
+            <td>{{ row.payment_date }}</td>
+            <td>{{ row.receipt_no }}</td>
+            <td>{{ row.student.admission_number }} - {{ row.student.name }}</td>
+            <td>{{ row.academic_year.year }}</td>
+            <td>{{ row.term.name }}</td>
+            <td>UGX {{ row.amount|intcomma }}</td>
+            <td>UGX {{ row.unapplied_amount|intcomma }}</td>
+            <td>{{ row.get_payment_method_display }}</td>
+            <td>{{ row.received_by.username|default:"-" }}</td>
+            <td>
+              <a href="{% url 'fee_payment_receipt' row.id %}" class="btn btn-sm btn-outline-danger" target="_blank">
+                <i class="fas fa-file-pdf"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center text-muted">No records found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#financialReportTable').DataTable({
+      pageLength: 25,
+      order: [[0, 'desc']]
+    });
+
+    const initialTerm = "{{ request.GET.term|default:'' }}";
+
+    function loadTerms(yearId, selectedValue = null) {
+      const $term = $('#filter_term');
+      $term.empty().append('<option value="">All</option>');
+
+      if (!yearId) return;
+
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $term.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+        });
+      });
+    }
+
+    function toggleCustomDates() {
+      if ($('#filter_period').val() === 'custom') {
+        $('.custom-date-group').show();
+      } else {
+        $('.custom-date-group').hide();
+      }
+    }
+
+    $('#filter_period').on('change', toggleCustomDates);
+    toggleCustomDates();
+
+    $('#filter_academic_year').on('change', function () {
+      loadTerms($(this).val());
+    });
+
+    if ($('#filter_academic_year').val()) {
+      loadTerms($('#filter_academic_year').val(), initialTerm);
+    }
+  });
+</script>
+{% endblock %}

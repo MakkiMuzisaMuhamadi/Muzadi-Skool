@@ -1,0 +1,414 @@
+<!-- templates/uce/top_candidates_subject.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Top {{ subject.name }} Candidates - UCE - UMTA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .subject-header {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        border-radius: 15px;
+        color: white;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .candidate-card {
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+    
+    .candidate-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+    }
+    
+    .rank-medal {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        color: white;
+        margin: 0 auto 15px;
+    }
+    
+    .rank-1 { background: linear-gradient(135deg, #FFD700, #FFC107); color: #000; }
+    .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; }
+    .rank-3 { background: linear-gradient(135deg, #CD7F32, #B06A29); color: #fff; }
+    .rank-other { background: #6c757d; color: white; }
+    
+    .percentage-display {
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+        margin: 10px 0;
+    }
+    
+    .grade-badge-large {
+        font-size: 14px;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+    }
+    
+    .school-logo-small {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+    }
+    
+    .performance-meter-small {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        margin: 0 auto;
+    }
+    
+    .meter-circle-small {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        position: relative;
+    }
+    
+    .meter-inner-small {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    .comparison-chart {
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Subject Header -->
+    <div class="subject-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <div class="me-4">
+                        <div class="bg-white bg-opacity-20 p-3 rounded-circle" style="width: 80px; height: 80px;">
+                            <i class="fas fa-book fa-3x"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="h2 mb-1">{{ subject.name }}</h1>
+                        <p class="mb-0 opacity-75">
+                            <strong>Code:</strong> {{ subject.code }} | 
+                            <strong>Category:</strong> 
+                            {% if subject.is_major %}Major Subject{% endif %}
+                            {% if subject.is_language %}Language{% endif %}
+                            {% if subject.is_Religion %}Religion{% endif %}
+                            {% if not subject.is_major and not subject.is_language and not subject.is_Religion %}Other{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="bg-white bg-opacity-20 p-3 rounded">
+                    <h4 class="mb-1">Subject Performance</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="opacity-75">Average Score</small>
+                            <h3 class="mb-0">
+                                {% if school_rankings.0.average_percentage %}
+                                    {{ school_rankings.0.average_percentage|floatformat:1 }}%
+                                {% else %}0%{% endif %}
+                            </h3>
+                        </div>
+                        <div>
+                            <small class="opacity-75">Top School</small>
+                            <h5 class="mb-0">{{ school_rankings.0.school.name|truncatechars:15 }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Schools for this Subject -->
+    <div class="card candidate-card mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-school me-2"></i>Top Performing Schools in {{ subject.name }}
+            </h5>
+            <span class="badge bg-info">
+                {{ school_rankings|length }} Schools
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Rank</th>
+                            <th>School</th>
+                            <th class="text-center">Average Score</th>
+                            <th class="text-center">Average Grade</th>
+                            <th class="text-center">Candidates</th>
+                            <th class="text-center">Performance</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in school_rankings %}
+                        <tr>
+                            <td class="text-center">
+                                <div class="rank-medal 
+                                    {% if school.position == 1 %}rank-1
+                                    {% elif school.position == 2 %}rank-2
+                                    {% elif school.position == 3 %}rank-3
+                                    {% else %}rank-other{% endif %}">
+                                    {{ school.position }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if school.school.logo %}
+                                        <img src="{{ school.school.logo.url }}" alt="{{ school.school.name }}" 
+                                             class="school-logo-small">
+                                    {% else %}
+                                        <div class="school-logo-small bg-light d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-school text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">{{ school.school.name }}</h6>
+                                        <small class="text-muted">
+                                            {{ school.school.address|default:"Location not specified"|truncatechars:30 }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="percentage-display 
+                                    {% if school.average_percentage >= 80 %}text-success
+                                    {% elif school.average_percentage >= 60 %}text-info
+                                    {% elif school.average_percentage >= 40 %}text-warning
+                                    {% else %}text-danger{% endif %}">
+                                    {{ school.average_percentage|floatformat:1 }}%
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge grade-badge-large 
+                                    {% if school.average_grade == 'A' %}bg-success
+                                    {% elif school.average_grade == 'B' %}bg-info
+                                    {% elif school.average_grade == 'C' %}bg-primary
+                                    {% elif school.average_grade == 'D' %}bg-warning
+                                    {% elif school.average_grade == 'E' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ school.average_grade }}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge bg-primary rounded-pill" style="font-size: 14px;">
+                                    {{ school.candidates_attempted }}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="performance-meter-small">
+                                    <div class="meter-circle-small" style="background: conic-gradient(
+                                        {% if school.average_percentage >= 80 %}#28a745
+                                        {% elif school.average_percentage >= 60 %}#17a2b8
+                                        {% elif school.average_percentage >= 40 %}#ffc107
+                                        {% else %}#dc3545{% endif %} 
+                                        0% {{ school.average_percentage }}%,
+                                        #e9ecef {{ school.average_percentage }}% 100%
+                                    );">
+                                        <div class="meter-inner-small">
+                                            <small class="text-muted">Score</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="viewSchoolPerformance('{{ school.school.id }}')">
+                                    <i class="fas fa-chart-line"></i> Details
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-school fa-3x mb-3"></i>
+                                    <h5>No school data available</h5>
+                                    <p>No schools have performance data for this subject.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card candidate-card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Grade Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="comparison-chart" id="gradeDistributionChart"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card candidate-card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Performance Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="comparison-chart" id="performanceTrendChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="card candidate-card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="d-grid">
+                        <a href="{% url 'uce_subject_rankings' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Subjects
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-success" onclick="downloadSubjectReport()">
+                            <i class="fas fa-download me-2"></i>Download Report
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-success" onclick="compareWithOtherSubjects()">
+                            <i class="fas fa-balance-scale me-2"></i>Compare Subjects
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-warning" onclick="viewSubjectHistory()">
+                            <i class="fas fa-history me-2"></i>View History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Grade Distribution Chart
+        const gradeCtx = document.getElementById('gradeDistributionChart').getContext('2d');
+        const gradeChart = new Chart(gradeCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Grade A', 'Grade B', 'Grade C', 'Grade D', 'Grade E', 'Ungraded'],
+                datasets: [{
+                    data: [35, 25, 20, 10, 5, 5], // Sample data
+                    backgroundColor: [
+                        '#28a745',
+                        '#17a2b8',
+                        '#007bff',
+                        '#ffc107',
+                        '#dc3545',
+                        '#6c757d'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        
+        // Performance Trend Chart
+        const trendCtx = document.getElementById('performanceTrendChart').getContext('2d');
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: ['2019', '2020', '2021', '2022', '2023'],
+                datasets: [{
+                    label: 'Average Score',
+                    data: [65, 68, 72, 70, 75],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 50,
+                        max: 100
+                    }
+                }
+            }
+        });
+    });
+    
+    function viewSchoolPerformance(schoolId) {
+        window.open(`/schools/${schoolId}/details/uce/`, '_blank');
+    }
+    
+    function downloadSubjectReport() {
+        window.open(`/reports/subject/{{ subject.id }}/uce/`, '_blank');
+    }
+    
+    function compareWithOtherSubjects() {
+        alert('Subject comparison feature will be implemented soon!');
+    }
+    
+    function viewSubjectHistory() {
+        alert('Subject history feature will be implemented soon!');
+    }
+</script>
+{% endblock %}

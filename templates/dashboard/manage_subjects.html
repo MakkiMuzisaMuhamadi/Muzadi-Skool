@@ -1,0 +1,369 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper py-4">
+  <!-- Page Header -->
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="page-title">Subject & Paper Management</h1>
+      <p class="page-subtitle text-muted">Manage academic subjects and examination papers</p>
+    </div>
+    <div class="action-buttons">
+      <a href="{% url 'uce_add_subject' %}" class="btn btn-outline-success mr-2">
+        <i class="fas fa-plus mr-1"></i> Add Subject
+      </a>
+      <a href="{% url 'uce_add_paper' %}" class="btn btn-success">
+        <i class="fas fa-plus mr-1"></i> Add Paper
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Subjects Table -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="card-title mb-0" style="color: white;">
+            <i class="fas fa-book-open mr-2"></i> Subjects
+            <span class="badge badge-light ml-2">{{ subjects|length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-3">
+          {% if subjects %}
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>Name</th>
+                  <th>Short Name</th>
+                  <th>Level</th>
+                  <th>Compulsory</th>
+                  <th>Optional</th>
+                  <th>Language</th>
+                  <th>Religion</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for subject in subjects %}
+                <tr>
+                  <td>{{ subject.name }}</td>
+                  <td>{{ subject.short_name }}</td>
+                  <td>{{ subject.level }}</td>
+                  <td>{{ subject.is_major|yesno:"Yes,No" }}</td>
+                  <td>{{ subject.is_optional|yesno:"Yes,No" }}</td>
+                  <td>{{ subject.is_language|yesno:"Yes,No" }}</td>
+                  <td>{{ subject.is_Religion|yesno:"Yes,No" }}</td>
+                  <td>
+                    <!-- Edit Button -->
+                    <button type="button" class="btn btn-sm btn-primary edit-subject-btn"
+                      data-toggle="modal"
+                      data-target="#editSubjectModal"
+                      data-id="{{ subject.id }}"
+                      data-name="{{ subject.name }}"
+                      data-short_name="{{ subject.short_name }}"
+                      data-level="{{ subject.level }}"
+                      data-is_major="{{ subject.is_major }}"
+                      data-is_optional="{{ subject.is_optional }}"
+                      data-is_language="{{ subject.is_language }}"
+                      data-is_religion="{{ subject.is_Religion }}">
+                      <i class="fas fa-edit mr-1"></i>Edit
+                    </button>
+                    <!-- Delete Button -->
+                    <!-- <button type="button" class="btn btn-sm btn-danger delete-subject-btn"
+                      data-toggle="modal"
+                      data-target="#deleteSubjectModal"
+                      data-id="{{ subject.id }}"
+                      data-name="{{ subject.name }}">
+                      <i class="fas fa-trash mr-1"></i>Delete
+                    </button> -->
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No subjects found.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Papers Table -->
+    <div class="col-12 mt-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="card-title mb-0" style="color: white;">
+            <i class="fas fa-file-alt mr-2"></i> Papers
+            <span class="badge badge-light ml-2">{{ papers|length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-3">
+          {% if papers %}
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>Paper Code</th>
+                  <th>Order</th>
+                  <th>Paper Name</th>
+                  <th>Compulsory</th>
+
+                  <th>Subject</th>
+                  <th>Max Marks</th>
+                  
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for paper in papers %}
+                <tr>
+                  <td>{{ paper.paper_code }}</td>
+                  <td>{{ paper.order }}</td>
+                  <td>{{ paper.paper_name }}</td>
+                  <td>{{ paper.compulsory|yesno:"Yes,No" }}</td>
+                  <td>{{ paper.subject.name }}</td>
+                  <td>
+                    <form method="post" class="form-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="paper_id" value="{{ paper.id }}">
+                      <input type="number" step="0.1" min="0" 
+                             name="max_marks" value="{{ paper.max_marks }}" 
+                             class="form-control form-control-sm mr-2" style="width: 90px;">
+                      <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </form>
+                  </td>
+<td>
+  <!-- Edit Paper Button -->
+  <button type="button" class="btn btn-sm btn-warning edit-paper-btn"
+    data-toggle="modal"
+    data-target="#editPaperModal"
+    data-id="{{ paper.id }}"
+    data-name="{{ paper.paper_name }}"
+    data-code="{{ paper.paper_code }}"
+    data-max="{{ paper.max_marks }}"
+    data-subject="{{ paper.subject.id }}"
+    data-order="{{ paper.order }}"
+    data-compulsory="{{ paper.compulsory }}">
+    <i class="fas fa-edit mr-1"></i>Edit
+  </button>
+</td>
+
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No papers found.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal fade" id="editSubjectModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form method="post" id="editSubjectForm">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Edit Subject</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="subject_id" id="subjectId">
+          <div class="form-group">
+            <label>Subject Name</label>
+            <input type="text" class="form-control" name="name" id="subjectName" required>
+          </div>
+          <div class="form-group">
+            <label>Short Name</label>
+            <input type="text" class="form-control" name="short_name" id="subjectShortName" required>
+          </div>
+          <div class="form-group">
+            <label>Level</label>
+            <select class="form-control" name="level" id="subjectLevel" required>
+              {% for key, value in LEVEL_CHOICES %}
+                <option value="{{ key }}">{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="isMajor" name="is_major">
+            <label class="form-check-label" for="isMajor">Major Subject</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="isOptional" name="is_optional">
+            <label class="form-check-label" for="isOptional">Optional Subject</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="isLanguage" name="is_language">
+            <label class="form-check-label" for="isLanguage">Language</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="isReligion" name="is_religion">
+            <label class="form-check-label" for="isReligion">Religion</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Subject Modal -->
+<div class="modal fade" id="deleteSubjectModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form method="post" id="deleteSubjectForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_subject">
+        <input type="hidden" name="subject_id" id="deleteSubjectId">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fas fa-trash mr-2"></i>Delete Subject</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete <strong id="deleteSubjectName"></strong>?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Paper Modal -->
+<div class="modal fade" id="editPaperModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form method="post" id="editPaperForm">
+        {% csrf_token %}
+        <div class="modal-header bg-warning text-white">
+          <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Edit Paper</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="paper_id" id="paperId">
+          <div class="form-group">
+            <label>Paper Name</label>
+            <input type="text" class="form-control" name="paper_name" id="paperName" required>
+          </div>
+          <div class="form-group">
+            <label>Paper Code</label>
+            <input type="text" class="form-control" name="paper_code" id="paperCode" required>
+          </div>
+          <div class="form-group">
+            <label>Max Marks</label>
+            <input type="number" min="0" class="form-control" name="max_marks" id="paperMaxMarks" required>
+          </div>
+          <div class="form-group">
+            <label>Order</label>
+            <input type="number" min="1" class="form-control" name="order" id="paperOrder" required>
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <select class="form-control" name="subject_id" id="paperSubject" required>
+              {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="paperCompulsory" name="compulsory">
+            <label class="form-check-label" for="paperCompulsory">Compulsory Paper</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script src="{% static 'js/data-table.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Edit modal
+  const editButtons = document.querySelectorAll(".edit-subject-btn");
+  const editForm = document.getElementById("editSubjectForm");
+
+  editButtons.forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.getElementById("subjectId").value = this.dataset.id;
+      document.getElementById("subjectName").value = this.dataset.name;
+      document.getElementById("subjectShortName").value = this.dataset.short_name;
+      document.getElementById("subjectLevel").value = this.dataset.level;
+      document.getElementById("isMajor").checked = this.dataset.is_major === 'True';
+      document.getElementById("isOptional").checked = this.dataset.is_optional === 'True';
+      document.getElementById("isLanguage").checked = this.dataset.is_language === 'True';
+      document.getElementById("isReligion").checked = this.dataset.is_religion === 'True';
+      editForm.action = "{% url 'uce_manage_subjects' %}";
+    });
+  });
+
+  // Delete modal
+  const deleteButtons = document.querySelectorAll(".delete-subject-btn");
+  const deleteForm = document.getElementById("deleteSubjectForm");
+
+  deleteButtons.forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.getElementById("deleteSubjectId").value = this.dataset.id;
+      document.getElementById("deleteSubjectName").innerText = this.dataset.name;
+      deleteForm.action = "{% url 'uce_manage_subjects' %}";
+    });
+  });
+});
+
+// ============================
+// Edit Paper Modal Logic
+// ============================
+const editPaperButtons = document.querySelectorAll(".edit-paper-btn");
+const editPaperForm = document.getElementById("editPaperForm");
+
+editPaperButtons.forEach(btn => {
+  btn.addEventListener("click", function() {
+    document.getElementById("paperId").value = this.dataset.id;
+    document.getElementById("paperName").value = this.dataset.name;
+    document.getElementById("paperCode").value = this.dataset.code;
+    document.getElementById("paperMaxMarks").value = this.dataset.max;
+    document.getElementById("paperOrder").value = this.dataset.order;
+    document.getElementById("paperSubject").value = this.dataset.subject;
+    document.getElementById("paperCompulsory").checked = this.dataset.compulsory === "True";
+
+    // Set the form action to the same view that handles saving
+    editPaperForm.action = "{% url 'uce_manage_subjects' %}";
+  });
+});
+
+</script>
+{% endblock %}

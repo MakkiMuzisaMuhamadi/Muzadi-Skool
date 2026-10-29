@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-plus"></i> Readmit Student
+      </h3>
+      <small class="text-muted">{{ student.admission_number }} • {{ student.name }}</small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'promotion_dashboard' %}" class="btn btn-light btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3">Student Summary</h5>
+        <p class="mb-2"><strong>Name:</strong> {{ student.name }}</p>
+        <p class="mb-2"><strong>Admission:</strong> {{ student.admission_number }}</p>
+        <p class="mb-2"><strong>Status:</strong> {{ student.get_academic_status_display }}</p>
+        <p class="mb-2"><strong>Last Class:</strong> {{ student.current_class|default:"-" }}</p>
+        <p class="mb-0"><strong>Level:</strong> {{ student.level|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3">Readmission Form</h5>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-row">
+            <div class="col-md-4 mb-3">
+              <label class="small text-muted mb-1">Level</label>
+              {{ form.to_level }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="small text-muted mb-1">Class</label>
+              {{ form.to_class }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="small text-muted mb-1">Stream</label>
+              {{ form.to_stream }}
+            </div>
+          </div>
+
+          <button class="btn btn-primary">
+            <i class="fas fa-check mr-1"></i> Readmit Student
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

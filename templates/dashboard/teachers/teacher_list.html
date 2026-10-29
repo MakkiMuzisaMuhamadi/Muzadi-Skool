@@ -1,0 +1,227 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-chalkboard-teacher"></i> {{ title }}
+      </h3>
+      <small class="text-muted">Teaching staff{% if academic_year %} and their workload for {{ academic_year }}{% endif %}.</small>
+    </div>
+
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'teacher_workload' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-balance-scale mr-1"></i> Workload
+      </a>
+      <a href="{% url 'teacher_import_upload' %}" class="btn btn-outline-info btn-sm">
+        <i class="fas fa-file-excel mr-1"></i> Upload from Excel
+      </a>
+      <a href="{% url 'enroll_teacher_step1' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-user-plus mr-1"></i> Enroll Teacher
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+      <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Filter by status">
+        <a href="?status=working" class="btn {% if status == 'working' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          Working <span class="badge badge-light ml-1">{{ working_count }}</span>
+        </a>
+        {% for value, label in status_choices %}
+          <a href="?status={{ value }}" class="btn {% if status == value %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {{ label }} <span class="badge badge-light ml-1">{% for k, v in counts.items %}{% if k == value %}{{ v }}{% endif %}{% endfor %}</span>
+          </a>
+        {% endfor %}
+        <a href="?status=all" class="btn {% if status == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
+      </div>
+      <small class="text-muted mt-2 mt-md-0">
+        Showing <span id="filteredTeachers">{{ total }}</span> of {{ total }}
+      </small>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+
+    {% if teachers %}
+      <div class="table-responsive">
+        <table id="teachersTable" class="table table-striped table-hover w-100">
+          <thead>
+            <tr>
+              <th style="width:45px;">#</th>
+              <th>Teacher</th>
+              <th>Staff no.</th>
+              <th>Username</th>
+              <th>Contacts</th>
+              <th>Email</th>
+              <th class="text-center" style="width:100px;">Allocations</th>
+              <th>Status</th>
+              <th class="text-right" style="width:180px;">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for t in teachers %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+
+              <td>
+                <div class="d-flex align-items-center">
+                  <div class="mr-2">
+                    {% if t.profile_photo %}
+                      <img
+                        src="{{ t.profile_photo.url }}"
+                        class="rounded border"
+                        style="width: 40px; height: 40px; object-fit: cover;"
+                        alt="{{ t.user.first_name }}"
+                      >
+                    {% else %}
+                      <div class="bg-light border rounded d-flex align-items-center justify-content-center"
+                           style="width: 40px; height: 40px;">
+                        <i class="fas fa-user text-muted"></i>
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div>
+                    <div class="font-weight-bold">
+                      {{ t.display_name }}
+                    </div>
+                    <small class="text-muted">
+                      {% if t.gender %}
+                        {{ t.get_gender_display }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </small>
+                  </div>
+                </div>
+              </td>
+
+              <td>{{ t.staff_no|default:"—" }}</td>
+              <td>{{ t.user.username|default:"—" }}</td>
+
+              <td>
+                <div>{{ t.contact1|default:"—" }}</div>
+                <small class="text-muted">{{ t.contact2|default:"—" }}</small>
+              </td>
+
+              <td>{{ t.email|default:"—" }}</td>
+
+              <td class="text-center">
+                <span class="badge {% if t.workload_count %}badge-primary{% else %}badge-light border{% endif %} px-3 py-2">
+                  {{ t.workload_count|default:"0" }}
+                </span>
+              </td>
+
+              <td>
+                {% if t.status == "ACTIVE" %}<span class="badge badge-success">{{ t.get_status_display }}</span>
+                {% elif t.status == "ON_LEAVE" %}<span class="badge badge-info">{{ t.get_status_display }}</span>
+                {% elif t.status == "SUSPENDED" %}<span class="badge badge-warning">{{ t.get_status_display }}</span>
+                {% else %}<span class="badge badge-success">{{ t.get_status_display }}</span>{% endif %}
+              </td>
+
+              <td class="text-right">
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{% url 'teacher_detail' t.id %}" class="btn btn-outline-success" title="View">
+                    <i class="fas fa-eye"></i>
+                  </a>
+
+                  <a href="{% url 'teacher_edit' t.id %}" class="btn btn-outline-warning" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </a>
+
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info mb-0">
+        No teachers with this status. <a href="{% url 'enroll_teacher_step1' %}">Enroll a teacher</a>
+        or <a href="{% url 'teacher_import_upload' %}">upload a list from Excel</a>.
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  "use strict";
+
+  $("#teachersTable").DataTable({
+    responsive: true,
+    autoWidth: false,
+    processing: false,
+    pageLength: 25,
+    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+    order: [[1, "asc"]],
+
+    columnDefs: [
+      {
+        targets: 0,
+        searchable: false,
+        orderable: false,
+        className: "text-muted"
+      },
+      {
+        targets: 6,
+        searchable: false,
+        className: "text-center"
+      },
+      {
+        targets: 8,
+        searchable: false,
+        orderable: false,
+        className: "text-right"
+      }
+    ],
+
+    language: {
+      search: "",
+      searchPlaceholder: "Search teachers...",
+      lengthMenu: "Show _MENU_ teachers",
+      info: "Showing _START_ to _END_ of _TOTAL_ teachers",
+      infoEmpty: "No teachers available",
+      zeroRecords: "No matching teachers found"
+    },
+
+    dom:
+      "<'row mb-3 align-items-center'<'col-md-6'l><'col-md-6'f>>" +
+      "<'row'<'col-sm-12'tr>>" +
+      "<'row mt-3 align-items-center'<'col-md-5'i><'col-md-7'p>>",
+
+    drawCallback: function () {
+      const info = this.api().page.info();
+      $("#filteredTeachers").text(info.recordsDisplay);
+
+      $("#teachersTable_filter input")
+        .addClass("form-control form-control-sm")
+        .css({
+          "max-width": "280px",
+          "display": "inline-block"
+        });
+
+      $("#teachersTable_length select")
+        .addClass("form-control form-control-sm")
+        .css({
+          "width": "80px",
+          "display": "inline-block"
+        });
+    }
+  });
+
+})();
+</script>
+{% endblock %}

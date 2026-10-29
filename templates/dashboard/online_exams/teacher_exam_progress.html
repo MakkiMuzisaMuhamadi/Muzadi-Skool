@@ -1,0 +1,155 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-chart-pie"></i> Exam Progress</h3>
+    <small class="text-muted">
+      {{ exam.title }} — {{ exam.class_ref }}{% if exam.stream %} / {{ exam.stream.name }}{% endif %}
+    </small>
+  </div>
+  <div>
+    <a href="{% url 'teacher_exam_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-4 mb-2">
+    <div class="card">
+      <div class="card-body py-3">
+        <div class="text-muted small">Total Students (Target)</div>
+        <div class="h4 mb-0">{{ total_students }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card">
+      <div class="card-body py-3">
+        <div class="text-muted small">Attempted</div>
+        <div class="h4 mb-0 text-success">{{ attempted_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card">
+      <div class="card-body py-3">
+        <div class="text-muted small">Not Attempted</div>
+        <div class="h4 mb-0 text-danger">{{ not_attempted_count }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <ul class="nav nav-pills" id="progTabs" role="tablist" style="gap:.5rem;">
+      <li class="nav-item">
+        <a class="nav-link active" data-toggle="tab" href="#tab_not" role="tab">
+          Not Attempted ({{ not_attempted_count }})
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#tab_yes" role="tab">
+          Attempted ({{ attempted_count }})
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#tab_recent" role="tab">
+          Recent Attempts
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="tab_not" role="tabpanel">
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Stream</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in not_attempted_students %}
+                <tr>
+                  <td class="font-weight-bold">{{ s }}</td>
+                  <td>{{ s.stream|default:"—" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="2" class="text-center text-muted py-4">All targeted students have attempted.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab_yes" role="tabpanel">
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Stream</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in attempted_students %}
+                <tr>
+                  <td class="font-weight-bold">{{ s }}</td>
+                  <td>{{ s.stream|default:"—" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="2" class="text-center text-muted py-4">No student has attempted yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab_recent" role="tabpanel">
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Student</th>
+                <th>Status</th>
+                <th class="text-right">Total Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in attempts %}
+                <tr>
+                  <td class="text-muted">{{ a.created_at }}</td>
+                  <td class="font-weight-bold">{{ a.student }}</td>
+                  <td><span class="badge badge-light">{{ a.status }}</span></td>
+                  <td class="text-right">{{ a.total_score }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">No attempts yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <small class="text-muted d-block mt-2">Showing latest 200 attempts.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

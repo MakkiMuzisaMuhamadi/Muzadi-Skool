@@ -1,0 +1,84 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-tags"></i> Fee Categories
+    </h3>
+    <small class="text-muted">Manage fee types like tuition, exam, transport, development and others</small>
+  </div>
+  <a href="{% url 'fee_category_create' %}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus-circle mr-1"></i> Add Fee Category
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="feeCategoryTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Priority</th>
+            <th>Mandatory</th>
+            <th>Status</th>
+            <th>Description</th>
+            <th style="width:120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in categories %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ category.name }}</td>
+            <td>{{ category.code|default:"-" }}</td>
+            <td>{{ category.priority }}</td>
+            <td>
+              {% if category.is_mandatory %}
+                <span class="badge badge-success">Yes</span>
+              {% else %}
+                <span class="badge badge-info">Optional</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if category.is_active %}
+                <span class="badge badge-primary">Active</span>
+              {% else %}
+                <span class="badge badge-danger">Inactive</span>
+              {% endif %}
+            </td>
+            <td>{{ category.description|default:"-"|truncatechars:60 }}</td>
+            <td>
+              <a href="{% url 'fee_category_edit' category.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted">No fee categories found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#feeCategoryTable').DataTable({
+      pageLength: 25,
+      order: [[3, 'asc']]
+    });
+  });
+</script>
+{% endblock %}
+
+

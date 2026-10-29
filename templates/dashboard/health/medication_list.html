@@ -1,0 +1,352 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-pills text-primary"></i> Medication Records
+    </h3>
+    <small class="text-muted">Track medicines given to students. Filter by class/stream/date/search.</small>
+  </div>
+
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'health_medication_add' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> New Record
+    </a>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="row mb-3">
+  <div class="col-md-3 mb-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-3">
+        <div class="text-muted small">Total (shown)</div>
+        <div class="h4 mb-0" id="mdTotal">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-3">
+        <div class="text-muted small">Today</div>
+        <div class="h4 mb-0" id="mdToday">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-3">
+        <div class="text-muted small">Last 7 days</div>
+        <div class="h4 mb-0" id="mdWeek">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-3">
+        <div class="text-muted small">Total Qty</div>
+        <div class="h4 mb-0" id="mdQty">0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters (styled) -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between flex-wrap mb-2">
+      <div class="d-flex align-items-center">
+        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
+             style="width:38px;height:38px;">
+          <i class="fas fa-filter text-primary"></i>
+        </div>
+        <div>
+          <div class="font-weight-bold mb-0">Filters</div>
+          <small class="text-muted">Class → Stream loads automatically.</small>
+        </div>
+      </div>
+
+      {% if filters.class or filters.stream or filters.q or filters.from or filters.to %}
+        <span class="badge badge-light mt-2 mt-md-0">Active filters</span>
+      {% endif %}
+    </div>
+
+    <hr class="mt-2 mb-3">
+
+    <form method="get" class="row" id="filterForm">
+      <div class="col-lg-3 col-md-6 mb-2">
+        <label class="small text-muted mb-1">Class</label>
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white"><i class="fas fa-layer-group text-muted"></i></span>
+          </div>
+          <select name="class" id="filterClass" class="form-select">
+            <option value="">All Classes</option>
+            {% for c in classes %}
+              <option value="{{ c.id }}" {% if filters.class == c.id|stringformat:"s" %}selected{% endif %}>
+                {{ c.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 mb-2">
+        <label class="small text-muted mb-1">Stream</label>
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white"><i class="fas fa-stream text-muted"></i></span>
+          </div>
+          <select name="stream" id="filterStream" class="form-select">
+            <option value="">All Streams</option>
+            {% for s in streams %}
+              <option value="{{ s.id }}" {% if filters.stream == s.id|stringformat:"s" %}selected{% endif %}>
+                {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="col-lg-2 col-md-6 mb-2">
+        <label class="small text-muted mb-1">From</label>
+        <input type="date" name="from" class="form-control" value="{{ filters.from }}">
+      </div>
+
+      <div class="col-lg-2 col-md-6 mb-2">
+        <label class="small text-muted mb-1">To</label>
+        <input type="date" name="to" class="form-control" value="{{ filters.to }}">
+      </div>
+
+      <div class="col-lg-4 col-md-8 mb-2">
+        <label class="small text-muted mb-1">Search</label>
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+          </div>
+          <input type="text" name="q" class="form-control"
+                 placeholder="Student / Adm No / Medicine / Reason..."
+                 value="{{ filters.q }}">
+        </div>
+      </div>
+
+      <div class="col-lg-2 col-md-4 mb-2 d-flex align-items-end">
+        <div class="btn-group w-100">
+          <button class="btn btn-primary" type="submit" title="Apply filters">
+            <i class="fas fa-filter mr-1"></i> Filter
+          </button>
+          <a class="btn btn-outline-secondary" href="{% url 'health_medication_list' %}" title="Reset filters">
+            <i class="fas fa-undo"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="medsTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Medicine</th>
+            <th>Dosage</th>
+            <th>Qty</th>
+            <th>Reason</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>
+              <div class="font-weight-bold">{{ r.given_on|date:"Y-m-d" }}</div>
+              <small class="text-muted">{{ r.given_on|date:"H:i" }}</small>
+            </td>
+
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
+                     style="width:36px;height:36px;">
+                  <i class="fas fa-user text-muted"></i>
+                </div>
+                <div>
+                  <div class="font-weight-bold">{{ r.student.name }}</div>
+                  <small class="text-muted">{{ r.student.admission_number }}</small>
+                </div>
+              </div>
+            </td>
+
+            <td>{{ r.class_ref.name|default:"-" }}</td>
+            <td>{{ r.stream.name|default:"-" }}</td>
+
+            <td>
+              <span class="font-weight-bold">{{ r.medicine_name }}</span>
+              {% if r.frequency %}
+                <div class="small text-muted">{{ r.frequency }}</div>
+              {% endif %}
+            </td>
+
+            <td class="text-muted">{{ r.dosage|default:"-" }}</td>
+            <td><span class="badge badge-light">{{ r.quantity }}</span></td>
+            <td class="text-muted">{{ r.reason|default:"-"|truncatechars:30 }}</td>
+
+            <td class="text-right">
+              <div class="btn-group">
+                <a href="{% url 'health_medication_edit' r.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'health_medication_delete' r.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-4">No medication records found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <div class="text-muted small">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </div>
+      <div class="btn-group">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary btn-sm" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary btn-sm" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // ✅ you said you use this name
+  const STREAMS_URL = "{% url 'ajax_streams_by_class' %}";
+
+  async function loadStreams(classId, selectedStream){
+    const streamSel = document.getElementById("filterStream");
+    if(!streamSel) return;
+
+    streamSel.innerHTML = '<option value="">Loading streams...</option>';
+
+    if(!classId){
+      streamSel.innerHTML = '<option value="">All Streams</option>';
+      return;
+    }
+
+    try{
+      const res = await fetch(`${STREAMS_URL}?class_id=${encodeURIComponent(classId)}`);
+      const data = await res.json();
+
+      streamSel.innerHTML = '<option value="">All Streams</option>';
+      (data.results || []).forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r.id;
+        opt.textContent = r.name;
+        streamSel.appendChild(opt);
+      });
+
+      if(selectedStream){
+        streamSel.value = String(selectedStream);
+      }
+    } catch(e){
+      streamSel.innerHTML = '<option value="">All Streams</option>';
+      console.error("Failed loading streams:", e);
+    }
+  }
+
+  function parseYmd(text){
+    const m = (text || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return null;
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  function sameDay(a, b){
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
+  }
+  function daysDiff(a, b){
+    const A = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+    const B = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+    return Math.floor((A - B) / 86400000);
+  }
+
+  function updateMedicationSummary(){
+    const tbody = document.querySelector("#medsTable tbody");
+    if(!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll("tr")).filter(r => r.children.length > 1);
+    const today = new Date();
+
+    let total = 0, todayCount = 0, week = 0, qty = 0;
+
+    rows.forEach(tr => {
+      total += 1;
+
+      const dateText = tr.children[0]?.querySelector(".font-weight-bold")?.textContent || "";
+      const d = parseYmd(dateText);
+      if(d){
+        if(sameDay(d, today)) todayCount += 1;
+        const diff = daysDiff(today, d);
+        if(diff >= 0 && diff <= 6) week += 1;
+      }
+
+      const qtyText = (tr.children[6]?.textContent || "").replace(/[^\d]/g, "");
+      qty += Number(qtyText || 0);
+    });
+
+    document.getElementById("mdTotal").textContent = total;
+    document.getElementById("mdToday").textContent = todayCount;
+    document.getElementById("mdWeek").textContent = week;
+    document.getElementById("mdQty").textContent = qty;
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    // ✅ preload streams if class already selected
+    const classSel = document.getElementById("filterClass");
+    const selectedStream = "{{ filters.stream }}";
+    if(classSel && classSel.value){
+      loadStreams(classSel.value, selectedStream);
+    }
+
+    // ✅ change class => reload streams
+    if(classSel){
+      classSel.addEventListener("change", function(){
+        loadStreams(this.value, "");
+      });
+    }
+
+    // summary + datatable redraw
+    updateMedicationSummary();
+
+    try {
+      const table = $('#medsTable').DataTable({ pageLength: 25, order: [] });
+      table.on('draw', function(){ updateMedicationSummary(); });
+    } catch(e){}
+  });
+</script>
+{% endblock %}

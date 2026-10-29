@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Inventory Labels</title>
+  <style>
+    /* A4 printing */
+    @page {
+      size: A4;
+      margin: 8mm;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* A4 usable area: 210x297mm minus margins (16mm total each axis) */
+    /* width ~ 194mm, height ~ 281mm */
+    /* 3 columns => ~64.6mm each, 8 rows => ~35.1mm each */
+    .sheet {
+      width: 194mm;
+      height: 281mm;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      gap: 2mm;
+    }
+
+    .label {
+      border: 0.2mm dashed #ccc; /* helpful while testing; remove if you want */
+      border-radius: 2mm;
+      padding: 2mm;
+      display: flex;
+      gap: 2mm;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .qr {
+      width: 22mm;
+      height: 22mm;
+      flex: 0 0 auto;
+    }
+
+    .meta {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .tag {
+      font-weight: 700;
+      font-size: 9pt;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item {
+      font-size: 8pt;
+      line-height: 1.15;
+      margin-top: 1mm;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .type {
+      font-size: 7pt;
+      color: #444;
+      margin-top: 1mm;
+    }
+
+    .blank {
+      border: 0.2mm dashed transparent;
+    }
+
+    /* Print: remove dashed borders if you want clean stickers */
+    @media print {
+      .label { border-color: transparent; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sheet">
+    {% for u in slots %}
+      {% if u %}
+        <div class="label">
+          <img class="qr" src="{% url 'inv_qr_png' u.tag_code %}" alt="{{ u.tag_code }}">
+          <div class="meta">
+            <div class="tag">{{ u.tag_code }}</div>
+            <div class="item">{{ u.item.name }}</div>
+            <div class="type">{{ u.item.category.type }}</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="label blank"></div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <script>
+    // auto-open print dialog (optional). Comment out if you don't like it.
+    window.onload = () => { window.print(); };
+  </script>
+
+</body>
+</html>

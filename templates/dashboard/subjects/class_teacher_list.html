@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> {{ title }}</h3>
+      <small class="text-muted">One class teacher per class or stream for each academic year. Report cards use this.</small>
+    </div>
+    <div class="d-flex align-items-center mt-2 mt-md-0">
+      <form method="get" class="mr-2">
+        <select name="year" class="form-control form-control-sm" onchange="this.form.submit()" aria-label="Academic year">
+          {% for y in years %}
+            <option value="{{ y.id }}" {% if selected_year and y.id == selected_year.id %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <a href="{% url 'class_teacher_create' %}" class="btn btn-success btn-sm"><i class="fas fa-plus mr-1"></i> Assign</a>
+    </div>
+  </div>
+</div>
+
+{% if without %}
+  <div class="card border-warning mb-3">
+    <div class="card-body">
+      <h6 class="mb-2">{{ without|length }} class{{ without|length|pluralize:"es" }} without a class teacher</h6>
+      {% for w in without %}
+        <a class="btn btn-outline-warning btn-sm mb-1"
+           href="{% url 'class_teacher_create' %}?class_ref={{ w.class_ref.id }}{% if w.stream %}&stream={{ w.stream.id }}{% endif %}">
+          {{ w.class_ref.name }}{% if w.stream %} {{ w.stream.name }}{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    {% if assignments %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead><tr><th>Class</th><th>Stream</th><th>Class teacher</th><th>Phone</th><th class="text-right">Action</th></tr></thead>
+          <tbody>
+            {% for a in assignments %}
+              <tr>
+                <td>{{ a.class_ref.name }}</td>
+                <td>{{ a.stream.name|default:"Whole class" }}</td>
+                <td>
+                  <a href="{% url 'teacher_detail' a.teacher.id %}">{{ a.teacher.display_name }}</a>
+                  {% if a.teacher.status != "ACTIVE" %}<span class="badge badge-warning ml-1">{{ a.teacher.get_status_display }}</span>{% endif %}
+                </td>
+                <td>{{ a.teacher.contact1|default:"—" }}</td>
+                <td class="text-right">
+                  <div class="btn-group btn-group-sm">
+                    <a href="{% url 'class_teacher_edit' a.id %}" class="btn btn-outline-warning" title="Change"><i class="fas fa-exchange-alt"></i></a>
+                    <a href="{% url 'class_teacher_delete' a.id %}" class="btn btn-outline-danger" title="Remove"><i class="fas fa-trash"></i></a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-light border mb-0">
+        No class teachers set for {{ selected_year|default:"this year" }}.
+        <a href="{% url 'class_teacher_create' %}">Assign the first one</a>
+        or <a href="{% url 'allocation_copy_year' %}">copy them from last year</a>.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-id-card"></i> Fee Clearance</h3>
+    <small class="text-muted">A student is cleared after paying {{ percent_needed }}% of this term's fees (credit counts).
+      {% if request.user.profile.role != "BURSAR" %}<a href="{% url 'fee_settings' %}">Change</a>{% endif %}</small>
+  </div>
+  {% if page_obj and not printing %}
+    {% if class_id %}
+      <a class="btn btn-light btn-sm" href="?{{ querystring }}&print=1" target="_blank"><i class="fas fa-print mr-1"></i> Print this class</a>
+    {% else %}
+      <small class="text-muted">Choose a class to print it.</small>
+    {% endif %}
+  {% endif %}
+</div>
+
+{% if not printing %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="form-row align-items-end">
+      <div class="col-md-3"><label>Term</label>
+        <select name="term" class="form-control">
+          {% for t in all_terms %}<option value="{{ t.id }}" {% if term and t.id == term.id %}selected{% endif %}>{{ t.name }} {{ t.academic_year.year }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-3"><label>Class</label>
+        <select name="class_ref" class="form-control" onchange="this.form.stream.value=''"><option value="">All classes</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if class_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2"><label>Stream</label>
+        <select name="stream" class="form-control"><option value="">All</option>
+          {% for st in streams %}<option value="{{ st.id }}" {% if stream_id == st.id|stringformat:"s" %}selected{% endif %}>{{ st.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2"><label>Show</label>
+        <select name="show" class="form-control">
+          <option value="all" {% if show == "all" %}selected{% endif %}>Everyone</option>
+          <option value="cleared" {% if show == "cleared" %}selected{% endif %}>Cleared only</option>
+          <option value="not_cleared" {% if show == "not_cleared" %}selected{% endif %}>Not cleared only</option>
+        </select></div>
+      <div class="col-md-2"><button class="btn btn-primary btn-block">Show</button></div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if not term %}
+<div class="alert alert-warning">Set up the academic calendar first: no term was found.</div>
+{% else %}
+<div class="card">
+  <div class="card-header">
+    <strong>{{ term.name }} {{ term.academic_year.year }}</strong> -
+    {{ cleared_count|intcomma }} of {{ total|intcomma }} student(s) cleared
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light"><tr><th>Adm No</th><th>Student</th><th>Class</th><th class="text-right">Term fees</th><th class="text-right">Paid</th><th class="text-right">Balance</th><th class="text-right">%</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for s in page_obj %}
+          <tr>
+            <td>{{ s.admission_number }}</td>
+            <td>{% if printing %}{{ s.name|default:s }}{% else %}<a href="{% url 'student_fee_statement' s.id %}">{{ s.name|default:s }}</a>{% endif %}</td>
+            <td>{{ s.current_class.name|default:"-" }}{% if s.stream %} {{ s.stream.name }}{% endif %}</td>
+            <td class="text-right">{{ s.billed|floatformat:0|intcomma }}</td>
+            <td class="text-right">{{ s.paid|floatformat:0|intcomma }}</td>
+            <td class="text-right">{{ s.balance|floatformat:0|intcomma }}</td>
+            <td class="text-right">{{ s.percent|floatformat:0 }}</td>
+            <td>{% if s.cleared %}<span class="badge badge-success">Cleared</span>{% else %}<span class="badge badge-danger">Not cleared</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted">No students for this selection.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages and not printing %}
+    <nav class="d-flex justify-content-between align-items-center mt-2">
+      <small class="text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count|intcomma }}</small>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?{{ querystring }}&page=1">First</a></li>
+          <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Next</a></li>
+          <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page_obj.paginator.num_pages }}">Last</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extrajs %}
+{% if printing %}<script>window.addEventListener("load", function () { window.print(); });</script>{% endif %}
+{% endblock %}

@@ -1,0 +1,1071 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<style>
+  .exam-builder-wrap .card {
+    border-radius: .85rem;
+  }
+  .builder-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .exam-meta-badges .badge {
+    margin-right: .35rem;
+    margin-bottom: .35rem;
+    font-size: .78rem;
+  }
+  .question-card {
+    border: 1px solid #e9ecef;
+    border-radius: .85rem;
+    transition: all .2s ease;
+    overflow: hidden;
+  }
+  .question-card:hover {
+    box-shadow: 0 0.35rem 1rem rgba(0,0,0,.05);
+  }
+  .question-head {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem;
+  }
+  .question-body {
+    padding: 1rem;
+  }
+  .question-no {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #007bff;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .95rem;
+    flex-shrink: 0;
+  }
+  .choice-item {
+    border: 1px solid #e9ecef;
+    border-radius: .7rem;
+    padding: .75rem .9rem;
+    background: #fff;
+  }
+  .choice-item.correct {
+    border-color: #28a745;
+    background: #f4fbf6;
+  }
+  .choice-letter {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #eef2f7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .85rem;
+    flex-shrink: 0;
+  }
+  .builder-sticky {
+    position: sticky;
+    top: 90px;
+    z-index: 10;
+  }
+  .drag-handle {
+    cursor: grab;
+    color: #6c757d;
+  }
+  .drag-handle:hover {
+    color: #007bff;
+  }
+  .muted-small {
+    font-size: .85rem;
+    color: #6c757d;
+  }
+  .question-prompt {
+    white-space: pre-wrap;
+  }
+  .choice-text {
+    white-space: pre-wrap;
+  }
+  .empty-state {
+    border: 2px dashed #dee2e6;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    background: #fafbfc;
+  }
+</style>
+
+<div class="exam-builder-wrap">
+
+  <div class="page-header mb-3">
+    <div class="builder-topbar">
+      <div>
+        <h3 class="page-title mb-1">
+          <i class="fas fa-tools text-primary"></i>
+          {% if is_locked %}View Exam{% else %}Exam Builder{% endif %}
+        </h3>
+        <div class="text-muted">
+          {{ exam.title }}
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap" style="gap:.5rem;">
+        <a href="{% url 'teacher_exam_list' %}" class="btn btn-light btn-sm">
+          <i class="fas fa-arrow-left mr-1"></i> Back
+        </a>
+
+        {% if not is_locked %}
+          <a href="{% url 'teacher_exam_update' exam.pk %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit mr-1"></i> Edit Exam
+          </a>
+          <a href="{% url 'teacher_exam_progress' exam.pk %}" class="btn btn-outline-info btn-sm">
+            <i class="fas fa-chart-line mr-1"></i> Progress
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if is_locked %}
+    <div class="alert alert-info border-0 shadow-sm">
+      <i class="fas fa-lock mr-1"></i>
+      This exam is now <b>read-only</b> because results have already been released. You can review questions and answers, but you cannot edit anything.
+    </div>
+  {% endif %}
+
+  <div class="row">
+    <!-- LEFT -->
+    <div class="col-lg-8 mb-3">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start" style="gap:1rem;">
+            <div>
+              <h4 class="mb-1">{{ exam.title }}</h4>
+              <div class="text-muted mb-2">
+                {{ exam.subject.name }}
+                {% if exam.paper %} • {{ exam.paper.paper_name }}{% endif %}
+                • {{ exam.class_ref }}
+                {% if exam.stream %}/ {{ exam.stream.name }}{% endif %}
+              </div>
+
+              <div class="exam-meta-badges">
+                {% if exam.status == "PUBLISHED" %}
+                  <span class="badge badge-success">Published</span>
+                {% elif exam.status == "DRAFT" %}
+                  <span class="badge badge-secondary">Draft</span>
+                {% else %}
+                  <span class="badge badge-warning">{{ exam.status }}</span>
+                {% endif %}
+
+                {% if exam.results_released %}
+                  <span class="badge badge-info">Results Released</span>
+                {% endif %}
+
+                {% if exam.duration_minutes %}
+                  <span class="badge badge-light">
+                    <i class="far fa-clock mr-1"></i>{{ exam.duration_minutes }} min
+                  </span>
+                {% endif %}
+
+                {% if exam.total_marks %}
+                  <span class="badge badge-light">
+                    <i class="fas fa-star mr-1"></i>{{ exam.total_marks }} marks
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="text-md-right">
+              <div class="muted-small">Opens</div>
+              <div>{{ exam.opens_at|default:"—" }}</div>
+
+              <div class="muted-small mt-2">Closes</div>
+              <div>{{ exam.closes_at|default:"—" }}</div>
+            </div>
+          </div>
+
+          {% if exam.instructions %}
+            <hr>
+            <div>
+              <div class="font-weight-bold mb-1">Instructions</div>
+              <div class="text-muted" style="white-space: pre-wrap;">{{ exam.instructions }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if not is_locked %}
+      <div class="card mb-3">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">
+            <i class="fas fa-plus-circle text-primary mr-1"></i>
+            Add Question
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'teacher_question_add' exam.pk %}" novalidate>
+            {% csrf_token %}
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="font-weight-bold">Question Prompt</label>
+                {{ qform.prompt }}
+                {% if qform.prompt.errors %}
+                  <div class="text-danger small mt-1">{{ qform.prompt.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label class="font-weight-bold">Question Type</label>
+                {{ qform.question_type }}
+                {% if qform.question_type.errors %}
+                  <div class="text-danger small mt-1">{{ qform.question_type.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label class="font-weight-bold">Marks</label>
+                {{ qform.marks }}
+                {% if qform.marks.errors %}
+                  <div class="text-danger small mt-1">{{ qform.marks.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-5 mb-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save mr-1"></i> Save Question
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if questions %}
+        <div id="questionList">
+          {% for q in questions %}
+            <div class="question-card mb-3" id="question-{{ q.id }}" data-question-id="{{ q.id }}">
+              <div class="question-head">
+                <div class="d-flex justify-content-between align-items-start flex-wrap" style="gap:1rem;">
+                  <div class="d-flex align-items-start" style="gap:.85rem;">
+                    <div class="question-no">{{ forloop.counter }}</div>
+
+                    <div>
+                      <div class="d-flex flex-wrap align-items-center" style="gap:.4rem;">
+                        <span class="badge badge-light">{{ q.get_question_type_display }}</span>
+                        <span class="badge badge-primary">{{ q.marks }} mark{{ q.marks|pluralize }}</span>
+                        {% if q.is_active %}
+                          <span class="badge badge-success">Active</span>
+                        {% else %}
+                          <span class="badge badge-secondary">Inactive</span>
+                        {% endif %}
+                      </div>
+                      <div class="question-prompt mt-2 font-weight-bold">{{ q.prompt }}</div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap" style="gap:.4rem;">
+                    {% if not is_locked %}
+                      <span class="btn btn-light btn-sm drag-handle" title="Drag to reorder">
+                        <i class="fas fa-grip-vertical"></i>
+                      </span>
+
+                      <a href="{% url 'teacher_question_edit' exam.pk q.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                      </a>
+
+                      <a href="{% url 'teacher_question_delete' exam.pk q.id %}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-trash mr-1"></i> Delete
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="question-body">
+                {% if q.question_type == "MCQ_SINGLE" or q.question_type == "MCQ_MULTI" or q.question_type == "TRUE_FALSE" %}
+                  <div class="mb-2">
+                    <div class="font-weight-bold mb-2">Choices</div>
+
+                    {% if q.choices.all %}
+                      <div class="d-grid" style="gap:.75rem;">
+                        {% for c in q.choices.all %}
+                          <div class="choice-item {% if c.is_correct %}correct{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap" style="gap:.75rem;">
+                              <div class="d-flex align-items-start" style="gap:.75rem;">
+                                <div class="choice-letter">
+                                  {% if forloop.counter == 1 %}A
+                                  {% elif forloop.counter == 2 %}B
+                                  {% elif forloop.counter == 3 %}C
+                                  {% elif forloop.counter == 4 %}D
+                                  {% elif forloop.counter == 5 %}E
+                                  {% else %}{{ forloop.counter }}
+                                  {% endif %}
+                                </div>
+
+                                <div>
+                                  <div class="choice-text">{{ c.text }}</div>
+                                  {% if c.is_correct %}
+                                    <div class="small text-success mt-1">
+                                      <i class="fas fa-check-circle mr-1"></i>Correct answer
+                                    </div>
+                                  {% endif %}
+                                </div>
+                              </div>
+
+                              {% if not is_locked %}
+                                <div class="d-flex flex-wrap" style="gap:.35rem;">
+                                  <form method="post" action="{% url 'teacher_choice_toggle_correct' exam.pk q.id c.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-success btn-sm">
+                                      <i class="fas fa-check mr-1"></i>
+                                      {% if c.is_correct %}Unmark Correct{% else %}Mark Correct{% endif %}
+                                    </button>
+                                  </form>
+
+                                  <button
+                                    type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    data-toggle="collapse"
+                                    data-target="#editChoice{{ c.id }}"
+                                    aria-expanded="false"
+                                    aria-controls="editChoice{{ c.id }}"
+                                  >
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                  </button>
+
+                                  <form method="post" action="{% url 'teacher_choice_delete' exam.pk q.id c.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this choice?');">
+                                      <i class="fas fa-trash mr-1"></i> Delete
+                                    </button>
+                                  </form>
+                                </div>
+                              {% endif %}
+                            </div>
+
+                            {% if not is_locked %}
+                              <div class="collapse mt-3" id="editChoice{{ c.id }}">
+                                <div class="card card-body bg-light border-0">
+                                  <form method="post" action="{% url 'teacher_choice_edit' exam.pk q.id c.id %}">
+                                    {% csrf_token %}
+                                    <div class="form-group mb-2">
+                                      <label class="font-weight-bold">Choice Text</label>
+                                      <textarea name="text" class="form-control" rows="2" required>{{ c.text }}</textarea>
+                                    </div>
+                                    <div class="form-group form-check">
+                                      <input type="checkbox" name="is_correct" class="form-check-input" id="is_correct_{{ c.id }}" {% if c.is_correct %}checked{% endif %}>
+                                      <label class="form-check-label" for="is_correct_{{ c.id }}">Correct answer</label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                      <i class="fas fa-save mr-1"></i> Save Changes
+                                    </button>
+                                  </form>
+                                </div>
+                              </div>
+                            {% endif %}
+                          </div>
+                        {% empty %}
+                          <div class="text-muted">No choices added yet.</div>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <div class="text-muted">No choices added yet.</div>
+                    {% endif %}
+                  </div>
+
+                  {% if not is_locked %}
+                    <hr>
+                    <div>
+                      <div class="font-weight-bold mb-2">Add Choice</div>
+                      <form method="post" action="{% url 'teacher_choice_add' exam.pk q.id %}">
+                        {% csrf_token %}
+                        <div class="row">
+                          <div class="col-md-9 mb-2">
+                            <textarea name="text" class="form-control" rows="2" placeholder="Enter choice text..." required></textarea>
+                          </div>
+                          <div class="col-md-3 mb-2">
+                            <div class="form-check mb-2 mt-1">
+                              <input class="form-check-input" type="checkbox" name="is_correct" id="choice_correct_{{ q.id }}">
+                              <label class="form-check-label" for="choice_correct_{{ q.id }}">
+                                Correct answer
+                              </label>
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-sm btn-block">
+                              <i class="fas fa-plus mr-1"></i> Add Choice
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  {% endif %}
+
+                {% else %}
+                  <div class="alert alert-light border mb-0">
+                    <i class="fas fa-align-left text-muted mr-1"></i>
+                    This is a text-answer question. Students type their own response during the exam.
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="mb-3">
+            <i class="fas fa-question-circle fa-3x text-muted"></i>
+          </div>
+          <h5 class="mb-2">No questions yet</h5>
+          <p class="text-muted mb-0">
+            {% if is_locked %}
+              This exam has no questions to display.
+            {% else %}
+              Start by adding the first question for this exam.
+            {% endif %}
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-lg-4 mb-3">
+      <div class="builder-sticky">
+        <div class="card mb-3">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">
+              <i class="fas fa-info-circle text-primary mr-1"></i>
+              Summary
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Questions</span>
+              <strong>{{ questions|length }}</strong>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Status</span>
+              <strong>
+                {% if exam.status == "PUBLISHED" %}Published
+                {% elif exam.status == "DRAFT" %}Draft
+                {% else %}{{ exam.status }}
+                {% endif %}
+              </strong>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Results</span>
+              <strong>{% if exam.results_released %}Released{% else %}Not Released{% endif %}</strong>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Mode</span>
+              <strong>{% if is_locked %}Read-only{% else %}Editable{% endif %}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">
+              <i class="fas fa-list-ol text-primary mr-1"></i>
+              Question Navigator
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if questions %}
+              <div class="d-flex flex-wrap" style="gap:.5rem;">
+                {% for q in questions %}
+                  <a href="#question-{{ q.id }}" class="btn btn-light btn-sm">
+                    {{ forloop.counter }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-muted">No questions available.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not is_locked %}
+          <div class="card">
+            <div class="card-header bg-white">
+              <h5 class="mb-0">
+                <i class="fas fa-lightbulb text-warning mr-1"></i>
+                Tips
+              </h5>
+            </div>
+            <div class="card-body">
+              <ul class="pl-3 mb-0 text-muted">
+                <li>Use objective questions for auto-marking.</li>
+                <li>Use short/long text for teacher marking.</li>
+                <li>Confirm correct choices before publishing.</li>
+                <li>Release results only after marking is complete.</li>
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+{% if is_locked %}
+<script>
+  const Q_ADD_AJAX_URL = "{% url 'teacher_question_add_ajax' exam.pk %}";
+  const REORDER_URL = "{% url 'teacher_question_reorder' exam.pk %}";
+  const EXAM_ID = "{{ exam.pk }}";
+</script>
+
+<script>
+function esc(s){
+  return (s || "").replace(/[&<>"']/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+function getCookie(name){
+  const v = `; ${document.cookie}`;
+  const parts = v.split(`; ${name}=`);
+  if(parts.length === 2) return parts.pop().split(';').shift();
+  return "";
+}
+function choiceActionButtons(examId, qid, choiceId, choiceText, isCorrect, qLabel){
+  return `
+    <div class="btn-group btn-group-sm choice-actions" role="group">
+      <button type="button"
+              class="btn btn-outline-info"
+              data-toggle="modal"
+              data-target="#editChoiceModal"
+              data-choice-id="${choiceId}"
+              data-qid="${qid}"
+              data-choice-text="${esc(choiceText)}"
+              data-choice-correct="${isCorrect ? '1' : '0'}"
+              data-ajax-url="/online-exams/teacher/${examId}/questions/${qid}/choices/${choiceId}/edit-ajax/"
+              data-label="${esc(qLabel)} choice">
+        <i class="fas fa-edit"></i>
+      </button>
+
+      <a class="btn btn-outline-success"
+         href="/online-exams/teacher/${examId}/questions/${qid}/choices/${choiceId}/toggle-correct/"
+         title="Toggle correct">
+        <i class="fas fa-check"></i>
+      </a>
+
+      <form method="post" action="/online-exams/teacher/${examId}/questions/${qid}/choices/${choiceId}/delete/" class="d-inline">
+        <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+        <button class="btn btn-outline-danger" type="submit" title="Delete choice">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </form>
+    </div>
+  `;
+}
+</script>
+
+<script>
+(function(){
+  const typeSel = document.getElementById("id_question_type");
+  const wrap = document.getElementById("markingGuideWrap");
+  function toggle(){
+    const v = (typeSel?.value || "").toUpperCase();
+    wrap.style.display = (v === "SHORT_TEXT" || v === "LONG_TEXT") ? "" : "none";
+  }
+  if(typeSel){
+    typeSel.addEventListener("change", toggle);
+    toggle();
+  }
+})();
+</script>
+
+<script>
+(function(){
+  const form = document.getElementById("addQuestionForm");
+  const bulk = document.getElementById("bulkMode");
+  const status = document.getElementById("qSaveStatus");
+  const list = document.getElementById("questionsList");
+  const addQuestionModal = $('#addQuestionModal');
+  const addChoiceModal = $('#addChoiceModal');
+
+  if(!form || !list) return;
+
+  const csrftoken = getCookie("csrftoken") || form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+
+  function cleanupModalState(){
+    // remove leftover bootstrap modal state
+    $('body').removeClass('modal-open');
+    $('.modal-backdrop').remove();
+    $('body').css('padding-right', '');
+  }
+
+  function openChoiceModalForQuestion(q){
+    const choiceForm = document.getElementById("addChoiceForm");
+    const choiceAjaxUrl = document.getElementById("choiceAjaxUrl");
+    const choiceText = document.getElementById("choiceForText");
+    const choiceStatus = document.getElementById("cSaveStatus");
+
+    if(choiceForm){
+      choiceForm.reset();
+      choiceForm.action = `/online-exams/teacher/${EXAM_ID}/questions/${q.id}/choices/add/`;
+    }
+    if(choiceAjaxUrl){
+      choiceAjaxUrl.value = `/online-exams/teacher/${EXAM_ID}/questions/${q.id}/choices/add-ajax/`;
+    }
+    if(choiceText){
+      choiceText.textContent = `NEW — ${q.prompt_short}`;
+    }
+    if(choiceStatus){
+      choiceStatus.textContent = "";
+    }
+
+    cleanupModalState();
+
+    setTimeout(() => {
+      addChoiceModal.modal({
+        backdrop: 'static',
+        keyboard: true,
+        show: true
+      });
+
+      setTimeout(() => {
+        const input = document.querySelector('#addChoiceForm input[name="text"]');
+        if(input) input.focus();
+      }, 250);
+    }, 120);
+  }
+
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    status.textContent = "Saving...";
+
+    const fd = new FormData(form);
+    const res = await fetch(Q_ADD_AJAX_URL, {
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      credentials: "same-origin",
+      body: fd
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if(!res.ok || !data.ok){
+      status.textContent = "Failed. Check required fields.";
+      return;
+    }
+
+    const q = data.q;
+    status.textContent = "Saved ✓";
+
+    const card = document.createElement("div");
+    card.className = "card mb-2 question-item";
+    card.dataset.qid = q.id;
+    card.draggable = true;
+
+    card.innerHTML = `
+      <div class="card-header d-flex justify-content-between align-items-center" id="qh_${q.id}" style="background:#fff;">
+        <div class="d-flex align-items-center w-100" style="gap:.5rem;">
+          <span class="drag-handle text-muted" title="Drag to reorder">
+            <i class="fas fa-grip-vertical"></i>
+          </span>
+
+          <button class="btn btn-link p-0 text-left qb-qbtn"
+                  type="button"
+                  data-toggle="collapse"
+                  data-target="#qc_${q.id}"
+                  aria-expanded="true"
+                  aria-controls="qc_${q.id}"
+                  style="text-decoration:none;">
+            <b class="qb-qnum">NEW</b> —
+            <span class="qb-qtext">${esc(q.prompt_short)}</span>
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center" style="gap:.35rem; white-space:nowrap;">
+          <span class="badge badge-light">${esc(q.question_type_label)}</span>
+          <span class="badge badge-info">${esc(q.marks)} marks</span>
+        </div>
+      </div>
+
+      <div id="qc_${q.id}" class="collapse show" aria-labelledby="qh_${q.id}" data-parent="#questionsList">
+        <div class="card-body">
+          <div class="mb-2"><b>Full Question:</b></div>
+          <div class="mb-3">${esc(q.prompt).replace(/\n/g,"<br>")}</div>
+
+          ${q.is_objective ? `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="font-weight-bold">Choices</div>
+              <button type="button"
+                      class="btn btn-primary btn-sm"
+                      data-toggle="modal"
+                      data-target="#addChoiceModal"
+                      data-qid="${q.id}"
+                      data-ajax-url="/online-exams/teacher/${EXAM_ID}/questions/${q.id}/choices/add-ajax/"
+                      data-action-url="/online-exams/teacher/${EXAM_ID}/questions/${q.id}/choices/add/"
+                      data-qtext="NEW — ${esc(q.prompt_short)}">
+                <i class="fas fa-plus mr-1"></i> Add Choice
+              </button>
+            </div>
+            <ul class="list-unstyled mb-0" id="choices_${q.id}">
+              <li class="text-muted small py-2 empty-choice">No choices yet. Click “Add Choice”.</li>
+            </ul>
+          ` : `
+            <div class="alert alert-light mb-0">
+              <i class="fas fa-pen mr-1"></i> Typed answer — mark later.
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+
+    list.prepend(card);
+
+    const totalEl = document.getElementById("qbTotal");
+    const shownEl = document.getElementById("qbShown");
+    const total = parseInt(totalEl?.textContent || "0", 10) + 1;
+    if(totalEl) totalEl.textContent = total.toString();
+    if(shownEl) shownEl.textContent = total.toString();
+
+    // reset question form for next use
+    form.querySelector("#id_prompt").value = "";
+    if(form.querySelector("#id_marking_guide")) {
+      form.querySelector("#id_marking_guide").value = "";
+    }
+
+    // CASE 1: non-objective -> just close or keep open normally
+    if(!q.is_objective){
+      if(bulk?.checked){
+        setTimeout(() => form.querySelector("#id_prompt").focus(), 150);
+      } else {
+        addQuestionModal.modal('hide');
+        setTimeout(cleanupModalState, 300);
+      }
+      return;
+    }
+
+    // CASE 2: objective question -> open choice modal safely
+    if(bulk?.checked){
+      // hide question modal first, then open choice modal
+      addQuestionModal.one('hidden.bs.modal', function () {
+        openChoiceModalForQuestion(q);
+      });
+      addQuestionModal.modal('hide');
+    } else {
+      addQuestionModal.one('hidden.bs.modal', function () {
+        openChoiceModalForQuestion(q);
+      });
+      addQuestionModal.modal('hide');
+    }
+  });
+
+  // extra protection in case bootstrap leaves overlay behind
+  addQuestionModal.on('hidden.bs.modal', function () {
+    cleanupModalState();
+  });
+
+  addChoiceModal.on('hidden.bs.modal', function () {
+    cleanupModalState();
+  });
+})();
+</script>
+
+<script>
+(function(){
+  const form = document.getElementById("addChoiceForm");
+  const status = document.getElementById("cSaveStatus");
+  const info = document.getElementById("choiceForText");
+  const ajaxUrlHolder = document.getElementById("choiceAjaxUrl");
+  if(!form) return;
+
+  const csrftoken = getCookie("csrftoken") || form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+
+  $('#addChoiceModal').on('show.bs.modal', function(event){
+    const btn = event.relatedTarget;
+    if(!btn) return;
+
+    const actionUrl = btn.getAttribute("data-action-url") || "";
+    const ajaxUrl = btn.getAttribute("data-ajax-url") || "";
+    const qtext = btn.getAttribute("data-qtext") || "";
+
+    form.action = actionUrl;
+    ajaxUrlHolder.value = ajaxUrl;
+    info.textContent = qtext;
+
+    form.reset();
+    status.textContent = "";
+
+    setTimeout(() => form.querySelector('input[name="text"]').focus(), 150);
+  });
+
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const ajaxUrl = ajaxUrlHolder.value;
+    if(!ajaxUrl){
+      form.submit();
+      return;
+    }
+
+    status.textContent = "Saving...";
+
+    const fd = new FormData(form);
+
+    let res, data;
+    try{
+      res = await fetch(ajaxUrl, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken },
+        credentials: "same-origin",
+        body: fd
+      });
+      data = await res.json().catch(() => ({}));
+    }catch(err){
+      status.textContent = "Network error.";
+      return;
+    }
+
+    if(!res.ok || !data.ok){
+      const msg = data?.errors ? JSON.stringify(data.errors) : (data?.error || `HTTP ${res.status}`);
+      status.textContent = "Failed: " + msg;
+      return;
+    }
+
+    const qid = data.q_id;
+    const ul = document.getElementById("choices_" + qid);
+    if(ul){
+      const empty = ul.querySelector(".empty-choice");
+      if(empty) empty.remove();
+
+      const qLabel = `Q${qid}`;
+      const li = document.createElement("li");
+      li.className = "d-flex justify-content-between align-items-center py-2 border-bottom choice-row";
+      li.setAttribute("data-choice-id", data.choice.id);
+      li.setAttribute("data-choice-text", data.choice.text);
+      li.setAttribute("data-choice-correct", data.choice.is_correct ? "1" : "0");
+
+      li.innerHTML = `
+        <div class="choice-left">
+          ${data.choice.is_correct ? `<span class="badge badge-success mr-2">Correct</span>` : `<span class="badge badge-light mr-2">—</span>`}
+          <span class="choice-text">${esc(data.choice.text)}</span>
+        </div>
+        ${choiceActionButtons(EXAM_ID, qid, data.choice.id, data.choice.text, data.choice.is_correct, qLabel)}
+      `;
+      ul.appendChild(li);
+    }
+
+    status.textContent = "Saved ✓";
+    form.querySelector('input[name="text"]').value = "";
+    form.querySelector('input[name="is_correct"]').checked = false;
+    form.querySelector('input[name="text"]').focus();
+  });
+})();
+</script>
+
+<script>
+(function(){
+  const list = document.getElementById("questionsList");
+  const status = document.getElementById("reorderStatus");
+  if(!list) return;
+
+  const csrftoken = getCookie("csrftoken") || document.querySelector("input[name=csrfmiddlewaretoken]")?.value || "";
+  let dragEl = null;
+
+  function sendOrder(){
+    const ordered_ids = Array.from(list.querySelectorAll(".question-item"))
+      .map(el => parseInt(el.dataset.qid, 10));
+
+    status.textContent = "Saving order...";
+
+    fetch(REORDER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ ordered_ids })
+    })
+    .then(r => r.json())
+    .then(data => {
+      status.textContent = data.ok ? "Order saved ✓" : "Failed";
+    })
+    .catch(() => {
+      status.textContent = "Failed";
+    });
+  }
+
+  list.addEventListener("mousedown", function(e){
+    const handle = e.target.closest(".drag-handle");
+    const item = e.target.closest(".question-item");
+    if(item) item.dataset.dragAllowed = handle ? "1" : "0";
+  });
+
+  list.addEventListener("dragstart", function(e){
+    const item = e.target.closest(".question-item");
+    if(!item) return;
+    if(item.dataset.dragAllowed !== "1"){
+      e.preventDefault();
+      return;
+    }
+    dragEl = item;
+    item.style.opacity = "0.6";
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", item.dataset.qid);
+  });
+
+  list.addEventListener("dragend", function(){
+    if(!dragEl) return;
+    dragEl.style.opacity = "1";
+    dragEl = null;
+    sendOrder();
+  });
+
+  list.addEventListener("dragover", function(e){
+    e.preventDefault();
+    if(!dragEl) return;
+    const over = e.target.closest(".question-item");
+    if(!over || over === dragEl) return;
+
+    const rect = over.getBoundingClientRect();
+    const next = (e.clientY - rect.top) > rect.height / 2;
+    list.insertBefore(dragEl, next ? over.nextSibling : over);
+  });
+})();
+</script>
+
+<script>
+(function(){
+  const input = document.getElementById("qSearch");
+  const clear = document.getElementById("qClear");
+  const shownEl = document.getElementById("qbShown");
+  const items = Array.from(document.querySelectorAll(".question-item"));
+
+  function normalize(s){
+    return (s || "").toLowerCase().trim();
+  }
+
+  function apply(){
+    const q = normalize(input.value);
+    let shown = 0;
+
+    items.forEach((card) => {
+      const text = normalize(card.innerText);
+      const match = !q || text.includes(q);
+      card.classList.toggle("qb-hide", !match);
+      if(match) shown++;
+    });
+
+    if(shownEl) shownEl.textContent = shown.toString();
+  }
+
+  if(input) input.addEventListener("input", apply);
+  if(clear) clear.addEventListener("click", function(){
+    input.value = "";
+    apply();
+    input.focus();
+  });
+
+  apply();
+})();
+</script>
+
+<script>
+(function(){
+  const form = document.getElementById("editChoiceForm");
+  const textInput = document.getElementById("editChoiceText");
+  const correctInput = document.getElementById("editChoiceCorrect");
+  const ajaxHolder = document.getElementById("editChoiceAjaxUrl");
+  const status = document.getElementById("editChoiceStatus");
+  const label = document.getElementById("editChoiceLabel");
+  if(!form) return;
+
+  const csrftoken = getCookie("csrftoken") || form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+
+  $('#editChoiceModal').on('show.bs.modal', function(event){
+    const btn = event.relatedTarget;
+    if(!btn) return;
+
+    textInput.value = btn.getAttribute("data-choice-text") || "";
+    correctInput.checked = btn.getAttribute("data-choice-correct") === "1";
+    ajaxHolder.value = btn.getAttribute("data-ajax-url") || "";
+    label.textContent = btn.getAttribute("data-label") || "";
+    status.textContent = "";
+
+    setTimeout(() => textInput.focus(), 120);
+  });
+
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const ajaxUrl = ajaxHolder.value;
+    if(!ajaxUrl){
+      status.textContent = "Missing edit URL.";
+      return;
+    }
+
+    status.textContent = "Saving...";
+    const fd = new FormData(form);
+
+    let res, data;
+    try{
+      res = await fetch(ajaxUrl, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken },
+        credentials: "same-origin",
+        body: fd
+      });
+      data = await res.json().catch(() => ({}));
+    }catch(err){
+      status.textContent = "Network error.";
+      return;
+    }
+
+    if(!res.ok || !data.ok){
+      status.textContent = "Failed to save.";
+      return;
+    }
+
+    const qid = data.q_id;
+    const choiceId = data.choice.id;
+    const row = document.querySelector(`#choices_${qid} .choice-row[data-choice-id="${choiceId}"]`);
+    if(row){
+      const leftBox = row.querySelector(".choice-left");
+      if(leftBox){
+        leftBox.innerHTML = `
+          ${data.choice.is_correct ? '<span class="badge badge-success mr-2">Correct</span>' : '<span class="badge badge-light mr-2">—</span>'}
+          <span class="choice-text">${esc(data.choice.text)}</span>
+        `;
+      }
+      row.setAttribute("data-choice-text", data.choice.text);
+      row.setAttribute("data-choice-correct", data.choice.is_correct ? "1" : "0");
+    }
+
+    status.textContent = "Saved ✓";
+    setTimeout(() => $('#editChoiceModal').modal('hide'), 400);
+  });
+})();
+</script>
+
+<script>
+(function(){
+  function cleanupModalState(){
+    $('body').removeClass('modal-open');
+    $('.modal-backdrop').remove();
+    $('body').css('padding-right', '');
+  }
+
+  $(document).on('hidden.bs.modal', '#addQuestionModal, #addChoiceModal, #editChoiceModal', function(){
+    setTimeout(cleanupModalState, 120);
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

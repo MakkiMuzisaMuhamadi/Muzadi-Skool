@@ -1,0 +1,126 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <h3 class="page-title">UCE Grading Management</h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="#">Management</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Grading Scales</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="card-title">Grading Scales</h4>
+          <a href="{% url 'grading_scale_create' %}" class="btn btn-outline-success">
+            <i class="mdi mdi-plus"></i> Add New Scale
+          </a>
+        </div>
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Grades Count</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for scale in grading_scales %}
+              <tr>
+                <td>
+                  <strong>{{ scale.name }}</strong>
+                  {% if scale.is_active %}
+                    <span class="badge badge-success ml-2">Active</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if scale.is_active %}
+                    <span class="badge badge-success">Active</span>
+                  {% else %}
+                    <span class="badge badge-secondary">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="font-weight-bold">{{ scale.grades.count }}</span> grades
+                </td>
+                <td>{{ scale.created_at|date:"M d, Y" }}</td>
+                <td>{{ scale.updated_at|date:"M d, Y" }}</td>
+                <td>
+                  <div class="btn-group">
+                    <a href="{% url 'grading_scale_detail' scale.pk %}" class="btn btn-info btn-sm">
+                      <i class="mdi mdi-eye"></i> View
+                    </a>
+                    <a href="{% url 'grading_scale_edit' scale.pk %}" class="btn btn-warning btn-sm">
+                      <i class="mdi mdi-pencil"></i> Edit
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  <i class="mdi mdi-information-outline" style="font-size: 48px;"></i>
+                  <p class="mt-2">No grading scales found.</p>
+                  <a href="{% url 'grading_scale_create' %}" class="btn btn-outline-success">
+                    <i class="mdi mdi-plus"></i> Create First Scale
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Info Card -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">About Grading Scales</h4>
+        <div class="row">
+          <div class="col-md-6">
+            <ul>
+              <li>Only one grading scale can be <strong>active</strong> at a time</li>
+              <li>Active scale will be used for all calculations</li>
+              <li>Each scale can have multiple grades (A, B, C, etc.)</li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <ul>
+              <li>Grades define score ranges and points</li>
+              <li>Higher order grades are considered better</li>
+              <li>Make sure score ranges don't overlap</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,394 @@
+<!-- templates/uce/candidate_list.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Header Section -->
+    <div class="page-header-container mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-1">Candidates</h1>
+                <p class="page-subtitle text-muted mb-0">
+                    {% if selected_school %}
+                        Showing candidates for <strong>{{ selected_school.name }}</strong>
+                    {% else %}
+                        Showing all candidates ({{ total_candidates }} total)
+                    {% endif %}
+                </p>
+            </div>
+            <div class="action-buttons">
+                <a href="{% url 'uce_add_candidate' %}" class="btn btn-outline-success me-2">
+                    <i class="fas fa-plus me-1"></i> Add Candidate
+                </a>
+                <a href="{% url 'uce_bulk_upload_candidates' education_level=current_level %}" class="btn btn-success">
+                    <i class="fas fa-file-import me-1"></i> Bulk Upload
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Messages -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- School Filter -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Filter by School</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label for="school" class="form-label">Select School</label>
+                    <select name="school" id="school" class="form-select">
+                        <option value="">All Schools</option>
+                        {% for school in schools %}
+                        <option value="{{ school.id }}" {% if selected_school and selected_school.id == school.id %}selected{% endif %}>
+                            {{ school.name }} ({{ school.school_id }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-success w-100">
+                        <i class="fas fa-filter me-1"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Candidates Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if selected_school %}
+            <div class="alert alert-info py-2 mb-3">
+                Showing candidates for: <strong>{{ selected_school.name }}</strong>
+                <a href="{% url 'uce_candidate_list' %}" class="float-end text-decoration-none">Show all candidates</a>
+            </div>
+            {% endif %}
+
+            <div class="table-responsive">
+                <table id="candidates-table" class="table table-striped align-middle w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Candidate ID</th>
+                            <th>Name</th>
+                            <th>School</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Candidate Modal -->
+<div class="modal fade" id="editCandidateModal" tabindex="-1" aria-labelledby="editCandidateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="editCandidateForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit_candidate">
+                <input type="hidden" name="candidate_id" id="candidateId">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editCandidateModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit Candidate
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white"  data-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Candidate Name</label>
+                        <input type="text" class="form-control" name="name" id="candidateName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Candidate ID</label>
+                        <input type="text" class="form-control" id="candidateCandidateId" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">School</label>
+                        <input type="text" class="form-control" id="candidateSchoolDisplay" disabled>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info"  data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Candidate Modal -->
+<div class="modal fade" id="deleteCandidateModal" tabindex="-1" aria-labelledby="deleteCandidateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="deleteCandidateForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_candidate">
+                <input type="hidden" name="candidate_id" id="deleteCandidateId">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteCandidateModalLabel">
+                        <i class="fas fa-trash me-2"></i>Delete Candidate
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white"  data-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete candidate <strong id="deleteCandidateName"></strong>?</p>
+                    <p class="text-danger mb-0"><small>This action cannot be undone.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info"  data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Candidate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<!-- Load DataTables -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<script>
+// Wait for document to be fully ready
+$(document).ready(function() {
+    // Check if DataTable already exists and destroy it first
+    if ($.fn.DataTable.isDataTable('#candidates-table')) {
+        $('#candidates-table').DataTable().destroy();
+    }
+
+    // Initialize DataTable with server-side processing
+    var table = $('#candidates-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{% url 'uce_candidates_ajax' %}",
+            type: "GET",
+            data: function(d) {
+                // Add school filter to AJAX request
+                var schoolId = $('#school').val();
+                if (schoolId) {
+                    d.school_id = schoolId;
+                }
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTables AJAX Error:', xhr.responseText);
+                console.error('Error:', error);
+                console.error('Thrown:', thrown);
+                
+                // Show user-friendly error
+                alert('Error loading candidates data. Please try again.');
+            }
+        },
+        columns: [
+            { 
+                data: "candidate_id",
+                className: "text-nowrap"
+            },
+            { 
+                data: "name" 
+            },
+            { 
+                data: "school" 
+            },
+            { 
+                data: "actions", 
+                orderable: false,
+                className: "text-center",
+                width: "180px"
+            }
+        ],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        language: {
+            processing: '<div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading candidates...',
+            emptyTable: "No candidates found.",
+            info: "Showing _START_ to _END_ of _TOTAL_ candidates",
+            infoEmpty: "Showing 0 to 0 of 0 candidates",
+            infoFiltered: "(filtered from _MAX_ total candidates)",
+            lengthMenu: "Show _MENU_ candidates",
+            search: "Search:",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+    });
+
+    // School filter change - reload table via AJAX
+    $('#school').change(function() {
+        table.ajax.reload();
+        
+        // Update URL in address bar without page reload
+        var schoolId = $(this).val();
+        var baseUrl = "{% url 'uce_candidate_list' %}";
+        var newUrl = schoolId ? baseUrl + '?school=' + schoolId : baseUrl;
+        window.history.replaceState({}, '', newUrl);
+    });
+
+    // Edit Candidate Modal
+    $(document).on('click', '.edit-candidate-btn', function() {
+        var candidateId = $(this).data('id');
+        var candidateName = $(this).data('name');
+        var candidateCode = $(this).data('candidate_id');
+        var schoolName = $(this).data('school');
+        
+        // Populate modal fields
+        $('#candidateId').val(candidateId);
+        $('#candidateName').val(candidateName);
+        $('#candidateCandidateId').val(candidateCode);
+        $('#candidateSchoolDisplay').val(schoolName);
+        
+        // Show modal using simple jQuery method
+        $('#editCandidateModal').modal('show');
+    });
+
+    // Delete Candidate Modal
+    $(document).on('click', '.delete-candidate-btn', function() {
+        var candidateId = $(this).data('id');
+        var candidateName = $(this).data('name');
+        
+        // Populate modal fields
+        $('#deleteCandidateId').val(candidateId);
+        $('#deleteCandidateName').text(candidateName);
+        
+        // Show modal using simple jQuery method
+        $('#deleteCandidateModal').modal('show');
+    });
+
+    // Handle Edit Form Submission - FIXED
+    $('#editCandidateForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        var submitBtn = $(this).find('button[type="submit"]');
+        var originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Saving...');
+        
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'uce_candidate_list' %}",
+            data: $(this).serialize(),
+            success: function(response) {
+                // Close modal using simple jQuery method - FIXED
+                $('#editCandidateModal').modal('hide');
+                
+                // Reset form and button state
+                $('#editCandidateForm')[0].reset();
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                // Reload table data
+                table.ajax.reload(null, false);
+                
+                // Show success message
+                alert('Candidate updated successfully!');
+            },
+            error: function(xhr, status, error) {
+                // Reset button state on error
+                submitBtn.prop('disabled', false).html(originalText);
+                alert('Error updating candidate: ' + error);
+            }
+        });
+    });
+
+    // Handle Delete Form Submission - FIXED
+    $('#deleteCandidateForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        var submitBtn = $(this).find('button[type="submit"]');
+        var originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Deleting...');
+        
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'uce_candidate_list' %}",
+            data: $(this).serialize(),
+            success: function(response) {
+                // Close modal using simple jQuery method - FIXED
+                $('#deleteCandidateModal').modal('hide');
+                
+                // Reset button state
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                // Reload table data
+                table.ajax.reload(null, false);
+                
+                // Show success message
+                alert('Candidate deleted successfully!');
+            },
+            error: function(xhr, status, error) {
+                // Reset button state on error
+                submitBtn.prop('disabled', false).html(originalText);
+                alert('Error deleting candidate: ' + error);
+            }
+        });
+    });
+
+    // Reset form when modal is hidden
+    $('#editCandidateModal, #deleteCandidateModal').on('hidden.bs.modal', function () {
+        $(this).find('form')[0].reset();
+        $(this).find('button[type="submit"]').prop('disabled', false).html(function() {
+            return $(this).data('original-text') || $(this).html();
+        });
+    });
+
+    // Store original button text when modal is shown
+    $('#editCandidateModal, #deleteCandidateModal').on('show.bs.modal', function () {
+        $(this).find('button[type="submit"]').each(function() {
+            $(this).data('original-text', $(this).html());
+        });
+    });
+});
+</script>
+
+<style>
+/* Custom styles for DataTables */
+#candidates-table_wrapper {
+    padding: 0;
+}
+
+#candidates-table {
+    margin-top: 0 !important;
+}
+
+.btn-group .btn {
+    margin: 0 2px;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Ensure proper spacing */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 1rem;
+}
+
+/* Loading state for buttons */
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+</style>
+{% endblock %}

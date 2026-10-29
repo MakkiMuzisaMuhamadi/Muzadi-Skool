@@ -1,0 +1,565 @@
+<!-- templates/uce/school_detailed.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ school.name }} - UCE Performance - UMTA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .school-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+        padding: 30px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .school-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: rgba(255,255,255,0.1);
+        transform: rotate(30deg);
+    }
+    
+    .school-logo-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .stat-card {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        height: 100%;
+        border: none;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+    }
+    
+    .performance-meter {
+        width: 120px;
+        height: 120px;
+        position: relative;
+    }
+    
+    .meter-circle {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(
+            #28a745 0% {{ school_performance.uce_average_percentage|default:0 }}%,
+            #e9ecef {{ school_performance.uce_average_percentage|default:0 }}% 100%
+        );
+        position: relative;
+    }
+    
+    .meter-inner {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    .candidate-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #dee2e6;
+    }
+    
+    .grade-distribution {
+        height: 200px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #007bff;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 17px;
+        width: 2px;
+        height: calc(100% + 10px);
+        background: #dee2e6;
+    }
+    
+    .timeline-item:last-child::after {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- School Header -->
+    <div class="school-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-3">
+                    {% if school.logo %}
+                        <img src="{{ school.logo.url }}" alt="{{ school.name }}" class="school-logo-large me-4">
+                    {% else %}
+                        <div class="school-logo-large bg-white d-flex align-items-center justify-content-center me-4">
+                            <i class="fas fa-school fa-3x text-primary"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h1 class="h2 mb-1">{{ school.name }}</h1>
+                        <p class="mb-0 opacity-75">
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            {{ school.address|default:"Address not specified" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="bg-white bg-opacity-10 p-3 rounded d-inline-block">
+                    <div class="mb-2">
+                        <span class="badge bg-white text-dark px-3 py-2">
+                            <i class="fas fa-trophy me-2"></i>
+                            Rank #{{ school_performance.national_rank }}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="badge bg-white text-dark px-3 py-2">
+                            <i class="fas fa-chart-line me-2"></i>
+                            {{ school_performance.uce_average_percentage|default:0|floatformat:1 }}% Average
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Total Candidates</h6>
+                            <h3 class="fw-bold">{{ school_performance.total_candidates|intcomma }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-primary rounded-circle">
+                                <i class="fas fa-users fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-light text-dark">
+                            {{ school_performance.complete_candidates }} Complete
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Distinctions (A)</h6>
+                            <h3 class="fw-bold text-success">{{ school_performance.uce_distinction_count|intcomma }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-success rounded-circle">
+                                <i class="fas fa-star fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-success bg-opacity-10 text-success">
+                            {{ school_performance.uce_distinction_count|floatformat:1 }} per candidate
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Merits (B)</h6>
+                            <h3 class="fw-bold text-warning">{{ school_performance.uce_merit_count|intcomma }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-warning rounded-circle">
+                                <i class="fas fa-star-half-alt fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-warning bg-opacity-10 text-warning">
+                            {{ school_performance.uce_merit_count|floatformat:1 }} per candidate
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted fw-semibold">Credits (C)</h6>
+                            <h3 class="fw-bold text-info">{{ school_performance.uce_credit_count|intcomma }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-info rounded-circle">
+                                <i class="fas fa-star-and-crescent fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-info bg-opacity-10 text-info">
+                            {{ school_performance.uce_credit_count|floatformat:1 }} per candidate
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Overview -->
+    <div class="row mb-4">
+        <div class="col-xl-8 mb-4">
+            <div class="card stat-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Performance Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 text-center">
+                            <div class="performance-meter mx-auto mb-4">
+                                <div class="meter-circle">
+                                    <div class="meter-inner">
+                                        <h3 class="mb-0 fw-bold">
+                                            {{ school_performance.uce_average_percentage|default:0|floatformat:1 }}%
+                                        </h3>
+                                        <small class="text-muted">Average</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <h5 class="mb-2">Overall Performance</h5>
+                            <div class="mb-3">
+                                {% if school_performance.uce_average_percentage >= 80 %}
+                                    <span class="badge bg-success">Excellent</span>
+                                {% elif school_performance.uce_average_percentage >= 70 %}
+                                    <span class="badge bg-info">Very Good</span>
+                                {% elif school_performance.uce_average_percentage >= 60 %}
+                                    <span class="badge bg-primary">Good</span>
+                                {% elif school_performance.uce_average_percentage >= 50 %}
+                                    <span class="badge bg-warning">Average</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Needs Improvement</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="grade-distribution" id="gradeChart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 mb-4">
+            <div class="card stat-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>School Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <h6 class="mb-1">School ID</h6>
+                            <p class="text-muted mb-2">{{ school.school_id }}</p>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Contact Information</h6>
+                            <p class="text-muted mb-2">
+                                {% if school.contact_email %}
+                                    <i class="fas fa-envelope me-1"></i>{{ school.contact_email }}<br>
+                                {% endif %}
+                                {% if school.contact_phone %}
+                                    <i class="fas fa-phone me-1"></i>{{ school.contact_phone }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Levels Offered</h6>
+                            <p class="text-muted mb-2">{{ school.levels_offered }}</p>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Last Updated</h6>
+                            <p class="text-muted mb-0">
+                                {{ school_performance.computed_at|date:"F j, Y, g:i a" }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performing Students -->
+    <div class="card stat-card mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-graduate me-2"></i>Top Performing Students
+            </h5>
+            <a href="{% url 'uce_top_students' %}" class="btn btn-sm btn-outline-primary">
+                View All Students
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>ID</th>
+                            <th>Average %</th>
+                            <th>Overall Grade</th>
+                            <th>Distinctions</th>
+                            <th>Subjects</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in candidate_performances|slice:":10" %}
+                        <tr>
+                            <td>
+                                <span class="badge {% if forloop.counter <= 3 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    #{{ forloop.counter }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="candidate-avatar bg-light d-flex align-items-center justify-content-center me-3">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ candidate.candidate.name }}</h6>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ candidate.candidate.candidate_id }}</td>
+                            <td>
+                                <span class="fw-bold {% if candidate.average_percentage >= 80 %}text-success{% elif candidate.average_percentage >= 60 %}text-info{% elif candidate.average_percentage >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ candidate.average_percentage|floatformat:1 }}%
+                                </span>
+                            </td>
+                            <td>
+                                {% if candidate.overall_grade == 'A' %}
+                                    <span class="badge bg-success">A</span>
+                                {% elif candidate.overall_grade == 'B' %}
+                                    <span class="badge bg-info">B</span>
+                                {% elif candidate.overall_grade == 'C' %}
+                                    <span class="badge bg-primary">C</span>
+                                {% elif candidate.overall_grade == 'D' %}
+                                    <span class="badge bg-warning">D</span>
+                                {% elif candidate.overall_grade == 'E' %}
+                                    <span class="badge bg-danger">E</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ candidate.overall_grade }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark">
+                                    {{ candidate.distinction_count }}
+                                </span>
+                            </td>
+                            <td>{{ candidate.total_subjects_attempted }}</td>
+                            <td>
+                                {% if candidate.is_complete %}
+                                    <span class="badge bg-success">Complete</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Incomplete</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="viewStudent('{{ candidate.candidate.id }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-user-graduate fa-2x mb-2"></i>
+                                    <p>No candidate data available</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-center gap-3">
+                        <button class="btn btn-outline-success-success-success" onclick="downloadSchoolReport()">
+                            <i class="fas fa-download me-2"></i>Download Full Report
+                        </button>
+                        <button class="btn btn-success" onclick="compareWithOtherSchools()">
+                            <i class="fas fa-balance-scale me-2"></i>Compare with Other Schools
+                        </button>
+                        <button class="btn btn-warning" onclick="viewHistoricalData()">
+                            <i class="fas fa-history me-2"></i>View Historical Data
+                        </button>
+                        <a href="{% url 'uce_top_schools' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Rankings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize grade distribution chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        
+        const data = {
+            labels: ['Grade A', 'Grade B', 'Grade C', 'Grade D', 'Grade E', 'Ungraded'],
+            datasets: [{
+                data: [
+                    {{ school_performance.uce_distinction_count|default:0 }},
+                    {{ school_performance.uce_merit_count|default:0 }},
+                    {{ school_performance.uce_credit_count|default:0 }},
+                    {{ school_performance.uce_pass_count|default:0 }},
+                    {{ school_performance.uce_fail_count|default:0 }},
+                    0 // Placeholder for ungraded
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#17a2b8',
+                    '#007bff',
+                    '#ffc107',
+                    '#dc3545',
+                    '#6c757d'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        };
+        
+        const config = {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed;
+                                return label;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        };
+        
+        new Chart(ctx, config);
+    });
+    
+    function viewStudent(studentId) {
+        window.open(`/students/${studentId}/details/`, '_blank');
+    }
+    
+    function downloadSchoolReport() {
+        window.open(`/reports/school/{{ school.id }}/uce/full/`, '_blank');
+    }
+    
+    function compareWithOtherSchools() {
+        // Implement comparison functionality
+        alert('School comparison feature will be implemented soon!');
+    }
+    
+    function viewHistoricalData() {
+        // Implement historical data view
+        alert('Historical data feature will be implemented soon!');
+    }
+    
+    // Print functionality
+    function printSchoolReport() {
+        window.print();
+    }
+</script>
+{% endblock %}

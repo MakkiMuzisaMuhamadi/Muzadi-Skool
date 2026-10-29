@@ -1,0 +1,257 @@
+{# templates/dashboard/grading/grading_scale_form.html #}
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-graduation-cap"></i> {{ title }}</h3>
+    <small class="text-muted">Configure grading rules + add grade boundaries.</small>
+  </div>
+  <div>
+    <a href="{% url 'uce_grading_scale_list' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert alert-danger">{{ form.errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group col-md-5">
+          <label>Name</label>
+          {{ form.name }}
+        </div>
+        <div class="form-group col-md-2">
+          <label>Required Subjects</label>
+          {{ form.required_subjects }}
+        </div>
+        <div class="form-group col-md-2">
+          <label>Average Divisor</label>
+          {{ form.average_divisor }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="mr-2">Active</label>
+        {{ form.is_active }}
+        <small class="text-muted ml-2">(Only one active scale per level per school.)</small>
+      </div>
+
+      <!-- ✅ Meaning / Help section -->
+      <div class="alert alert-info mt-3 mb-0">
+        <div class="d-flex">
+          <div class="mr-3" style="font-size: 22px;">
+            <i class="fas fa-info-circle"></i>
+          </div>
+          <div>
+            <h6 class="mb-2">What do these fields mean?</h6>
+
+            <div class="mb-2">
+              <strong>Required Subjects</strong>:
+              Minimum number of subjects a student must have marks for to be graded.
+              <br>
+              <small class="text-muted">
+                Example: If set to <strong>8</strong>, any student with marks in fewer than 8 subjects will receive <strong>X (Ungraded)</strong>.
+              </small>
+            </div>
+
+            <div>
+              <strong>Average Divisor</strong>:
+              The number used to compute the final average, even if a student attempted fewer subjects.
+              Missing subjects are treated as <strong>0</strong>.
+              <br>
+              <small class="text-muted">
+                Example: If divisor is <strong>9</strong> and total percentage = <strong>540</strong>,
+                average = <strong>540 ÷ 9 = 60%</strong>.
+                If attempted only 7 subjects (total = 420), average becomes <strong>420 ÷ 9 = 46.7%</strong>.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Grade Boundaries</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addRowBtn">
+        <i class="fas fa-plus mr-1"></i> Add Row
+      </button>
+    </div>
+
+    <div class="card-body">
+      {% if formset.non_form_errors %}
+        <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+      {% endif %}
+      {% if formset.errors %}
+        <div class="alert alert-danger">{{ formset.errors }}</div>
+      {% endif %}
+
+      {{ formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped" id="gradesTable">
+          <thead>
+            <tr>
+              <th style="width:90px;">Letter</th>
+              <th style="width:160px;">Name</th>
+              <th style="width:140px;">Min %</th>
+              <th style="width:140px;">Max %</th>
+              <th style="width:140px;">Description</th>
+              <th style="width:120px;">Order</th>
+              <th style="width:80px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="gradesTbody">
+            {% for f in formset %}
+            <tr class="grade-row">
+              <td>{{ f.grade_letter }}</td>
+              <td>{{ f.grade_name }}</td>
+              <td>{{ f.min_percentage }}</td>
+              <td>{{ f.max_percentage }}</td>
+              <td>{{ f.order }}</td>
+              <td class="text-center">
+                {% if f.instance.pk %}
+                  {{ f.DELETE }}
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger removeRowBtn">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {% endif %}
+              </td>
+              {{ f.id }}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <small class="text-muted">
+        Tip: Make sure ranges don’t overlap and cover 0–100.
+      </small>
+
+      {# ✅ Hidden template row from empty_form (correct names/ids with __prefix__) #}
+      <template id="emptyFormTemplate">
+        <tr class="grade-row">
+          <td>{{ formset.empty_form.grade_letter }}</td>
+          <td>{{ formset.empty_form.grade_name }}</td>
+          <td>{{ formset.empty_form.min_percentage }}</td>
+          <td>{{ formset.empty_form.max_percentage }}</td>
+          <td>{{ formset.empty_form.order }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger removeRowBtn">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+          {{ formset.empty_form.id }}
+        </tr>
+      </template>
+
+    </div>
+
+    <div class="card-footer d-flex justify-content-end">
+      <button class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const tbody = document.getElementById("gradesTbody");
+  const addBtn = document.getElementById("addRowBtn");
+  const tpl = document.getElementById("emptyFormTemplate");
+  const totalFormsEl = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+  if (!tbody || !addBtn || !tpl || !totalFormsEl) return;
+
+  function getPrefix() {
+    // name like "grade_set-TOTAL_FORMS" or "grades-TOTAL_FORMS"
+    const name = totalFormsEl.getAttribute("name"); // "<prefix>-TOTAL_FORMS"
+    return name.replace("-TOTAL_FORMS", "");
+  }
+
+  function addRow() {
+    const prefix = getPrefix();
+    const idx = parseInt(totalFormsEl.value, 10);
+
+    const html = tpl.innerHTML.replaceAll("__prefix__", String(idx));
+    const temp = document.createElement("tbody");
+    temp.innerHTML = html.trim();
+    const row = temp.firstElementChild;
+
+    // ✅ ensure bootstrap class exists on all inputs (if any widget misses it)
+    row.querySelectorAll("input, select, textarea").forEach(el => {
+      if (!el.classList.contains("form-control") && el.type !== "checkbox") {
+        el.classList.add("form-control");
+      }
+      // default order to 0 (nice UX)
+      if (el.name.endsWith("-order") && !el.value) el.value = "0";
+    });
+
+    tbody.appendChild(row);
+    totalFormsEl.value = String(idx + 1);
+  }
+
+  function reindexRows() {
+    // after removing a row, update indices so Django doesn't validate missing ones
+    const prefix = getPrefix();
+    const rows = Array.from(tbody.querySelectorAll("tr.grade-row"));
+
+    rows.forEach((row, i) => {
+      row.querySelectorAll("input, select, textarea, label").forEach(el => {
+        // update name
+        if (el.name) {
+          el.name = el.name.replace(new RegExp(prefix + "-\\d+-"), prefix + "-" + i + "-");
+        }
+        // update id
+        if (el.id) {
+          el.id = el.id.replace(new RegExp(prefix + "-\\d+-"), prefix + "-" + i + "-");
+        }
+        // update label for=
+        if (el.getAttribute && el.getAttribute("for")) {
+          el.setAttribute("for", el.getAttribute("for").replace(new RegExp(prefix + "-\\d+-"), prefix + "-" + i + "-"));
+        }
+      });
+    });
+
+    totalFormsEl.value = String(rows.length);
+  }
+
+  addBtn.addEventListener("click", addRow);
+
+  tbody.addEventListener("click", (e) => {
+    const btn = e.target.closest(".removeRowBtn");
+    if (!btn) return;
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    // If it's an existing row (has DELETE checkbox), just tick DELETE instead of removing
+    const delCheckbox = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    if (delCheckbox) {
+      delCheckbox.checked = true;
+      tr.style.opacity = "0.5";
+      return;
+    }
+
+    // New row: remove and reindex to avoid Django validating "holes"
+    tr.remove();
+    reindexRows();
+  });
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,268 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-book-medical"></i> Add Subject
+      </h3>
+      <small class="text-muted">
+        Step 1 of 3 — Enter subject details
+      </small>
+    </div>
+
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'subject_list' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Subjects
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <div class="badge badge-primary mr-2" style="font-size: 0.95rem;">1</div>
+        <div>
+          <div class="font-weight-bold">Subject</div>
+          <small class="text-muted">Name, code, level</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">2</div>
+        <div>
+          <div class="font-weight-bold">Papers</div>
+          <small class="text-muted">Skipped automatically for PLE</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finalize subject</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate id="subjectStep1Form">
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-body">
+
+          <div class="d-flex align-items-start justify-content-between flex-wrap">
+            <div class="mb-2">
+              <h5 class="mb-1">
+                <i class="fas fa-edit mr-2"></i> Subject Details
+              </h5>
+              <small class="text-muted">
+                Fill in the subject information to continue.
+              </small>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for err in form.non_field_errors %}
+                <div>{{ err }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="{{ form.code.id_for_label }}">
+                Code <span class="text-danger">*</span>
+              </label>
+              {{ form.code }}
+              {% for e in form.code.errors %}
+                <small class="text-danger d-block">{{ e }}</small>
+              {% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label for="{{ form.short_name.id_for_label }}">
+                Short Name <span class="text-danger">*</span>
+              </label>
+              {{ form.short_name }}
+              {% for e in form.short_name.errors %}
+                <small class="text-danger d-block">{{ e }}</small>
+              {% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label for="{{ form.level.id_for_label }}">
+                Level <span class="text-danger">*</span>
+              </label>
+              {{ form.level }}
+              {% for e in form.level.errors %}
+                <small class="text-danger d-block">{{ e }}</small>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">
+              Subject Name <span class="text-danger">*</span>
+            </label>
+            {{ form.name }}
+            {% for e in form.name.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+
+          <hr>
+
+          <div class="mb-2">
+            <h6 class="mb-3">Tags / Type</h6>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-3">
+              <div class="form-check">
+                {{ form.is_major }}
+                <label class="form-check-label" for="{{ form.is_major.id_for_label }}">
+                  Major
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group col-md-3">
+              <div class="form-check">
+                {{ form.is_optional }}
+                <label class="form-check-label" for="{{ form.is_optional.id_for_label }}">
+                  Optional
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group col-md-3">
+              <div class="form-check">
+                {{ form.is_language }}
+                <label class="form-check-label" for="{{ form.is_language.id_for_label }}">
+                  Language
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group col-md-3">
+              <div class="form-check">
+                {{ form.is_Religion }}
+                <label class="form-check-label" for="{{ form.is_Religion.id_for_label }}">
+                  Religion
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between flex-wrap mt-3">
+            <a href="{% url 'subject_list' %}" class="btn btn-light mb-2">
+              <i class="fas fa-times mr-1"></i> Cancel
+            </a>
+
+            <button type="submit" class="btn btn-outline-success mb-2">
+              Save & Continue <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3">
+            <i class="fas fa-info-circle mr-2"></i> Flow Guide
+          </h5>
+
+          <div class="mb-3 p-3 border rounded">
+            <div class="font-weight-bold text-success mb-1">PLE</div>
+            <small class="text-muted d-block">
+              Step 1 → Step 3
+            </small>
+            <small class="text-muted">
+              Papers are not required for PLE subjects.
+            </small>
+          </div>
+
+          <div class="p-3 border rounded">
+            <div class="font-weight-bold text-primary mb-1">UCE / UACE</div>
+            <small class="text-muted d-block">
+              Step 1 → Step 2 → Step 3
+            </small>
+            <small class="text-muted">
+              Papers must be added before finalizing.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">
+            <i class="fas fa-lightbulb mr-2"></i> Tips
+          </h5>
+
+          <ul class="text-muted pl-3 mb-0">
+            <li>Use a unique subject code.</li>
+            <li>Short name should be brief and clear.</li>
+            <li>Select the correct education level.</li>
+            <li>For PLE, the system will skip papers automatically.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const form = document.getElementById("subjectStep1Form");
+    if (!form) return;
+
+    form.addEventListener("submit", function (e) {
+      const requiredFields = form.querySelectorAll("input[required], select[required], textarea[required]");
+      let hasError = false;
+
+      requiredFields.forEach(function (field) {
+        const value = (field.value || "").trim();
+
+        field.classList.remove("is-invalid");
+
+        if (!value) {
+          field.classList.add("is-invalid");
+          hasError = true;
+        }
+      });
+
+      if (hasError) {
+        e.preventDefault();
+      }
+    });
+  })();
+</script>
+
+{% endblock %}

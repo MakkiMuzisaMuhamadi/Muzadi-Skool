@@ -1,0 +1,117 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-marker"></i> Teacher Marking Inbox
+    </h3>
+    <small class="text-muted">Typed answers waiting for marking (Short Text / Essay).</small>
+  </div>
+  <div>
+    <a href="{% url 'teacher_exam_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back to Exams
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="font-weight-bold mb-1">Filter by Exam</label>
+        <select name="exam" class="form-select">
+          <option value="">All Exams</option>
+          {% for e in exams %}
+            <option value="{{ e.id }}" {% if selected_exam_id == e.id|stringformat:"s" %}selected{% endif %}>
+              {{ e.title }} — {{ e.class_ref }}{% if e.stream %} / {{ e.stream.name }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6 d-flex" style="gap:.5rem;">
+        <button class="btn btn-outline-primary" type="submit">
+          <i class="fas fa-filter mr-1"></i> Apply Filter
+        </button>
+        <a class="btn btn-outline-danger" href="{% url 'teacher_marking_inbox' %}">
+          <i class="fas fa-sync-alt mr-1"></i> Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Inbox Table -->
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="text-muted small">
+        Showing attempts that are <b>Submitted</b> and still have <b>manual marking pending</b>.
+      </div>
+      <div>
+        <span class="badge badge-warning">Manual Pending</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Exam</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in attempts %}
+            <tr>
+              <td class="font-weight-bold">{{ a.student }}</td>
+              <td>
+                <div class="font-weight-bold">{{ a.exam.title }}</div>
+                <div class="text-muted small">
+                  Attempt {{ a.attempt_no }}
+                </div>
+              </td>
+              <td>
+                {{ a.exam.class_ref }}
+                {% if a.exam.stream %}
+                  / {{ a.exam.stream.name }}
+                {% endif %}
+              </td>
+              <td>{{ a.exam.subject.name }}</td>
+              <td>{{ a.submitted_at|default:"—" }}</td>
+              <td>
+                {% if a.is_manual_pending %}
+                  <span class="badge badge-warning">Manual Pending</span>
+                {% else %}
+                  <span class="badge badge-success">Done</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <a href="{% url 'teacher_mark_attempt' a.id %}" class="btn btn-primary btn-sm">
+                  <i class="fas fa-pen mr-1"></i> Mark Now
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">
+                No pending marking found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

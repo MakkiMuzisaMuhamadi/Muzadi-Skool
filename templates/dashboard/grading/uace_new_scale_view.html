@@ -1,0 +1,175 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-eye"></i> {{ scale.name }}
+    </h3>
+    <small class="text-muted">
+      New UACE Grading Scale Details
+    </small>
+  </div>
+
+  <div>
+    <a href="{% url back_url %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+
+    <a href="{% url 'new_uace_grading_scale_edit' scale.id %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-edit mr-1"></i> Edit
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-2">
+        <strong>Status</strong><br>
+        {% if scale.is_active %}
+          <span class="badge badge-success">ACTIVE</span>
+        {% else %}
+          <span class="badge badge-secondary">INACTIVE</span>
+        {% endif %}
+      </div>
+
+      <div class="col-md-2">
+        <strong>Principal Subjects</strong><br>
+        {{ scale.required_principal_subjects }}
+      </div>
+
+      <div class="col-md-2">
+        <strong>Subsidiary Subjects</strong><br>
+        {{ scale.required_subsidiary_subjects }}
+      </div>
+
+      <div class="col-md-2">
+        <strong>Require GP</strong><br>
+        {% if scale.require_general_paper %}Yes{% else %}No{% endif %}
+      </div>
+
+      <div class="col-md-2">
+        <strong>Max Points</strong><br>
+        {{ scale.max_total_points }}
+      </div>
+
+      <div class="col-md-2">
+        <strong>Grade Bands</strong><br>
+        {{ grade_bands|length }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <strong>Grade Bands</strong>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Grade</th>
+          <th>Name</th>
+          <th>Min Score</th>
+          <th>Max Score</th>
+          <th>Points</th>
+          <th>Pass</th>
+          <th>Descriptor</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for g in grade_bands %}
+          <tr>
+            <td>{{ g.order }}</td>
+            <td><strong>{{ g.grade_code }}</strong></td>
+            <td>{{ g.grade_name|default:"-" }}</td>
+            <td>{{ g.min_score }}</td>
+            <td>{{ g.max_score }}</td>
+            <td>{{ g.points }}</td>
+            <td>
+              {% if g.is_pass %}
+                <span class="badge badge-success">Yes</span>
+              {% else %}
+                <span class="badge badge-danger">No</span>
+              {% endif %}
+            </td>
+            <td>{{ g.descriptor|default:"-" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted">
+              No grade bands defined.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>New UACE Subject Configurations</strong>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Subject</th>
+          <th>Code</th>
+          <th>Category</th>
+          <th>Compulsory</th>
+          <th>Total Points</th>
+          <th>Average</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for s in subject_configs %}
+          <tr>
+            <td>{{ s.order }}</td>
+            <td>{{ s.subject.name }}</td>
+            <td>{{ s.subject.code }}</td>
+            <td>{{ s.get_category_display }}</td>
+            <td>
+              {% if s.is_compulsory %}
+                <span class="badge badge-info">Yes</span>
+              {% else %}
+                <span class="badge badge-light">No</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.include_in_total_points %}
+                <span class="badge badge-success">Yes</span>
+              {% else %}
+                <span class="badge badge-secondary">No</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.include_in_average %}
+                <span class="badge badge-success">Yes</span>
+              {% else %}
+                <span class="badge badge-secondary">No</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted">
+              No subjects configured.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

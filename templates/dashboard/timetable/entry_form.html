@@ -1,0 +1,141 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-4 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-edit mr-2 text-primary"></i> {{ title }}</h3>
+    <small class="text-muted">Teacher, class, group and room clashes are checked across all running timetables.</small>
+  </div>
+  <a href="{% if next %}{{ next }}{% else %}{% url 'timetable_entry_list' %}{% endif %}" class="btn btn-light btn-sm border">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        <strong>This lesson cannot be saved:</strong>
+        <ul class="mb-0 mt-1">{% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-6 mb-3">{% include "dashboard/timetable/_field.html" with f=form.timetable %}</div>
+        <div class="col-md-3 mb-3">{% include "dashboard/timetable/_field.html" with f=form.day %}</div>
+        <div class="col-md-3 mb-3">{% include "dashboard/timetable/_field.html" with f=form.span %}</div>
+
+        <div class="col-md-6 mb-3">{% include "dashboard/timetable/_field.html" with f=form.period %}</div>
+        <div class="col-md-6 mb-3">{% include "dashboard/timetable/_field.html" with f=form.class_ref %}</div>
+
+        <div class="col-md-6 mb-3">
+          {% include "dashboard/timetable/_field.html" with f=form.stream %}
+        </div>
+        <div class="col-md-6 mb-3">
+          {% include "dashboard/timetable/_field.html" with f=form.teaching_group %}
+          <small class="text-muted">Use a group for electives / combinations. Leave stream and group empty for the whole class.</small>
+        </div>
+
+        <div class="col-md-4 mb-3">{% include "dashboard/timetable/_field.html" with f=form.subject %}</div>
+        <div class="col-md-4 mb-3">{% include "dashboard/timetable/_field.html" with f=form.teacher %}</div>
+        <div class="col-md-4 mb-3">{% include "dashboard/timetable/_field.html" with f=form.venue %}</div>
+
+        <div class="col-md-9 mb-3">{% include "dashboard/timetable/_field.html" with f=form.notes %}</div>
+        <div class="col-md-3 mb-3">{% include "dashboard/timetable/_field.html" with f=form.is_active %}</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save Lesson</button>
+      <a href="{% if next %}{{ next }}{% else %}{% url 'timetable_entry_list' %}{% endif %}" class="btn btn-light border">Cancel</a>
+      {% if item %}
+        <a href="{% url 'timetable_entry_delete' item.pk %}?next={{ next|urlencode }}" class="btn btn-outline-danger float-right">Delete</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const $ = id => document.getElementById(id);
+  const timetableSelect = $("id_timetable"), daySelect = $("id_day"), periodSelect = $("id_period");
+  const classSelect = $("id_class_ref"), streamSelect = $("id_stream"), groupSelect = $("id_teaching_group");
+  const subjectSelect = $("id_subject"), teacherSelect = $("id_teacher");
+  let groups = [];
+
+  function setOptions(select, items, placeholder, keep) {
+    const current = keep !== undefined ? keep : select.value;
+    select.innerHTML = "";
+    const first = document.createElement("option");
+    first.value = ""; first.textContent = placeholder;
+    select.appendChild(first);
+    items.forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item.id; opt.textContent = item.name || item.text;
+      if (String(item.id) === String(current)) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+  const getJSON = url => fetch(url).then(r => r.json()).then(d => d.results || []);
+
+  function loadPeriods(keep) {
+    if (!timetableSelect.value || !daySelect.value) return Promise.resolve();
+    return getJSON(`{% url 'ajax_tt_periods_for_day' %}?timetable_id=${timetableSelect.value}&day=${daySelect.value}`)
+      .then(items => setOptions(periodSelect, items, "---------", keep));
+  }
+  function loadStreams(keep) {
+    if (!classSelect.value) { setOptions(streamSelect, [], "Whole class", ""); return Promise.resolve(); }
+    return getJSON(`{% url 'ajax_streams_for_class' %}?class_id=${classSelect.value}`)
+      .then(items => setOptions(streamSelect, items, "Whole class", keep));
+  }
+  function loadGroups(keep) {
+    if (!classSelect.value) { setOptions(groupSelect, [], "No group", ""); return Promise.resolve(); }
+    return getJSON(`{% url 'ajax_tt_groups_for_class' %}?class_id=${classSelect.value}&timetable_id=${timetableSelect.value || ""}`)
+      .then(items => { groups = items; setOptions(groupSelect, items, "No group", keep); toggleGroup(); });
+  }
+  function loadSubjects(keep) {
+    if (!classSelect.value) return Promise.resolve();
+    return getJSON(`{% url 'ajax_subjects_for_class' %}?class_id=${classSelect.value}`)
+      .then(items => setOptions(subjectSelect, items, "---------", keep));
+  }
+  function loadTeachers(keep) {
+    if (!classSelect.value || !subjectSelect.value) return Promise.resolve();
+    return getJSON(`{% url 'ajax_timetable_teachers' %}?class_id=${classSelect.value}&stream_id=${streamSelect.value}&subject_id=${subjectSelect.value}`)
+      .then(items => { if (items.length) setOptions(teacherSelect, items, "---------", keep); });
+  }
+  function toggleGroup() {
+    const hasGroup = !!groupSelect.value;
+    streamSelect.disabled = hasGroup;
+    if (hasGroup) {
+      streamSelect.value = "";
+      const g = groups.find(x => String(x.id) === String(groupSelect.value));
+      if (g) {
+        subjectSelect.value = g.subject_id || subjectSelect.value;
+        if (g.teacher_id && !teacherSelect.value) teacherSelect.value = g.teacher_id;
+      }
+    }
+  }
+
+  timetableSelect.addEventListener("change", () => { loadPeriods(); loadGroups(); });
+  daySelect.addEventListener("change", () => loadPeriods());
+  classSelect.addEventListener("change", () => { loadStreams(""); loadGroups(""); loadSubjects(""); });
+  streamSelect.addEventListener("change", () => loadTeachers());
+  groupSelect.addEventListener("change", () => { toggleGroup(); loadTeachers(); });
+  subjectSelect.addEventListener("change", () => loadTeachers());
+
+  // initial load keeps existing / prefilled values
+  const init = {
+    period: "{{ form.period.value|default:'' }}", stream: "{{ form.stream.value|default:'' }}",
+    group: "{{ form.teaching_group.value|default:'' }}", subject: "{{ form.subject.value|default:'' }}",
+    teacher: "{{ form.teacher.value|default:'' }}",
+  };
+  loadPeriods(init.period);
+  if (classSelect.value) {
+    Promise.all([loadStreams(init.stream), loadGroups(init.group), loadSubjects(init.subject)])
+      .then(() => loadTeachers(init.teacher));
+  }
+});
+</script>
+{% endblock %}

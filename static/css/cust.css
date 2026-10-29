@@ -1,0 +1,377 @@
+/* =========================================================
+   EXISTING NAVBAR / HEADER CUSTOM CSS (your original)
+========================================================= */
+.nav-profile img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.nav-profile-name {
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+/* Quick Access Button */
+.quick-access-btn {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  color: white;
+  box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-access-btn:hover {
+  background: linear-gradient(135deg, #172c5c 0%, #24478a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Search Field */
+.search-field .input-group {
+  border-radius: 25px;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+}
+
+.search-field input {
+  background-color: #f8f9fa;
+}
+
+.search-field input:focus {
+  background-color: white;
+  box-shadow: none;
+}
+
+/* Stats Widget */
+.nav-stats .stats-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid #dee2e6;
+}
+
+.stat-item {
+  flex: 1;
+  padding: 0 10px;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+/* Notification Styles */
+.notification-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  font-size: 0.7rem;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Role-based navigation indicators */
+.nav-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-item.disabled a {
+  pointer-events: none;
+  color: #6c757d !important;
+}
+
+.role-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Today's Entries Counter */
+.today-entries-pill {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  margin: 0 1.5rem;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 120px;
+  justify-content: center;
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+  .header-title { display: none; }
+  .search-field { display: none !important; }
+  .quick-access-dropdown { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  .nav-profile-name { display: none !important; }
+  .today-entries-pill .text { display: none; }
+}
+
+/* =========================================================
+   NEW DASHBOARD UI (cards + charts wrappers)
+========================================================= */
+.dash { padding: 0.25rem 0.25rem 0.75rem; }
+
+/* Header card */
+.dash-header {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.08);
+  overflow: hidden;
+}
+
+.dash-logo img {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+}
+
+.dash-title { font-weight: 800; letter-spacing: 0.2px; }
+.dash-sub { gap: .75rem; }
+.dash-meta .h4 { line-height: 1.1; }
+
+/* Soft cards */
+.soft-card {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.08);
+}
+
+.dash-filter-box{
+  border: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.7);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+/* Progress */
+.dash-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.dash-progress .progress-bar { border-radius: 999px; }
+
+/* Small icon pill */
+.icon-pill{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.10);
+  color: #3b82f6;
+}
+
+/* Stat cards (modern) */
+.stat-card{
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.08);
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.stat-card:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.12);
+}
+
+.stat-top{
+  padding: 16px 16px 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.stat-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+}
+.stat-meta{ min-width: 0; }
+.stat-label{ font-size: 0.85rem; color: rgba(0,0,0,0.55); font-weight: 600; }
+.stat-value{ font-size: 1.55rem; font-weight: 800; line-height: 1.1; }
+
+.stat-bottom{
+  padding: 12px 16px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Color themes */
+.stat-blue .stat-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.stat-green .stat-icon { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.stat-cyan .stat-icon { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.stat-amber .stat-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+/* Chart wrapper */
+.chart-wrap{
+  position: relative;
+  width: 100%;
+}
+.chart-wrap canvas{
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Better buttons in stat cards */
+.stat-card .btn{
+  border-radius: 999px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Minor utilities */
+.min-w-0{ min-width: 0; }
+
+
+
+/* =============================
+   ENROLLMENT STEPS UI
+============================= */
+
+.enroll-step-card {
+  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+
+.step-chip {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.step-chip.active {
+  background: #28a745;
+  color: #fff;
+}
+
+.step-chip.done {
+  background: #eaf7ee;
+  color: #28a745;
+}
+
+.step-chip.pending {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #6c757d;
+}
+
+.student-summary-box {
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fff9, #ffffff);
+  border: 1px solid #dff0e4;
+}
+
+/* =============================
+   SUMMARY CARDS
+============================= */
+
+.summary-card {
+  border-radius: 14px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.summary-card:hover {
+  box-shadow: 0 8px 22px rgba(0,0,0,0.05);
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.summary-value {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #212529;
+}
+
+/* =============================
+   PARENT LIST BADGES
+============================= */
+
+.parent-pill {
+  display: inline-block;
+  background: #f1f3f5;
+  border-radius: 999px;
+  padding: 6px 10px;
+  margin: 4px;
+  font-size: 0.85rem;
+}
+
+/* =============================
+   FINISH PANEL
+============================= */
+
+.finish-card {
+  border-radius: 16px;
+  border: 1px solid #dff0e4;
+  background: linear-gradient(135deg, #f6fff8, #ffffff);
+}
+
+.finish-icon {
+  font-size: 42px;
+  color: #28a745;
+}
+
+.finish-btn {
+  height: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+}

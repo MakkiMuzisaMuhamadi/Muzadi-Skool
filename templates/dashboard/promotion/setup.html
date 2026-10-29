@@ -1,0 +1,218 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-project-diagram"></i> Promotion Setup
+      </h3>
+      <small class="text-muted">
+        First define class progression, then map streams into the selected next class.
+      </small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'promotion_dashboard' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-exchange-alt mr-1"></i> Student Promotions
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row text-center">
+      <div class="col-md-4 mb-2">
+        <div class="border rounded p-3 h-100">
+          <span class="badge badge-success mb-2">Step 1</span>
+          <h6 class="mb-1">Class Progression</h6>
+          <small class="text-muted">Choose the next class and progression mode.</small>
+        </div>
+      </div>
+      <div class="col-md-4 mb-2">
+        <div class="border rounded p-3 h-100">
+          <span class="badge badge-info mb-2">Step 2</span>
+          <h6 class="mb-1">Stream Mapping</h6>
+          <small class="text-muted">Map current streams to streams in that next class.</small>
+        </div>
+      </div>
+      <div class="col-md-4 mb-2">
+        <div class="border rounded p-3 h-100">
+          <span class="badge badge-primary mb-2">Example</span>
+          <h6 class="mb-1">Senior 1 / North → Senior 2 / Zambogo</h6>
+          <small class="text-muted">This is the exact mapping you are defining below.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <strong>Class Progression</strong><br>
+      <small class="text-muted">Set the next class before doing stream mapping.</small>
+    </div>
+    <form method="get" class="form-inline mt-2 mt-md-0">
+      <label class="small text-muted mr-2 mb-0">Filter by Level</label>
+      <select name="level" class="form-control form-control-sm mr-2">
+        <option value="">All Levels</option>
+        {% for l in levels %}
+          <option value="{{ l.id }}" {% if selected_level == l.id|stringformat:"s" %}selected{% endif %}>{{ l.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-success btn-sm">Apply</button>
+    </form>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="classProgressionTable" class="table table-bordered table-striped table-sm w-100">
+        <thead>
+          <tr>
+            <th>Current Class</th>
+            <th>Level</th>
+            <th>Next Class</th>
+            <th>Mode</th>
+            <th>Save</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in class_rows %}
+          <tr>
+            <td><strong>{{ c.name }}</strong></td>
+            <td>{{ c.level.name }}</td>
+            <td>
+              <form method="post" action="{% url 'promotion_setup_class_update' c.id %}">
+                {% csrf_token %}
+                <select name="next_class" class="form-control form-control-sm">
+                  <option value="">---------</option>
+                  {% for option in classes %}
+                    {% if option.id != c.id %}
+                      <option value="{{ option.id }}" {% if c.next_class_id == option.id %}selected{% endif %}>
+                        {{ option.name }} ({{ option.level.name }})
+                      </option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select name="progression_mode" class="form-control form-control-sm">
+                  <option value="NORMAL" {% if c.progression_mode == "NORMAL" %}selected{% endif %}>Normal</option>
+                  <option value="CYCLE_EXIT" {% if c.progression_mode == "CYCLE_EXIT" %}selected{% endif %}>Cycle Exit</option>
+                  <option value="TERMINAL" {% if c.progression_mode == "TERMINAL" %}selected{% endif %}>Terminal</option>
+                </select>
+            </td>
+            <td>
+                <button class="btn btn-success btn-sm btn-block">
+                  <i class="fas fa-save mr-1"></i> Save
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted">No classes found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <strong>Stream Progression</strong><br>
+      <small class="text-muted">Only classes with a next class appear here. Already-used target streams are excluded.</small>
+    </div>
+    <form method="get" class="form-inline mt-2 mt-md-0">
+      {% if selected_level %}
+        <input type="hidden" name="level" value="{{ selected_level }}">
+      {% endif %}
+      <label class="small text-muted mr-2 mb-0">Filter by Class</label>
+      <select name="class" class="form-control form-control-sm mr-2">
+        <option value="">All Classes</option>
+        {% for c in class_rows %}
+          {% if c.next_class %}
+            <option value="{{ c.id }}" {% if selected_class == c.id|stringformat:"s" %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-success btn-sm">Apply</button>
+    </form>
+  </div>
+
+  <div class="card-body">
+    {% if stream_rows %}
+      <div class="table-responsive">
+        <table id="streamProgressionTable" class="table table-bordered table-striped table-sm w-100">
+          <thead>
+            <tr>
+              <th>Current Class</th>
+              <th>Current Stream</th>
+              <th>Next Class</th>
+              <th>Next Stream</th>
+              <th>Save</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in stream_rows %}
+            <tr>
+              <td><strong>{{ row.stream.class_ref.name }}</strong></td>
+              <td><span class="badge badge-light">{{ row.stream.name }}</span></td>
+              <td><strong>{{ row.stream.class_ref.next_class.name }}</strong></td>
+              <td>
+                <form method="post" action="{% url 'promotion_setup_stream_update' row.stream.id %}">
+                  {% csrf_token %}
+                  <select name="next_stream" class="form-control form-control-sm">
+                    <option value="">---------</option>
+                    {% for ns in row.available_next_streams %}
+                      <option value="{{ ns.id }}" {% if row.stream.next_stream_id == ns.id %}selected{% endif %}>
+                        {{ ns.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+              </td>
+              <td>
+                  <button class="btn btn-success btn-sm btn-block">
+                    <i class="fas fa-save mr-1"></i> Save Mapping
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-info mt-3 mb-0">
+        Example: if <strong>Senior One / North</strong> should go to <strong>Senior Two / Zambogo</strong>, choose <strong>Zambogo</strong> in the row for <strong>North</strong>.
+      </div>
+    {% else %}
+      <div class="alert alert-warning mb-0">
+        No stream rows available yet. First save the <strong>Next Class</strong> in the class progression section above.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#classProgressionTable').DataTable({
+      pageLength: 10,
+      ordering: false
+    });
+
+    $('#streamProgressionTable').DataTable({
+      pageLength: 10,
+      ordering: false
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,339 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  input[readonly] {
+    background: #f5f5f5 !important;
+    cursor: not-allowed;
+  }
+
+  .grade-helper-box {
+    background: #f8fbff;
+    border: 1px solid #d9e8ff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #315478;
+  }
+</style>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h4 class="mb-1">Subject Grade Comment</h4>
+        <small class="text-muted">
+          Select a grade from the active grading scale. The percentage range will fill automatically.
+        </small>
+      </div>
+
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'report_subject_comment_list' %}">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+
+    <hr>
+
+    <form method="post" novalidate data-grades-url="{% url 'ajax_grades_for_level' %}" data-purpose="subject_comment">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="row">
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.level.label }} <span class="text-danger">*</span>
+            </label>
+
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">
+                  <i class="fas fa-layer-group"></i>
+                </span>
+              </div>
+              {{ form.level }}
+            </div>
+
+            {% for e in form.level.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.grade_letter.label }} <span class="text-danger">*</span>
+            </label>
+
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">
+                  <i class="fas fa-award"></i>
+                </span>
+              </div>
+              {{ form.grade_letter }}
+            </div>
+
+            <small class="text-muted">
+              Grades are loaded from the active grading scale.
+            </small>
+
+            {% for e in form.grade_letter.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-12 mb-3">
+          <div class="grade-helper-box" id="gradeHelpBox">
+            Select a level first, then choose a grade. The range will be filled automatically.
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.min_percentage.label }}
+            </label>
+            {{ form.min_percentage }}
+
+            {% for e in form.min_percentage.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.max_percentage.label }}
+            </label>
+            {{ form.max_percentage }}
+
+            {% for e in form.max_percentage.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group">
+            <label class="font-weight-bold">
+              {{ form.comment_text.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.comment_text }}
+
+            {% for e in form.comment_text.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-group mb-0">
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label font-weight-bold ml-1" for="{{ form.is_active.id_for_label }}">
+                {{ form.is_active.label }}
+              </label>
+            </div>
+
+            {% for e in form.is_active.errors %}
+              <small class="text-danger d-block">{{ e }}</small>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      <hr>
+
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function(){
+  const form = document.querySelector('form[data-grades-url]');
+  if (!form) return;
+
+  const gradesUrl = form.getAttribute('data-grades-url');
+
+  const levelSelect = form.querySelector('[data-level-select="1"]') || form.querySelector('#id_level');
+  const gradeSelect = form.querySelector('[data-grade-select="1"]') || form.querySelector('#id_grade_letter');
+
+  const minInput = form.querySelector('#id_min_percentage');
+  const maxInput = form.querySelector('#id_max_percentage');
+  const gradeHelpBox = document.querySelector('#gradeHelpBox');
+
+  const selectedGradeFromServer = gradeSelect ? gradeSelect.value : "";
+
+  function setHelp(message, type){
+    if (!gradeHelpBox) return;
+
+    gradeHelpBox.textContent = message;
+
+    gradeHelpBox.style.background = '#f8fbff';
+    gradeHelpBox.style.borderColor = '#d9e8ff';
+    gradeHelpBox.style.color = '#315478';
+
+    if (type === 'error') {
+      gradeHelpBox.style.background = '#fff5f5';
+      gradeHelpBox.style.borderColor = '#ffd6d6';
+      gradeHelpBox.style.color = '#9b1c1c';
+    }
+
+    if (type === 'success') {
+      gradeHelpBox.style.background = '#f3fff6';
+      gradeHelpBox.style.borderColor = '#ccefd4';
+      gradeHelpBox.style.color = '#206a35';
+    }
+  }
+
+  function setMinMax(minVal, maxVal){
+    if (minInput) minInput.value = (minVal ?? "");
+    if (maxInput) maxInput.value = (maxVal ?? "");
+  }
+
+  function resetGrades(){
+    if (!gradeSelect) return;
+
+    gradeSelect.innerHTML = '';
+
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '— Select Grade —';
+    gradeSelect.appendChild(opt);
+
+    setMinMax("", "");
+  }
+
+  function fillRangeFromSelectedGrade(){
+    if (!gradeSelect) return;
+
+    const opt = gradeSelect.options[gradeSelect.selectedIndex];
+
+    if (!opt || !opt.value) {
+      setMinMax("", "");
+      setHelp("Select a grade to auto-fill the minimum and maximum percentage.", "info");
+      return;
+    }
+
+    const minVal = opt.dataset.min || "";
+    const maxVal = opt.dataset.max || "";
+    const gradeName = opt.dataset.gradeName || "";
+    const aggregatePoint = opt.dataset.aggregatePoint || "";
+
+    setMinMax(minVal, maxVal);
+
+    let message = `Selected ${opt.value}`;
+    if (gradeName) message += ` - ${gradeName}`;
+    message += `, range ${minVal} - ${maxVal}`;
+
+    if (aggregatePoint) {
+      message += `, aggregate point ${aggregatePoint}`;
+    }
+
+    setHelp(message, "success");
+  }
+
+  async function loadGrades(levelId, selectedGrade){
+    resetGrades();
+
+    if (!levelId) {
+      setHelp("Select a level first, then choose a grade.", "info");
+      return;
+    }
+
+    setHelp("Loading grades from active grading scale...", "info");
+
+    try {
+     const purpose = form.getAttribute('data-purpose') || 'subject_comment';
+     const url = `${gradesUrl}?level_id=${encodeURIComponent(levelId)}&purpose=${encodeURIComponent(purpose)}`;
+
+      const res = await fetch(url, {
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      });
+
+      const data = await res.json();
+
+      if (!data || !data.ok) {
+        setHelp((data && data.message) ? data.message : "Failed to load grades.", "error");
+        return;
+      }
+
+      const grades = data.grades || [];
+
+      if (!grades.length) {
+        setHelp("No grades found for this level. Check the active grading scale.", "error");
+        return;
+      }
+
+      grades.forEach(g => {
+        const opt = document.createElement('option');
+
+        opt.value = g.grade_letter;
+        opt.textContent = g.label;
+
+        opt.dataset.min = g.min;
+        opt.dataset.max = g.max;
+        opt.dataset.gradeName = g.grade_name || "";
+        opt.dataset.aggregatePoint = g.aggregate_point || "";
+
+        if (selectedGrade && selectedGrade === g.grade_letter) {
+          opt.selected = true;
+        }
+
+        gradeSelect.appendChild(opt);
+      });
+
+      if (selectedGrade) {
+        fillRangeFromSelectedGrade();
+      } else {
+        setHelp("Grades loaded. Now select a grade.", "success");
+      }
+
+    } catch (err) {
+      setHelp("Something went wrong while loading grades.", "error");
+      console.error(err);
+    }
+  }
+
+  if (levelSelect) {
+    levelSelect.addEventListener('change', function(){
+      loadGrades(this.value, "");
+    });
+  }
+
+  if (gradeSelect) {
+    gradeSelect.addEventListener('change', function(){
+      fillRangeFromSelectedGrade();
+    });
+  }
+
+  if (levelSelect && levelSelect.value) {
+    loadGrades(levelSelect.value, selectedGradeFromServer);
+  } else {
+    resetGrades();
+    setHelp("Select a level first, then choose a grade.", "info");
+  }
+})();
+</script>
+{% endblock %}

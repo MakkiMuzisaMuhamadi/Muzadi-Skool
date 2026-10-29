@@ -1,0 +1,79 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-tag"></i> Unit Details</h3>
+    <small class="text-muted">Tag: <strong>{{ unit.tag_code }}</strong></small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm"><i class="fas fa-qrcode mr-1"></i> Scan</a>
+    <a href="{% url 'inv_units' %}" class="btn btn-primary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="mb-2">{{ unit.item.name }}</h5>
+        <div class="mb-1"><strong>Type:</strong> {{ unit.item.category.type }}</div>
+        <div class="mb-1"><strong>Status:</strong> {{ unit.status }}</div>
+        <div class="mb-1"><strong>Condition:</strong> {{ unit.condition }}</div>
+        <div class="mb-1"><strong>Location:</strong> {{ unit.current_location|default:"—" }}</div>
+        <div class="mb-1"><strong>Serial:</strong> {{ unit.serial_number|default:"—" }}</div>
+        <div class="mb-1"><strong>Notes:</strong> <span class="text-muted">{{ unit.notes|default:"—" }}</span></div>
+
+        <hr>
+        <div><strong>Holder</strong></div>
+        {% if unit.current_student %}
+          <div>Student: {{ unit.current_student }}</div>
+        {% elif unit.current_staff_name %}
+          <div>Staff: {{ unit.current_staff_name }}</div>
+        {% else %}
+          <div class="text-muted">No current holder.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-2">Recent Activity</h5>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Type</th>
+                <th>By</th>
+                <th>Student/Staff</th>
+                <th>Remark</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in tx %}
+              <tr>
+                <td>{{ r.created_at|naturaltime }}</td>
+                <td><strong>{{ r.tx_type }}</strong></td>
+                <td>{{ r.performed_by|default:"—" }}</td>
+                <td>
+                  {% if r.student %}{{ r.student }}{% elif r.staff_name %}{{ r.staff_name }}{% else %}—{% endif %}
+                </td>
+                <td class="text-muted">{{ r.remark|default:"—" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted">No transactions for this unit yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <small class="text-muted">Showing latest 100 records.</small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+<!-- templates/uce/user_profile.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <h3 class="page-title">My Profile</h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">My Profile</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-md-4 grid-margin">
+    <!-- Profile Card -->
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="mb-4">
+          <img src="{% static 'images/noimage.jpg' %}" alt="profile" class="img-lg rounded-circle mb-3">
+          <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+          <p class="text-muted mb-2">
+            <span class="badge 
+              {% if request.user.profile.role == 'SUPER_ADMIN' %}badge-danger
+              {% elif request.user.profile.role == 'ADMIN' %}badge-warning
+              {% else %}badge-secondary
+              {% endif %}">
+              {{ request.user.profile.get_role_display }}
+            </span>
+          </p>
+          {% if request.user.profile.school %}
+          <p class="text-muted">
+            <i class="fas fa-school mr-1"></i>
+            {{ request.user.profile.school.name }}
+          </p>
+          {% endif %}
+        </div>
+        
+        <div class="border-top pt-3">
+          <div class="row">
+            <div class="col-6">
+              <small class="text-muted d-block">User since</small>
+              <p class="mb-0">{{ request.user.date_joined|date:"M d, Y" }}</p>
+            </div>
+            <div class="col-6">
+              <small class="text-muted d-block">Last login</small>
+              <p class="mb-0">{{ request.user.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8 grid-margin">
+    <!-- Profile Information -->
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Profile Information</h4>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="alert-container mb-4">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="font-weight-bold">Username</label>
+              <div class="d-flex align-items-center">
+                <input type="text" class="form-control bg-light" value="{{ request.user.username }}" readonly>
+                <button type="button" class="btn btn-outline-success btn-sm ml-2" 
+                        data-toggle="modal" data-target="#usernameModal">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="font-weight-bold">Email Address</label>
+              <div class="d-flex align-items-center">
+                <input type="email" class="form-control bg-light" 
+                       value="{{ request.user.email|default:'Not set' }}" readonly>
+                <button type="button" class="btn btn-outline-success btn-sm ml-2" 
+                        data-toggle="modal" data-target="#emailModal">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="font-weight-bold">Role</label>
+              <input type="text" class="form-control bg-light" 
+                     value="{{ request.user.profile.get_role_display }}" readonly>
+            </div>
+          </div>
+          
+        </div>
+
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="d-flex justify-content-between">
+              <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#passwordModal">
+                <i class="fas fa-key mr-2"></i>Change Password
+              </button>
+              
+              {% if request.user.profile.role in 'SUPER_ADMIN,ADMIN' %}
+              <a href="{% url 'user_management' %}" class="btn btn-outline-success">
+                <i class="fas fa-users-cog mr-2"></i>User Management
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Include Modals -->
+{% include 'dashboard/partials/account_modals.html' %}
+
+{% endblock %}

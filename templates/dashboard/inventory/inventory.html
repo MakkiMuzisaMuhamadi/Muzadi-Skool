@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-boxes"></i> Inventory Dashboard</h3>
+    <small class="text-muted">Overview of inventory records and activity</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-qrcode mr-1"></i> Scan Issue/Return
+    </a>
+    <a href="{% url 'inv_unit_bulk_add' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Bulk Add Units
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-3 mb-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="h2 mb-0">{{ counts.categories }}</div>
+        <div class="text-muted">Categories</div>
+        <a class="btn btn-link btn-sm" href="{% url 'inv_categories' %}">Manage</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="h2 mb-0">{{ counts.items }}</div>
+        <div class="text-muted">Items (Titles/Types)</div>
+        <a class="btn btn-link btn-sm" href="{% url 'inv_items' %}">View</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="h2 mb-0">{{ counts.units }}</div>
+        <div class="text-muted">Asset Tags</div>
+        <a class="btn btn-link btn-sm" href="{% url 'inv_units' %}">View</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="h2 mb-0">{{ counts.tx }}</div>
+        <div class="text-muted">Transactions</div>
+        <a class="btn btn-link btn-sm" href="{% url 'inv_transactions' %}">Audit Log</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-2">Quick Setup Checklist</h5>
+    <ol class="mb-0">
+      <li>Create Categories (Library / Assets).</li>
+      <li>Create Locations (Library, Stores, Labs, Offices).</li>
+      <li>Create Items (Book titles / Asset types).</li>
+      <li>Add Tags (Tagged copies) and print QR labels.</li>
+      <li>Use Scan Issue/Return for daily operations.</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

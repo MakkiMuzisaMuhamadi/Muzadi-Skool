@@ -1,0 +1,381 @@
+<!-- templates/uce/bulk_upload.html -->
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="card-title mb-0 text-white">
+                    <i class="fas fa-file-import me-2"></i>Bulk Upload Candidates - {{ education_level.name }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Information Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card border-info h-100">
+                            <div class="card-header bg-info text-white py-2">
+                                <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i> Single File Upload</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2"><strong>Use when:</strong> Adding candidates to an existing school</p>
+                                <ul class="mb-0 small">
+                                    <li>Select the target school from dropdown</li>
+                                    <li>Upload one Excel file</li>
+                                    <li>Candidates will be added to selected school</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-warning h-100">
+                            <div class="card-header bg-warning text-dark py-2">
+                                <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i> Multiple Files Upload</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2"><strong>Use when:</strong> Creating new schools from Excel files</p>
+                                <ul class="mb-0 small">
+                                    <li>Upload multiple Excel files or ZIP/RAR archive</li>
+                                    <li>Schools created from filenames</li>
+                                    <li>Each file creates a separate school</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs nav-fill mb-4" id="uploadTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="single-tab" data-toggle="tab" href="#single-upload" role="tab" 
+                           aria-controls="single-upload" aria-selected="true">
+                            <i class="fas fa-file-excel me-2"></i> Single File Upload
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="multiple-tab" data-toggle="tab" href="#multiple-upload" role="tab" 
+                           aria-controls="multiple-upload" aria-selected="false">
+                            <i class="fas fa-files me-2"></i> Multiple Files Upload
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="uploadTabsContent">
+                    <!-- Single File Upload Tab -->
+                    <div class="tab-pane fade show active" id="single-upload" role="tabpanel" aria-labelledby="single-tab">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0 text-dark">
+                                    <i class="fas fa-school me-2"></i>Upload to Existing School
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url 'single_upload_candidates' education_level=current_level %}" 
+                                      enctype="multipart/form-data" id="singleUploadForm">
+                                    {% csrf_token %}
+                                    
+                                    <div class="form-group row">
+                                        <label for="{{ single_form.school.id_for_label }}" class="col-md-3 col-form-label font-weight-bold">School</label>
+                                        <div class="col-md-9">
+                                            {{ single_form.school }}
+                                            {% if single_form.school.errors %}
+                                                <div class="text-danger small mt-1">
+                                                    {{ single_form.school.errors }}
+                                                </div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                Select the school where you want to add candidates
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group row">
+                                        <label for="{{ single_form.excel_file.id_for_label }}" class="col-md-3 col-form-label font-weight-bold">Excel File</label>
+                                        <div class="col-md-9">
+                                            {{ single_form.excel_file }}
+                                            {% if single_form.excel_file.errors %}
+                                                <div class="text-danger small mt-1">
+                                                    {{ single_form.excel_file.errors }}
+                                                </div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                <strong>File Requirements:</strong><br>
+                                                • Candidate names must be in column B<br>
+                                                • Data starts from row 6 (first 5 rows are skipped)<br>
+                                                • Column A will be ignored<br>
+                                                • Supported formats: .xlsx, .xls
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group row">
+                                        <div class="col-md-9 offset-md-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <a href="{% url 'uce_candidate_list' %}" class="btn btn-info">
+                                                    <i class="fas fa-arrow-left me-1"></i> Back to Candidates
+                                                </a>
+                                                <button type="submit" class="btn btn-outline-success">
+                                                    <i class="fas fa-upload me-1"></i> Upload Candidates
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multiple Files Upload Tab -->
+                    <div class="tab-pane fade" id="multiple-upload" role="tabpanel" aria-labelledby="multiple-tab">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0 text-dark">
+                                    <i class="fas fa-school me-2"></i>Create Schools from Files
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url 'multiple_upload_candidates' education_level=current_level %}" 
+                                      enctype="multipart/form-data" id="multipleUploadForm">
+                                    {% csrf_token %}
+                                    
+                                    <!-- <div class="form-group">
+                                        <div class="card border-primary">
+                                            <div class="card-header bg-primary text-white py-2">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-file-excel me-1"></i> Option 1: Upload Multiple Excel Files
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-group">
+                                                    <label for="{{ multiple_form.excel_files.id_for_label }}" class="font-weight-bold">Select Excel Files</label>
+                                                    {{ multiple_form.excel_files }}
+                                                    {% if multiple_form.excel_files.errors %}
+                                                        <div class="text-danger small mt-1">
+                                                            {{ multiple_form.excel_files.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                    <small class="form-text text-muted">
+                                                        Select multiple Excel files. Each file will create a school with the filename as the school name.
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div> -->
+
+                                    <div class="text-center my-4">
+                                        <span class="bg-light px-3 py-1 rounded text-muted font-weight-bold">OR</span>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="card border-success">
+                                            <div class="card-header bg-success text-white py-2">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-file-archive me-1"></i>Upload Archive File
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-group">
+                                                    <label for="{{ multiple_form.archive_file.id_for_label }}" class="font-weight-bold">Upload ZIP/RAR Archive</label>
+                                                    {{ multiple_form.archive_file }}
+                                                    {% if multiple_form.archive_file.errors %}
+                                                        <div class="text-danger small mt-1">
+                                                            {{ multiple_form.archive_file.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                    <small class="form-text text-muted">
+                                                        Upload a ZIP or RAR archive containing Excel files. Each Excel file in the archive will create a school.
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% if multiple_form.non_field_errors %}
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            {{ multiple_form.non_field_errors }}
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- File Requirements Card -->
+                                <div class="card border-info mt-4">
+                                    <div class="card-header bg-info text-white py-2">
+                                        <h6 class="mb-0"><i class="fas fa-list-alt me-1"></i> File Requirements</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6 class="text-info">Excel File Structure:</h6>
+                                                <ul class="mb-0">
+                                                    <li>Candidate names in <strong>Column B</strong></li>
+                                                    <li>Data starts from <strong>Row 6</strong></li>
+                                                    <li>First 5 rows are skipped</li>
+                                                    <li>Column A is ignored</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-info">Supported Formats:</h6>
+                                                <ul class="mb-0">
+                                                    <li>Excel: .xlsx, .xls</li>
+                                                    <li>Archive: ZIP, RAR, 7z, TAR</li>
+                                                    <li>School names from filenames</li>
+                                                    <li>Existing schools are reused</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                    
+                                    <div class="form-group mt-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a href="{% url 'uce_candidate_list' %}" class="btn btn-info">
+                                                <i class="fas fa-arrow-left me-1"></i> Back to Candidates
+                                            </a>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-upload me-1"></i> Process Files
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bootstrap 4 tab initialization (if needed)
+    $('#uploadTabs a').on('click', function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
+
+    // Handle single upload form validation
+    const singleUploadForm = document.getElementById('singleUploadForm');
+    if (singleUploadForm) {
+        singleUploadForm.addEventListener('submit', function(e) {
+            const schoolSelect = document.getElementById('id_school');
+            const fileInput = document.getElementById('id_excel_file');
+            let isValid = true;
+            
+            if (!schoolSelect || !schoolSelect.value) {
+                isValid = false;
+                alert('Please select a school');
+                if (schoolSelect) schoolSelect.focus();
+            } else if (!fileInput || !fileInput.value) {
+                isValid = false;
+                alert('Please select an Excel file to upload');
+                if (fileInput) fileInput.focus();
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Handle multiple upload form validation
+    const multipleUploadForm = document.getElementById('multipleUploadForm');
+    if (multipleUploadForm) {
+        multipleUploadForm.addEventListener('submit', function(e) {
+            const excelFilesInput = document.getElementById('id_excel_files');
+            const archiveInput = document.getElementById('id_archive_file');
+            
+            if ((!excelFilesInput || !excelFilesInput.value) && (!archiveInput || !archiveInput.value)) {
+                e.preventDefault();
+                alert('Please upload either Excel files or an archive file');
+                return;
+            }
+        });
+
+        // Clear other file inputs when one is selected
+        const excelFilesElem = document.getElementById('id_excel_files');
+        const archiveElem = document.getElementById('id_archive_file');
+        
+        if (excelFilesElem) {
+            excelFilesElem.addEventListener('change', function() {
+                if (archiveElem) archiveElem.value = '';
+            });
+        }
+        
+        if (archiveElem) {
+            archiveElem.addEventListener('change', function() {
+                if (excelFilesElem) excelFilesElem.value = '';
+            });
+        }
+    }
+
+    // Add active tab highlighting
+    const activeTab = localStorage.getItem('activeUploadTab');
+    if (activeTab) {
+        const tabElement = document.querySelector(`[href="${activeTab}"]`);
+        if (tabElement) {
+            $(tabElement).tab('show');
+        }
+    }
+
+    // Save active tab to localStorage
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        localStorage.setItem('activeUploadTab', e.target.getAttribute('href'));
+    });
+});
+</script>
+
+<style>
+.nav-tabs .nav-link {
+    color: #495057;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+    color: #495057;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    border-bottom: 2px solid #007bff;
+    font-weight: 600;
+}
+
+.card-header h5, .card-header h6 {
+    font-weight: 600;
+}
+
+.form-text ul {
+    padding-left: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-text li {
+    margin-bottom: 0.2rem;
+}
+
+.border-info {
+    border-left: 4px solid #17a2b8 !important;
+}
+
+.border-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.border-success {
+    border-left: 4px solid #28a745 !important;
+}
+
+.border-primary {
+    border-left: 4px solid #007bff !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% load static %}
+{% load role_tags %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-comments"></i> Messages to Parents</h3>
+    <small class="text-muted">Send SMS or WhatsApp to parents and track delivery. Newest first.</small>
+  </div>
+  {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'whatsapp_template_list' %}" class="btn btn-outline-success btn-sm">
+      <i class="fab fa-whatsapp mr-1"></i> WhatsApp templates
+    </a>
+    <a href="{% url 'sms_compose' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> New message
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-body">
+
+    <div class="table-responsive">
+      <table class="table table-hover table-striped" id="smsCampaignsTable">
+        <thead>
+          <tr>
+            <th>Created</th>
+            <th>Title</th>
+            <th>Via</th>
+            <th>Audience</th>
+            <th class="text-center">Total</th>
+            <th class="text-center">Delivered</th>
+            <th class="text-center">Sent</th>
+            <th class="text-center">Failed</th>
+            <th class="text-center">Unsent</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in campaigns %}
+          <tr>
+            {# data-order = exact time as a number, so sorting is by real date+time, newest first #}
+            <td data-order="{{ c.queued_at|date:'U' }}{{ c.pk|stringformat:'08d' }}" style="white-space:nowrap;">
+              {{ c.queued_at|date:"d M Y" }}<br>
+              <small class="text-muted">{{ c.queued_at|time:"H:i" }} · {{ c.queued_at|naturaltime }}</small>
+            </td>
+
+            <td class="font-weight-bold">
+              {{ c.title }}
+              {% if c.created_by %}<div class="small text-muted font-weight-normal">by {{ c.created_by.get_full_name|default:c.created_by.username }}</div>{% endif %}
+            </td>
+
+            <td>
+              {% if c.channel == "SMS" %}<span class="badge badge-danger">SMS</span>
+              {% elif c.channel == "WHATSAPP" %}<span class="badge" style="background:#25D366;color:#fff;">WhatsApp</span>
+              {% else %}<span class="badge" style="background:#25D366;color:#fff;">WhatsApp</span> <span class="badge badge-secondary">SMS</span>{% endif %}
+            </td>
+            <td><span class="badge badge-info">{{ c.get_audience_display }}</span></td>
+
+            <td class="text-center">{{ c.total_msgs|intcomma }}</td>
+            <td class="text-center text-success">{{ c.delivered_msgs|intcomma }}</td>
+            <td class="text-center text-info">{{ c.sent_msgs|intcomma }}</td>
+            <td class="text-center text-danger">{{ c.failed_msgs|intcomma }}</td>
+            <td class="text-center">{% if c.pending_msgs %}<span class="badge badge-warning">{{ c.pending_msgs|intcomma }}</span>{% else %}0{% endif %}</td>
+
+            <td class="text-right">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'sms_campaign_detail' c.pk %}">
+                <i class="fas fa-eye mr-1"></i> View
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-4">No messages sent yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  (function(){
+    try {
+      if (window.$ && $.fn.DataTable && document.querySelectorAll("#smsCampaignsTable tbody td[colspan]").length === 0) {
+        $("#smsCampaignsTable").DataTable({
+          pageLength: 25,
+          order: [[0, "desc"]],                           // Created column, newest first
+          columnDefs: [{ orderable: false, targets: -1 }] // no sorting on the View button
+        });
+      }
+    } catch(e){}
+  })();
+</script>
+{% endblock %}

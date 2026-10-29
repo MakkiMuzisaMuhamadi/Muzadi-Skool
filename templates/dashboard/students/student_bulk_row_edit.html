@@ -1,0 +1,63 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-edit text-primary"></i> Fix row {{ row.row_number }}</h3>
+    <small class="text-muted">{{ batch.title }}</small>
+  </div>
+  <a href="{{ back_url }}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back to review</a>
+</div>
+
+{% if row.validation_errors or row.duplicate_file_note or row.duplicate_db_note or row.import_error or row.warnings %}
+<div class="alert alert-warning small">
+  {% if row.validation_errors %}<div class="text-danger"><strong>Errors:</strong> {{ row.validation_errors }}</div>{% endif %}
+  {% if row.import_error %}<div class="text-danger"><strong>Import failed:</strong> {{ row.import_error }}</div>{% endif %}
+  {% if row.duplicate_file_note %}<div><strong>Repeated:</strong> {{ row.duplicate_file_note }}</div>{% endif %}
+  {% if row.duplicate_db_note %}<div><strong>May already exist:</strong> {{ row.duplicate_db_note }}</div>{% endif %}
+  {% if row.warnings %}<div class="text-muted"><strong>Warnings:</strong> {{ row.warnings }}</div>{% endif %}
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-lg-8">
+    <form method="post" class="card mb-3">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="form-row">
+          {% for field in form %}
+          {% if field.name == "parent1_name" %}
+            </div><hr><h6 class="mb-3">Parents / guardians</h6><div class="form-row">
+          {% elif field.name == "emergency_contact_name" %}
+            </div><hr><h6 class="mb-1">Emergency contact</h6><p class="small text-muted">Leave blank to use parent 1.</p><div class="form-row">
+          {% elif field.name == "nationality" %}
+            </div><hr><h6 class="mb-3">Other details</h6><div class="form-row">
+          {% endif %}
+          <div class="form-group col-md-4">
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+            {{ field }}
+            {% for e in field.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-footer bg-white">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save and re-check</button>
+      </div>
+    </form>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-2">As written in the file</h6>
+        <table class="table table-sm small mb-0">
+          {% for header, value in raw_items %}
+          <tr><th class="text-nowrap">{{ header }}</th><td>{{ value|default_if_none:"" }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

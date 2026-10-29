@@ -1,0 +1,225 @@
+<!-- templates/school/stream_list.html -->
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        
+        <!-- Left: Title + Breadcrumb -->
+        <div class="d-flex align-items-center flex-wrap">
+            <div class="mr-3">
+                <h3 class="page-title mb-1">
+                    <i class="fas fa-stream text-success mr-2"></i>
+                    Streams Management
+                </h3>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb p-0 m-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Streams</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Right: Add New Class Button -->
+        <div class="ml-2">
+        <a href="{% url 'stream_create' %}" class="btn btn-success">
+            <i class="fas fa-plus mr-1"></i> Add New Stream
+        </a>
+        </div>
+
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list mr-2"></i>
+                            All Streams ({{ streams.count }})
+                        </h5>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search streams..." id="searchStreams">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="streamsTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th><i class="fas fa-stream mr-1"></i> Stream Name</th>
+                                <th><i class="fas fa-chalkboard mr-1"></i> Class</th>
+                                <th><i class="fas fa-graduation-cap mr-1"></i> Level</th>
+                                <th><i class="fas fa-school mr-1"></i> School</th>
+                                <th><i class="fas fa-calendar mr-1"></i> Created</th>
+                                <th><i class="fas fa-cogs mr-1"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stream in streams %}
+                            <tr class="stream-row">
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong class="text-success">{{ stream.name }}</strong>
+                                </td>
+                                <td>
+                                    <a href="{% url 'class_detail' stream.class_ref.id %}" class="text-primary">
+                                        {{ stream.class_ref.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">
+                                        <i class="{{ stream.class_ref.level.icon }} mr-1"></i>
+                                        {{ stream.class_ref.level.name }}
+                                    </span>
+                                </td>
+                                <td>{{ stream.class_ref.school.name }}</td>
+                                <td>{{ stream.created_at|date:"d/m/Y" }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'stream_update' stream.id %}" class="btn btn-sm btn-warning" 
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger delete-stream" 
+                                                data-id="{{ stream.id }}" data-name="{{ stream.name }}"
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <div class="empty-state">
+                                        <i class="fas fa-stream fa-3x text-muted mb-3"></i>
+                                        <h5>No Streams Found</h5>
+                                        <p class="text-muted">Start by adding your first stream.</p>
+                                        <a href="{% url 'stream_create' %}" class="btn btn-success">
+                                            <i class="fas fa-plus mr-1"></i> Add Stream
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(document).ready(function() {
+    // Search functionality
+    $('#searchStreams').on('keyup', function() {
+        const value = $(this).val().toLowerCase();
+        $('.stream-row').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+    
+    // Clear search
+    $('#clearSearch').click(function() {
+        $('#searchStreams').val('');
+        $('.stream-row').show();
+    });
+    
+    // Delete stream confirmation
+    $('.delete-stream').click(function() {
+        const streamId = $(this).data('id');
+        const streamName = $(this).data('name');
+        
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `You are about to delete stream "${streamName}". This action cannot be undone!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{% url 'stream_delete' 0 %}".replace('0', streamId),
+                    type: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire(
+                                'Deleted!',
+                                `Stream "${streamName}" has been deleted.`,
+                                'success'
+                            ).then(() => {
+                                location.reload();
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire(
+                            'Error!',
+                            'Failed to delete stream. Please try again.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.stream-row:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.stream-row a:hover {
+    text-decoration: underline;
+}
+
+.badge-info {
+    background: linear-gradient(45deg, #17a2b8, #20c997);
+    color: white;
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state i {
+    opacity: 0.5;
+}
+
+#searchStreams:focus {
+    border-color: #00b09b;
+    box-shadow: 0 0 0 0.2rem rgba(0, 176, 155, 0.25);
+}
+</style>
+{% endblock %}

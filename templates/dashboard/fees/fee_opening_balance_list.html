@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-hourglass-half"></i> Old Fee Balances
+    </h3>
+    <small class="text-muted">Manage arrears brought from manual records or a previous system</small>
+  </div>
+  <a href="{% url 'fee_opening_balance_create' %}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus-circle mr-1"></i> Add Old Fee Balance
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="openingBalanceTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Student</th>
+            <th>Academic Year</th>
+            <th>Term</th>
+            <th>Fee Category</th>
+            <th>Amount</th>
+            <th>Posted</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ row.student.admission_number }} - {{ row.student.name }}</td>
+            <td>{{ row.academic_year.year|default:"-" }}</td>
+            <td>{{ row.term.name|default:"-" }}</td>
+            <td>{{ row.fee_category.name }}</td>
+            <td>UGX {{ row.amount|intcomma }}</td>
+            <td>
+              {% if row.is_posted %}
+                <span class="badge badge-success">Posted</span>
+              {% else %}
+                <span class="badge badge-warning">Pending</span>
+              {% endif %}
+            </td>
+            <td>{{ row.notes|default:"-"|truncatechars:50 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted">No old fee balances found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#openingBalanceTable').DataTable({
+      pageLength: 25
+    });
+  });
+</script>
+{% endblock %}

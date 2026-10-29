@@ -1,0 +1,76 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Add New Subject
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_code" class="form-label">Subject Code</label>
+                        {{ form.code }}
+                        {% if form.code.errors %}
+                        <div class="text-danger">{{ form.code.errors }}</div>
+                        {% endif %}
+                    </div>
+
+
+
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Subject Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_short_name" class="form-label">Short Name</label>
+                        {{ form.short_name }}
+                        {% if form.short_name.errors %}
+                        <div class="text-danger">{{ form.short_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_level" class="form-label">Level</label>
+                        {{ form.level }}
+                        {% if form.level.errors %}
+                        <div class="text-danger">{{ form.level.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-check mb-2">
+                        {{ form.is_major }} 
+                        <label for="id_is_major" class="form-check-label">Major Subject</label>
+                    </div>
+                    <div class="form-check mb-2">
+                        {{ form.is_optional }} 
+                        <label for="id_is_optional" class="form-check-label">Optional Subject</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        {{ form.is_language }} 
+                        <label for="id_is_language" class="form-check-label">Language</label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        {{ form.is_Religion }} 
+                        <label for="id_is_Religion" class="form-check-label">Religion</label>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'uce_manage_subjects' %}" class="btn btn-info me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-outline-success">Save Subject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

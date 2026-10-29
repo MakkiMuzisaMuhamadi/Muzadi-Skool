@@ -1,0 +1,767 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% load role_tags %}
+{% load humanize %}
+
+
+{% block content %}
+<div class="page-header mb-3">
+    <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+        <div>
+            <h3 class="page-title mb-1">
+                <i class="fas fa-calendar-alt mr-2 text-primary"></i>
+                Academic Calendar Dashboard
+            </h3>
+            <small class="text-muted">
+                Full academic year overview with holidays, events, terms, and allocated days
+            </small>
+        </div>
+
+        <div class="d-flex flex-wrap mt-2 mt-md-0">
+            <form method="get" class="mr-2">
+                <select name="year" class="form-control" onchange="this.form.submit()">
+                    {% for year in academic_years %}
+                        <option value="{{ year.id }}" {% if current_year and current_year.id == year.id %}selected{% endif %}>
+                            {{ year.year }}{% if year.is_active %} (Active){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+{% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+            <a href="{% url 'term_add' %}" class="btn btn-outline-primary btn-sm mr-2">
+                <i class="fas fa-clock mr-1"></i> Add Term
+            </a>
+            <a href="{% url 'holiday_add' %}" class="btn btn-outline-danger btn-sm mr-2">
+                <i class="fas fa-umbrella-beach mr-1"></i> Add Holiday
+            </a>
+            <a href="{% url 'event_add' %}" class="btn btn-success btn-sm mr-2">
+                <i class="fas fa-plus mr-1"></i> Add Event
+            </a>
+            <a href="{% url 'export_calendar_pdf' %}?year={{ current_year.id }}" class="btn btn-danger btn-sm">
+                <i class="fas fa-file-pdf mr-1"></i> Export Planner PDF
+            </a>
+
+{% endif %}
+        </div>
+    </div>
+</div>
+
+{% if current_year %}
+<div class="row">
+    <div class="col-md-3 grid-margin stretch-card">
+        <div class="card card-stat border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted mb-1">Academic Year</p>
+                <h4 class="mb-1">{{ current_year.year }}</h4>
+                <small class="text-muted">
+                    {{ current_year.start_date|date:"M d, Y" }} - {{ current_year.end_date|date:"M d, Y" }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 grid-margin stretch-card">
+        <div class="card card-stat border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted mb-1">Current Term</p>
+                <h4 class="mb-1">{% if current_term %}{{ current_term.name }}{% else %}Not Set{% endif %}</h4>
+                <small class="text-muted">
+                    {% if current_term %}
+                        {{ current_term.start_date|date:"M d" }} - {{ current_term.end_date|date:"M d, Y" }}
+                    {% else %}
+                        Select a current term
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2 grid-margin stretch-card">
+        <div class="card card-stat border-0 shadow-sm">
+            <div class="card-body text-center">
+                <p class="text-muted mb-1">Terms</p>
+                <h3 class="mb-0">{{ total_terms }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2 grid-margin stretch-card">
+        <div class="card card-stat border-0 shadow-sm">
+            <div class="card-body text-center">
+                <p class="text-muted mb-1">Holidays</p>
+                <h3 class="mb-0">{{ total_holidays }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2 grid-margin stretch-card">
+        <div class="card card-stat border-0 shadow-sm">
+            <div class="card-body text-center">
+                <p class="text-muted mb-1">Events</p>
+                <h3 class="mb-0">{{ total_events }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if important_notices %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-bullhorn text-warning mr-2"></i>Important Notices</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for item in important_notices %}
+            <div class="col-md-6 mb-2">
+                <div class="notice-card" style="border-left: 4px solid {{ item.color }};">
+                    <strong>{{ item.label }}</strong>
+                    <div class="small text-muted">{{ item.text }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 pb-0">
+                <h4 class="card-title mb-1">{{ current_year.year }} Year Planner</h4>
+                <small class="text-muted">Hover any day to see full details</small>
+            </div>
+
+            <div class="card-body">
+                <div class="year-grid">
+                    {% for month in year_months %}
+                    <div class="month-card">
+                        <div class="month-card-header">
+                            <h6 class="mb-0">{{ month.name }} {{ month.year }}</h6>
+                        </div>
+
+                        <table class="month-table">
+                            <thead>
+                                <tr>
+                                    <th>Mon</th>
+                                    <th>Tue</th>
+                                    <th>Wed</th>
+                                    <th>Thu</th>
+                                    <th>Fri</th>
+                                    <th>Sat</th>
+                                    <th>Sun</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for week in month.weeks %}
+                                <tr>
+                                    {% for day in week %}
+                                    <td
+                                        class="
+                                            {% if not day.in_month %}day-muted{% endif %}
+                                            {% if not day.in_academic_year %}day-outside-year{% endif %}
+                                            {% if day.is_weekend %}day-weekend{% endif %}
+                                            {% if day.is_today %}day-today{% endif %}
+                                            {% if day.is_current_term_day %}day-current-term{% endif %}
+                                        "
+                                        title="{{ day.tooltip }}"
+                                        data-toggle="tooltip"
+                                        data-placement="top"
+                                    >
+                                        <div class="day-box">
+                                            <span class="day-number">{{ day.day }}</span>
+
+                                            {% if day.has_items %}
+                                            <div class="day-tags">
+                                                {% for holiday in day.holidays|slice:":2" %}
+                                                    <span class="tag-chip"
+                                                          style="background: {{ holiday.holiday_type.color|default:'#DC2626' }};">
+                                                        H
+                                                    </span>
+                                                {% endfor %}
+                                                {% for event in day.events|slice:":2" %}
+                                                    <span class="tag-chip"
+                                                          style="background: {{ event.effective_color }};">
+                                                        E
+                                                    </span>
+                                                {% endfor %}
+                                                {% if day.terms %}
+                                                    <span class="tag-chip" style="background: #2563EB;">T</span>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% if day.cell_color %}
+                                            <div class="day-strip" style="background: {{ day.cell_color }};"></div>
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TERMS TABLE -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-stream mr-2 text-primary"></i>Terms</h5>
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                <a href="{% url 'term_add' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-plus mr-1"></i> Add Term
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Term</th>
+                                <th>Period</th>
+                                <th>Working Days</th>
+                                <th>Status</th>
+                                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                                <th width="250">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for term in terms %}
+                            <tr>
+                                <td>
+                                    <strong>{{ term.name }}</strong>
+                                    {% if term.short_name %}
+                                        <small class="text-muted d-block">{{ term.short_name }}</small>
+                                    {% endif %}
+                                    {% if term.notice %}
+                                        <small class="d-block text-info">{{ term.notice }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ term.start_date|date:"M d, Y" }} - {{ term.end_date|date:"M d, Y" }}</td>
+                                <td>{{ term.total_working_days }}</td>
+                                <td>
+                                    {% if term.is_current %}
+                                        <span class="badge badge-success">Current</span>
+                                    {% else %}
+                                        <span class="badge badge-light">Inactive</span>
+                                    {% endif %}
+                                    {% if term.is_final_term %}
+                                        <span class="badge badge-dark">Final</span>
+                                    {% endif %}
+                                </td>
+                                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                                <td>
+                                    <div class="btn-group btn-group-sm flex-wrap">
+                                        {% if not term.is_current %}
+                                        <form method="post" action="{% url 'set_current_term' %}" class="d-inline-block mr-1 mb-1">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="term_id" value="{{ term.id }}">
+                                            <button type="submit" class="btn btn-outline-primary">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+
+                                        <a href="{% url 'term_edit' term.id %}" class="btn btn-outline-info mr-1 mb-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        <button type="button"
+                                                class="btn btn-outline-danger mr-1 mb-1"
+                                                data-toggle="modal"
+                                                data-target="#deleteTermModal{{ term.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete Term Modal -->
+                                    <div class="modal fade" id="deleteTermModal{{ term.id }}" tabindex="-1" role="dialog" aria-labelledby="deleteTermModalLabel{{ term.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title" id="deleteTermModalLabel{{ term.id }}">
+                                                        <i class="fas fa-exclamation-triangle mr-2"></i>Delete Term
+                                                    </h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Are you sure you want to delete <strong>{{ term.name }}</strong>?
+                                                    <br><small class="text-muted">This action cannot be undone.</small>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                                                    <form method="post" action="{% url 'term_delete' term.id %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No terms added yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOLIDAYS TABLE -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-umbrella-beach mr-2 text-danger"></i>Holidays</h5>
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                <a href="{% url 'holiday_add' %}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-plus mr-1"></i> Add Holiday
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Dates</th>
+                                <th>Status</th>
+                                <th>Closed Day</th>
+                                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                                <th width="170">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for holiday in all_holidays %}
+                            <tr>
+                                <td>
+                                    <strong>{{ holiday.name }}</strong>
+                                    {% if holiday.banner_text %}
+                                        <small class="d-block text-danger">{{ holiday.banner_text }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ holiday.date|date:"M d, Y" }}
+                                    {% if holiday.end_date %}
+                                        - {{ holiday.end_date|date:"M d, Y" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-light">{{ holiday.get_status_display }}</span>
+                                </td>
+                                <td>
+                                    {% if holiday.is_closed_day %}
+                                        <span class="badge badge-danger">Yes</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                                <td>
+                                    <div class="btn-group btn-group-sm flex-wrap">
+                                        <a href="{% url 'holiday_edit' holiday.id %}" class="btn btn-outline-info mr-1 mb-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        <button type="button"
+                                                class="btn btn-outline-danger mr-1 mb-1"
+                                                data-toggle="modal"
+                                                data-target="#deleteHolidayModal{{ holiday.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete Holiday Modal -->
+                                    <div class="modal fade" id="deleteHolidayModal{{ holiday.id }}" tabindex="-1" role="dialog" aria-labelledby="deleteHolidayModalLabel{{ holiday.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title" id="deleteHolidayModalLabel{{ holiday.id }}">
+                                                        <i class="fas fa-exclamation-triangle mr-2"></i>Delete Holiday
+                                                    </h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Are you sure you want to delete <strong>{{ holiday.name }}</strong>?
+                                                    <br><small class="text-muted">This action cannot be undone.</small>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                                                    <form method="post" action="{% url 'holiday_delete' holiday.id %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                           {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No holidays added yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVENTS TABLE -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bullhorn mr-2 text-success"></i>Events</h5>
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                <a href="{% url 'event_add' %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-plus mr-1"></i> Add Event
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Dates</th>
+                                <th>Type</th>
+                                <th>Venue</th>
+                                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                                <th width="170">Actions</th>
+                                {% endif  %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in all_events %}
+                            <tr>
+                                <td>
+                                    <strong>{{ event.title }}</strong>
+                                    {% if event.notice %}
+                                        <small class="d-block" style="color: {{ event.effective_color }};">{{ event.notice }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ event.start_date|date:"M d, Y" }}
+                                    {% if event.end_date != event.start_date %}
+                                        - {{ event.end_date|date:"M d, Y" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-light">{{ event.get_event_type_display }}</span>
+                                </td>
+                                <td>{{ event.venue|default:"-" }}</td>
+                                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+                                <td>
+                                    <div class="btn-group btn-group-sm flex-wrap">
+                                        <a href="{% url 'event_edit' event.id %}" class="btn btn-outline-info mr-1 mb-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        <button type="button"
+                                                class="btn btn-outline-danger mr-1 mb-1"
+                                                data-toggle="modal"
+                                                data-target="#deleteEventModal{{ event.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete Event Modal -->
+                                    <div class="modal fade" id="deleteEventModal{{ event.id }}" tabindex="-1" role="dialog" aria-labelledby="deleteEventModalLabel{{ event.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title" id="deleteEventModalLabel{{ event.id }}">
+                                                        <i class="fas fa-exclamation-triangle mr-2"></i>Delete Event
+                                                    </h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Are you sure you want to delete <strong>{{ event.title }}</strong>?
+                                                    <br><small class="text-muted">This action cannot be undone.</small>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                                                    <form method="post" action="{% url 'event_delete' event.id %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No events added yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-palette mr-2 text-primary"></i>Legend</h5>
+            </div>
+            <div class="card-body legend-list">
+                <div class="legend-item"><span class="legend-color legend-current-term"></span> Ongoing term</div>
+                <div class="legend-item"><span class="legend-color legend-term"></span> Term</div>
+                <div class="legend-item"><span class="legend-color legend-public"></span> Public holiday</div>
+                <div class="legend-item"><span class="legend-color legend-school"></span> School holiday</div>
+                <div class="legend-item"><span class="legend-color legend-exam"></span> Exam</div>
+                <div class="legend-item"><span class="legend-color legend-today"></span> Today</div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-calendar-day mr-2 text-danger"></i>Upcoming Holidays</h5>
+                <span class="badge badge-danger">{{ upcoming_holidays.count }}</span>
+            </div>
+            <div class="card-body sidebar-scroll">
+                {% for holiday in upcoming_holidays %}
+                <div class="timeline-item timeline-danger">
+                    <h6 class="mb-1">{{ holiday.name }}</h6>
+                    <small class="text-muted d-block">{{ holiday.date|date:"M d, Y" }}</small>
+                    {% if holiday.banner_text %}
+                    <small class="d-block text-danger">{{ holiday.banner_text }}</small>
+                    {% endif %}
+                    {% if holiday.description %}
+                    <small class="text-muted">{{ holiday.description|truncatechars:60 }}</small>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No upcoming holidays.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bullhorn mr-2 text-success"></i>Upcoming Events</h5>
+                <span class="badge badge-success">{{ upcoming_events.count }}</span>
+            </div>
+            <div class="card-body sidebar-scroll">
+                {% for event in upcoming_events %}
+                <div class="timeline-item timeline-success" style="border-left-color: {{ event.effective_color }};">
+                    <h6 class="mb-1">{{ event.title }}</h6>
+                    <small class="text-muted d-block">
+                        {{ event.start_date|date:"M d, Y" }}
+                        {% if event.start_time %} • {{ event.start_time|time:"g:i A" }}{% endif %}
+                    </small>
+                    {% if event.venue %}
+                    <small class="text-muted d-block"><i class="fas fa-map-marker-alt mr-1"></i>{{ event.venue }}</small>
+                    {% endif %}
+                    {% if event.notice %}
+                    <small class="d-block" style="color: {{ event.effective_color }};">{{ event.notice }}</small>
+                    {% endif %}
+                    <span class="badge badge-light text-uppercase mt-1">{{ event.event_type }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No upcoming events.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.year-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+}
+@media (max-width: 1199px){
+    .year-grid{grid-template-columns:repeat(2, 1fr);}
+}
+@media (max-width: 767px){
+    .year-grid{grid-template-columns:repeat(1, 1fr);}
+}
+
+.month-card{
+    border:1px solid #e9ecef;
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+    box-shadow:0 2px 14px rgba(0,0,0,.04);
+}
+.month-card-header{
+    padding:12px 14px;
+    background:linear-gradient(135deg,#f8fafc,#eef4ff);
+    border-bottom:1px solid #e9ecef;
+}
+.month-table{
+    width:100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+}
+.month-table th{
+    font-size:11px;
+    text-transform:uppercase;
+    color:#6c757d;
+    text-align:center;
+    padding:8px 0;
+    border-bottom:1px solid #f1f3f5;
+    background:#fafbfc;
+}
+.month-table td{
+    position:relative;
+    height:54px;
+    border:1px solid #f1f3f5;
+    vertical-align:top;
+    padding:0;
+    transition:.18s ease;
+}
+.month-table td:hover{
+    transform:scale(1.02);
+    z-index:2;
+    box-shadow:0 6px 16px rgba(0,0,0,.10);
+}
+.day-box{
+    height:100%;
+    padding:5px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:flex-end;
+}
+.day-number{
+    font-size:12px;
+    font-weight:700;
+}
+.day-tags{
+    display:flex;
+    gap:2px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+}
+.tag-chip{
+    min-width:14px;
+    height:14px;
+    padding:0 3px;
+    border-radius:4px;
+    color:#fff;
+    font-size:9px;
+    font-weight:700;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+}
+.day-strip{
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:4px;
+}
+
+.day-muted{background:#fbfbfc;color:#c0c4cc;}
+.day-outside-year{opacity:.35;}
+.day-weekend{background:#fcfcfd;}
+.day-today{
+    box-shadow: inset 0 0 0 2px #111827;
+    background:#fff8db !important;
+}
+.day-current-term{
+    background:linear-gradient(180deg, rgba(37,99,235,.16), rgba(37,99,235,.05));
+    box-shadow: inset 0 0 0 2px rgba(37,99,235,.35);
+}
+
+.legend-list .legend-item{
+    display:flex;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:14px;
+}
+.legend-color{
+    width:18px;
+    height:18px;
+    border-radius:6px;
+    display:inline-block;
+    margin-right:10px;
+    border:1px solid rgba(0,0,0,.08);
+}
+.legend-current-term{background:rgba(37,99,235,.18);}
+.legend-term{background:#2563EB;}
+.legend-public{background:#DC2626;}
+.legend-school{background:#F59E0B;}
+.legend-exam{background:#7C3AED;}
+.legend-today{background:#fff8db;}
+
+.sidebar-scroll{
+    max-height:350px;
+    overflow-y:auto;
+}
+.timeline-item{
+    padding:12px 0 12px 14px;
+    border-left:3px solid #dee2e6;
+}
+.timeline-item + .timeline-item{margin-top:8px;}
+
+.notice-card{
+    background:#f8fafc;
+    border-radius:10px;
+    padding:10px 12px;
+}
+
+.tooltip-inner{
+    max-width:320px;
+    white-space:pre-line;
+    text-align:left;
+}
+
+.modal-header .close{
+    opacity:1;
+}
+</style>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip({
+        html: false,
+        container: 'body'
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-plus"></i> Enroll Teacher
+      </h3>
+      <small class="text-muted">Step 1 of 3: personal and employment details</small>
+    </div>
+    <div>
+      <a href="{% url 'teacher_list' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Teachers
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stepper -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <div class="badge badge-primary mr-2" style="font-size: 0.95rem;">1</div>
+        <div>
+          <div class="font-weight-bold">Bio & Contacts</div>
+          <small class="text-muted">Names, contacts, employment</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">2</div>
+        <div>
+          <div class="font-weight-bold">Assignments</div>
+          <small class="text-muted">Class, stream, subject, papers</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finish enrollment</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-lg-8">
+
+      <!-- Teacher Bio -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-user mr-2"></i> Teacher Details</h5>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="form-row">
+            {% include "dashboard/partials/_field.html" with field=form.first_name col="col-md-6" %}
+            {% include "dashboard/partials/_field.html" with field=form.last_name col="col-md-6" %}
+          </div>
+
+          {% include "dashboard/partials/_staff_hr_fields.html" %}
+
+          <div class="form-row">
+            {% include "dashboard/partials/_field.html" with field=form.profile_photo col="col-md-6" %}
+          </div>
+
+          <!-- hidden country fields for backend parsing -->
+          <input type="hidden" name="contact1_country" id="id_contact1_country">
+          <input type="hidden" name="contact2_country" id="id_contact2_country">
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Summary + Next -->
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-info-circle mr-2"></i> What happens next?</h5>
+
+          <ul class="text-muted pl-3">
+            <li>A username is created now. The password is created when you finish, and is shown only once.</li>
+            <li>Step 2 assigns classes, streams, subjects and papers.</li>
+            <li>Step 3 confirms and creates the final Teacher record.</li>
+          </ul>
+
+          <button type="submit" class="btn btn-success btn-block">
+            Save & Continue <i class="fas fa-arrow-right ml-1"></i>
+          </button>
+
+          {% if draft %}
+          <a href="{% url 'enroll_teacher_step2' draft.id %}" class="btn btn-outline-danger btn-block mt-2">
+            Skip to Step 2
+          </a>
+          {% endif %}
+
+          <a href="{% url 'teacher_list' %}" class="btn btn-light btn-block mt-2">
+            Cancel
+          </a>
+
+          <hr>
+
+          <small class="text-muted d-block">
+            <i class="fas fa-lock"></i> Teacher account is created after final confirmation.
+          </small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/css/intlTelInput.css">
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/intlTelInput.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/utils.js"></script>
+
+<script>
+  function setupIntlTel(inputId, countryFieldId) {
+    const input = document.getElementById(inputId);
+    if (!input) return null;
+
+    const iti = window.intlTelInput(input, {
+      initialCountry: "ug",
+      separateDialCode: true,
+      nationalMode: true,
+      utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/utils.js",
+    });
+
+    const countryField = document.getElementById(countryFieldId);
+    if (countryField) {
+      countryField.value = iti.getSelectedCountryData().iso2;
+      input.addEventListener("countrychange", function () {
+        countryField.value = iti.getSelectedCountryData().iso2;
+      });
+    }
+
+    return iti;
+  }
+
+  const itiPhone = setupIntlTel("id_contact1", "id_contact1_country");
+  const itiAlt   = setupIntlTel("id_contact2", "id_contact2_country");
+
+  // IMPORTANT: ensure we are binding to the correct form
+  const form = document.querySelector("form");
+  if (form) {
+    form.addEventListener("submit", function () {
+      if (itiPhone) document.getElementById("id_contact1").value = itiPhone.getNumber();
+
+      const altEl = document.getElementById("id_contact2");
+      if (itiAlt && altEl && altEl.value.trim()) altEl.value = itiAlt.getNumber();
+    });
+  }
+</script>
+{% endblock %}

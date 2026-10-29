@@ -1,0 +1,592 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-plus"></i> Enroll Teacher
+      </h3>
+      <small class="text-muted">Step 2 of 3 — Add teaching assignments</small>
+    </div>
+
+    <div class="mt-2 mt-md-0 d-flex flex-wrap">
+      <a href="{% url 'enroll_teacher_step1' %}" class="btn btn-outline-success btn-sm mr-2 mb-2 mb-md-0">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Step 1
+      </a>
+      <a href="{% url 'teacher_list' %}" class="btn btn-outline-secondary btn-sm mb-2 mb-md-0">
+        <i class="fas fa-list mr-1"></i> Teachers
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.7;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">1</div>
+        <div>
+          <div class="font-weight-bold">Bio & Account</div>
+          <small class="text-muted">Names, contacts, login</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <div class="badge badge-primary mr-2" style="font-size: 0.95rem;">2</div>
+        <div>
+          <div class="font-weight-bold">Assignments</div>
+          <small class="text-muted">Class, stream, subject, papers</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finish enrollment</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate id="teacherAssignmentForm">
+  {% csrf_token %}
+  {{ formset.management_form }}
+
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {% for err in formset.non_form_errors %}
+        <div>{{ err }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col-lg-8">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex align-items-start justify-content-between flex-wrap">
+            <div class="mb-2">
+              <h5 class="mb-1">
+                <i class="fas fa-tasks mr-2"></i> Teaching Assignments
+              </h5>
+              <small class="text-muted">
+                Add one or more class teaching assignments for <strong>{{ draft.first_name }} {{ draft.last_name }}</strong>.
+              </small>
+            </div>
+
+            <div class="mb-2">
+              <button type="button" class="btn btn-outline-success btn-sm" id="add-assignment-btn">
+                <i class="fas fa-plus mr-1"></i> Add Assignment
+              </button>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div id="assignment-forms">
+            {% for form in formset %}
+              <div class="assignment-form card border mb-3 formset-row" data-form-index="{{ forloop.counter0 }}">
+                <div class="card-body">
+                  {% for hidden in form.hidden_fields %}
+                    {{ hidden }}
+                  {% endfor %}
+
+                  <div class="d-flex align-items-center justify-content-between flex-wrap mb-3">
+                    <h6 class="mb-2 mb-md-0">
+                      <i class="fas fa-layer-group mr-1"></i>
+                      Assignment {{ forloop.counter }}
+                    </h6>
+
+                    <div class="d-flex align-items-center">
+                      {% if form.instance.pk %}
+                        <div class="form-check mr-3 mb-0">
+                          {{ form.DELETE }}
+                          <label class="form-check-label ml-1" for="{{ form.DELETE.id_for_label }}">
+                            Remove
+                          </label>
+                        </div>
+                      {% endif %}
+
+                      <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                      {% for err in form.non_field_errors %}
+                        <div>{{ err }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+
+                  <div class="form-row">
+                    <div class="form-group col-md-4">
+                      <label for="{{ form.class_ref.id_for_label }}">
+                        Class <span class="text-danger">*</span>
+                      </label>
+                      {{ form.class_ref }}
+                      {% for e in form.class_ref.errors %}
+                        <small class="text-danger d-block">{{ e }}</small>
+                      {% endfor %}
+                    </div>
+
+                    <div class="form-group col-md-4">
+                      <label for="{{ form.stream.id_for_label }}">
+                        Stream <span class="text-danger">*</span>
+                      </label>
+                      {{ form.stream }}
+                      {% for e in form.stream.errors %}
+                        <small class="text-danger d-block">{{ e }}</small>
+                      {% endfor %}
+                    </div>
+
+                    <div class="form-group col-md-4">
+                      <label for="{{ form.subject.id_for_label }}">
+                        Subject <span class="text-danger">*</span>
+                      </label>
+                      {{ form.subject }}
+                      {% for e in form.subject.errors %}
+                        <small class="text-danger d-block">{{ e }}</small>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="{{ form.papers.id_for_label }}">Papers</label>
+                    {{ form.papers }}
+                    <small class="text-muted d-block mt-1">
+                      Select the papers taught for the chosen subject.
+                    </small>
+                    {% for e in form.papers.errors %}
+                      <small class="text-danger d-block">{{ e }}</small>
+                    {% endfor %}
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-md-4">
+                      <div class="form-check mt-md-4 pt-md-2">
+                        {{ form.is_class_teacher }}
+                        <label class="form-check-label ml-1" for="{{ form.is_class_teacher.id_for_label }}">
+                          Class Teacher
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="form-group col-md-8">
+                      <label for="{{ form.notes.id_for_label }}">Notes</label>
+                      {{ form.notes }}
+                      {% for e in form.notes.errors %}
+                        <small class="text-danger d-block">{{ e }}</small>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <div class="alert alert-info">
+                No assignment rows yet.
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between flex-wrap mt-3">
+            <a href="{% url 'enroll_teacher_step1' %}" class="btn btn-light mb-2">
+              <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+
+            <button type="submit" class="btn btn-outline-success mb-2">
+              Save & Continue <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3">
+            <i class="fas fa-user mr-2"></i> Teacher Summary
+          </h5>
+
+          <div class="mb-2">
+            <span class="text-muted">Name:</span>
+            <span class="font-weight-bold">{{ draft.first_name }} {{ draft.last_name }}</span>
+          </div>
+
+          <div class="mb-2">
+            <span class="text-muted">Username:</span>
+            <span class="font-weight-bold">{{ draft.username }}</span>
+          </div>
+
+          <div class="mb-2">
+            <span class="text-muted">Email:</span>
+            <span class="font-weight-bold">{{ draft.email|default:"—" }}</span>
+          </div>
+
+          <div class="mb-0">
+            <span class="text-muted">Contact:</span>
+            <span class="font-weight-bold">{{ draft.contact1|default:"—" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">
+            <i class="fas fa-lightbulb mr-2"></i> Tips
+          </h5>
+
+          <ul class="text-muted pl-3 mb-0">
+            <li>Select a class first to load streams and subjects.</li>
+            <li>Subjects are filtered by the class education level.</li>
+            <li>Papers are filtered by the selected subject.</li>
+            <li>Empty extra rows are ignored automatically.</li>
+            <li>Incomplete rows will show errors and will not continue.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div id="empty-form-template" class="d-none">
+  <div class="assignment-form card border mb-3 formset-row" data-form-index="__prefix__">
+    <div class="card-body">
+      {% with form=formset.empty_form %}
+        {% for hidden in form.hidden_fields %}
+          {{ hidden }}
+        {% endfor %}
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap mb-3">
+          <h6 class="mb-2 mb-md-0">
+            <i class="fas fa-layer-group mr-1"></i>
+            Assignment __number__
+          </h6>
+
+          <div class="d-flex align-items-center">
+            {% if form.DELETE %}
+              <div class="form-check mr-3 mb-0 d-none">
+                {{ form.DELETE }}
+                <label class="form-check-label ml-1" for="{{ form.DELETE.id_for_label }}">
+                  Remove
+                </label>
+              </div>
+            {% endif %}
+
+            <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label for="{{ form.class_ref.id_for_label }}">
+              Class <span class="text-danger">*</span>
+            </label>
+            {{ form.class_ref }}
+          </div>
+
+          <div class="form-group col-md-4">
+            <label for="{{ form.stream.id_for_label }}">
+              Stream <span class="text-danger">*</span>
+            </label>
+            {{ form.stream }}
+          </div>
+
+          <div class="form-group col-md-4">
+            <label for="{{ form.subject.id_for_label }}">
+              Subject <span class="text-danger">*</span>
+            </label>
+            {{ form.subject }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.papers.id_for_label }}">Papers</label>
+          {{ form.papers }}
+          <small class="text-muted d-block mt-1">
+            Select the papers taught for the chosen subject.
+          </small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <div class="form-check mt-md-4 pt-md-2">
+              {{ form.is_class_teacher }}
+              <label class="form-check-label ml-1" for="{{ form.is_class_teacher.id_for_label }}">
+                Class Teacher
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-md-8">
+            <label for="{{ form.notes.id_for_label }}">Notes</label>
+            {{ form.notes }}
+          </div>
+        </div>
+      {% endwith %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .papers-select {
+    min-height: 110px;
+  }
+
+  @media (max-width: 767.98px) {
+    .assignment-form .card-body {
+      padding: 1rem;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const streamsUrl = "{% url 'ajax_streams_for_class' %}";
+    const subjectsUrl = "{% url 'ajax_subjects_for_class' %}";
+    const papersUrl = "{% url 'ajax_papers_for_subject' %}";
+
+    const formContainer = document.getElementById("assignment-forms");
+    const addBtn = document.getElementById("add-assignment-btn");
+    const totalFormsInput = document.getElementById("id_{{ formset.prefix }}-TOTAL_FORMS");
+    const emptyFormTemplate = document.getElementById("empty-form-template");
+
+    function updateAssignmentTitles() {
+      const visibleRows = formContainer.querySelectorAll(".formset-row");
+      visibleRows.forEach((row, index) => {
+        const title = row.querySelector("h6");
+        if (title) {
+          title.innerHTML = '<i class="fas fa-layer-group mr-1"></i> Assignment ' + (index + 1);
+        }
+      });
+    }
+
+    function resetSelect(selectEl, placeholderText) {
+      if (!selectEl) return;
+      selectEl.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = placeholderText;
+      selectEl.appendChild(opt);
+    }
+
+    function fillSelect(selectEl, items, valueKey, textKey, placeholderText, selectedValue = null) {
+      if (!selectEl) return;
+      resetSelect(selectEl, placeholderText);
+
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item[valueKey];
+        opt.textContent = item[textKey];
+        if (selectedValue && String(selectedValue) === String(item[valueKey])) {
+          opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function fillMultiSelect(selectEl, items, valueKey, textKey, selectedValues = []) {
+      if (!selectEl) return;
+      selectEl.innerHTML = "";
+
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item[valueKey];
+        opt.textContent = item[textKey];
+        if (selectedValues.map(String).includes(String(item[valueKey]))) {
+          opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function getRowFields(row) {
+      return {
+        classSelect: row.querySelector(".class-select"),
+        streamSelect: row.querySelector(".stream-select"),
+        subjectSelect: row.querySelector(".subject-select"),
+        papersSelect: row.querySelector(".papers-select")
+      };
+    }
+
+    function loadStreams(row, classId, selectedStream = null) {
+      const { streamSelect } = getRowFields(row);
+      if (!streamSelect) return Promise.resolve();
+
+      if (!classId) {
+        resetSelect(streamSelect, "---------");
+        return Promise.resolve();
+      }
+
+      return fetch(`${streamsUrl}?class_id=${classId}`)
+        .then(res => res.json())
+        .then(data => {
+          fillSelect(streamSelect, data.streams || [], "id", "name", "---------", selectedStream);
+        })
+        .catch(() => {
+          resetSelect(streamSelect, "---------");
+        });
+    }
+
+    function loadSubjects(row, classId, selectedSubject = null) {
+      const { subjectSelect, papersSelect } = getRowFields(row);
+      if (!subjectSelect) return Promise.resolve();
+
+      if (!classId) {
+        resetSelect(subjectSelect, "---------");
+        if (papersSelect) papersSelect.innerHTML = "";
+        return Promise.resolve();
+      }
+
+      return fetch(`${subjectsUrl}?class_id=${classId}`)
+        .then(res => res.json())
+        .then(data => {
+          fillSelect(subjectSelect, data.subjects || [], "id", "name", "---------", selectedSubject);
+        })
+        .catch(() => {
+          resetSelect(subjectSelect, "---------");
+        });
+    }
+
+    function loadPapers(row, subjectId, selectedPaperValues = []) {
+      const { papersSelect } = getRowFields(row);
+      if (!papersSelect) return Promise.resolve();
+
+      if (!subjectId) {
+        papersSelect.innerHTML = "";
+        return Promise.resolve();
+      }
+
+      return fetch(`${papersUrl}?subject_id=${subjectId}`)
+        .then(res => res.json())
+        .then(data => {
+          fillMultiSelect(papersSelect, data.papers || [], "id", "paper_name", selectedPaperValues);
+        })
+        .catch(() => {
+          papersSelect.innerHTML = "";
+        });
+    }
+
+    function bindRow(row) {
+      const { classSelect, subjectSelect } = getRowFields(row);
+
+      if (classSelect) {
+        classSelect.addEventListener("change", function () {
+          const classId = this.value;
+          const { streamSelect, subjectSelect, papersSelect } = getRowFields(row);
+
+          if (streamSelect) resetSelect(streamSelect, "---------");
+          if (subjectSelect) resetSelect(subjectSelect, "---------");
+          if (papersSelect) papersSelect.innerHTML = "";
+
+          if (classId) {
+            loadStreams(row, classId);
+            loadSubjects(row, classId);
+          }
+        });
+      }
+
+      if (subjectSelect) {
+        subjectSelect.addEventListener("change", function () {
+          const subjectId = this.value;
+          const { papersSelect } = getRowFields(row);
+
+          if (papersSelect) papersSelect.innerHTML = "";
+
+          if (subjectId) {
+            loadPapers(row, subjectId);
+          }
+        });
+      }
+
+      const removeBtn = row.querySelector(".remove-row-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", function () {
+          const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+
+          if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            row.style.display = "none";
+          } else {
+            row.remove();
+            updateAssignmentTitles();
+          }
+        });
+      }
+    }
+
+    function addNewRow() {
+      const total = parseInt(totalFormsInput.value, 10);
+      let html = emptyFormTemplate.innerHTML.replace(/__prefix__/g, total).replace(/__number__/g, total + 1);
+
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = html.trim();
+
+      const newRow = wrapper.firstElementChild;
+      formContainer.appendChild(newRow);
+      totalFormsInput.value = total + 1;
+
+      bindRow(newRow);
+      updateAssignmentTitles();
+    }
+
+    function initExistingRows() {
+      const rows = formContainer.querySelectorAll(".formset-row");
+
+      rows.forEach(row => {
+        bindRow(row);
+
+        const { classSelect, streamSelect, subjectSelect, papersSelect } = getRowFields(row);
+
+        const classVal = classSelect ? classSelect.value : "";
+        const streamVal = streamSelect ? streamSelect.value : "";
+        const subjectVal = subjectSelect ? subjectSelect.value : "";
+        const selectedPapers = papersSelect
+          ? Array.from(papersSelect.options).filter(o => o.selected).map(o => o.value)
+          : [];
+
+        if (classVal) {
+          loadStreams(row, classVal, streamVal);
+          loadSubjects(row, classVal, subjectVal).then(() => {
+            if (subjectVal) {
+              loadPapers(row, subjectVal, selectedPapers);
+            }
+          });
+        }
+      });
+
+      updateAssignmentTitles();
+    }
+
+    if (addBtn) {
+      addBtn.addEventListener("click", addNewRow);
+    }
+
+    initExistingRows();
+  })();
+</script>
+
+{% endblock %}

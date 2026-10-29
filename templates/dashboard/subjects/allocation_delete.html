@@ -1,0 +1,19 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h4>Delete Allocation</h4>
+    <p>
+      Remove allocation for <b>{{ allocation.teacher.user.get_full_name }}</b>
+      ({{ allocation.class_ref }}{% if allocation.stream %}/{{ allocation.stream.name }}{% endif %})
+      - <b>{{ allocation.subject.name }}</b>?
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-danger">Yes, Delete</button>
+      <a href="{% url 'teacher_allocation_list' %}" class="btn btn-primary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

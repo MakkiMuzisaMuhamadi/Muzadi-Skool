@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-id-card"></i> Report Card Templates</h3>
+    <small class="text-muted">Manage school-specific report card designs</small>
+  </div>
+  <a href="{% url 'report_template_create' %}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus mr-1"></i> New Template
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Level</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th width="220">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td>{{ row.level }}</td>
+            <td>{{ row.report_title }}</td>
+            <td>
+              {% if row.is_active %}
+                <span class="badge badge-success">Active</span>
+              {% else %}
+                <span class="badge badge-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+            <a href="{% url 'report_template_edit' row.pk %}" class="btn btn-sm btn-info">Basic Settings</a>
+            <a href="{% url 'report_template_sections_edit' row.pk %}" class="btn btn-sm btn-warning">Sections</a>
+            <a href="{% url 'report_template_signatures_edit' row.pk %}" class="btn btn-sm btn-danger">Signatures</a>
+            {% if not row.is_active %}
+            <a href="{% url 'report_template_activate' row.pk %}" class="btn btn-sm btn-success">Activate</a>
+            {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted">No templates yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

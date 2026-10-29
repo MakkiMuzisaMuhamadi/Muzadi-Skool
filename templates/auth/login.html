@@ -1,0 +1,428 @@
+<!-- templates/auth/login.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ school_name }} - Login</title>
+
+    <link rel="stylesheet" href="{% static 'vendors/iconfonts/font-awesome/css/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendors/css/vendor.bundle.base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body {
+            background: #f4f7ff;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: #fff;
+            border-radius: 18px;
+            padding: 35px 40px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.07);
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .app-logo {
+            height: 70px;
+            margin-bottom: 15px;
+        }
+
+        .title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #666;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            height: 48px;
+            font-size: 1rem;
+            padding-right: 45px;
+            border: 1px solid #ddd;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #4f6cff;
+            box-shadow: 0 0 0 0.2rem rgba(79, 108, 255, 0.25);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #777;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .btn-login {
+            width: 100%;
+            margin-top: 15px;
+            height: 48px;
+            border-radius: 10px;
+            background: #4f6cff;
+            border: none;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #3d54d1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 108, 255, 0.3);
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #4f6cff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        /* Alert Styles */
+        .alert-container {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            border: 1px solid transparent;
+            position: relative;
+            animation: slideDown 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @keyframes slideDown {
+            from { 
+                opacity: 0; 
+                transform: translateY(-10px); 
+                max-height: 0;
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+                max-height: 100px;
+            }
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+            color: #c53030;
+            border: 2px solid #feb2b2;
+            border-left: 6px solid #e53e3e;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+            color: #276749;
+            border: 2px solid #9ae6b4;
+            border-left: 6px solid #38a169;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
+            color: #744210;
+            border: 2px solid #fbd38d;
+            border-left: 6px solid #ed8936;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+            color: #2c5282;
+            border: 2px solid #90cdf4;
+            border-left: 6px solid #3182ce;
+        }
+
+        .alert-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .alert-close:hover {
+            opacity: 1;
+            background: rgba(0,0,0,0.1);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #777;
+        }
+
+        .modal-title {
+            margin-bottom: 15px;
+            color: #4f6cff;
+        }
+    </style>
+</head>
+
+<body>
+<div class="login-wrapper">
+    <div class="login-card">
+
+        <!-- Logo -->
+        <div class="text-center">
+            {% if school_logo %}
+            <img src="{% static 'images/zimak-logo1.png' %}" alt="{{ school_name }} Logo" class="app-logo">
+            {% endif %}
+        </div>
+
+        <!-- Header -->
+        <h2 class="title">{{ school_name }}</h2>
+        <p class="subtitle">School Management System</p>
+
+        <!-- Django Messages -->
+        <div class="alert-container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" id="alert-{{ forloop.counter }}">
+                        <div class="alert-icon">
+                            {% if message.tags == 'error' %}
+                                ⚠️
+                            {% elif message.tags == 'success' %}
+                                ✅
+                            {% elif message.tags == 'warning' %}
+                                🔔
+                            {% else %}
+                                ℹ️
+                            {% endif %}
+                        </div>
+                        <div class="alert-content">
+                            {{ message }}
+                        </div>
+                        <button type="button" class="alert-close" onclick="closeAlert('alert-{{ forloop.counter }}')">
+                            &times;
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form method="POST" action="{% url 'login' %}" id="loginForm">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <input type="text" name="username"
+                       class="form-control"
+                       placeholder="Username" 
+                       required
+                       autofocus>
+            </div>
+
+            <div class="form-group">
+                <input type="password" name="password" id="passwordField"
+                       class="form-control"
+                       placeholder="Password" 
+                       required>
+                <button type="button" class="password-toggle" id="passwordToggle">
+                    <i class="far fa-eye"></i>
+                </button>
+            </div>
+
+            <button type="submit" id="loginBtn" class="btn-login">
+                Sign In
+            </button>
+
+            <div class="forgot-password">
+                <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeModal">&times;</span>
+        <h3 class="modal-title">Forgot Password?</h3>
+        <div class="modal-body">
+            <p>If you've forgotten your password, please contact the system administrator for assistance.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-ok" id="modalOk">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Password toggle functionality
+    const passwordField = document.getElementById('passwordField');
+    const passwordToggle = document.getElementById('passwordToggle');
+    
+    passwordToggle.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        
+        // Toggle eye icon
+        const eyeIcon = this.querySelector('i');
+        if (type === 'text') {
+            eyeIcon.classList.remove('fa-eye');
+            eyeIcon.classList.add('fa-eye-slash');
+        } else {
+            eyeIcon.classList.remove('fa-eye-slash');
+            eyeIcon.classList.add('fa-eye');
+        }
+    });
+
+    // Forgot password modal functionality
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const closeModal = document.getElementById('closeModal');
+    const modalOk = document.getElementById('modalOk');
+    
+    forgotPasswordLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        forgotPasswordModal.style.display = 'block';
+    });
+    
+    closeModal.addEventListener('click', function() {
+        forgotPasswordModal.style.display = 'none';
+    });
+    
+    modalOk.addEventListener('click', function() {
+        forgotPasswordModal.style.display = 'none';
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target === forgotPasswordModal) {
+            forgotPasswordModal.style.display = 'none';
+        }
+    });
+
+    // Alert close functionality
+    function closeAlert(alertId) {
+        const alert = document.getElementById(alertId);
+        if (alert) {
+            alert.style.opacity = '0';
+            alert.style.maxHeight = '0';
+            alert.style.marginBottom = '0';
+            alert.style.paddingTop = '0';
+            alert.style.paddingBottom = '0';
+            setTimeout(() => {
+                if (alert.parentElement) {
+                    alert.parentElement.removeChild(alert);
+                }
+            }, 500);
+        }
+    }
+
+    // Auto-dismiss alerts after 7 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert, index) {
+            setTimeout(function() {
+                if (alert.parentElement) {
+                    closeAlert(alert.id);
+                }
+            }, 7000);
+        });
+    });
+
+    // Auto-focus username field
+    document.querySelector('input[name="username"]').focus();
+</script>
+
+</body>
+</html>

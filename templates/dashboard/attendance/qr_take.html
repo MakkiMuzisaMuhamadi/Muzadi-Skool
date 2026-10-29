@@ -1,0 +1,759 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+  .scan-panel{border-radius:10px;padding:18px 22px;margin-bottom:1rem;border:2px solid #dee2e6;background:#f8f9fa;color:#495057;min-height:96px}
+  .scan-title{font-size:1.9rem;font-weight:700;line-height:1.2;word-break:break-word}
+  .scan-sub{font-size:1.05rem;margin-top:4px}
+  .scan-ok{background:#d4edda;border-color:#28a745;color:#155724}
+  .scan-late{background:#fff3cd;border-color:#e0a800;color:#856404}
+  .scan-absent{background:#e2e3e5;border-color:#6c757d;color:#383d41}
+  .scan-already{background:#d1ecf1;border-color:#17a2b8;color:#0c5460}
+  .scan-error{background:#f8d7da;border-color:#dc3545;color:#721c24}
+  .scan-flash{animation:scanflash .45s ease-out}
+  @keyframes scanflash{0%{transform:scale(1.025);box-shadow:0 0 0 8px rgba(0,0,0,.08)}100%{transform:scale(1);box-shadow:none}}
+  .counter-big{font-size:2.2rem;font-weight:700;line-height:1}
+  .recent-time{font-size:.8rem}
+</style>
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-qrcode"></i> QR Attendance</h3>
+    <small class="text-muted">
+      Choose the register, then scan cards. Press <strong>Close register</strong> at the end to mark everyone who did not scan as Absent.
+    </small>
+  </div>
+
+  <div class="d-flex" style="gap: .5rem;">
+    <button type="button" class="btn btn-outline-danger btn-sm" id="btnSound" title="Turn scan sounds on or off">
+      <i class="fas fa-volume-up mr-1"></i> Sound on
+    </button>
+    {% if is_admin %}
+      <a href="{% url 'student_qr_cards' %}" class="btn btn-outline-primary btn-sm" id="btnGenQR">
+        <i class="fas fa-id-card mr-1"></i> Student QR Cards
+      </a>
+    {% endif %}
+    <a href="{% url 'attendance_take' %}" class="btn btn-outline-success btn-sm">
+      <i class="fas fa-edit mr-1"></i> Manual Mode
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+
+    <!-- CSRF token holder for AJAX POST -->
+    <form id="csrfForm">{% csrf_token %}</form>
+
+    <div class="form-row">
+      <div class="form-group col-md-3">{{ form.reg_type.label_tag }} {{ form.reg_type }}</div>
+      <div class="form-group col-md-2">{{ form.date.label_tag }} {{ form.date }}</div>
+      <div class="form-group col-md-3">{{ form.class_ref.label_tag }} {{ form.class_ref }}</div>
+      <div class="form-group col-md-2">{{ form.stream.label_tag }} {{ form.stream }}</div>
+      <div class="form-group col-md-2">
+        <label for="statusSel">Mark as</label>
+        <select class="form-control" id="statusSel">
+          <option value="P">Present</option>
+          <option value="L">Late</option>
+          <option value="A">Absent</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-3" id="subjectGroup">{{ form.subject.label_tag }} {{ form.subject }}</div>
+      <div class="form-group col-md-2" id="paperGroup">{{ form.paper.label_tag }} {{ form.paper }}</div>
+    </div>
+
+    <!-- Big scan feedback -->
+    <div class="scan-panel" id="scanPanel" aria-live="assertive">
+      <div class="scan-title" id="scanTitle">Choose a register to start</div>
+      <div class="scan-sub" id="scanSub">Select the date and class (and subject, unless it is the Daily register).</div>
+    </div>
+
+    <!-- Live counter -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between border rounded p-3 mb-3" style="gap:1rem;">
+      <div>
+        <div class="counter-big"><span id="cIn">0</span> <small class="text-muted" style="font-size:1rem;">of <span id="cTotal">0</span> in</small></div>
+        <div class="small text-muted mt-1" id="cDetail">No register selected.</div>
+      </div>
+      <div class="d-flex flex-wrap" style="gap:.5rem;">
+        <a href="#" class="btn btn-outline-secondary btn-sm d-none" id="btnViewSession" target="_blank" rel="noopener">
+          <i class="fas fa-eye mr-1"></i> View register
+        </a>
+        <button type="button" class="btn btn-danger btn-sm" id="btnClose" disabled>
+          <i class="fas fa-lock mr-1"></i> Close register (mark rest Absent)
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-warning d-none" id="queueInfo"></div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="mb-2">
+          <label for="tokenInput">USB scanner</label>
+          <div class="input-group">
+            <input class="form-control" id="tokenInput" placeholder="Just scan — the page listens automatically" autocomplete="off" autofocus>
+            <div class="input-group-append">
+              <button class="btn btn-primary" id="btnSubmitToken" type="button">
+                <i class="fas fa-check mr-1"></i> Mark
+              </button>
+            </div>
+          </div>
+          <small class="text-muted">Scans are caught anywhere on this page, even if you clicked elsewhere. Use a 2D/QR scanner set to send Enter after each scan.</small>
+        </div>
+
+        <hr>
+        <h6 class="mb-2">Recent scans</h6>
+        <ul id="recentList" class="list-group"></ul>
+      </div>
+
+      <div class="col-md-6">
+        <div class="border rounded p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>Camera scanner</strong>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btnCamera">
+              <i class="fas fa-camera mr-1"></i> Start camera
+            </button>
+          </div>
+          <div id="qrReader" style="width:100%;"></div>
+          <small class="text-muted d-block mt-2" id="cameraMsg">
+            The camera needs the site to be opened over HTTPS. If it does not start, use a USB scanner.
+          </small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# Pinned version. For schools with poor internet, download this file into static/vendor/ and load it with the static tag instead. #}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function(){
+  const markUrl     = "{% url 'attendance_qr_mark' %}";
+  const rosterUrl   = "{% url 'attendance_roster' %}";
+  const streamsUrl  = "{% url 'ajax_streams_for_class' %}";
+  const subjectsUrl = "{% url 'ajax_subjects_for_class' %}";
+  const papersUrl   = "{% url 'ajax_papers_for_subject' %}";
+  const closeUrlTpl  = "{% url 'attendance_session_close' 999999999 %}";
+  const detailUrlTpl = "{% url 'attendance_session_detail' 999999999 %}";
+  const qrCardsBaseUrl = "{% url 'student_qr_cards' %}";
+
+  const STATUS_LABELS = {P: "Present", A: "Absent", L: "Late"};
+  const STATUS_BADGE  = {P: "badge-success", A: "badge-danger", L: "badge-warning"};
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  function esc(v){
+    const d = document.createElement("div");
+    d.textContent = (v === null || v === undefined) ? "" : String(v);
+    return d.innerHTML;
+  }
+  function csrfToken(){
+    return document.querySelector("#csrfForm input[name=csrfmiddlewaretoken]")?.value || "";
+  }
+  function isDaily(){ return $("id_reg_type").value === "daily"; }
+  function selectionReady(){
+    return !!($("id_date").value && $("id_class_ref").value && (isDaily() || $("id_subject").value));
+  }
+  function selectionPayload(){
+    const p = {
+      reg_type: isDaily() ? "daily" : "subject",
+      date: $("id_date").value,
+      class_id: $("id_class_ref").value,
+      stream_id: $("id_stream").value
+    };
+    if(!isDaily()){
+      p.subject_id = $("id_subject").value;
+      p.paper_id = $("id_paper").value;
+    }
+    return p;
+  }
+  function selectionLabel(){
+    const opt = (id) => { const s = $(id); return s && s.selectedIndex > 0 ? s.options[s.selectedIndex].text : ""; };
+    let label = opt("id_class_ref");
+    if(opt("id_stream")) label += " / " + opt("id_stream");
+    label += isDaily() ? " · Daily register" : (" · " + opt("id_subject") + (opt("id_paper") ? " (" + opt("id_paper") + ")" : ""));
+    return label;
+  }
+
+  /* =========================================================
+     Sound + vibration feedback
+  ========================================================= */
+  let audioCtx = null;
+  let soundOn = true;
+
+  function ensureAudio(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    if(audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+  // Browsers only allow sound after the user has clicked or pressed a key
+  document.addEventListener("pointerdown", ensureAudio, {passive: true});
+  document.addEventListener("keydown", ensureAudio, true);
+
+  function tone(freq, ms, delay, type){
+    if(!soundOn || !audioCtx) return;
+    const t = audioCtx.currentTime + (delay || 0) / 1000;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.35, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start(t);
+    o.stop(t + ms / 1000 + 0.02);
+  }
+
+  const SOUNDS = {
+    ok:      () => tone(1050, 130),
+    late:    () => { tone(900, 110); tone(680, 150, 150); },
+    absent:  () => { tone(500, 120); tone(500, 120, 170); },
+    already: () => { tone(650, 70); tone(650, 70, 110); },
+    error:   () => tone(190, 450, 0, "square")
+  };
+  const BUZZ = { ok: 60, late: [60, 60, 60], absent: [60, 60, 60], already: [30, 40, 30], error: [200, 80, 200] };
+
+  function feedback(kind){
+    try { SOUNDS[kind] && SOUNDS[kind](); } catch(e){}
+    if(navigator.vibrate) { try { navigator.vibrate(BUZZ[kind] || 0); } catch(e){} }
+  }
+
+  $("btnSound").addEventListener("click", () => {
+    soundOn = !soundOn;
+    $("btnSound").innerHTML = soundOn
+      ? '<i class="fas fa-volume-up mr-1"></i> Sound on'
+      : '<i class="fas fa-volume-mute mr-1"></i> Sound off';
+    if(soundOn){ ensureAudio(); feedback("ok"); }
+  });
+
+  /* =========================================================
+     Big panel
+  ========================================================= */
+  function showPanel(kind, title, sub){
+    const p = $("scanPanel");
+    p.className = "scan-panel" + (kind ? " scan-" + kind : "");
+    $("scanTitle").textContent = title || "";
+    $("scanSub").textContent = sub || "";
+    void p.offsetWidth;          // restart the flash animation
+    if(kind) p.classList.add("scan-flash");
+  }
+
+  /* =========================================================
+     Register + live counter
+  ========================================================= */
+  let currentSessionId = null;
+  let currentTotal = 0;
+  let registerGen = 0;          // changes whenever the selection changes
+  let regReq = 0;
+
+  function renderCounts(stats, total){
+    const P = +stats.P || 0, L = +stats.L || 0, A = +stats.A || 0;
+    currentTotal = +total || 0;
+    const notYet = Math.max(currentTotal - P - L - A, 0);
+    $("cIn").textContent = P + L;
+    $("cTotal").textContent = currentTotal;
+    $("cDetail").textContent = `Present ${P} · Late ${L} · Absent ${A} · Not yet scanned ${notYet}`;
+  }
+
+  function setSession(id){
+    currentSessionId = id;
+    const view = $("btnViewSession");
+    if(id){
+      $("btnClose").disabled = false;
+      view.href = detailUrlTpl.replace("999999999", String(parseInt(id, 10)));
+      view.classList.remove("d-none");
+    } else {
+      $("btnClose").disabled = true;
+      view.classList.add("d-none");
+    }
+  }
+
+  function resetSession(){
+    registerGen++;
+    setSession(null);
+    $("recentList").innerHTML = "";
+    recentMap.clear();
+    lastSeen.clear();
+    $("cIn").textContent = "0";
+    $("cTotal").textContent = "0";
+    $("cDetail").textContent = "No register selected.";
+  }
+
+  async function fetchJson(url){
+    const res = await fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}});
+    return res.json();
+  }
+
+  // Load the current state of the chosen register (it may already have scans)
+  async function refreshRegister(){
+    resetSession();
+    if(!selectionReady()){
+      showPanel("", "Choose a register to start", "Select the date and class (and subject, unless it is the Daily register).");
+      return;
+    }
+    const req = ++regReq;
+    $("cDetail").textContent = "Loading register…";
+    let data;
+    try {
+      data = await fetchJson(`${rosterUrl}?${new URLSearchParams(selectionPayload()).toString()}`);
+    } catch(e){
+      if(req !== regReq) return;
+      $("cDetail").textContent = "Could not load the register. Check the connection.";
+      return;
+    }
+    if(req !== regReq) return;
+
+    if(!data.ok){
+      showPanel("error", "You can't use this register", data.error || "");
+      $("cDetail").textContent = data.error || "";
+      return;
+    }
+
+    const stats = {P: 0, A: 0, L: 0};
+    (data.students || []).forEach(s => { if(s.marked) stats[s.status] = (stats[s.status] || 0) + 1; });
+    renderCounts(stats, (data.students || []).length);
+    setSession(data.session ? data.session.id : null);
+    showPanel("", "Ready to scan", selectionLabel());
+    focusScannerBox();
+  }
+
+  /* =========================================================
+     Recent list
+  ========================================================= */
+  const MAX_RECENT = 12;
+  const recentMap = new Map();
+
+  function badge(status){
+    const span = document.createElement("span");
+    span.className = `badge badge-pill recent-status ${STATUS_BADGE[status] || "badge-secondary"}`;
+    span.textContent = STATUS_LABELS[status] || status;
+    return span;
+  }
+
+  function addRecent(student, status, time, repeat){
+    const ul = $("recentList");
+    const key = String(student.id);
+    let li = recentMap.get(key);
+    if(!li){
+      li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center";
+      li.dataset.studentId = key;
+      recentMap.set(key, li);
+    }
+    li.innerHTML = `<div><strong>${esc(student.name)}</strong> <span class="text-muted">(${esc(student.adm)})</span>
+      <div class="text-muted recent-time">${esc(time)}${repeat ? " · scanned again" : ""}</div></div>`;
+    li.appendChild(badge(status));
+    ul.prepend(li);
+    while(ul.children.length > MAX_RECENT){
+      const last = ul.lastElementChild;
+      recentMap.delete(String(last.dataset.studentId || ""));
+      last.remove();
+    }
+  }
+
+  /* =========================================================
+     Scan queue: nothing is dropped, failed saves are retried
+  ========================================================= */
+  const queue = [];
+  let processing = false;
+  let offline = false;
+  const lastSeen = new Map();       // token -> time; stops the camera re-reading one card
+  const COOLDOWN_MS = 3000;
+
+  function updateQueueInfo(){
+    const box = $("queueInfo");
+    if(!queue.length){
+      box.classList.add("d-none");
+      return;
+    }
+    box.classList.remove("d-none");
+    box.className = "alert " + (offline ? "alert-danger" : "alert-warning");
+    box.innerHTML = offline
+      ? `<i class="fas fa-wifi mr-1"></i> No connection. <strong>${queue.length}</strong> scan(s) waiting — they will be saved automatically when the connection returns. Keep this page open.`
+      : `<i class="fas fa-spinner fa-spin mr-1"></i> Saving… <strong>${queue.length}</strong> scan(s) in the queue.`;
+  }
+
+  // Returns true if the scan was accepted into the queue
+  function enqueue(raw){
+    const token = (raw || "").trim();
+    if(!token) return false;
+
+    const now = Date.now();
+    if(now - (lastSeen.get(token) || 0) < COOLDOWN_MS) return false;
+    lastSeen.set(token, now);
+
+    if(!selectionReady()){
+      showPanel("error", "Choose the register first", "Select the date and class (and subject, unless it is the Daily register).");
+      feedback("error");
+      return false;
+    }
+    if(queue.some(q => q.token === token && q.gen === registerGen)) return false;
+
+    queue.push({
+      token: token,
+      payload: Object.assign(selectionPayload(), {status: $("statusSel").value}),
+      gen: registerGen,
+      tries: 0
+    });
+    updateQueueInfo();
+    processQueue();
+    return true;
+  }
+
+  async function processQueue(){
+    if(processing) return;
+    processing = true;
+    while(queue.length){
+      const item = queue[0];
+      let res;
+      try {
+        res = await fetch(markUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: new URLSearchParams(Object.assign({}, item.payload, {
+            token: item.token,
+            csrfmiddlewaretoken: csrfToken()
+          }))
+        });
+        if(res.status >= 500) throw new Error("server " + res.status);
+      } catch(e){
+        // Network or server problem: keep the scan and retry it
+        item.tries++;
+        offline = true;
+        updateQueueInfo();
+        await sleep(Math.min(2000 * item.tries, 10000));
+        continue;
+      }
+
+      offline = false;
+      let data;
+      try { data = await res.json(); }
+      catch(e){
+        data = {ok: false, error: `Unexpected response (${res.status}). You may have been logged out — reload the page.`};
+      }
+      queue.shift();
+      updateQueueInfo();
+      handleResult(item, data);
+    }
+    processing = false;
+  }
+
+  function handleResult(item, data){
+    if(!data.ok){
+      showPanel("error", "Not marked", data.error || "Failed");
+      feedback("error");
+      return;
+    }
+
+    const s = data.student;
+    const when = data.marked_at ? ` at ${data.marked_at}` : "";
+
+    if(data.already){
+      showPanel("already", s.name, `${s.adm} · Already marked ${data.status_label}${when}`);
+      feedback("already");
+    } else {
+      const kind = data.status === "L" ? "late" : (data.status === "A" ? "absent" : "ok");
+      const was = data.previous_label ? ` (was ${data.previous_label})` : "";
+      showPanel(kind, s.name, `${s.adm} · ${data.status_label}${when}${was}`);
+      feedback(kind);
+    }
+    addRecent(s, data.status, data.marked_at || "", data.already);
+
+    // Only update the counter if the teacher is still on the same register
+    if(item.gen === registerGen){
+      setSession(data.session_id);
+      renderCounts(data.stats || {}, data.total);
+    }
+  }
+
+  window.addEventListener("beforeunload", (e) => {
+    if(queue.length){
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
+  /* =========================================================
+     USB scanner: listen on the whole page
+     Scanners "type" very fast then press Enter. Fast keystrokes that
+     land outside the scan box are collected here instead of changing
+     dropdowns.
+  ========================================================= */
+  let scanBuf = "";
+  let lastKeyAt = 0;
+  const MAX_GAP_MS = 80;     // scanners type much faster than people
+  const MIN_LEN = 8;
+
+  function isTypingField(el){
+    if(!el) return false;
+    if(el.isContentEditable || el.tagName === "TEXTAREA") return true;
+    if(el.tagName === "INPUT"){
+      // allow real typing in text-like inputs and the date box
+      return !["checkbox", "radio", "button", "submit", "reset"].includes(el.type);
+    }
+    return false;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const t = e.target;
+    if(t === $("tokenInput")) return;          // handled by its own listener
+    if(isTypingField(t)) return;
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+
+    const now = performance.now();
+    if(now - lastKeyAt > MAX_GAP_MS) scanBuf = "";
+    lastKeyAt = now;
+
+    if(e.key === "Enter"){
+      if(scanBuf.length >= MIN_LEN){
+        e.preventDefault();
+        const tok = scanBuf;
+        scanBuf = "";
+        enqueue(tok);
+        focusScannerBox();
+      } else {
+        scanBuf = "";
+      }
+      return;
+    }
+    if(e.key.length === 1 && e.key !== " "){
+      scanBuf += e.key;
+      e.preventDefault();     // stop scanner keystrokes changing a dropdown
+    }
+  }, true);
+
+  function focusScannerBox(){
+    if(cameraRunning) return;
+    const a = document.activeElement;
+    if(!a || a === document.body || a.tagName === "SELECT" || a.tagName === "BUTTON"){
+      $("tokenInput").focus();
+    }
+  }
+
+  $("tokenInput").addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      const token = e.target.value;
+      e.target.value = "";
+      enqueue(token);
+    }
+  });
+
+  $("btnSubmitToken").addEventListener("click", () => {
+    const token = $("tokenInput").value;
+    $("tokenInput").value = "";
+    enqueue(token);
+    $("tokenInput").focus();
+  });
+
+  /* =========================================================
+     Camera
+  ========================================================= */
+  let qr = null;
+  let cameraRunning = false;
+
+  function cameraMsg(text, isError){
+    $("cameraMsg").textContent = text;
+    $("cameraMsg").className = "d-block mt-2 " + (isError ? "text-danger" : "text-muted");
+  }
+
+  function pauseCameraBriefly(ms){
+    if(!qr || !cameraRunning) return;
+    try {
+      qr.pause(true);
+      setTimeout(() => { try { qr.resume(); } catch(e){} }, ms);
+    } catch(e){}
+  }
+
+  async function startCamera(){
+    ensureAudio();
+    if(typeof Html5Qrcode === "undefined"){
+      cameraMsg("The camera library could not load (check internet). Use a USB scanner.", true);
+      return;
+    }
+    if(!window.isSecureContext){
+      cameraMsg("Camera only works when the site is opened over HTTPS. Use a USB scanner, or ask your admin to enable HTTPS.", true);
+      return;
+    }
+    try {
+      if(!qr) qr = new Html5Qrcode("qrReader");
+      await qr.start(
+        {facingMode: "environment"},
+        {fps: 10, qrbox: 250},
+        (decodedText) => { if(enqueue(decodedText)) pauseCameraBriefly(900); }
+      );
+      cameraRunning = true;
+      $("btnCamera").innerHTML = '<i class="fas fa-stop mr-1"></i> Stop camera';
+      cameraMsg("Camera running. Hold each card inside the box.", false);
+    } catch(e){
+      cameraRunning = false;
+      cameraMsg("Could not start the camera (permission denied or no camera found). Use a USB scanner.", true);
+    }
+  }
+
+  async function stopCamera(){
+    if(qr && cameraRunning){ try { await qr.stop(); } catch(e){} }
+    cameraRunning = false;
+    $("btnCamera").innerHTML = '<i class="fas fa-camera mr-1"></i> Start camera';
+    cameraMsg("Camera stopped.", false);
+    $("tokenInput").focus();
+  }
+
+  $("btnCamera").addEventListener("click", () => cameraRunning ? stopCamera() : startCamera());
+
+  /* =========================================================
+     Close register
+  ========================================================= */
+  async function closeRegister(){
+    if(!currentSessionId) return;
+    if(queue.length){
+      alert("Some scans are still being saved. Wait until the queue is empty, then close the register.");
+      return;
+    }
+    if(!confirm("Close this register? Every student who has not scanned will be marked Absent. Late arrivals can still be scanned afterwards.")) return;
+
+    $("btnClose").disabled = true;
+    try {
+      const res = await fetch(closeUrlTpl.replace("999999999", String(parseInt(currentSessionId, 10))), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: new URLSearchParams({csrfmiddlewaretoken: csrfToken()})
+      });
+      const data = await res.json();
+      if(!data.ok){
+        showPanel("error", "Could not close the register", data.error || "");
+        feedback("error");
+        return;
+      }
+      renderCounts(data.stats || {}, currentTotal);
+      showPanel("absent", "Register closed", data.message || "");
+      feedback("absent");
+    } catch(e){
+      showPanel("error", "Network error", "The register was not closed. Try again.");
+      feedback("error");
+    } finally {
+      $("btnClose").disabled = false;
+      focusScannerBox();
+    }
+  }
+  $("btnClose").addEventListener("click", closeRegister);
+
+  /* =========================================================
+     Dropdowns
+  ========================================================= */
+  function resetSelect(selectEl, firstLabel){
+    if(!selectEl) return;
+    selectEl.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = firstLabel;
+    selectEl.appendChild(opt);
+  }
+
+  function addOptions(selectEl, items, labelKey){
+    (items || []).forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item[labelKey] || item.name || "";
+      selectEl.appendChild(opt);
+    });
+  }
+
+  async function loadStreamsForClass(){
+    const classId = $("id_class_ref").value;
+    resetSelect($("id_stream"), "All streams");
+    if(!classId) return;
+    const data = await fetchJson(`${streamsUrl}?class_id=${encodeURIComponent(classId)}`);
+    addOptions($("id_stream"), data.streams, "name");
+  }
+
+  async function loadSubjectsForClass(){
+    const classId = $("id_class_ref").value;
+    resetSelect($("id_subject"), "Select subject...");
+    resetSelect($("id_paper"), "All papers");
+    if(!classId) return;
+    const data = await fetchJson(`${subjectsUrl}?class_id=${encodeURIComponent(classId)}`);
+    addOptions($("id_subject"), data.subjects, "name");
+  }
+
+  async function loadPapersForSubject(){
+    const subjectId = $("id_subject").value;
+    resetSelect($("id_paper"), "All papers");
+    if(!subjectId) return;
+    const data = await fetchJson(`${papersUrl}?subject_id=${encodeURIComponent(subjectId)}`);
+    addOptions($("id_paper"), data.papers, "paper_name");
+  }
+
+  function toggleRegType(){
+    const daily = isDaily();
+    $("subjectGroup").classList.toggle("d-none", daily);
+    $("paperGroup").classList.toggle("d-none", daily);
+  }
+
+  function updateGenerateQrLink(){
+    const btn = $("btnGenQR");
+    if(!btn) return;
+    const qs = new URLSearchParams();
+    if($("id_class_ref").value) qs.set("class_id", $("id_class_ref").value);
+    if($("id_stream").value) qs.set("stream_id", $("id_stream").value);
+    btn.href = qrCardsBaseUrl + (qs.toString() ? `?${qs.toString()}` : "");
+  }
+
+  /* =========================================================
+     Events
+  ========================================================= */
+  $("id_reg_type").addEventListener("change", () => { toggleRegType(); refreshRegister(); });
+  $("id_date").addEventListener("change", refreshRegister);
+
+  $("id_class_ref").addEventListener("change", async () => {
+    resetSession();
+    try {
+      await loadStreamsForClass();
+      await loadSubjectsForClass();
+    } catch(e){
+      showPanel("error", "Could not load streams/subjects", "Check the connection and try again.");
+    }
+    updateGenerateQrLink();
+    refreshRegister();
+  });
+
+  $("id_stream").addEventListener("change", () => { updateGenerateQrLink(); refreshRegister(); });
+
+  $("id_subject").addEventListener("change", async () => {
+    resetSession();
+    try { await loadPapersForSubject(); } catch(e){}
+    refreshRegister();
+  });
+
+  $("id_paper").addEventListener("change", refreshRegister);
+  $("statusSel").addEventListener("change", focusScannerBox);
+
+  /* Initial state */
+  toggleRegType();
+  if($("id_class_ref").value){
+    (async () => {
+      try {
+        await loadStreamsForClass();
+        await loadSubjectsForClass();
+      } catch(e){}
+      updateGenerateQrLink();
+      refreshRegister();
+    })();
+  }
+})();
+</script>
+{% endblock %}

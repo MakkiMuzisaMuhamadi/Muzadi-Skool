@@ -1,0 +1,182 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-invoice-dollar"></i> Fee Structures
+    </h3>
+    <small class="text-muted">Manage fees by academic year, term, class, stream and residence</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'fee_structure_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus-circle mr-1"></i> Add Fee Structure
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="mb-0">
+      <div class="form-row align-items-end">
+        <div class="col-md-3">
+          <label>Academic Year</label>
+          <select name="academic_year" id="filter_academic_year" class="form-control">
+            <option value="">All Academic Years</option>
+            {% for year in academic_years %}
+              <option value="{{ year.id }}" {% if request.GET.academic_year == year.id|stringformat:"s" %}selected{% endif %}>
+                {{ year.year }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label>Term</label>
+          <select name="term" id="filter_term" class="form-control">
+            <option value="">All Terms</option>
+            {% for term_obj in terms %}
+              <option value="{{ term_obj.id }}" {% if request.GET.term == term_obj.id|stringformat:"s" %}selected{% endif %}>
+                {{ term_obj.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label>Class</label>
+          <select name="class_ref" id="filter_class_ref" class="form-control">
+            <option value="">All Classes</option>
+            {% for cls in classes %}
+              <option value="{{ cls.id }}" {% if request.GET.class_ref == cls.id|stringformat:"s" %}selected{% endif %}>
+                {{ cls.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <button class="btn btn-primary btn-block">
+            <i class="fas fa-filter mr-1"></i> Filter
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <a href="{% url 'fee_structure_list' %}" class="btn btn-light btn-sm">
+          <i class="fas fa-sync-alt mr-1"></i> Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="feeStructureTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Academic Year</th>
+            <th>Term</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Residence</th>
+            <th>Apply Mode</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Generated</th>
+            <th style="width:170px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for structure in structures %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ structure.name|default:"-" }}</td>
+            <td>{{ structure.academic_year.year }}</td>
+            <td>{{ structure.term.name }}</td>
+            <td>{{ structure.class_ref.name }}</td>
+            <td>{{ structure.stream.name|default:"-" }}</td>
+            <td>{{ structure.get_residence_display|default:"All" }}</td>
+            <td>{{ structure.get_apply_mode_display }}</td>
+            <td>UGX {{ structure.total_amount|intcomma }}</td>
+            <td>
+              {% if structure.is_active %}
+                <span class="badge badge-success">Active</span>
+              {% else %}
+                <span class="badge badge-danger">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if structure.charges_generated %}
+                <span class="badge badge-primary">Yes</span>
+              {% else %}
+                <span class="badge badge-warning">No</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'fee_structure_detail' structure.id %}" class="btn btn-sm btn-outline-info" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'fee_structure_edit' structure.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'fee_structure_generate_charges' structure.id %}"
+                 class="btn btn-sm btn-outline-success"
+                 onclick="return confirm('Generate charges for this structure?');"
+                 title="Generate Charges">
+                <i class="fas fa-cogs"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="12" class="text-center text-muted">No fee structures found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#feeStructureTable').DataTable({
+      pageLength: 25,
+      order: [[2, 'desc'], [3, 'asc'], [4, 'asc']]
+    });
+
+    const initialTerm = "{{ request.GET.term|default:'' }}";
+
+    function loadTerms(yearId, selectedValue = null) {
+      const $term = $('#filter_term');
+      $term.empty().append('<option value="">All Terms</option>');
+
+      if (!yearId) return;
+
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $term.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+        });
+      });
+    }
+
+    $('#filter_academic_year').on('change', function () {
+      loadTerms($(this).val());
+    });
+
+    if ($('#filter_academic_year').val()) {
+      loadTerms($('#filter_academic_year').val(), initialTerm);
+    }
+  });
+</script>
+{% endblock %}

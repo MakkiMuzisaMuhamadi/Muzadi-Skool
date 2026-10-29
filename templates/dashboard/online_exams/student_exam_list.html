@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-laptop-house mr-1"></i> Online Exams
+    </h3>
+    <small class="text-muted">
+      View available exams, continue unfinished ones, and see results.
+    </small>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if exams %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Exam</th>
+              <th>Subject</th>
+              <th>Class</th>
+              <th>Status</th>
+              <th>Attempts</th>
+              <th>Opens</th>
+              <th>Closes</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exam in exams %}
+              <tr>
+                <td>
+                  <div class="font-weight-bold">{{ exam.title }}</div>
+                  {% if exam.instructions %}
+                    <small class="text-muted">{{ exam.instructions|truncatechars:90 }}</small>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {{ exam.subject.name }}
+                  {% if exam.paper %}
+                    <br><small class="text-muted">{{ exam.paper.paper_name }}</small>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {{ exam.class_ref }}
+                  {% if exam.stream %}
+                    <br><small class="text-muted">{{ exam.stream.name }}</small>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if exam.is_open_now %}
+                    <span class="badge badge-success">Open</span>
+                  {% elif exam.status == "PUBLISHED" %}
+                    <span class="badge badge-warning">Scheduled / Closed</span>
+                  {% elif exam.status == "CLOSED" %}
+                    <span class="badge badge-danger">Closed</span>
+                  {% else %}
+                    <span class="badge badge-secondary">{{ exam.status }}</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if exam.my_attempts_count %}
+                    <span class="badge badge-info">{{ exam.my_attempts_count }} / {{ exam.max_attempts }}</span>
+                  {% else %}
+                    <span class="text-muted">0 / {{ exam.max_attempts }}</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if exam.opens_at %}
+                    {{ exam.opens_at|date:"d M Y, H:i" }}
+                  {% else %}
+                    <span class="text-muted">Any time</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if exam.closes_at %}
+                    {{ exam.closes_at|date:"d M Y, H:i" }}
+                  {% else %}
+                    <span class="text-muted">No deadline</span>
+                  {% endif %}
+                </td>
+
+                <td class="text-right">
+  {% if exam.latest_attempt and exam.latest_attempt.status == "IN_PROGRESS" %}
+    <a href="{% url 'student_exam_take' exam.latest_attempt.id %}" class="btn btn-warning btn-sm">
+      <i class="fas fa-pen mr-1"></i> Continue
+    </a>
+
+  {% elif exam.can_view_result %}
+    <a href="{% url 'student_exam_result' exam.latest_attempt.id %}" class="btn btn-outline-success btn-sm">
+      <i class="fas fa-chart-bar mr-1"></i> View Result
+    </a>
+
+  {% elif exam.can_attempt %}
+    <a href="{% url 'student_exam_start' exam.pk %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-play mr-1"></i> Start
+    </a>
+
+  {% elif exam.latest_attempt %}
+    <a href="{% url 'student_exam_submit_success' exam.latest_attempt.id %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-check-circle mr-1"></i> Submitted
+    </a>
+
+  {% else %}
+    <button class="btn btn-outline-secondary btn-sm" disabled>
+      <i class="fas fa-lock mr-1"></i> Unavailable
+    </button>
+  {% endif %}
+</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <div class="mb-2">
+          <i class="fas fa-file-alt fa-2x text-muted"></i>
+        </div>
+        <h5 class="mb-1">No exams available</h5>
+        <p class="text-muted mb-0">There are currently no online exams assigned to you.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

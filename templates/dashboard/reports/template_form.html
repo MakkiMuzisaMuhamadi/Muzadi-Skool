@@ -1,0 +1,301 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-pencil-ruler"></i> {{ title }}
+      </h3>
+      <small class="text-muted">Configure report card appearance and titles</small>
+    </div>
+
+    {% if is_edit and template_obj %}
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'report_template_sections_edit' template_obj.pk %}" class="btn btn-warning btn-sm">
+        <i class="fas fa-stream mr-1"></i> Edit Sections
+      </a>
+      <a href="{% url 'report_template_signatures_edit' template_obj.pk %}" class="btn btn-info btn-sm">
+        <i class="fas fa-signature mr-1"></i> Edit Signatures
+      </a>
+      <a href="{% url 'report_template_list' %}" class="btn btn-light btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger">
+    <strong>Please correct the errors below and save again.</strong>
+    <ul class="mb-0 mt-2">
+      {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>Basic Template Settings</strong>
+    </div>
+    <div class="card-body">
+
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+          {{ form.name }}
+          {% for err in form.name.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="{{ form.level.id_for_label }}">{{ form.level.label }}</label>
+          {{ form.level }}
+          {% for err in form.level.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="d-block mb-2">{{ form.is_active.label }}</label>
+          <div class="custom-control custom-switch">
+            {{ form.is_active }}
+            <label class="custom-control-label" for="{{ form.is_active.id_for_label }}">
+              Make this the active template
+            </label>
+          </div>
+          {% for err in form.is_active.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="{{ form.report_title.id_for_label }}">{{ form.report_title.label }}</label>
+          {{ form.report_title }}
+          {% for err in form.report_title.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="{{ form.report_subtitle.id_for_label }}">{{ form.report_subtitle.label }}</label>
+          {{ form.report_subtitle }}
+          {% for err in form.report_subtitle.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-2">
+          <label for="{{ form.primary_color.id_for_label }}">{{ form.primary_color.label }}</label>
+          {{ form.primary_color }}
+          <small class="text-muted d-block mt-1" id="primary_color_value">{{ form.primary_color.value|default:"#0B4F8A" }}</small>
+          {% for err in form.primary_color.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label for="{{ form.secondary_color.id_for_label }}">{{ form.secondary_color.label }}</label>
+          {{ form.secondary_color }}
+          <small class="text-muted d-block mt-1" id="secondary_color_value">{{ form.secondary_color.value|default:"#EAF3FB" }}</small>
+          {% for err in form.secondary_color.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label for="{{ form.accent_color.id_for_label }}">{{ form.accent_color.label }}</label>
+          {{ form.accent_color }}
+          <small class="text-muted d-block mt-1" id="accent_color_value">{{ form.accent_color.value|default:"#123B63" }}</small>
+          {% for err in form.accent_color.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label for="{{ form.text_color.id_for_label }}">{{ form.text_color.label }}</label>
+          {{ form.text_color }}
+          <small class="text-muted d-block mt-1" id="text_color_value">{{ form.text_color.value|default:"#222222" }}</small>
+          {% for err in form.text_color.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-2">
+          <label for="{{ form.border_color.id_for_label }}">{{ form.border_color.label }}</label>
+          {{ form.border_color }}
+          <small class="text-muted d-block mt-1" id="border_color_value">{{ form.border_color.value|default:"#C9D9E8" }}</small>
+          {% for err in form.border_color.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label for="{{ form.page_size.id_for_label }}">{{ form.page_size.label }}</label>
+          {{ form.page_size }}
+          {% for err in form.page_size.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-3">
+          <label for="{{ form.orientation.id_for_label }}">{{ form.orientation.label }}</label>
+          {{ form.orientation }}
+          {% for err in form.orientation.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="{{ form.watermark_text.id_for_label }}">{{ form.watermark_text.label }}</label>
+          {{ form.watermark_text }}
+          {% for err in form.watermark_text.errors %}
+            <div class="invalid-feedback d-block">{{ err }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="{{ form.footer_text.id_for_label }}">{{ form.footer_text.label }}</label>
+        {{ form.footer_text }}
+        {% for err in form.footer_text.errors %}
+          <div class="invalid-feedback d-block">{{ err }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body bg-light rounded">
+          <h6 class="mb-3 text-primary">
+            <i class="fas fa-heading mr-2"></i>Section Titles
+          </h6>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="{{ form.student_info_title.id_for_label }}">{{ form.student_info_title.label }}</label>
+              {{ form.student_info_title }}
+              {% for err in form.student_info_title.errors %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label for="{{ form.academic_table_title.id_for_label }}">{{ form.academic_table_title.label }}</label>
+              {{ form.academic_table_title }}
+              {% for err in form.academic_table_title.errors %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label for="{{ form.competencies_title.id_for_label }}">{{ form.competencies_title.label }}</label>
+              {{ form.competencies_title }}
+              {% for err in form.competencies_title.errors %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="form-row mb-0">
+            <div class="form-group col-md-4">
+              <label for="{{ form.projects_title.id_for_label }}">{{ form.projects_title.label }}</label>
+              {{ form.projects_title }}
+              {% for err in form.projects_title.errors %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label for="{{ form.comments_title.id_for_label }}">{{ form.comments_title.label }}</label>
+              {{ form.comments_title }}
+              {% for err in form.comments_title.errors %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label for="{{ form.legend_title.id_for_label }}">{{ form.legend_title.label }}</label>
+              {{ form.legend_title }}
+              {% for err in form.legend_title.errors %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>Visibility Settings</strong>
+    </div>
+    <div class="card-body">
+      <div class="row">
+
+        {% for field in form %}
+          {% if field.name in "show_logo,show_school_address,show_school_phone,show_school_email,show_school_website,show_school_motto,show_student_photo,show_stream,show_admission_number,show_student_number,show_average_score,show_overall_grade,show_position,show_grade_legend,show_class_teacher_comment,show_head_teacher_comment,show_promotion_status,show_signatures" %}
+          <div class="col-md-3 mb-3">
+            <div class="custom-control custom-checkbox">
+              {{ field }}
+              <label class="custom-control-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+            {% for err in field.errors %}
+              <div class="invalid-feedback d-block">{{ err }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+  <div class="text-right">
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save mr-1"></i> Save Template
+    </button>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const colorFields = [
+      "primary_color",
+      "secondary_color",
+      "accent_color",
+      "text_color",
+      "border_color"
+    ];
+
+    colorFields.forEach(function(name) {
+      const input = document.getElementById("id_" + name);
+      const label = document.getElementById(name + "_value");
+
+      if (input && label) {
+        const sync = function() {
+          label.textContent = input.value;
+        };
+        input.addEventListener("input", sync);
+        sync();
+      }
+    });
+  });
+</script>
+{% endblock %}

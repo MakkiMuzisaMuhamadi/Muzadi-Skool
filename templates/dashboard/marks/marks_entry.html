@@ -1,0 +1,694 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-pen-square"></i> Enter Marks</h3>
+  <small class="text-muted">
+    Auto-saves when you leave a field. Use arrow keys to move between fields.
+  </small>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    {% if filter_form.errors %}
+      <div class="alert alert-danger">{{ filter_form.errors }}</div>
+    {% endif %}
+
+    <form method="get" id="marksFilter"
+          data-terms-url="{% url 'ajax_terms' %}"
+          data-classes-url="{% url 'ajax_teacher_classes' %}"
+          data-streams-url="{% url 'ajax_teacher_streams' %}"
+          data-examtypes-url="{% url 'ajax_exam_types_for_class' %}"
+          data-subjects-url="{% url 'ajax_teacher_subjects' %}"
+          data-papers-url="{% url 'ajax_teacher_papers' %}">
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label>Academic Year</label>
+          {{ filter_form.academic_year }}
+        </div>
+
+        <div class="form-group col-md-3">
+          <label>Term</label>
+          {{ filter_form.term }}
+        </div>
+
+        <div class="form-group col-md-3">
+          <label>Class</label>
+          {{ filter_form.class_ref }}
+        </div>
+
+        <div class="form-group col-md-3">
+          <label>Stream</label>
+          {{ filter_form.stream }}
+          <small class="text-muted d-block">
+            Leave blank to load all streams.
+          </small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>Exam Type</label>
+          {{ filter_form.exam_type }}
+        </div>
+
+        <div class="form-group col-md-4">
+          <label>Subject</label>
+          {{ filter_form.subject }}
+        </div>
+
+        <div class="form-group col-md-4">
+          <label>Paper</label>
+          {{ filter_form.paper }}
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap" style="gap:.5rem;">
+        <button class="btn btn-primary">
+          <i class="fas fa-users mr-1"></i> Load Students
+        </button>
+
+        <a href="{% url 'marks_entry' %}" class="btn btn-light">
+          <i class="fas fa-sync-alt mr-1"></i> Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if sheet or all_streams_mode %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start flex-wrap" style="gap:.75rem;">
+        <div>
+          <span class="badge badge-info">Session</span>
+          <strong class="ml-1">{{ session_title }}</strong>
+          {% if all_streams_mode %}<span class="badge badge-warning ml-2">ALL STREAMS</span>{% endif %}
+          <div class="small text-muted mt-1">
+            Maximum mark: <b>{{ max_mark|floatformat:"-1" }}</b>.
+            Type <b>ABS</b> (or press the <b>A</b> button) for a student who was absent.
+            Clearing a box removes that mark.
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap" style="gap:.5rem;">
+          <a class="btn btn-outline-success btn-sm" href="{% url 'marks_excel_template' %}?{{ query_string }}">
+            <i class="fas fa-file-download mr-1"></i> Download Excel sheet
+          </a>
+          {% if not is_locked %}
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'marks_import' %}?{{ query_string }}">
+            <i class="fas fa-file-upload mr-1"></i> Upload from Excel
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mt-3">
+        {% for w in windows %}
+          <div class="d-flex flex-wrap align-items-center small mb-1" style="gap:.4rem;">
+            <span class="text-muted">{{ w.marksheet.stream.name|default:"(no stream)" }}:</span>
+            {% if w.submission_status == "APPROVED" %}
+              <span class="badge badge-success">Approved &amp; locked</span>
+            {% elif w.submission_status == "SUBMITTED" %}
+              <span class="badge badge-info">Submitted — awaiting approval</span>
+            {% elif w.submission_status == "RETURNED" %}
+              <span class="badge badge-warning">Returned for correction</span>
+            {% else %}
+              <span class="badge badge-secondary">Draft</span>
+            {% endif %}
+            {% if w.is_locked and w.submission_status != "APPROVED" %}<span class="badge badge-danger">Closed</span>{% endif %}
+            {% if w.deadline %}
+              <span class="badge {% if w.is_past_deadline %}badge-danger{% else %}badge-light border{% endif %}">
+                Deadline {{ w.deadline|date:"D d M, H:i" }}
+              </span>
+            {% endif %}
+            {% if w.submission_status == "RETURNED" and w.review_note %}
+              <span class="text-warning"><i class="fas fa-comment-dots"></i> {{ w.review_note }}</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if is_locked %}
+      <div class="card-footer">
+        <div class="alert alert-danger mb-0">
+          Editing is not available for this list. You can still view the marks.
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="saveBanner" class="alert alert-warning d-none" role="status" aria-live="polite"></div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if no_students %}
+        <div class="alert alert-warning">There are no active students in the selected class/stream.</div>
+      {% else %}
+        <div class="d-flex flex-wrap align-items-center mb-3" style="gap:.75rem;">
+          <input type="text" id="searchInput" class="form-control" style="max-width:360px;"
+                 placeholder="Search by name, Candidate ID or stream...">
+          <span class="small text-muted">
+            Entered: <b id="countEntered">0</b> / {{ students|length }}
+            &nbsp;|&nbsp; Absent: <b id="countAbsent">0</b>
+            &nbsp;|&nbsp; Not entered: <b id="countMissing">0</b>
+          </span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-sm" id="students-table">
+            <thead>
+              <tr>
+                <th>Candidate ID</th>
+                <th>Student</th>
+                <th>Stream</th>
+                <th style="width:190px;">Mark (0 – {{ max_mark|floatformat:"-1" }}) or ABS</th>
+                <th style="width:220px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in students %}
+              <tr>
+                <td>{{ s.candidate_id }}</td>
+                <td>{{ s.name }}</td>
+                <td>{{ s.stream }}</td>
+                <td>
+                  <div class="input-group input-group-sm">
+                    <input type="text"
+                           class="form-control marks-input {% if s.locked %}bg-light{% endif %}"
+                           data-student-id="{{ s.id }}"
+                           data-marksheet-id="{{ s.marksheet_id }}"
+                           data-saved="{{ s.value }}"
+                           value="{{ s.value }}"
+                           autocomplete="off"
+                           spellcheck="false"
+                           aria-label="Mark for {{ s.name }}"
+                           {% if s.locked %}disabled{% endif %}>
+                    {% if not s.locked %}
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-outline-secondary abs-btn" tabindex="-1"
+                              title="Mark absent">A</button>
+                    </div>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="status-cell small" id="status-{{ s.id }}">
+                  {% if s.locked %}
+                    <span class="text-muted">{{ s.lock_reason }}</span>
+                  {% elif s.value == "ABS" %}
+                    <span class="text-secondary">Absent</span>
+                  {% elif s.value %}
+                    <span class="text-success">Saved</span>
+                  {% else %}
+                    <span class="text-muted">Not entered</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if can_submit %}
+        <form method="post" action="{% url 'marks_submit' %}" id="submitForm"
+              class="d-flex flex-wrap align-items-center mt-3" style="gap:.75rem;">
+          {% csrf_token %}
+          <input type="hidden" name="window_ids" value="{{ submit_window_ids }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button class="btn btn-success">
+            <i class="fas fa-paper-plane mr-1"></i> Submit for approval
+          </button>
+          <small class="text-muted">
+            When you submit, editing pauses until the administrator approves or returns the list.
+          </small>
+        </form>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<script>
+(function () {
+  const table = document.getElementById("students-table");
+  if (!table) return;
+
+  const csrfToken = "{{ csrf_token }}";
+  const autosaveUrl = "{% url 'marks_autosave' %}";
+  const subjectId = "{{ subject.id|default:'' }}";
+  const paperId = "{{ paper.id|default:'' }}";
+  const maxMark = parseFloat("{{ max_mark|default:'100'|stringformat:'s' }}");
+  const ABSENT = ["ABS", "AB", "ABSENT", "A"];
+  const QUEUE_KEY = "marksQueue:v1:{{ request.user.id }}";
+
+  const banner = document.getElementById("saveBanner");
+  const inputs = Array.from(document.querySelectorAll(".marks-input"));
+  const byKey = {};               // queue key -> input
+  const inFlight = new Set();
+  let retryTimer = null;
+  let retryDelay = 5000;
+
+  // ---------------------------------------------------------------- helpers
+  function keyFor(input) {
+    return [input.dataset.marksheetId, input.dataset.studentId, paperId || ("s" + subjectId)].join(":");
+  }
+  inputs.forEach(i => { byKey[keyFor(i)] = i; });
+
+  function statusCell(input) {
+    return document.getElementById("status-" + input.dataset.studentId);
+  }
+  function setStatus(input, text, cls) {
+    const cell = statusCell(input);
+    if (!cell) return;
+    cell.innerHTML = "";
+    const span = document.createElement("span");
+    span.className = cls;
+    span.textContent = text;
+    cell.appendChild(span);
+  }
+
+  function loadQueue() {
+    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "{}"); }
+    catch (e) { return {}; }
+  }
+  function storeQueue(q) {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch (e) { /* storage full or blocked */ }
+  }
+  let queue = loadQueue();
+
+  function updateCounts() {
+    let entered = 0, absent = 0, missing = 0;
+    inputs.forEach(i => {
+      const v = (i.value || "").trim().toUpperCase();
+      if (!v) { if (!i.disabled) missing++; return; }
+      entered++;
+      if (ABSENT.includes(v)) absent++;
+    });
+    const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+    set("countEntered", entered); set("countAbsent", absent); set("countMissing", missing);
+  }
+
+  function updateBanner() {
+    const n = Object.keys(queue).length;
+    if (!banner) return;
+    if (n === 0) { banner.classList.add("d-none"); return; }
+    banner.classList.remove("d-none");
+    banner.textContent = navigator.onLine
+      ? `${n} mark(s) not yet saved — retrying automatically. Keep this page open.`
+      : `You are offline. ${n} mark(s) are kept on this device and will save when the connection returns.`;
+  }
+
+  // client-side check before sending; returns {ok, value, message}
+  function check(raw) {
+    const v = raw.trim();
+    if (v === "") return { ok: true, value: null };
+    if (ABSENT.includes(v.toUpperCase())) return { ok: true, value: "ABS" };
+    if (!/^\d+(\.\d)?$/.test(v)) return { ok: false, message: "Type a number (max one decimal) or ABS" };
+    const n = parseFloat(v);
+    if (!isNaN(maxMark) && n > maxMark) return { ok: false, message: "Above maximum of " + maxMark };
+    return { ok: true, value: v };
+  }
+
+  // ---------------------------------------------------------------- saving
+  function enqueue(input, value) {
+    const key = keyFor(input);
+    queue[key] = {
+      marksheet_id: input.dataset.marksheetId,
+      student_id: input.dataset.studentId,
+      marks: value,
+      paper_id: paperId || undefined,
+      subject_id: paperId ? undefined : (subjectId || undefined),
+    };
+    storeQueue(queue);
+    setStatus(input, "Saving…", "text-warning");
+    updateBanner();
+    flush();
+  }
+
+  function scheduleRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(() => { retryTimer = null; flush(); }, retryDelay);
+    retryDelay = Math.min(retryDelay * 2, 60000);
+  }
+
+  function flush() {
+    Object.keys(queue).forEach(key => {
+      if (inFlight.has(key)) return;
+      const payload = queue[key];
+      const input = byKey[key];
+      inFlight.add(key);
+
+      fetch(autosaveUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+        body: JSON.stringify(payload),
+        credentials: "same-origin",
+      })
+      .then(async r => {
+        let json = null;
+        try { json = await r.json(); } catch (e) { json = null; }
+        return { status: r.status, ok: r.ok, json };
+      })
+      .then(({ status, ok, json }) => {
+        inFlight.delete(key);
+        const stillSame = queue[key] && queue[key].marks === payload.marks;
+
+        if (ok && json && json.success) {
+          if (stillSame) { delete queue[key]; storeQueue(queue); }
+          retryDelay = 5000;
+          if (input && stillSame) {
+            input.classList.remove("is-invalid");
+            input.dataset.saved = json.marks || "";
+            if (document.activeElement !== input) input.value = json.marks || "";
+            if (!json.marks) setStatus(input, "Removed", "text-muted");
+            else if (json.marks === "ABS") setStatus(input, "Absent — saved", "text-secondary");
+            else setStatus(input, "Saved", "text-success");
+          }
+        } else if (json && status >= 400 && status < 500) {
+          // the server refused this value: do not retry, show why
+          if (stillSame) { delete queue[key]; storeQueue(queue); }
+          if (input) {
+            input.classList.add("is-invalid");
+            setStatus(input, json.message || ("Error " + status), "text-danger");
+          }
+        } else {
+          // network problem, server error, or session expired (login page returned)
+          if (input) {
+            const msg = json ? "Server busy — will retry" : "Not saved yet — will retry (check login/connection)";
+            setStatus(input, msg, "text-warning");
+          }
+          scheduleRetry();
+        }
+        updateBanner();
+        updateCounts();
+        if (queue[key] && !stillSame) flush();   // a newer value was typed meanwhile
+      })
+      .catch(() => {
+        inFlight.delete(key);
+        if (input) setStatus(input, "Offline — will save later", "text-warning");
+        updateBanner();
+        scheduleRetry();
+      });
+    });
+  }
+
+  // restore anything left from a previous visit (e.g. page closed while offline)
+  Object.keys(queue).forEach(key => {
+    const input = byKey[key];
+    if (!input) return;                     // belongs to another list; keep it for that page
+    const v = queue[key].marks;
+    input.value = v === null ? "" : v;
+    setStatus(input, "Restored — saving…", "text-warning");
+  });
+  updateBanner();
+  updateCounts();
+  if (Object.keys(queue).some(k => byKey[k])) flush();
+
+  window.addEventListener("online", () => { retryDelay = 5000; updateBanner(); flush(); });
+  window.addEventListener("offline", updateBanner);
+  window.addEventListener("beforeunload", e => {
+    const pendingHere = Object.keys(queue).some(k => byKey[k]);
+    if (pendingHere || inFlight.size) { e.preventDefault(); e.returnValue = ""; }
+  });
+
+  // ---------------------------------------------------------------- search
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("keyup", function () {
+      const f = this.value.toLowerCase();
+      document.querySelectorAll("#students-table tbody tr").forEach(row => {
+        const text = (row.cells[0].textContent + " " + row.cells[1].textContent + " " + row.cells[2].textContent).toLowerCase();
+        row.style.display = text.includes(f) ? "" : "none";
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------- keyboard
+  function visibleInputs() {
+    return inputs.filter(i => !i.disabled && i.closest("tr").style.display !== "none");
+  }
+  function move(current, dir) {
+    const list = visibleInputs();
+    const idx = list.indexOf(current);
+    if (idx === -1) return;
+    const next = list[Math.max(0, Math.min(list.length - 1, idx + dir))];
+    if (next && next !== current) { next.focus(); next.select(); }
+  }
+
+  function commit(input) {
+    const res = check(input.value);
+    if (!res.ok) {
+      input.classList.add("is-invalid");
+      setStatus(input, res.message, "text-danger");
+      return;
+    }
+    input.classList.remove("is-invalid");
+    const normalized = res.value === null ? "" : res.value;
+    if (res.value === "ABS") input.value = "ABS";
+    const saved = (input.dataset.saved || "");
+    const sameAsSaved = normalized === saved || (normalized !== "" && saved !== "" && normalized !== "ABS" && parseFloat(normalized) === parseFloat(saved));
+    if (sameAsSaved && !queue[keyFor(input)]) return;   // nothing changed
+    enqueue(input, res.value);
+    updateCounts();
+  }
+
+  inputs.forEach(input => {
+    if (input.disabled) return;
+
+    input.addEventListener("focus", function () { this.select(); });
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); move(this, -1); }
+      else if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); move(this, 1); }
+      else if (e.key === "Escape") { this.value = this.dataset.saved || ""; this.classList.remove("is-invalid"); }
+    });
+
+    input.addEventListener("blur", function () { commit(this); });
+
+    const absBtn = input.parentElement.querySelector(".abs-btn");
+    if (absBtn) {
+      absBtn.addEventListener("click", () => {
+        input.value = "ABS";
+        commit(input);
+      });
+    }
+  });
+
+  // ---------------------------------------------------------------- submit
+  const submitForm = document.getElementById("submitForm");
+  if (submitForm) {
+    submitForm.addEventListener("submit", e => {
+      if (Object.keys(queue).some(k => byKey[k])) {
+        e.preventDefault();
+        alert("Some marks are still saving. Please wait until all are saved, then submit.");
+        return;
+      }
+      const missing = parseInt(document.getElementById("countMissing")?.textContent || "0", 10);
+      const msg = missing
+        ? `${missing} student(s) have no mark. Submit anyway? (Use ABS for absent students.)`
+        : "Submit these marks for approval? You will not be able to edit until they are reviewed.";
+      if (!confirm(msg)) e.preventDefault();
+    });
+  }
+})();
+</script>
+
+<script>
+(function () {
+  const form = document.getElementById("marksFilter");
+  if (!form) return;
+
+  const urls = {
+    terms: form.dataset.termsUrl,
+    classes: form.dataset.classesUrl,
+    streams: form.dataset.streamsUrl,
+    examtypes: form.dataset.examtypesUrl,
+    subjects: form.dataset.subjectsUrl,
+    papers: form.dataset.papersUrl,
+  };
+
+  const yearEl = document.getElementById("id_academic_year");
+  const termEl = document.getElementById("id_term");
+  const classEl = document.getElementById("id_class_ref");
+  const streamEl = document.getElementById("id_stream");
+  const examTypeEl = document.getElementById("id_exam_type");
+  const subjectEl = document.getElementById("id_subject");
+  const paperEl = document.getElementById("id_paper");
+
+  function reset(el, label, disabled = true) {
+    if (!el) return;
+
+    el.innerHTML = `<option value="">${label}</option>`;
+    el.disabled = disabled;
+  }
+
+  async function load(url, el, label, textKey, selectedValue = null) {
+    reset(el, label, true);
+
+    const res = await fetch(url, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    });
+
+    const data = await res.json();
+    const rows = (data.results || []).filter(x => x && x.id !== null && x.id !== undefined);
+
+    if (!rows.length) {
+      el.innerHTML = `<option value="">No options available</option>`;
+      el.disabled = true;
+      return;
+    }
+
+    reset(el, label, false);
+
+    rows.forEach(x => {
+      const opt = document.createElement("option");
+      opt.value = String(x.id);
+      opt.textContent = String(x[textKey] ?? "");
+
+      if (selectedValue && String(selectedValue) === String(x.id)) {
+        opt.selected = true;
+      }
+
+      el.appendChild(opt);
+    });
+  }
+
+  const selected = {
+    term: termEl?.value,
+    class_ref: classEl?.value,
+    stream: streamEl?.value,
+    exam_type: examTypeEl?.value,
+    subject: subjectEl?.value,
+    paper: paperEl?.value,
+  };
+
+  reset(termEl, "-- Select Term --", true);
+  reset(classEl, "-- Select Class --", true);
+  reset(streamEl, "-- All Streams --", true);
+  reset(examTypeEl, "-- Select Exam Type --", true);
+  reset(subjectEl, "-- Select Subject --", true);
+  reset(paperEl, "-- Select Paper --", true);
+
+  yearEl?.addEventListener("change", async () => {
+    reset(termEl, "-- Select Term --", true);
+    reset(classEl, "-- Select Class --", true);
+    reset(streamEl, "-- All Streams --", true);
+    reset(examTypeEl, "-- Select Exam Type --", true);
+    reset(subjectEl, "-- Select Subject --", true);
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!yearEl.value) return;
+
+    await load(
+      `${urls.terms}?year_id=${encodeURIComponent(yearEl.value)}`,
+      termEl,
+      "-- Select Term --",
+      "text",
+      selected.term
+    );
+
+    await load(
+      `${urls.classes}`,
+      classEl,
+      "-- Select Class --",
+      "name",
+      selected.class_ref
+    );
+  });
+
+  classEl?.addEventListener("change", async () => {
+    reset(streamEl, "-- All Streams --", true);
+    reset(examTypeEl, "-- Select Exam Type --", true);
+    reset(subjectEl, "-- Select Subject --", true);
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!classEl.value) return;
+
+    await load(
+      `${urls.streams}?class_id=${encodeURIComponent(classEl.value)}`,
+      streamEl,
+      "-- All Streams --",
+      "name",
+      selected.stream
+    );
+
+    await load(
+      `${urls.examtypes}?class_id=${encodeURIComponent(classEl.value)}`,
+      examTypeEl,
+      "-- Select Exam Type --",
+      "name",
+      selected.exam_type
+    );
+
+    let sUrl = `${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`;
+
+    if (streamEl.value) {
+      sUrl += `&stream_id=${encodeURIComponent(streamEl.value)}`;
+    }
+
+    await load(
+      sUrl,
+      subjectEl,
+      "-- Select Subject --",
+      "name",
+      selected.subject
+    );
+  });
+
+  streamEl?.addEventListener("change", async () => {
+    reset(subjectEl, "-- Select Subject --", true);
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!classEl.value) return;
+
+    let sUrl = `${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`;
+
+    if (streamEl.value) {
+      sUrl += `&stream_id=${encodeURIComponent(streamEl.value)}`;
+    }
+
+    await load(
+      sUrl,
+      subjectEl,
+      "-- Select Subject --",
+      "name",
+      selected.subject
+    );
+  });
+
+  subjectEl?.addEventListener("change", async () => {
+    reset(paperEl, "-- Select Paper --", true);
+
+    if (!classEl.value || !subjectEl.value) return;
+
+    let pUrl = `${urls.papers}?class_id=${encodeURIComponent(classEl.value)}&subject_id=${encodeURIComponent(subjectEl.value)}`;
+
+    if (streamEl.value) {
+      pUrl += `&stream_id=${encodeURIComponent(streamEl.value)}`;
+    }
+
+    await load(
+      pUrl,
+      paperEl,
+      "-- Select Paper --",
+      "paper_name",
+      selected.paper
+    );
+  });
+
+  form.addEventListener("submit", () => {
+    [termEl, classEl, streamEl, examTypeEl, subjectEl, paperEl].forEach(el => {
+      if (el) el.disabled = false;
+    });
+  });
+
+  if (yearEl && yearEl.value) {
+    yearEl.dispatchEvent(new Event("change"));
+  }
+})();
+</script>
+
+{% endblock %}

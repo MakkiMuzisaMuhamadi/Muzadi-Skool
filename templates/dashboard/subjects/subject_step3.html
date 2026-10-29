@@ -1,0 +1,249 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-check-circle"></i> Confirm Subject
+      </h3>
+      <small class="text-muted">Step 3 of 3 — Review & finalize</small>
+    </div>
+
+    <div>
+      {% if not is_ple %}
+      <a href="{% url 'subject_enroll_step2' draft.id %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Papers
+      </a>
+      {% else %}
+      <a href="{% url 'subject_enroll_step1' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Subject
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.7;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">1</div>
+        <div>
+          <div class="font-weight-bold">Subject</div>
+          <small class="text-muted">Name, code, level</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.7;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">2</div>
+        <div>
+          <div class="font-weight-bold">Papers</div>
+          <small class="text-muted">
+            {% if is_ple %}Skipped for PLE{% else %}Add paper units{% endif %}
+          </small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center">
+        <div class="badge badge-primary mr-2" style="font-size: 0.95rem;">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finalize subject</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="row">
+
+  <div class="col-lg-8">
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between flex-wrap">
+          <div>
+            <h5 class="mb-1"><i class="fas fa-book mr-2"></i> Subject Summary</h5>
+            <small class="text-muted">Confirm details before creating the subject.</small>
+          </div>
+          <div class="mt-2 mt-md-0">
+            <a href="{% url 'subject_enroll_step1' %}" class="btn btn-outline-success btn-sm">
+              <i class="fas fa-edit mr-1"></i> Edit Subject
+            </a>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row">
+          <div class="col-md-4 mb-2">
+            <small class="text-muted d-block">Code</small>
+            <div class="font-weight-bold">{{ draft.code }}</div>
+          </div>
+
+          <div class="col-md-4 mb-2">
+            <small class="text-muted d-block">Short Name</small>
+            <div class="font-weight-bold">{{ draft.short_name }}</div>
+          </div>
+
+          <div class="col-md-4 mb-2">
+            <small class="text-muted d-block">Level</small>
+            <div class="font-weight-bold">{{ draft.level }}</div>
+          </div>
+
+          <div class="col-12 mt-2">
+            <small class="text-muted d-block">Subject Name</small>
+            <div class="font-weight-bold">{{ draft.name }}</div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="d-flex flex-wrap">
+          {% if draft.is_major %}<span class="badge badge-primary mr-2 mb-2">Major</span>{% endif %}
+          {% if draft.is_optional %}<span class="badge badge-info mr-2 mb-2">Optional</span>{% endif %}
+          {% if draft.is_language %}<span class="badge badge-warning mr-2 mb-2">Language</span>{% endif %}
+          {% if draft.is_Religion %}<span class="badge badge-success mr-2 mb-2">Religion</span>{% endif %}
+          {% if not draft.is_major and not draft.is_optional and not draft.is_language and not draft.is_Religion %}
+            <span class="badge badge-light border mr-2 mb-2">No tags</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+
+        <div class="d-flex align-items-start justify-content-between flex-wrap">
+          <div>
+            <h5 class="mb-1"><i class="fas fa-file-alt mr-2"></i>
+              {% if is_ple %}
+                Papers Not Required
+              {% else %}
+                Papers ({{ papers|length }})
+              {% endif %}
+            </h5>
+            <small class="text-muted">
+              {% if is_ple %}
+                PLE subjects do not use papers, so this step was skipped.
+              {% else %}
+                These papers will be created under the subject.
+              {% endif %}
+            </small>
+          </div>
+
+          {% if not is_ple %}
+          <div class="mt-2 mt-md-0">
+            <a href="{% url 'subject_enroll_step2' draft.id %}" class="btn btn-outline-success btn-sm">
+              <i class="fas fa-edit mr-1"></i> Edit Papers
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        <hr class="my-3">
+
+        {% if is_ple %}
+        <div class="alert alert-info mb-0">
+          <i class="fas fa-info-circle mr-1"></i>
+          This is a PLE subject. No papers will be created.
+        </div>
+        {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+              <tr>
+                <th style="width:10%;">Order</th>
+                <th style="width:18%;">Code</th>
+                <th>Name</th>
+                <th style="width:14%;">Max</th>
+                <th style="width:14%;">Compulsory</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in papers %}
+              <tr>
+                <td>{{ p.order }}</td>
+                <td>{{ p.paper_code }}</td>
+                <td>{{ p.paper_name }}</td>
+                <td>{{ p.max_marks }}</td>
+                <td>
+                  {% if p.compulsory %}
+                    <span class="badge badge-success">Yes</span>
+                  {% else %}
+                    <span class="badge badge-secondary">No</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">
+                  <i class="fas fa-exclamation-circle mr-1"></i> No papers found. Go back and add at least one.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+
+        <h5 class="mb-3"><i class="fas fa-lock mr-2"></i> Finalize</h5>
+
+        <ul class="text-muted pl-3">
+          <li>Creates the subject.</li>
+          {% if is_ple %}
+          <li>No papers will be created for this PLE subject.</li>
+          {% else %}
+          <li>Creates all papers under the subject.</li>
+          {% endif %}
+          <li>Moves draft to finalized state.</li>
+        </ul>
+
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-block"
+                  {% if not is_ple and papers|length == 0 %}disabled{% endif %}>
+            Confirm & Create <i class="fas fa-check ml-1"></i>
+          </button>
+        </form>
+
+        <a href="{% url 'subject_list' %}" class="btn btn-light btn-block mt-2">
+          Cancel
+        </a>
+
+        {% if not is_ple and papers|length == 0 %}
+          <small class="text-danger d-block mt-2">
+            <i class="fas fa-info-circle"></i> Add at least one paper before finalizing.
+          </small>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

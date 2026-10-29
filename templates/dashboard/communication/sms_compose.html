@@ -1,0 +1,638 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-comments"></i> Message Parents</h3>
+    <small class="text-muted">Send by SMS or WhatsApp.</small>
+  </div>
+  <div>
+    <a href="{% url 'sms_campaign_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>
+{% endif %}
+<div id="ajaxErrors" class="alert alert-danger" style="display:none;"></div>
+
+<form method="post" id="smsComposeForm" novalidate>
+  {% csrf_token %}
+
+  <div class="row">
+    <!-- Left: Target & Options -->
+    <div class="col-lg-5 mb-3">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <div class="font-weight-bold"><i class="fas fa-users mr-1"></i> Recipients</div>
+          <small class="text-muted">Choose audience & filters</small>
+        </div>
+
+        <div class="card-body">
+          <div class="form-group">
+            <label class="mb-1" for="{{ form.channel.id_for_label }}">Send via</label>
+            {{ form.channel }}
+            {% if form.channel.errors %}<div class="text-danger small mt-1">{{ form.channel.errors|join:" " }}</div>{% endif %}
+            {% if not whatsapp_ready %}
+              <small class="text-warning d-block mt-1" id="waNotReady">
+                WhatsApp is not set up yet (WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID missing). SMS still works.
+              </small>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="mb-1" for="{{ form.audience.id_for_label }}">Audience</label>
+            {{ form.audience }}
+            {% if form.audience.errors %}<div class="text-danger small mt-1">{{ form.audience.errors|join:" " }}</div>{% endif %}
+          </div>
+
+          <div id="filtersBox" class="border rounded p-3 mb-3" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="font-weight-bold"><i class="fas fa-filter mr-1"></i> Filters</div>
+            </div>
+
+            <div id="filterLevel" style="display:none;">
+              <div class="form-group mb-2">
+                <label class="mb-1">Level</label>
+                {{ form.level }}
+                {% if form.level.errors %}<div class="text-danger small mt-1">{{ form.level.errors|join:" " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div id="filterClass" style="display:none;">
+              <div class="form-group mb-2">
+                <label class="mb-1">Class</label>
+                {{ form.current_class }}
+                {% if form.current_class.errors %}<div class="text-danger small mt-1">{{ form.current_class.errors|join:" " }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div id="filterStream" style="display:none;">
+              <div class="form-group mb-0">
+                <label class="mb-1">Stream <small class="text-muted" id="streamOptionalHint">(optional)</small></label>
+                {{ form.stream }}
+                {% if form.stream.errors %}<div class="text-danger small mt-1">{{ form.stream.errors|join:" " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div id="selectBox" class="border rounded p-3 mb-3" style="display:none;">
+            <div id="selectStudents" style="display:none;">
+              <div class="form-group mb-2">
+                <label class="mb-1">Students</label>
+                {{ form.students }}
+                {% if form.students.errors %}<div class="text-danger small mt-1">{{ form.students.errors|join:" " }}</div>{% endif %}
+                <small class="text-muted d-block mt-1">Type to search, select multiple. Their parents receive the SMS.</small>
+              </div>
+            </div>
+
+            <div id="selectParents" style="display:none;">
+              <div class="form-group mb-0">
+                <label class="mb-1">Parents</label>
+                {{ form.parents }}
+                {% if form.parents.errors %}<div class="text-danger small mt-1">{{ form.parents.errors|join:" " }}</div>{% endif %}
+                <small class="text-muted d-block mt-1">Type to search, select multiple.</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live recipient count -->
+          <div id="recipientPreview" class="alert alert-info py-2 small mb-3" style="display:none;"></div>
+
+          <div class="form-group mb-2">
+            <label class="mb-1">Template (optional)</label>
+            {{ form.template }}
+            {% if form.template.errors %}<div class="text-danger small mt-1">{{ form.template.errors|join:" " }}</div>{% endif %}
+            <small class="text-muted d-block mt-1">Picking a template fills the message box. You can still edit it.</small>
+          </div>
+
+          <div class="form-group form-check mb-1">
+            {{ form.use_alternate_if_missing }}
+            <label class="form-check-label" for="{{ form.use_alternate_if_missing.id_for_label }}">
+              Use alternate phone if main number is missing/invalid
+            </label>
+          </div>
+          <div class="form-group form-check mb-0">
+            {{ form.use_emergency_contact }}
+            <label class="form-check-label" for="{{ form.use_emergency_contact.id_for_label }}">
+              Use the student’s emergency contact if no parent is linked
+            </label>
+          </div>
+          <div class="form-group form-check mb-0 mt-1 js-wa-only" style="display:none;">
+            {{ form.use_phone_for_whatsapp }}
+            <label class="form-check-label" for="{{ form.use_phone_for_whatsapp.id_for_label }}">
+              If no WhatsApp number is saved, try the parent’s phone number on WhatsApp
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Message -->
+    <div class="col-lg-7 mb-3">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <div class="font-weight-bold"><i class="fas fa-pen mr-1"></i> Message</div>
+          <small class="text-muted js-sms-only">
+            Characters: <span id="charCount">0</span> •
+            SMS per parent: <span id="segCount">1</span>
+            <span id="unicodeWarn" class="text-warning" style="display:none;"> • special characters make SMS shorter</span>
+          </small>
+        </div>
+
+        <div class="card-body">
+          <div class="form-group">
+            <label class="mb-1">Campaign Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors|join:" " }}</div>{% endif %}
+            {% if form.title.help_text %}<small class="text-muted d-block mt-1">{{ form.title.help_text }}</small>{% endif %}
+          </div>
+
+          <!-- WhatsApp template -->
+          <div class="border rounded p-3 mb-3 js-wa-only" style="display:none; border-color:#25D366 !important;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="font-weight-bold"><i class="fab fa-whatsapp mr-1" style="color:#25D366;"></i> WhatsApp message</div>
+              <a href="{% url 'whatsapp_template_list' %}" class="small">Manage templates</a>
+            </div>
+            <div class="form-group mb-2">
+              <label class="mb-1">Approved template</label>
+              {{ form.wa_template }}
+              {% if form.wa_template.errors %}<div class="text-danger small mt-1">{{ form.wa_template.errors|join:" " }}</div>{% endif %}
+              {% if not form.wa_template.field.queryset.exists %}
+                <small class="text-warning d-block mt-1">No approved templates yet. Open “Manage templates” and click “Sync from WhatsApp”.</small>
+              {% endif %}
+            </div>
+            <div id="waParams"></div>
+            <small class="text-muted d-block">
+              WhatsApp only allows approved templates for messages the school starts. Fill each blank below;
+              you can use the Insert buttons (e.g. Student name) inside a blank.
+            </small>
+          </div>
+
+          <!-- SMS text -->
+          <div class="form-group mb-2 js-sms-only">
+            <label class="mb-1" id="smsTextLabel">SMS Text</label>
+            {{ form.message_body }}
+            {% if form.message_body.errors %}<div class="text-danger small mt-1">{{ form.message_body.errors|join:" " }}</div>{% endif %}
+          </div>
+
+          <div class="mb-2">
+            <small class="text-muted mr-1">Insert:</small>
+            <button type="button" class="btn btn-light btn-sm js-ph" data-ph="{student_name}">Student name</button>
+            <button type="button" class="btn btn-light btn-sm js-ph" data-ph="{first_name}">First name</button>
+            <button type="button" class="btn btn-light btn-sm js-ph" data-ph="{class}">Class</button>
+            <button type="button" class="btn btn-light btn-sm js-ph" data-ph="{stream}">Stream</button>
+            <button type="button" class="btn btn-light btn-sm js-ph" data-ph="{school_name}">School</button>
+            <button type="button" class="btn btn-light btn-sm js-ph" data-ph="{parent_name}">Parent name</button>
+          </div>
+
+          <div class="alert alert-light mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <small class="text-muted"><i class="fas fa-eye mr-1"></i> Preview</small>
+              <small class="text-muted">Example of what a parent will see</small>
+            </div>
+            <div id="waPreview" class="js-wa-only mb-2" style="display:none; white-space: pre-wrap; font-size: 14px; background:#e7fbe9; border-radius:8px; padding:8px;"></div>
+            <div id="smsPreview" class="js-sms-only" style="white-space: pre-wrap; font-size: 14px;"></div>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <small class="text-muted">Tip: keep it short and clear. Avoid emojis and curly quotes for cheaper SMS.</small>
+          <div class="d-flex" style="gap:.5rem;">
+            <button class="btn btn-primary" type="submit" id="sendBtn">
+              <i class="fas fa-paper-plane mr-1"></i> <span id="sendBtnText">Send SMS</span>
+            </button>
+            <a href="{% url 'sms_campaign_list' %}" class="btn btn-outline-danger">Cancel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="smsSendModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-paper-plane mr-1"></i> Sending SMS…</h5>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2 text-muted" id="smsProgressText">Preparing…</div>
+        <div class="progress mb-2" style="height: 14px;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" id="smsProgressBar" style="width: 0%"></div>
+        </div>
+        <div class="d-flex justify-content-between">
+          <small>Sent: <span id="smsSent">0</span></small>
+          <small class="text-danger">Failed: <span id="smsFailed">0</span></small>
+          <small>Total: <span id="smsTotal">0</span></small>
+        </div>
+        <div class="small text-muted mt-2">Please don’t close this window while messages are sending.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ form.wa_params_initial|json_script:"waParamsInitial" }}
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .select2-container .select2-selection--single { height: calc(1.5em + .75rem + 2px); padding: .375rem .75rem; }
+  .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 1.5; padding-left: 0; }
+  .select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .75rem + 2px); }
+  .js-ph { margin: 0 .15rem .25rem 0; }
+</style>
+
+{% endblock %}
+
+{% block extrajs %}
+<!-- Runs after base.html loads jQuery/Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+(function(){
+  const $ = window.jQuery;
+  const byId = (id) => document.getElementById(id);
+
+  const form       = byId("smsComposeForm");
+  const audienceEl = byId("id_audience");
+  const classEl    = byId("id_current_class");
+  const streamEl   = byId("id_stream");
+  const templateEl = byId("id_template");
+  const messageEl  = byId("id_message_body");
+  const sendBtn    = byId("sendBtn");
+  const errorsBox  = byId("ajaxErrors");
+  const previewBox = byId("recipientPreview");
+  const channelEl  = byId("id_channel");
+  const waTplEl    = byId("id_wa_template");
+  const waParamsBox = byId("waParams");
+  let lastFocused = null;    // the field the Insert buttons write into
+
+  const URLS = {
+    preview: "{% url 'sms_preview_recipients' %}",
+    search:  "{% url 'sms_recipient_search' %}",
+    compose: "{% url 'sms_compose_ajax' %}",
+    batch:   "{% url 'sms_send_batch' 999999 %}",
+    detail:  "{% url 'sms_campaign_detail' 999999 %}",
+  };
+  const withId = (url, id) => url.replace("999999", String(id));
+
+  function show(el, yes){ if(el) el.style.display = yes ? "" : "none"; }
+  function onChange(el, fn){
+    if(!el) return;
+    if($) $(el).on("change", fn); else el.addEventListener("change", fn);   // select2 fires jQuery events
+  }
+
+  // ---------- Audience -> which filters are visible ----------
+  function applyAudienceUI(){
+    const v = (audienceEl && audienceEl.value) || "ALL";
+    ["filtersBox","selectBox","filterLevel","filterClass","filterStream","selectStudents","selectParents"]
+      .forEach(id => show(byId(id), false));
+
+    if(v === "LEVEL"){ show(byId("filtersBox"), true); show(byId("filterLevel"), true); }
+    else if(v === "CLASS"){
+      show(byId("filtersBox"), true); show(byId("filterClass"), true); show(byId("filterStream"), true);
+      show(byId("streamOptionalHint"), true);
+    }
+    else if(v === "STREAM"){
+      show(byId("filtersBox"), true); show(byId("filterStream"), true);
+      show(byId("streamOptionalHint"), false);
+    }
+    else if(v === "STUDENTS"){ show(byId("selectBox"), true); show(byId("selectStudents"), true); }
+    else if(v === "PARENTS"){ show(byId("selectBox"), true); show(byId("selectParents"), true); }
+    filterStreams();
+  }
+
+  // ---------- Only show streams of the selected class (in "By Class" mode) ----------
+  const allStreamOptions = streamEl ? Array.from(streamEl.options).map(o => o.cloneNode(true)) : [];
+  function filterStreams(){
+    if(!streamEl) return;
+    const classId = (audienceEl.value === "CLASS" && classEl) ? classEl.value : "";
+    const current = streamEl.value;
+    streamEl.innerHTML = "";
+    allStreamOptions.forEach(function(o){
+      if(!o.value || !classId || o.dataset.class === classId){
+        streamEl.appendChild(o.cloneNode(true));
+      }
+    });
+    const stillThere = Array.from(streamEl.options).some(o => o.value === current);
+    streamEl.value = stillThere ? current : "";
+    if($ && $.fn.select2) $(streamEl).trigger("change.select2");
+  }
+
+  // ---------- Message counter + preview ----------
+  function isGsm(txt){ return /^[\x00-\x7F]*$/.test(txt); }
+  function smsUnits(txt){
+    const n = txt.length, gsm = isGsm(txt);
+    const single = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+    return n <= single ? 1 : Math.ceil(n / multi);
+  }
+  function samplePreview(txt){
+    return txt
+      .replaceAll("{student_name}", "Nakato Sarah")
+      .replaceAll("{first_name}", "Sarah")
+      .replaceAll("{class}", "S.2")
+      .replaceAll("{stream}", "East")
+      .replaceAll("{school_name}", "{{ request.user.profile.school.name|escapejs }}")
+      .replaceAll("{parent_name}", "Mr. Okello John");
+  }
+  function updateCounts(){
+    const txt = (messageEl && messageEl.value) || "";
+    byId("charCount").textContent = String(txt.length);
+    byId("segCount").textContent = String(smsUnits(txt));
+    show(byId("unicodeWarn"), !isGsm(txt));
+    byId("smsPreview").textContent = txt ? samplePreview(txt) : "—";
+  }
+
+  // ---------- Template -> fills the message ----------
+  onChange(templateEl, function(){
+    const opt = templateEl.options[templateEl.selectedIndex];
+    const body = opt ? opt.getAttribute("data-body") : "";
+    if(!body) return;
+    if(messageEl.value.trim() && !confirm("Replace the current message with this template?")) return;
+    messageEl.value = body;
+    updateCounts();
+  });
+
+  // ---------- Placeholder buttons ----------
+  if(messageEl) messageEl.addEventListener("focus", () => { lastFocused = messageEl; });
+  document.querySelectorAll(".js-ph").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      const target = (lastFocused && document.body.contains(lastFocused) && lastFocused.offsetParent !== null)
+        ? lastFocused
+        : (channelEl && channelEl.value === "WHATSAPP" ? waParamsBox.querySelector("input") : messageEl);
+      if(!target) return;
+      const ph = btn.dataset.ph;
+      const s = target.selectionStart ?? target.value.length;
+      const e = target.selectionEnd ?? target.value.length;
+      target.value = target.value.slice(0, s) + ph + target.value.slice(e);
+      target.focus();
+      target.selectionStart = target.selectionEnd = s + ph.length;
+      updateCounts();
+      updateWaPreview();
+    });
+  });
+
+  // ---------- Channel: SMS / WhatsApp / WhatsApp with SMS fallback ----------
+  function applyChannelUI(){
+    const ch = (channelEl && channelEl.value) || "SMS";
+    const wa = ch !== "SMS", sms = ch !== "WHATSAPP";
+    document.querySelectorAll(".js-wa-only").forEach(el => show(el, wa));
+    document.querySelectorAll(".js-sms-only").forEach(el => show(el, sms));
+    const label = byId("smsTextLabel");
+    if(label) label.textContent = ch === "WHATSAPP_SMS" ? "SMS text (for parents not on WhatsApp)" : "SMS Text";
+    byId("sendBtnText").textContent = ch === "SMS" ? "Send SMS" : (ch === "WHATSAPP" ? "Send WhatsApp" : "Send WhatsApp / SMS");
+  }
+
+  // ---------- WhatsApp template: one input per blank ----------
+  const OPEN = "{" + "{", CLOSE = "}" + "}";   // written this way so Django doesn't read them as template tags
+  const initialParams = JSON.parse((byId("waParamsInitial") || {}).textContent || "[]");
+  function selectedTemplate(){
+    if(!waTplEl) return null;
+    const opt = waTplEl.options[waTplEl.selectedIndex];
+    if(!opt || !opt.value) return null;
+    return { body: opt.getAttribute("data-body") || "", params: JSON.parse(opt.getAttribute("data-params") || "[]") };
+  }
+  function buildWaParams(keepValues){
+    const old = Array.from(waParamsBox.querySelectorAll("input")).map(i => i.value);
+    const values = keepValues || old;
+    waParamsBox.innerHTML = "";
+    const tpl = selectedTemplate();
+    if(!tpl){ updateWaPreview(); return; }
+    tpl.params.forEach(function(name, i){
+      const wrap = document.createElement("div");
+      wrap.className = "form-group mb-2";
+      const label = document.createElement("label");
+      label.className = "mb-1 small font-weight-bold";
+      label.textContent = `Blank ${OPEN}${name}${CLOSE}`;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.name = `wa_param_${i}`;
+      input.className = "form-control form-control-sm";
+      input.placeholder = "e.g. {student_name} or fixed text";
+      input.value = values[i] || "";
+      input.addEventListener("focus", () => { lastFocused = input; });
+      input.addEventListener("input", updateWaPreview);
+      wrap.appendChild(label); wrap.appendChild(input);
+      waParamsBox.appendChild(wrap);
+    });
+    if(!tpl.params.length){
+      waParamsBox.innerHTML = '<small class="text-muted d-block mb-2">This template has no blanks.</small>';
+    }
+    updateWaPreview();
+  }
+  function updateWaPreview(){
+    const box = byId("waPreview");
+    if(!box) return;
+    const tpl = selectedTemplate();
+    if(!tpl){ box.textContent = "Choose a template to see the WhatsApp message."; return; }
+    const inputs = Array.from(waParamsBox.querySelectorAll("input"));
+    let text = tpl.body;
+    tpl.params.forEach(function(name, i){
+      const v = inputs[i] && inputs[i].value ? samplePreview(inputs[i].value) : `${OPEN}${name}${CLOSE}`;
+      text = text.split(`${OPEN}${name}${CLOSE}`).join(v);
+    });
+    box.textContent = text;
+  }
+
+  // ---------- Live "who will receive this" ----------
+  let lastPreview = null;
+  let previewTimer = null;
+  function refreshRecipients(){
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(async function(){
+      const params = new URLSearchParams();
+      ["channel","audience","level","current_class","stream"].forEach(function(n){
+        const el = byId("id_" + n);
+        if(el && el.value) params.append(n, el.value);
+      });
+      ["students","parents"].forEach(function(n){
+        const el = byId("id_" + n);
+        if(el) Array.from(el.selectedOptions || []).forEach(o => params.append(n, o.value));
+      });
+      ["use_alternate_if_missing","use_emergency_contact","use_phone_for_whatsapp"].forEach(function(n){
+        const el = byId("id_" + n);
+        if(el && el.checked) params.append(n, "on");
+      });
+
+      try{
+        const res = await fetch(URLS.preview + "?" + params.toString(), {headers: {"X-Requested-With": "XMLHttpRequest"}});
+        const j = await res.json();
+        show(previewBox, true);
+        if(j.ok){
+          lastPreview = j;
+          const fmt = n => Number(n || 0).toLocaleString();
+          const what = j.channel === "WHATSAPP" ? "WhatsApp number(s)" : (j.channel === "SMS" ? "phone number(s)" : "parent contact(s)");
+          let html = `<div style="font-size:15px;"><b>${fmt(j.valid_numbers)}</b> ${what} will get this message</div>`;
+
+          if(j.channel === "WHATSAPP_SMS"){
+            html += `<div>${fmt(j.whatsapp_numbers)} by WhatsApp first · ${fmt(j.sms_numbers)} by SMS (no WhatsApp number)</div>`;
+          }
+
+          if(j.kind === "parents"){
+            html += `<div class="text-muted">${fmt(j.parents)} parent(s) selected</div>`;
+          } else {
+            const parts = [`${fmt(j.students)} student(s)`];
+            if(j.via_parent)    parts.push(`${fmt(j.parents)} linked parent(s)`);
+            if(j.via_emergency) parts.push(`${fmt(j.via_emergency)} emergency contact(s)`);
+            html += `<div class="text-muted">From ${parts.join(" · ")}</div>`;
+          }
+
+          if(j.unreachable){
+            html += `<div class="text-danger mt-1">${fmt(j.unreachable)} ${j.kind === "parents" ? "parent(s)" : "student(s)"} have no usable number for this channel and will be skipped</div>`;
+          }
+          if(j.valid_numbers >= 1000){
+            html += `<div class="text-warning mt-1">Large send: check your SMS / WhatsApp balance first.</div>`;
+          }
+
+          previewBox.innerHTML = html;
+          previewBox.className = j.valid_numbers ? "alert alert-info py-2 small mb-3" : "alert alert-warning py-2 small mb-3";
+        } else {
+          lastPreview = null;
+          previewBox.className = "alert alert-warning py-2 small mb-3";
+          previewBox.textContent = Object.values(j.errors || {}).flat().join(" ") || "Choose a filter.";
+        }
+      }catch(e){
+        lastPreview = null;
+        show(previewBox, false);
+      }
+    }, 300);
+  }
+
+  // ---------- Init ----------
+  if($ && $.fn.select2){
+    // Small dropdowns (level, class, stream): normal Select2
+    $(".js-select2").each(function(){
+      $(this).select2({ width: "100%", placeholder: $(this).data("placeholder") || "", allowClear: !this.multiple });
+    });
+    // Students / Parents: load matches from the server as you type (page no longer renders thousands of options)
+    $(".js-ajax-select").each(function(){
+      const kind = $(this).data("kind");
+      $(this).select2({
+        width: "100%",
+        placeholder: $(this).data("placeholder") || "Search…",
+        minimumInputLength: 2,
+        ajax: {
+          url: URLS.search,
+          delay: 250,
+          dataType: "json",
+          data: params => ({ kind: kind, q: params.term || "" }),
+          processResults: data => data,
+        },
+      });
+    });
+  }
+  onChange(audienceEl, function(){ applyAudienceUI(); refreshRecipients(); });
+  onChange(classEl, function(){ filterStreams(); refreshRecipients(); });
+  ["id_level","id_stream","id_students","id_parents","id_use_alternate_if_missing","id_use_emergency_contact","id_use_phone_for_whatsapp"]
+    .forEach(id => onChange(byId(id), refreshRecipients));
+  if(messageEl) messageEl.addEventListener("input", updateCounts);
+
+  onChange(channelEl, function(){ applyChannelUI(); refreshRecipients(); });
+  onChange(waTplEl, function(){ buildWaParams([]); });
+
+  applyAudienceUI();
+  applyChannelUI();
+  buildWaParams(initialParams);
+  updateCounts();
+  refreshRecipients();
+
+  // ---------- Sending ----------
+  const modalEl = byId("smsSendModal");
+  const bar = byId("smsProgressBar");
+  const progressText = byId("smsProgressText");
+
+  function csrfToken(){ return document.querySelector("input[name=csrfmiddlewaretoken]")?.value || ""; }
+  function openModal(){ try { $(modalEl).modal({backdrop: "static", keyboard: false}); } catch(e){} }
+  function closeModal(){ try { $(modalEl).modal("hide"); } catch(e){} }
+
+  function setProgress(sent, failed, total){
+    byId("smsSent").textContent = String(sent || 0);
+    byId("smsFailed").textContent = String(failed || 0);
+    byId("smsTotal").textContent = String(total || 0);
+    const done = (sent || 0) + (failed || 0);
+    bar.style.width = (total ? Math.min(100, Math.round(done / total * 100)) : 0) + "%";
+    progressText.textContent = `Sending… ${done}/${total || 0}`;
+  }
+
+  async function postForm(url, data){
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"X-CSRFToken": csrfToken(), "X-Requested-With": "XMLHttpRequest"},
+      body: data,
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok) throw Object.assign({status: res.status}, json);
+    return json;
+  }
+
+  function showErrors(errs){
+    const parts = [];
+    Object.entries(errs || {}).forEach(function([field, list]){
+      const msgs = (Array.isArray(list) ? list : [list]).map(x => (typeof x === "string" ? x : (x.message || ""))).join(" ");
+      parts.push(field === "__all__" ? msgs : `${field.replaceAll("_", " ")}: ${msgs}`);
+    });
+    errorsBox.textContent = parts.join(" • ") || "Please check the form.";
+    show(errorsBox, true);
+    window.scrollTo({top: 0, behavior: "smooth"});
+  }
+
+  async function runBatches(campaignId){
+    let rounds = 0;
+    while(rounds++ < 2000){
+      const data = new FormData();
+      data.append("batch_size", "10");
+      const r = await postForm(withId(URLS.batch, campaignId), data);
+      const t = r.totals || {};
+      setProgress(t.sent, t.failed, t.total);
+      if(r.done){ window.location.href = r.redirect_url; return; }
+    }
+    window.location.href = withId(URLS.detail, campaignId);
+  }
+
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    show(errorsBox, false);
+
+    // Confirm the audience before spending money
+    if(lastPreview){
+      const ok = confirm(`Send this message to ${lastPreview.valid_numbers} contact(s)?`);
+      if(!ok) return;
+    }
+
+    if(sendBtn) sendBtn.disabled = true;
+    openModal();
+    progressText.textContent = "Creating campaign…";
+    setProgress(0, 0, 0);
+
+    let campaignId = null;
+    try{
+      const r = await postForm(URLS.compose, new FormData(form));
+      campaignId = r.campaign_id;
+      setProgress(0, 0, r.queued || 0);
+      progressText.textContent = "Starting delivery…";
+      await runBatches(campaignId);
+    }catch(err){
+      closeModal();
+      if(sendBtn) sendBtn.disabled = false;
+
+      if(campaignId){
+        // The campaign exists: NEVER resubmit the form (that would SMS everyone again).
+        alert("Sending was interrupted. Opening the campaign — use “Retry failed / unsent” to finish.");
+        window.location.href = withId(URLS.detail, campaignId);
+      } else if(err && err.errors){
+        showErrors(err.errors);          // validation problem: nothing was created or sent
+      } else if(err && err.status === 403){
+        showErrors({"__all__": ["You don't have permission to send SMS."]});
+      } else {
+        showErrors({"__all__": ["Could not reach the server. Nothing was sent — please try again."]});
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

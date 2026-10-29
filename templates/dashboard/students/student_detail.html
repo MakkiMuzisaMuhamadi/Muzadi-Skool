@@ -1,0 +1,243 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-graduate"></i> Student Details
+      </h3>
+      <small class="text-muted">
+        {{ student.admission_number }} • {{ student.name }}
+      </small>
+    </div>
+
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'student_list' %}" class="btn btn-light btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back
+      </a>
+      <a href="{% url 'student_update' student.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-edit mr-1"></i> Edit
+      </a>
+      <button class="btn btn-outline-success btn-sm">
+        <i class="fas fa-print mr-1"></i> Print
+      </button>
+
+      <button type="button" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#deleteStudentModal">
+        <i class="fas fa-trash mr-1"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Left: Profile card -->
+  <div class="col-lg-4 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body text-center">
+        {% if student.profile_photo %}
+          <img src="{{ student.profile_photo.url }}" class="rounded-circle mb-3"
+               style="width:120px;height:120px;object-fit:cover;" alt="{{ student.name }}">
+        {% else %}
+          <div class="rounded-circle mb-3 d-flex align-items-center justify-content-center"
+               style="width:120px;height:120px;background:#f2f2f2;margin:0 auto;">
+            <i class="fas fa-user fa-3x text-muted"></i>
+          </div>
+        {% endif %}
+
+        <h4 class="mb-1">{{ student.name }}</h4>
+        <p class="text-muted mb-2">{{ student.admission_number }}</p>
+
+        <div class="mb-2">
+          {% if student.is_active %}
+            <span class="badge badge-success">Active</span>
+          {% else %}
+            <span class="badge badge-secondary">Inactive</span>
+          {% endif %}
+          {% if student.is_alumni %}
+            <span class="badge badge-info ml-1">Alumni</span>
+          {% endif %}
+        </div>
+
+        <hr>
+
+        <div class="text-left">
+          <p class="mb-2">
+            <i class="fas fa-layer-group text-primary mr-2"></i>
+            <b>Username:</b> {{ student.user.username }}
+          </p>
+          <p class="mb-2">
+            <i class="fas fa-key text-warning mr-2"></i>
+            <b>Password:</b> Student@123
+          </p>
+          <p class="mb-2">
+            <i class="fas fa-layer-group text-primary mr-2"></i>
+            <b>Level:</b> {{ student.level.name|default:"-" }}
+          </p>
+          <p class="mb-2">
+            <i class="fas fa-chalkboard text-primary mr-2"></i>
+            <b>Class:</b> {{ student.current_class.name|default:"-" }}
+          </p>
+          <p class="mb-2">
+            <i class="fas fa-stream text-primary mr-2"></i>
+            <b>Stream:</b> {{ student.stream.name|default:"-" }}
+          </p>
+          <p class="mb-0">
+            <i class="fas fa-calendar-alt text-primary mr-2"></i>
+            <b>Admission Date:</b> {{ student.admission_date|date:"M d, Y"|default:"-" }}
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Details -->
+  <div class="col-lg-8">
+    <!-- Personal -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-id-card mr-2 text-info"></i> Personal Information</h5>
+
+        <div class="row">
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Gender</small>{{ student.get_gender_display|default:"-" }}</div>
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Date of Birth</small>{{ student.date_of_birth|date:"M d, Y"|default:"-" }}</div>
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Age</small>{{ student.age|default:"-" }}</div>
+
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Residence</small>{{ student.get_residence_display|default:"-" }}</div>
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Nationality</small>{{ student.nationality|default:"-" }}</div>
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Religion</small>{{ student.religion|default:"-" }}</div>
+
+          <div class="col-md-6 mb-2"><small class="text-muted d-block">Place of Birth</small>{{ student.place_of_birth|default:"-" }}</div>
+          <div class="col-md-6 mb-2"><small class="text-muted d-block">Previous School</small>{{ student.previous_school|default:"-" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emergency -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-phone-alt mr-2 text-warning"></i> Emergency Contact</h5>
+        <div class="row">
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Name</small>{{ student.emergency_contact_name|default:"-" }}</div>
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Phone</small>{{ student.emergency_contact_phone|default:"-" }}</div>
+          <div class="col-md-4 mb-2"><small class="text-muted d-block">Relationship</small>{{ student.emergency_contact_relationship|default:"-" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parents -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0"><i class="fas fa-user-friends mr-2 text-success"></i> Parents / Guardians</h5>
+          <a href="{% url 'parent_create' %}?student={{ student.id }}&next={{ request.get_full_path|urlencode }}"
+             class="btn btn-sm btn-outline-success"><i class="fas fa-plus mr-1"></i> Add</a>
+        </div>
+
+        {% if student.guardian_links.all %}
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Relationship</th>
+                  <th>Phone</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for link in student.guardian_links.all %}
+                <tr>
+                  <td><a href="{% url 'parent_detail' link.parent.id %}">{{ link.parent.full_name }}</a></td>
+                  <td>{{ link.get_relationship_display }}</td>
+                  <td><a href="tel:{{ link.parent.phone }}">{{ link.parent.phone }}</a></td>
+                  <td>
+                    {% if link.is_primary %}<span class="badge badge-success">Primary</span>{% endif %}
+                    {% if link.is_fee_payer %}<span class="badge badge-info">Pays fees</span>{% endif %}
+                    {% if not link.can_pick_up %}<span class="badge badge-warning">Not allowed to pick up</span>{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No parents/guardians linked.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Medical / Transport / Hostel -->
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="mb-3"><i class="fas fa-heartbeat mr-2 text-danger"></i> Medical</h5>
+            <p class="mb-2"><small class="text-muted d-block">Blood Group</small>{{ student.blood_group|default:"-" }}</p>
+            <p class="mb-2"><small class="text-muted d-block">Allergies</small>{{ student.known_allergies|default:"-" }}</p>
+            <p class="mb-0"><small class="text-muted d-block">Special Needs</small>{{ student.special_needs|default:"-" }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="mb-3"><i class="fas fa-bus mr-2 text-primary"></i> Transport / Hostel</h5>
+
+            <p class="mb-2">
+              <small class="text-muted d-block">Uses School Transport</small>
+              {% if student.uses_school_transport %}<span class="badge badge-success">Yes</span>{% else %}<span class="badge badge-secondary">No</span>{% endif %}
+            </p>
+
+            <p class="mb-2"><small class="text-muted d-block">Transport Route</small>{{ student.transport_route|default:"-" }}</p>
+            <p class="mb-2"><small class="text-muted d-block">Bus Stop</small>{{ student.bus_stop|default:"-" }}</p>
+
+            <p class="mb-0"><small class="text-muted d-block">Hostel / Room / Bed</small>
+              {{ student.hostel|default:"-" }}{% if student.room_number %} • Room {{ student.room_number }}{% endif %}{% if student.bed_number %} • Bed {{ student.bed_number }}{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  
+</div>
+
+<div class="modal fade" id="deleteStudentModal" tabindex="-1" role="dialog" aria-labelledby="deleteStudentModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form method="post" action="{% url 'student_delete' student.pk %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteStudentModalLabel">
+            <i class="fas fa-exclamation-triangle text-danger mr-2"></i>Delete Student
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="mb-2">
+            Are you sure you want to delete <strong>{{ student.name }}</strong>?
+          </p>
+          <p class="text-muted mb-0">
+            This will also remove the linked login account and profile if they exist.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash mr-1"></i> Yes, Delete
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

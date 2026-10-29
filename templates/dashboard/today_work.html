@@ -1,0 +1,136 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">My Today's Work - {{ current_session.date }}</h4>
+            </div>
+            <div class="card-body">
+                {% if not rate_set %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>No rate configured!</strong> Please contact administrator.
+                </div>
+                {% endif %}
+
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h2>{{ today_stats.entries_today }}</h2>
+                                <p class="mb-0">Mark Entries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h2>UGX {{ today_stats.amount_earned|floatformat:0 }}</h2>
+                                <p class="mb-0">Amount Earned</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h2>{{ rate_per_entry }}</h2>
+                                <p class="mb-0">Rate per Entry</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mark Entries Table -->
+                <h5>My Mark Entries Today</h5>
+                <div class="table-responsive">
+                    <table id="entriesTable" class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>School</th>
+                                <th>Level</th>
+                                <th>Subject</th>
+                                <th>Paper</th>
+                                <th>Candidate</th>
+                                <th>Marks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in today_entries %}
+                            <tr>
+                                <td>{{ entry.entered_at|time:"H:i:s" }}</td>
+                                <td>{{ entry.school.name }}</td>
+                                <td>{{ entry.level.name }}</td>
+                                <td>
+                                    <strong>{{ entry.paper.subject.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ entry.paper.subject.short_name }}</small>
+                                </td>
+                                <td>
+                                    {{ entry.paper.paper_name }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.paper.paper_code }}</small>
+                                </td>
+                                <td>
+                                    {{ entry.candidate.name }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.candidate.candidate_id }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <strong>{{ entry.marks_entered }}</strong>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                        <td colspan="7" class="text-center py-4">
+                        <div class="bg-light p-3 rounded shadow-sm border-left border-primary">
+                            <h5 class="text-primary mb-2">
+                            Hello {{ request.user.get_full_name|default:request.user.username }} 👋
+                            </h5>
+                            <p class="text-muted mb-0">You haven’t entered any marks today.</p>
+                        </div>
+                        </td>
+
+
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Info Box -->
+            <div class="card mt-3 shadow-sm border-info">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-info-circle"></i> How It Works
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                <li>Every mark for a paper for a candidate counts as <strong>1 entry</strong></li>
+                <li>Current rate: <strong>UGX {{ rate_per_entry }} per entry</strong></li>
+                <li>Amount updates in real-time as you enter marks</li>
+                <li>Session automatically starts when you enter your first marks</li>
+                </ul>
+            </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#entriesTable').DataTable({
+        "pageLength": 25,
+        "order": [[0, 'desc']],
+        "responsive": true
+    });
+});
+</script>
+{% endblock %}

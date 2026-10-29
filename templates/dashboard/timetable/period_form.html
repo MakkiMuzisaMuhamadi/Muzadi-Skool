@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-4 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-clock mr-2 text-primary"></i> {{ title }}</h3>
+    <small class="text-muted">Lessons, breaks, lunch, assembly, games and prep. Periods are ordered by start time automatically.</small>
+  </div>
+  <a href="{% url 'timetable_period_list' %}" class="btn btn-light btn-sm border"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+</div>
+
+{% if not has_schedules %}
+<div class="alert alert-warning">
+  Create a bell schedule first (e.g. "Normal Day").
+  <a href="{% url 'timetable_setup_create' 'bell_schedule' %}" class="alert-link">Add bell schedule</a>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-row">
+        <div class="form-group col-md-4">{% include "dashboard/timetable/_field.html" with f=form.bell_schedule %}</div>
+        <div class="form-group col-md-4">{% include "dashboard/timetable/_field.html" with f=form.name %}</div>
+        <div class="form-group col-md-4">{% include "dashboard/timetable/_field.html" with f=form.period_type %}</div>
+        <div class="form-group col-md-4">{% include "dashboard/timetable/_field.html" with f=form.start_time %}</div>
+        <div class="form-group col-md-4">{% include "dashboard/timetable/_field.html" with f=form.end_time %}</div>
+        <div class="form-group col-md-4 pt-4">{% include "dashboard/timetable/_field.html" with f=form.is_active %}</div>
+      </div>
+      <button class="btn btn-primary" name="save"><i class="fas fa-save mr-1"></i> Save</button>
+      {% if not item %}<button class="btn btn-outline-primary" name="save_add">Save &amp; add another</button>{% endif %}
+      <a href="{% url 'timetable_period_list' %}" class="btn btn-light border">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

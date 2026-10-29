@@ -1,0 +1,151 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center no-print">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-id-card"></i> Student QR Cards</h3>
+    <small class="text-muted">Choose a class (and stream), then print the sheet or download the cards as JPG images.</small>
+  </div>
+  <a href="{% url 'attendance_qr_take' %}" class="btn btn-outline-success btn-sm">
+    <i class="fas fa-qrcode mr-1"></i> Back to QR Attendance
+  </a>
+</div>
+
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="get" id="cardFilter" class="form-row align-items-end">
+      <div class="form-group col-md-4">
+        <label for="c_class">Class</label>
+        <select id="c_class" name="class_id" class="form-control">
+          <option value="">Select class...</option>
+          {% for c in classes %}
+            <option value="{{ c.id }}" {% if selected_class and selected_class.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label for="c_stream">Stream</label>
+        <select id="c_stream" name="stream_id" class="form-control" {% if not selected_class %}disabled{% endif %}>
+          <option value="">All streams</option>
+          {% for s in streams %}
+            <option value="{{ s.id }}" {% if selected_stream and selected_stream.id == s.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-5 d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary"><i class="fas fa-sync mr-1"></i> Show cards</button>
+        {% if cards %}
+          {% comment %} <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print mr-1"></i> Print{% if page.paginator.num_pages > 1 %} this batch{% endif %}
+          </button> {% endcomment %}
+          <a class="btn btn-outline-info" href="{% url 'download_student_qr_zip' %}?{{ base_query }}&batch={{ page.number }}">
+            <i class="fas fa-download mr-1"></i> Download ZIP{% if page.paginator.num_pages > 1 %} (this batch){% endif %}
+          </a>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if page and page.paginator.num_pages > 1 %}
+      <div class="d-flex flex-wrap align-items-center justify-content-between border-top pt-3 mt-1" style="gap:.5rem;">
+        <div>
+          <strong>Batch {{ page.number }} of {{ page.paginator.num_pages }}</strong>
+          <span class="text-muted">· students {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }}</span>
+        </div>
+        <div class="d-flex flex-wrap" style="gap:.25rem;">
+          {% if page.has_previous %}
+            <a class="btn btn-outline-danger btn-sm" href="?{{ base_query }}&batch={{ page.previous_page_number }}">
+              <i class="fas fa-chevron-left mr-1"></i> Previous
+            </a>
+          {% endif %}
+          {% for n in page.paginator.page_range %}
+            <a class="btn btn-sm {% if n == page.number %}btn-primary{% else %}btn-outline-info{% endif %}"
+               href="?{{ base_query }}&batch={{ n }}">{{ n }}</a>
+          {% endfor %}
+          {% if page.has_next %}
+            <a class="btn btn-outline-danger btn-sm" href="?{{ base_query }}&batch={{ page.next_page_number }}">
+              Next <i class="fas fa-chevron-right ml-1"></i>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+@page { size: A4; margin: 10mm; }
+
+.print-only { display: none; }
+
+.qr-sheet {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8mm;
+}
+.qr-label {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6mm;
+  text-align: center;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.qr-name { font-weight: 700; font-size: 12pt; line-height: 1.2; }
+.qr-meta { font-size: 10pt; color: #555; margin-top: 2mm; }
+.qr-box { margin-top: 4mm; display: flex; justify-content: center; }
+.qr-box > img, .qr-box > canvas { width: 38mm; height: 38mm; }
+.qr-foot { margin-top: 3mm; font-size: 9pt; color: #777; }
+
+@media print {
+  .no-print, .navbar, .sidebar, .footer, .settings-panel { display: none !important; }
+  .print-only { display: block; }
+  .content-wrapper, .main-panel { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+  .card, .card-body { border: none !important; box-shadow: none !important; padding: 0 !important; }
+  .qr-sheet { gap: 6mm; }
+}
+</style>
+
+<div class="card">
+  <div class="card-body">
+    {% if not selected_class %}
+      <p class="text-muted mb-0">Select a class to generate its QR cards.</p>
+    {% elif not cards %}
+      <p class="text-muted mb-0">No active students found in this class/stream.</p>
+    {% else %}
+      <div class="print-only" style="margin-bottom: 6mm;">
+        <div style="font-weight:700; font-size: 14pt;">
+          Student QR Cards — {{ selected_class }}{% if selected_stream %} / {{ selected_stream.name }}{% endif %}
+          {% if page.paginator.num_pages > 1 %}(batch {{ page.number }} of {{ page.paginator.num_pages }}){% endif %}
+        </div>
+      </div>
+
+      <div class="qr-sheet">
+        {% for c in cards %}
+        <div class="qr-label">
+          <div class="qr-name">{{ c.name }}</div>
+          <div class="qr-meta">ADM: <strong>{{ c.student.admission_number }}</strong></div>
+          <div class="qr-box" id="qr_{{ c.student.id }}" data-token="{{ c.token }}"></div>
+          <div class="qr-foot">Attendance QR</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+  // Changing class reloads the page so the stream list matches the class
+  const classSel = document.getElementById("c_class");
+  classSel.addEventListener("change", () => {
+    document.getElementById("c_stream").value = "";
+    document.getElementById("cardFilter").submit();
+  });
+
+  if(typeof QRCode === "undefined") return;
+  document.querySelectorAll(".qr-box[data-token]").forEach(box => {
+    new QRCode(box, { text: box.dataset.token, width: 150, height: 150 });
+  });
+})();
+</script>
+{% endblock %}

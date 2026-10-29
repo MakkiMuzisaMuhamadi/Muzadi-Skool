@@ -1,0 +1,102 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-eye"></i> {{ scale.name }}
+    </h3>
+    <small class="text-muted">
+      UCE Grading Scale (Read-only)
+    </small>
+  </div>
+  <div>
+    <a href="{% url back_url %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+{% if scale_issues %}
+<div class="alert alert-warning">
+  <strong><i class="fas fa-exclamation-triangle mr-1"></i> This scale has {{ scale_issues|length }} problem{{ scale_issues|length|pluralize }}.</strong>
+  Learners whose scores fall in these ranges may get no grade or the wrong division on their report cards:
+  <ul class="mb-0 mt-2">
+    {% for issue in scale_issues %}<li>{{ issue }}</li>{% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="alert alert-success py-2">
+  <i class="fas fa-check-circle mr-1"></i> Scale check passed: every score from 0 to 100 has exactly one grade{% if divisions %}, and every possible aggregate has a division{% endif %}.
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Status</strong><br>
+        {% if scale.is_active %}
+          <span class="badge badge-success">ACTIVE</span>
+        {% else %}
+          <span class="badge badge-secondary">INACTIVE</span>
+        {% endif %}
+      </div>
+      <div class="col-md-3">
+        <strong>Required Subjects</strong><br>
+        {{ scale.required_subjects }}
+      </div>
+      <div class="col-md-3">
+        <strong>Average Divisor</strong><br>
+        {{ scale.average_divisor }}
+      </div>
+      <div class="col-md-3">
+        <strong>Total Grades</strong><br>
+        {{ grades|length }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <strong>Grade Boundaries</strong>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Letter</th>
+          <th>Name</th>
+          <th>Min %</th>
+          <th>Max %</th>
+          <th>Description</th>
+          <th>Scaled Range (0–3)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in grades %}
+        <tr>
+          <td>{{ g.order }}</td>
+          <td><strong>{{ g.grade_letter }}</strong></td>
+          <td>{{ g.grade_name }}</td>
+          <td>{{ g.min_percentage }}%</td>
+          <td>{{ g.max_percentage }}%</td>
+          <td>
+            {{ g.min_scaled_score }} – {{ g.max_scaled_score }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">
+            No grades defined.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

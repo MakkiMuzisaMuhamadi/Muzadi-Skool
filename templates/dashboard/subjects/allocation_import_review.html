@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-clipboard-check"></i> {{ title }}</h3>
+  <small class="text-muted">For {{ year }}. Rows with errors are skipped.</small>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap align-items-center justify-content-between">
+    <div class="mb-2 mb-md-0">
+      <span class="badge badge-success p-2 mr-1">{{ ok_count }} ready to save</span>
+      {% if error_count %}<span class="badge badge-danger p-2">{{ error_count }} with errors</span>{% endif %}
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" name="action" value="cancel" class="btn btn-light mr-2">Cancel</button>
+      <button type="submit" name="action" value="save" class="btn btn-success" {% if not ok_count %}disabled{% endif %}>
+        Save {{ ok_count }} allocation{{ ok_count|pluralize }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr><th>Row</th><th>Teacher</th><th>Class</th><th>Stream</th><th>Subject</th><th>Papers</th><th>Class teacher</th><th>Problems</th></tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr class="{% if r.errors %}table-danger{% elif r.warnings %}table-warning{% endif %}">
+              <td class="text-muted">{{ r.line }}</td>
+              <td>{{ r.data.labels.teacher|default:"—" }}</td>
+              <td>{{ r.data.labels.class|default:"—" }}</td>
+              <td>{{ r.data.labels.stream|default:"Whole class" }}</td>
+              <td>{{ r.data.labels.subject|default:"—" }}</td>
+              <td>{{ r.data.labels.papers|default:"All" }}</td>
+              <td>{% if r.data.class_teacher %}Yes{% else %}—{% endif %}</td>
+              <td class="small">
+                {% for e in r.errors %}<div class="text-danger"><i class="fas fa-times-circle mr-1"></i>{{ e }}</div>{% endfor %}
+                {% for w in r.warnings %}<div><i class="fas fa-exclamation-triangle mr-1"></i>{{ w }}</div>{% endfor %}
+                {% if not r.errors and not r.warnings %}<span class="text-success"><i class="fas fa-check"></i></span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

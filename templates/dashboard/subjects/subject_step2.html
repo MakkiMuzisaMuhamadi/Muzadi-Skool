@@ -1,0 +1,486 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-layer-group"></i> Add Papers
+      </h3>
+      <small class="text-muted">Step 2 of 3 — Papers for <strong>{{ draft.name }}</strong></small>
+    </div>
+
+    <div>
+      <a href="{% url 'subject_enroll_step1' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Step 1
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stepper -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.7;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">1</div>
+        <div>
+          <div class="font-weight-bold">Subject</div>
+          <small class="text-muted">Name, code, level</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <div class="badge badge-primary mr-2" style="font-size: 0.95rem;">2</div>
+        <div>
+          <div class="font-weight-bold">Papers</div>
+          <small class="text-muted">Add paper units</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finalize subject</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-12">
+
+      <div class="card mb-3">
+        <div class="card-body">
+
+          <div class="d-flex align-items-start justify-content-between flex-wrap">
+            <div class="mb-2">
+              <h5 class="mb-1">
+                <i class="fas fa-file-alt mr-2"></i> Papers
+              </h5>
+              <small class="text-muted">
+                Add one or more papers under this subject. Empty rows are ignored.
+              </small>
+            </div>
+
+            <div class="mb-2">
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="addRow()">
+                <i class="fas fa-plus mr-1"></i> Add Paper
+              </button>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Subject mini summary -->
+          <div class="d-flex flex-wrap mb-3">
+            <span class="badge badge-light border mr-2 mb-2">
+              <i class="fas fa-hashtag mr-1"></i> {{ draft.code }}
+            </span>
+
+            <span class="badge badge-light border mr-2 mb-2">
+              <i class="fas fa-tag mr-1"></i> {{ draft.short_name }}
+            </span>
+
+            <span class="badge badge-light border mr-2 mb-2">
+              <i class="fas fa-graduation-cap mr-1"></i>
+              {% if draft.level %}
+                {{ draft.level }}
+              {% else %}
+                Not set
+              {% endif %}
+            </span>
+          </div>
+
+          <!-- Papers table -->
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle" id="papersTable">
+              <thead class="thead-light">
+                <tr>
+                  <th style="width: 18%;">Paper Code</th>
+                  <th>Paper Name</th>
+                  <th style="width: 12%;">Max Marks</th>
+                  <th style="width: 10%;">Order</th>
+                  <th style="width: 12%;" class="text-center">Compulsory</th>
+                  <th style="width: 7%;" class="text-center">Remove</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for p in papers %}
+                  <tr>
+                    <td data-label="Paper Code">
+                      <input class="form-control" name="paper_code[]" value="{{ p.paper_code }}" placeholder="e.g. P1">
+                    </td>
+
+                    <td data-label="Paper Name">
+                      <input class="form-control" name="paper_name[]" value="{{ p.paper_name }}" placeholder="e.g. Paper 1">
+                    </td>
+
+                    <td data-label="Max Marks">
+                      <input class="form-control" name="max_marks[]" type="number" value="{{ p.max_marks }}" min="0">
+                    </td>
+
+                    <td data-label="Order">
+                      <input class="form-control" name="order[]" type="number" value="{{ p.order }}" min="1">
+                    </td>
+
+                    <td data-label="Compulsory" class="text-center">
+                      <div class="form-check d-inline-flex align-items-center justify-content-center mb-0">
+                        <input type="checkbox"
+                               class="form-check-input"
+                               name="compulsory[]"
+                               value="{{ forloop.counter0 }}"
+                               {% if p.compulsory %}checked{% endif %}>
+                      </div>
+                    </td>
+
+                    <td data-label="Remove" class="text-center">
+                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)" title="Remove row">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                {% empty %}
+
+                  <!-- Friendly empty state -->
+                  <tr class="table-active">
+                    <td colspan="6" class="text-center text-muted py-3">
+                      <i class="fas fa-info-circle mr-1"></i>
+                      No papers added yet. Start with the rows below or click <strong>Add Paper</strong>.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td data-label="Paper Code">
+                      <input class="form-control" name="paper_code[]" placeholder="e.g. P1">
+                    </td>
+
+                    <td data-label="Paper Name">
+                      <input class="form-control" name="paper_name[]" placeholder="e.g. Paper 1">
+                    </td>
+
+                    <td data-label="Max Marks">
+                      <input class="form-control" name="max_marks[]" type="number" value="100" min="0">
+                    </td>
+
+                    <td data-label="Order">
+                      <input class="form-control" name="order[]" type="number" value="1" min="1">
+                    </td>
+
+                    <td data-label="Compulsory" class="text-center">
+                      <input type="checkbox" class="form-check-input" name="compulsory[]" value="0" checked>
+                    </td>
+
+                    <td data-label="Remove" class="text-center">
+                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td data-label="Paper Code">
+                      <input class="form-control" name="paper_code[]" placeholder="e.g. P2">
+                    </td>
+
+                    <td data-label="Paper Name">
+                      <input class="form-control" name="paper_name[]" placeholder="e.g. Paper 2">
+                    </td>
+
+                    <td data-label="Max Marks">
+                      <input class="form-control" name="max_marks[]" type="number" value="100" min="0">
+                    </td>
+
+                    <td data-label="Order">
+                      <input class="form-control" name="order[]" type="number" value="2" min="1">
+                    </td>
+
+                    <td data-label="Compulsory" class="text-center">
+                      <input type="checkbox" class="form-check-input" name="compulsory[]" value="1" checked>
+                    </td>
+
+                    <td data-label="Remove" class="text-center">
+                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Footer actions -->
+          <div class="d-flex align-items-center justify-content-between flex-wrap mt-3">
+            <a href="{% url 'subject_enroll_step1' %}" class="btn btn-light mb-2">
+              <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+
+            <button type="submit" class="btn btn-outline-success mb-2">
+              Save & Continue <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+          <!-- Tips + Next BELOW the table -->
+          <div class="row mt-3">
+            <div class="col-lg-6">
+              <div class="card border mb-3 mb-lg-0">
+                <div class="card-body">
+                  <h5 class="mb-3">
+                    <i class="fas fa-lightbulb mr-2"></i> Tips
+                  </h5>
+
+                  <ul class="text-muted pl-3 mb-0">
+                    <li><strong>Paper Code</strong>: use P1, P2… or 112/1, 112/2 style.</li>
+                    <li><strong>Order</strong> controls display and reporting order.</li>
+                    <li>Unchecked means <strong>optional paper</strong>.</li>
+                    <li>Empty rows will be ignored automatically.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-6">
+              <div class="card border">
+                <div class="card-body">
+                  <h5 class="mb-3">
+                    <i class="fas fa-info-circle mr-2"></i> What’s next?
+                  </h5>
+
+                  <ul class="text-muted pl-3">
+                    <li>Review subject + papers</li>
+                    <li>Finalize creation</li>
+                  </ul>
+
+                  <div class="d-flex flex-wrap">
+                    {% if draft %}
+                      {% if draft.level.name|upper == "PLE" %}
+                        <a href="{% url 'subject_enroll_step3' draft.id %}" class="btn btn-outline-danger mr-2 mb-2">
+                          Skip to Confirm
+                        </a>
+                      {% endif %}
+                    {% endif %}
+
+                    <a href="{% url 'subject_list' %}" class="btn btn-outline-secondary mb-2">
+                      Cancel
+                    </a>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End tips + next -->
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</form>
+
+<!-- Mobile: ensure ALL inputs visible -->
+<style>
+  #papersTable input.form-control {
+    min-width: 90px;
+  }
+
+  #papersTable td {
+    vertical-align: middle;
+  }
+
+  #papersTable .form-check-input {
+    position: static;
+    margin-left: 0;
+  }
+
+  @media (max-width: 576px) {
+    .table-responsive {
+      overflow-x: visible !important;
+    }
+
+    #papersTable thead {
+      display: none;
+    }
+
+    #papersTable,
+    #papersTable tbody,
+    #papersTable tr,
+    #papersTable td {
+      display: block;
+      width: 100%;
+    }
+
+    #papersTable tr {
+      border: 1px solid #dee2e6;
+      border-radius: .5rem;
+      padding: .75rem;
+      margin-bottom: .75rem;
+      background: rgba(255, 255, 255, .02);
+    }
+
+    #papersTable td {
+      border: none !important;
+      padding: .35rem 0;
+    }
+
+    #papersTable td::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #6c757d;
+      margin-bottom: .25rem;
+    }
+
+    #papersTable td.text-center {
+      text-align: left !important;
+    }
+
+    #papersTable td.text-center .form-check,
+    #papersTable td.text-center .btn {
+      margin-top: .25rem;
+    }
+  }
+</style>
+
+<script>
+  function removeRow(btn) {
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    tr.remove();
+    reindexCompulsory();
+    ensureAtLeastOneRow();
+  }
+
+  function addRow() {
+    const tbody = document.querySelector("#papersTable tbody");
+
+    const emptyRow = tbody.querySelector("tr.table-active");
+    if (emptyRow) emptyRow.remove();
+
+    const normalRows = tbody.querySelectorAll("tr:not(.table-active)");
+    const idx = normalRows.length;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td data-label="Paper Code">
+        <input class="form-control" name="paper_code[]" placeholder="e.g. P${idx + 1}">
+      </td>
+
+      <td data-label="Paper Name">
+        <input class="form-control" name="paper_name[]" placeholder="e.g. Paper ${idx + 1}">
+      </td>
+
+      <td data-label="Max Marks">
+        <input class="form-control" name="max_marks[]" type="number" value="100" min="0">
+      </td>
+
+      <td data-label="Order">
+        <input class="form-control" name="order[]" type="number" value="${idx + 1}" min="1">
+      </td>
+
+      <td data-label="Compulsory" class="text-center">
+        <input type="checkbox" class="form-check-input" name="compulsory[]" value="${idx}" checked>
+      </td>
+
+      <td data-label="Remove" class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+    reindexCompulsory();
+  }
+
+  function reindexCompulsory() {
+    const rows = document.querySelectorAll("#papersTable tbody tr");
+    let visibleIndex = 0;
+
+    rows.forEach((row) => {
+      if (row.classList.contains("table-active")) return;
+
+      const cb = row.querySelector('input[type="checkbox"][name="compulsory[]"]');
+      if (cb) {
+        cb.value = String(visibleIndex);
+      }
+
+      const order = row.querySelector('input[name="order[]"]');
+      if (order && (!order.value || Number(order.value) <= 0)) {
+        order.value = String(visibleIndex + 1);
+      }
+
+      visibleIndex += 1;
+    });
+  }
+
+  function ensureAtLeastOneRow() {
+    const tbody = document.querySelector("#papersTable tbody");
+    const normalRows = tbody.querySelectorAll("tr:not(.table-active)");
+
+    if (normalRows.length > 0) return;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td data-label="Paper Code">
+        <input class="form-control" name="paper_code[]" placeholder="e.g. P1">
+      </td>
+
+      <td data-label="Paper Name">
+        <input class="form-control" name="paper_name[]" placeholder="e.g. Paper 1">
+      </td>
+
+      <td data-label="Max Marks">
+        <input class="form-control" name="max_marks[]" type="number" value="100" min="0">
+      </td>
+
+      <td data-label="Order">
+        <input class="form-control" name="order[]" type="number" value="1" min="1">
+      </td>
+
+      <td data-label="Compulsory" class="text-center">
+        <input type="checkbox" class="form-check-input" name="compulsory[]" value="0" checked>
+      </td>
+
+      <td data-label="Remove" class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+    reindexCompulsory();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    reindexCompulsory();
+  });
+</script>
+
+{% endblock %}

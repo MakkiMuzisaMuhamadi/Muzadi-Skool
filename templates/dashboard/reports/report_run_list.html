@@ -1,0 +1,213 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  .rl-card {
+    border: 1px solid #e9ecef;
+    border-radius: .9rem;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+  }
+
+  .rl-card .card-body {
+    padding: 1.1rem;
+  }
+
+  .rl-section-title {
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .badge-soft-success,
+  .badge-soft-danger,
+  .badge-soft-warning,
+  .badge-soft-primary,
+  .badge-soft-secondary {
+    padding: .38rem .62rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+  }
+
+  .badge-soft-success {
+    background: rgba(40, 167, 69, .13);
+    color: #198754;
+  }
+
+  .badge-soft-danger {
+    background: rgba(220, 53, 69, .13);
+    color: #dc3545;
+  }
+
+  .badge-soft-warning {
+    background: rgba(255, 193, 7, .2);
+    color: #946200;
+  }
+
+  .badge-soft-primary {
+    background: rgba(13, 110, 253, .12);
+    color: #0d6efd;
+  }
+
+  .badge-soft-secondary {
+    background: rgba(108, 117, 125, .13);
+    color: #6c757d;
+  }
+
+  .table td,
+  .table th {
+    vertical-align: middle;
+  }
+</style>
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-list text-primary"></i> Report Runs
+    </h3>
+    <small class="text-muted">Track all report-card processing runs.</small>
+  </div>
+
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'report_command_center' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-desktop mr-1"></i> Command Center
+    </a>
+  </div>
+</div>
+
+<div class="card rl-card">
+  <div class="card-body">
+    <div class="rl-section-title">
+      <i class="fas fa-history text-success"></i>
+      <span>All Report Runs</span>
+    </div>
+
+    <div class="table-responsive">
+      <table id="reportRunsTable" class="table table-sm table-bordered table-hover w-100">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Level</th>
+            <th>Scope</th>
+            <th>Year</th>
+            <th>Term</th>
+            <th>Target</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>ETA</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for r in runs %}
+            <tr>
+              <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+
+              <td>
+                <span class="badge-soft-primary">{{ r.level_scope }}</span>
+              </td>
+
+              <td>
+                <span class="badge-soft-danger">{{ r.scope }}</span>
+              </td>
+
+              <td>{{ r.academic_year }}</td>
+              <td>{{ r.term }}</td>
+
+              <td>
+                {% if r.scope == "STUDENT" %}
+                  {{ r.student|default:"-" }}
+                {% elif r.scope == "CLASS" %}
+                  {{ r.class_ref|default:"-" }}
+                {% elif r.scope == "STREAM" %}
+                  {{ r.class_ref|default:"-" }} / {{ r.stream|default:"-" }}
+                {% else %}
+                  Whole School
+                {% endif %}
+              </td>
+
+              <td>
+                {% if r.status == "SUCCESS" %}
+                  <span class="badge-soft-success">{{ r.status }}</span>
+                {% elif r.status == "PARTIAL" %}
+                  <span class="badge-soft-warning">{{ r.status }}</span>
+                {% elif r.status == "FAILED" or r.status == "CANCELLED" %}
+                  <span class="badge-soft-danger">{{ r.status }}</span>
+                {% elif r.status == "RUNNING" %}
+                  <span class="badge-soft-warning">{{ r.status }}</span>
+                {% else %}
+                  <span class="badge-soft-primary">{{ r.status }}</span>
+                {% endif %}
+              </td>
+
+              <td style="min-width:190px;">
+                <div class="progress mb-1" style="height:14px;">
+                  <div class="progress-bar" style="width: {{ r.percent }}%;">
+                    {{ r.percent }}%
+                  </div>
+                </div>
+                <small class="text-muted">
+                  {{ r.done_students }}/{{ r.total_students }}
+                  • failed {{ r.failed_students }}
+                </small>
+              </td>
+
+              <td>{{ r.eta_human }}</td>
+
+              <td>
+                <div class="d-flex flex-wrap" style="gap:.35rem;">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'report_run_detail' r.id %}">
+                    <i class="fas fa-eye mr-1"></i> Run
+                  </a>
+
+                  {% if r.latest_snapshot and r.latest_snapshot.pdf %}
+                    <a class="btn btn-sm btn-outline-info"
+                      href="{% url 'view_report_pdf_admin' r.latest_snapshot.id %}"
+                      target="_blank">
+                      <i class="fas fa-file-pdf mr-1"></i> View PDF
+                    </a>
+                  {% endif %}
+
+                  <a class="btn btn-sm btn-outline-success" href="{% url 'report_run_download_zip' r.id %}">
+                    <i class="fas fa-file-archive mr-1"></i> ZIP
+                  </a>
+                </div>
+              </td>
+            </tr>
+      
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  if (typeof $ !== "undefined" && $.fn.DataTable) {
+    const $table = $("#reportRunsTable");
+    const hasRealRows = $table.find("tbody tr").length > 0 &&
+      $table.find("tbody tr td[colspan]").length === 0;
+
+    if (hasRealRows) {
+      $table.DataTable({
+        pageLength: 15,
+        lengthMenu: [[10, 15, 25, 50, 100, -1], [10, 15, 25, 50, 100, "All"]],
+        order: [[0, "desc"]],
+        responsive: true,
+        autoWidth: false
+      });
+    }
+  }
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,364 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-sliders-h"></i> {{ title }}</h3>
+    <small class="text-muted">Configure PLE subject grades and aggregate division rules.</small>
+  </div>
+  <div>
+    <a href="{% url 'ple_grading_scale_list' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      {% if form.errors %}
+        <div class="alert alert-danger">
+          Please correct the form errors below.
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label>Name</label>
+          {{ form.name }}
+          {% for error in form.name.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label>Required Subjects</label>
+          {{ form.required_subjects }}
+          {% for error in form.required_subjects.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+      </div>
+
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger mt-3 mb-0">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Subject Grade Boundaries</h5>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addGradeRowBtn">
+        <i class="fas fa-plus mr-1"></i> Add Grade Row
+      </button>
+    </div>
+    <div class="card-body table-responsive">
+      {{ grade_formset.management_form }}
+
+      {% if grade_formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in grade_formset.non_form_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <table class="table table-bordered align-middle" id="gradeTable">
+        <thead>
+          <tr>
+            <th>Grade</th>
+            <th>Name</th>
+            <th>Min %</th>
+            <th>Max %</th>
+            <th>Aggregate</th>
+            <th class="text-center" style="width: 90px;">Delete</th>
+          </tr>
+        </thead>
+        <tbody id="gradeTbody">
+          {% for f in grade_formset %}
+            <tr class="grade-row">
+              {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+
+              <td>
+                {{ f.grade_letter }}
+                {% for error in f.grade_letter.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ f.grade_name }}
+                {% for error in f.grade_name.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ f.min_percentage }}
+                {% for error in f.min_percentage.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ f.max_percentage }}
+                {% for error in f.max_percentage.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ f.aggregate_point }}
+                {% for error in f.aggregate_point.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td class="text-center">
+                {% if f.instance.pk %}
+                  <div class="d-none">{{ f.DELETE }}</div>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-existing-row-btn">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-new-row-btn">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+
+            {% if f.non_field_errors %}
+              <tr>
+                <td colspan="6">
+                  {% for error in f.non_field_errors %}
+                    <div class="alert alert-danger py-1 mb-1">{{ error }}</div>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <template id="gradeEmptyFormTemplate">
+        <tr class="grade-row">
+          {% for hidden in grade_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+          <td>{{ grade_formset.empty_form.grade_letter }}</td>
+          <td>{{ grade_formset.empty_form.grade_name }}</td>
+          <td>{{ grade_formset.empty_form.min_percentage }}</td>
+          <td>{{ grade_formset.empty_form.max_percentage }}</td>
+          <td>{{ grade_formset.empty_form.aggregate_point }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-new-row-btn">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Aggregate Division Rules</h5>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addDivisionRowBtn">
+        <i class="fas fa-plus mr-1"></i> Add Division Row
+      </button>
+    </div>
+    <div class="card-body table-responsive">
+      {{ division_formset.management_form }}
+
+      {% if division_formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in division_formset.non_form_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <table class="table table-bordered align-middle" id="divisionTable">
+        <thead>
+          <tr>
+            <th>Division</th>
+            <th>Min Aggregate</th>
+            <th>Max Aggregate</th>
+            <th class="text-center" style="width: 90px;">Delete</th>
+          </tr>
+        </thead>
+        <tbody id="divisionTbody">
+          {% for f in division_formset %}
+            <tr class="division-row">
+              {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+
+              <td>
+                {{ f.division }}
+                {% for error in f.division.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ f.min_aggregate }}
+                {% for error in f.min_aggregate.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ f.max_aggregate }}
+                {% for error in f.max_aggregate.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td class="text-center">
+                {% if f.instance.pk %}
+                  <div class="d-none">{{ f.DELETE }}</div>
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-existing-division-btn">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-new-division-btn">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+
+            {% if f.non_field_errors %}
+              <tr>
+                <td colspan="4">
+                  {% for error in f.non_field_errors %}
+                    <div class="alert alert-danger py-1 mb-1">{{ error }}</div>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <template id="divisionEmptyFormTemplate">
+        <tr class="division-row">
+          {% for hidden in division_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+          <td>{{ division_formset.empty_form.division }}</td>
+          <td>{{ division_formset.empty_form.min_aggregate }}</td>
+          <td>{{ division_formset.empty_form.max_aggregate }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-new-division-btn">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="text-right">
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save mr-1"></i> Save PLE Scale
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  function setupDynamicFormset(config) {
+    const tbody = document.getElementById(config.tbodyId);
+    const addBtn = document.getElementById(config.addBtnId);
+    const tpl = document.getElementById(config.templateId);
+    const totalFormsEl = document.querySelector(`input[name="${config.prefix}-TOTAL_FORMS"]`);
+
+    if (!tbody || !addBtn || !tpl || !totalFormsEl) return;
+
+    function addRow() {
+      const idx = parseInt(totalFormsEl.value, 10);
+      const html = tpl.innerHTML.replaceAll("__prefix__", String(idx));
+      const temp = document.createElement("tbody");
+      temp.innerHTML = html.trim();
+      const row = temp.firstElementChild;
+
+      row.querySelectorAll("input, select, textarea").forEach(el => {
+        if (!el.classList.contains("form-control") && el.type !== "checkbox" && el.type !== "hidden") {
+          el.classList.add("form-control");
+        }
+      });
+
+      tbody.appendChild(row);
+      totalFormsEl.value = String(idx + 1);
+    }
+
+    function reindexRows() {
+      const rows = Array.from(tbody.querySelectorAll(config.rowSelector));
+
+      rows.forEach((row, i) => {
+        row.querySelectorAll("input, select, textarea, label").forEach(el => {
+          if (el.name) {
+            el.name = el.name.replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-");
+          }
+          if (el.id) {
+            el.id = el.id.replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-");
+          }
+          if (el.getAttribute && el.getAttribute("for")) {
+            el.setAttribute("for", el.getAttribute("for").replace(new RegExp(config.prefix + "-\\d+-"), config.prefix + "-" + i + "-"));
+          }
+        });
+      });
+
+      totalFormsEl.value = String(rows.length);
+    }
+
+    addBtn.addEventListener("click", addRow);
+
+    tbody.addEventListener("click", function (e) {
+      const removeNewBtn = e.target.closest(config.removeNewBtnSelector);
+      const deleteExistingBtn = e.target.closest(config.deleteExistingBtnSelector);
+
+      if (removeNewBtn) {
+        const row = removeNewBtn.closest(config.rowSelector);
+        if (row) {
+          row.remove();
+          reindexRows();
+        }
+      }
+
+      if (deleteExistingBtn) {
+        const row = deleteExistingBtn.closest(config.rowSelector);
+        if (!row) return;
+
+        const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        if (deleteCheckbox) {
+          deleteCheckbox.checked = true;
+          row.style.opacity = "0.45";
+          row.style.backgroundColor = "#f8d7da";
+        }
+      }
+    });
+  }
+
+  setupDynamicFormset({
+    prefix: "grades",
+    tbodyId: "gradeTbody",
+    addBtnId: "addGradeRowBtn",
+    templateId: "gradeEmptyFormTemplate",
+    rowSelector: ".grade-row",
+    removeNewBtnSelector: ".remove-new-row-btn",
+    deleteExistingBtnSelector: ".delete-existing-row-btn"
+  });
+
+  setupDynamicFormset({
+    prefix: "divisions",
+    tbodyId: "divisionTbody",
+    addBtnId: "addDivisionRowBtn",
+    templateId: "divisionEmptyFormTemplate",
+    rowSelector: ".division-row",
+    removeNewBtnSelector: ".remove-new-division-btn",
+    deleteExistingBtnSelector: ".delete-existing-division-btn"
+  });
+})();
+</script>
+{% endblock %}

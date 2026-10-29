@@ -1,0 +1,360 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-invoice-dollar"></i> {{ title }}
+    </h3>
+    <small class="text-muted">Define term fees per class and stream</small>
+  </div>
+  <a href="{% url 'fee_structure_list' %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+  {% if structure and structure.charges_generated %}
+  <div class="alert alert-warning">
+    Students are already billed from this structure. After saving, open the structure and click
+    <strong>Apply changes to billed students</strong> to update their accounts.
+  </div>
+  {% endif %}
+  {{ formset.management_form }}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>Structure Details</strong>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Academic Year <span class="text-danger">*</span></label>
+            {{ form.academic_year }}
+            {% if form.academic_year.errors %}
+              <div class="text-danger small">{{ form.academic_year.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Term <span class="text-danger">*</span></label>
+            {{ form.term }}
+            {% if form.term.errors %}
+              <div class="text-danger small">{{ form.term.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="text-danger small">{{ form.name.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Class <span class="text-danger">*</span></label>
+            {{ form.class_ref }}
+            {% if form.class_ref.errors %}
+              <div class="text-danger small">{{ form.class_ref.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Stream</label>
+            {{ form.stream }}
+            {% if form.stream.errors %}
+              <div class="text-danger small">{{ form.stream.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label>Residence</label>
+            {{ form.residence }}
+            {% if form.residence.errors %}
+              <div class="text-danger small">{{ form.residence.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Apply Mode</label>
+            {{ form.apply_mode }}
+            {% if form.apply_mode.errors %}
+              <div class="text-danger small">{{ form.apply_mode.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-check mt-3">
+            {{ form.is_active }}
+            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+              Active Structure
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group">
+            <label>Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+              <div class="text-danger small">{{ form.notes.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+      <div>
+        <strong>Fee Items</strong>
+        <div class="text-muted small">Add categories and amounts</div>
+      </div>
+
+      <button type="button" class="btn btn-sm btn-primary mt-2 mt-md-0" id="add-fee-item-btn">
+        <i class="fas fa-plus-circle mr-1"></i> Add Another Fee Item
+      </button>
+    </div>
+
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle" id="fee-items-table">
+          <thead class="thead-light">
+            <tr>
+              <th style="min-width:250px;">Fee Category</th>
+              <th style="min-width:160px;">Amount</th>
+              <th>Notes</th>
+              <th style="width:90px;">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in formset %}
+            <tr class="fee-item-row">
+              {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+              <td>
+                {{ row.fee_category }}
+                {% if row.fee_category.errors %}
+                  <div class="text-danger small">{{ row.fee_category.errors }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {{ row.amount }}
+                {% if row.amount.errors %}
+                  <div class="text-danger small">{{ row.amount.errors }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {{ row.notes }}
+                {% if row.notes.errors %}
+                  <div class="text-danger small">{{ row.notes.errors }}</div>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if row.instance.pk %}
+                  {{ row.DELETE }}
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-fee-row">
+                    <i class="fas fa-times"></i>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if formset.non_form_errors %}
+      <div class="alert alert-danger mt-3">
+        {{ formset.non_form_errors }}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card-footer">
+      <button class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save Structure
+      </button>
+      <a href="{% url 'fee_structure_list' %}" class="btn btn-light">Cancel</a>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    const initialTerm = "{{ form.term.value|default:'' }}";
+    const initialStream = "{{ form.stream.value|default:'' }}";
+
+    function loadTerms(yearId, selectedValue = null) {
+      const $term = $('#id_term');
+      $term.empty().append('<option value="">---------</option>');
+
+      if (!yearId) return;
+
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $term.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+        });
+      });
+    }
+
+    function loadStreams(classId, selectedValue = null) {
+      const $stream = $('#id_stream');
+      $stream.empty().append('<option value="">---------</option>');
+
+      if (!classId) return;
+
+      $.getJSON("{% url 'ajax_streams_by_class' %}", { class_id: classId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const label = item.text || item.name;
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $stream.append(`<option value="${item.id}" ${selected}>${label}</option>`);
+        });
+      });
+    }
+
+    $('#id_academic_year').on('change', function () {
+      loadTerms($(this).val());
+    });
+
+    $('#id_class_ref').on('change', function () {
+      loadStreams($(this).val());
+    });
+
+    if ($('#id_academic_year').val()) {
+      loadTerms($('#id_academic_year').val(), initialTerm);
+    }
+
+    if ($('#id_class_ref').val()) {
+      loadStreams($('#id_class_ref').val(), initialStream);
+    }
+
+    let formPrefix = '';
+    const totalFormsInput =
+      $('#id_items-TOTAL_FORMS').length ? $('#id_items-TOTAL_FORMS') :
+      $('#id_feestructureitem_set-TOTAL_FORMS').length ? $('#id_feestructureitem_set-TOTAL_FORMS') :
+      $('#id_form-TOTAL_FORMS');
+
+    if ($('#id_items-TOTAL_FORMS').length) {
+      formPrefix = 'items';
+    } else if ($('#id_feestructureitem_set-TOTAL_FORMS').length) {
+      formPrefix = 'feestructureitem_set';
+    } else {
+      formPrefix = 'form';
+    }
+
+    function getUsedCategoryValues() {
+      const used = [];
+      $('#fee-items-table tbody tr.fee-item-row').each(function () {
+        const $row = $(this);
+        const $deleteCheckbox = $row.find('input[type="checkbox"][name$="-DELETE"]');
+
+        if ($deleteCheckbox.length && $deleteCheckbox.is(':checked')) {
+          return;
+        }
+
+        const val = $row.find('select[name$="-fee_category"]').val();
+        if (val) {
+          used.push(String(val));
+        }
+      });
+      return used;
+    }
+
+    function refreshCategoryOptions() {
+      const used = getUsedCategoryValues();
+
+      $('#fee-items-table tbody tr.fee-item-row').each(function () {
+        const $select = $(this).find('select[name$="-fee_category"]');
+        const currentValue = $select.val();
+
+        $select.find('option').each(function () {
+          const optionValue = $(this).attr('value');
+          if (!optionValue) return;
+
+          if (used.includes(String(optionValue)) && String(optionValue) !== String(currentValue)) {
+            $(this).prop('disabled', true).hide();
+          } else {
+            $(this).prop('disabled', false).show();
+          }
+        });
+      });
+    }
+
+    function buildNewRow(index) {
+      const $lastCategory = $('#fee-items-table tbody tr.fee-item-row:last select[name$="-fee_category"]');
+      const categoryOptions = $lastCategory.length ? $lastCategory.html() : '<option value="">---------</option>';
+
+      return `
+        <tr class="fee-item-row">
+          <td>
+            <select name="${formPrefix}-${index}-fee_category" class="form-control" id="id_${formPrefix}-${index}-fee_category">
+              ${categoryOptions}
+            </select>
+          </td>
+          <td>
+            <input type="number" name="${formPrefix}-${index}-amount" step="0.01" min="0" class="form-control" id="id_${formPrefix}-${index}-amount">
+          </td>
+          <td>
+            <input type="text" name="${formPrefix}-${index}-notes" class="form-control" id="id_${formPrefix}-${index}-notes">
+          </td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-fee-row">
+              <i class="fas fa-times"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+
+    $('#add-fee-item-btn').on('click', function () {
+      const currentCount = parseInt(totalFormsInput.val(), 10);
+      $('#fee-items-table tbody').append(buildNewRow(currentCount));
+      totalFormsInput.val(currentCount + 1);
+      refreshCategoryOptions();
+    });
+
+    $(document).on('change', 'select[name$="-fee_category"]', function () {
+      refreshCategoryOptions();
+    });
+
+    $(document).on('click', '.remove-fee-row', function () {
+      const $rows = $('#fee-items-table tbody tr.fee-item-row');
+      if ($rows.length <= 1) return;
+
+      $(this).closest('tr').remove();
+      refreshCategoryOptions();
+    });
+
+    $(document).on('change', 'input[type="checkbox"][name$="-DELETE"]', function () {
+      refreshCategoryOptions();
+    });
+
+    refreshCategoryOptions();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-file-upload"></i> Upload Marks from Excel</h3>
+    {% if sel %}
+    <small class="text-muted">
+      {{ sel.class_ref.name }}{% if sel.stream %} ({{ sel.stream.name }}){% else %} (all streams){% endif %}
+      • {{ sel.exam_type.name }} • {{ target_label }} • {{ sel.term.name }} {{ sel.academic_year.year }}
+    </small>
+    {% endif %}
+  </div>
+  <a href="{% url 'marks_entry' %}?{{ back_query }}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back to Enter Marks</a>
+</div>
+
+{% if not preview %}
+<div class="card mb-3">
+  <div class="card-body">
+    <ol class="small pl-3">
+      <li>Download the Excel sheet from the Enter Marks page (it already lists your students).</li>
+      <li>Type marks in the yellow column. Use <b>ABS</b> for absent. Leave a box blank to keep the current mark.</li>
+      <li>Upload it here. You will see a preview before anything is saved.</li>
+    </ol>
+    <a class="btn btn-outline-success btn-sm mb-3" href="{% url 'marks_excel_template' %}?{{ back_query }}">
+      <i class="fas fa-file-download mr-1"></i> Download Excel sheet
+    </a>
+    <form method="post" enctype="multipart/form-data" class="form-inline" style="gap:.5rem;">
+      {% csrf_token %}
+      <input type="file" name="file" accept=".xlsx" class="form-control-file" required>
+      <button class="btn btn-primary btn-sm"><i class="fas fa-eye mr-1"></i> Preview</button>
+    </form>
+  </div>
+</div>
+{% else %}
+
+<div class="row mb-3">
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">New marks</div><div class="h4 mb-0 text-success">{{ counts.new }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Changed marks</div><div class="h4 mb-0 text-warning">{{ counts.change }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">No change</div><div class="h4 mb-0">{{ counts.same }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Blank (kept)</div><div class="h4 mb-0">{{ counts.skip }}</div></div></div></div>
+  <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><div class="small text-muted">Problems</div><div class="h4 mb-0 {% if counts.error %}text-danger{% endif %}">{{ counts.error }}</div></div></div></div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap align-items-center" style="gap:.75rem;">
+    {% if token %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm">
+        <input type="hidden" name="token" value="{{ token }}">
+        <button class="btn btn-success"><i class="fas fa-save mr-1"></i> Save {{ counts.new|add:counts.change }} mark(s)</button>
+      </form>
+      {% if counts.error %}<span class="small text-danger">Rows with problems will be skipped. Fix them in Excel and upload again, or correct them on the Enter Marks page.</span>{% endif %}
+    {% else %}
+      <span class="text-muted">There is nothing new to save from this file.</span>
+    {% endif %}
+    <a href="{% url 'marks_import' %}?{{ back_query }}" class="btn btn-light btn-sm ml-auto">Upload a different file</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead class="thead-light">
+          <tr><th>Excel row</th><th>Candidate ID</th><th>Student</th><th>Current</th><th>In file</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          {% for p in preview %}
+          <tr class="{% if p.status == 'error' %}table-danger{% elif p.status == 'change' %}table-warning{% elif p.status == 'new' %}table-success{% endif %}">
+            <td>{{ p.row }}</td>
+            <td>{{ p.candidate_id }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.current|default:"—" }}</td>
+            <td>{{ p.new|default:"—" }}</td>
+            <td class="small">{{ p.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

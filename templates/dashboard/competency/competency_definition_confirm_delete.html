@@ -1,0 +1,39 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-trash"></i> {{ title|default:"Delete Competency" }}
+    </h3>
+    <small class="text-muted">
+      This will delete the competency and all related student rows (remarks/scores).
+    </small>
+  </div>
+  <div>
+    <a href="{% url 'competency_definition_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Cancel
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p class="mb-2"><strong>Academic:</strong> {{ cd.academic_year }} / {{ cd.term }}</p>
+    <p class="mb-2"><strong>Class:</strong> {{ cd.class_ref }}{% if cd.stream %} ({{ cd.stream }}){% endif %}</p>
+    <p class="mb-2"><strong>Subject:</strong> {{ cd.subject }}</p>
+    <p class="mb-3"><strong>Competency:</strong> {{ cd.competency_text }}</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-danger">
+        <i class="fas fa-trash mr-1"></i> Yes, Delete
+      </button>
+      <a href="{% url 'competency_definition_list' %}" class="btn btn-outline-secondary ml-2">
+        No, Keep It
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

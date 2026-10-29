@@ -1,0 +1,506 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  .rr-card {
+    border: 1px solid #e9ecef;
+    border-radius: .9rem;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+  }
+
+  .rr-card .card-body {
+    padding: 1.1rem;
+  }
+
+  .rr-section-title {
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .rr-stat-box {
+    background: #f8f9fa;
+    border: 1px solid #edf0f2;
+    border-radius: .75rem;
+    padding: .85rem;
+    height: 100%;
+  }
+
+  .rr-stat-label {
+    font-size: .78rem;
+    color: #6c757d;
+    margin-bottom: .2rem;
+  }
+
+  .rr-stat-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #212529;
+  }
+
+  .badge-soft-success,
+  .badge-soft-danger,
+  .badge-soft-warning,
+  .badge-soft-primary,
+  .badge-soft-secondary {
+    padding: .38rem .62rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+  }
+
+  .badge-soft-success {
+    background: rgba(40, 167, 69, .13);
+    color: #198754;
+  }
+
+  .badge-soft-danger {
+    background: rgba(220, 53, 69, .13);
+    color: #dc3545;
+  }
+
+  .badge-soft-warning {
+    background: rgba(255, 193, 7, .2);
+    color: #946200;
+  }
+
+  .badge-soft-primary {
+    background: rgba(13, 110, 253, .12);
+    color: #0d6efd;
+  }
+
+  .badge-soft-secondary {
+    background: rgba(108, 117, 125, .13);
+    color: #6c757d;
+  }
+
+  .table td,
+  .table th {
+    vertical-align: middle;
+  }
+</style>
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-file-pdf text-primary"></i> Report Run Progress
+    </h3>
+    <small class="text-muted">
+      {{ run.academic_year }} • {{ run.term }} • {{ run.level_scope }} • {{ run.scope }}
+      {% if run.class_ref %} • {{ run.class_ref }}{% endif %}
+      {% if run.stream %} / {{ run.stream }}{% endif %}
+    </small>
+  </div>
+
+  <div class="d-flex mt-2 mt-md-0 flex-wrap" style="gap:.5rem;">
+    <a href="{% url 'report_command_center' %}?run_id={{ run.id }}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Command Center
+    </a>
+
+    <a href="{% url 'report_run_download_zip' run.id %}" class="btn btn-success btn-sm">
+      <i class="fas fa-file-archive mr-1"></i> Download ZIP
+    </a>
+
+    {% if run.failed_students %}
+      <form method="post" action="{% url 'report_run_retry_failed' run.id %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning btn-sm"
+                onclick="return confirm('Retry failed report cards?');">
+          <i class="fas fa-redo mr-1"></i> Retry Failed
+        </button>
+      </form>
+    {% endif %}
+
+    {% if run.status != "SUCCESS" and run.status != "PARTIAL" and run.status != "FAILED" and run.status != "CANCELLED" %}
+      <form method="post" action="{% url 'report_run_stop' run.id %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm"
+                onclick="return confirm('Stop this report run?');">
+          <i class="fas fa-stop mr-1"></i> Stop
+        </button>
+      </form>
+    {% endif %}
+
+    <form method="post" action="{% url 'report_run_rerun' run.id %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-primary btn-sm"
+              onclick="return confirm('Start a fresh re-run using the same filters?');">
+        <i class="fas fa-sync-alt mr-1"></i> Fresh Re-run
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card rr-card mb-3">
+  <div class="card-body">
+    <div class="rr-section-title">
+      <i class="fas fa-chart-line text-primary"></i>
+      <span>Live Progress</span>
+    </div>
+
+    <div class="mb-2">
+      Status:
+      <span id="statusText" class="badge-soft-primary">{{ run.status }}</span>
+      <span id="messageText" class="text-muted ml-2">{{ run.message }}</span>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-2 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Total</div>
+          <div class="rr-stat-value" id="total">{{ run.total_students }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Done</div>
+          <div class="rr-stat-value" id="done">{{ run.done_students }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Success</div>
+          <div class="rr-stat-value text-success" id="processed">{{ run.processed_students }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Failed</div>
+          <div class="rr-stat-value text-danger" id="failed">{{ run.failed_students }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Skipped</div>
+          <div class="rr-stat-value" id="skipped">{{ run.skipped_students }}</div>
+        </div>
+      </div>
+
+      <div class="col-md-2 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">ETA</div>
+          <div class="rr-stat-value" id="eta">{{ run.eta_human }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-1 flex-wrap">
+      <small class="text-muted">
+        Avg/student: <b id="avg">{{ run.avg_seconds_per_student|floatformat:2 }}</b>s
+      </small>
+      <small class="text-muted">
+        Progress: <b id="percentText">{{ run.percent }}</b>%
+      </small>
+    </div>
+
+    <div class="progress" style="height:20px;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated"
+           id="bar"
+           style="width: {{ run.percent }}%;">
+        {{ run.percent }}%
+      </div>
+    </div>
+
+    <div id="errBox" class="alert alert-danger mt-3" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="card rr-card mb-3">
+  <div class="card-body">
+    <div class="rr-section-title">
+      <i class="fas fa-users text-warning"></i>
+      <span>Student Processing Items</span>
+    </div>
+
+    <div class="table-responsive">
+      <table id="itemsTable" class="table table-sm table-bordered table-hover w-100">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Level</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Status</th>
+            <th>Attempts</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>{{ item.student }}</td>
+              <td>{{ item.level_code|default:"-" }}</td>
+              <td>{{ item.class_name|default:"-" }}</td>
+              <td>{{ item.stream_name|default:"-" }}</td>
+              <td>
+                {% if item.status == "SUCCESS" %}
+                  <span class="badge-soft-success">{{ item.status }}</span>
+                {% elif item.status == "FAILED" %}
+                  <span class="badge-soft-danger">{{ item.status }}</span>
+                {% elif item.status == "SKIPPED" %}
+                  <span class="badge-soft-secondary">{{ item.status }}</span>
+                {% elif item.status == "RUNNING" %}
+                  <span class="badge-soft-warning">{{ item.status }}</span>
+                {% else %}
+                  <span class="badge-soft-primary">{{ item.status }}</span>
+                {% endif %}
+              </td>
+              <td>{{ item.attempts }}</td>
+              <td>
+                {% if item.error_message %}
+                  <small class="text-danger">{{ item.error_message|truncatechars:150 }}</small>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Items will appear after the queue starts.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card rr-card">
+  <div class="card-body">
+    <div class="rr-section-title">
+      <i class="fas fa-folder-open text-success"></i>
+      <span>Generated PDFs</span>
+    </div>
+
+    <div class="table-responsive">
+      <table id="snapshotsTable" class="table table-sm table-hover table-bordered w-100">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>PDF</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for s in snapshots %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ s.student }}</td>
+              <td>{{ s.class_ref.name|default:"-" }}</td>
+              <td>{{ s.stream.name|default:"-" }}</td>
+              <td>
+                {% if s.pdf %}
+                  <div class="d-flex flex-wrap" style="gap:.35rem;">
+                    <a class="btn btn-sm btn-outline-info"
+                      href="{% url 'view_report_pdf_admin' s.id %}"
+                      target="_blank">
+                      <i class="fas fa-eye mr-1"></i> View
+                    </a>
+
+                    <a class="btn btn-sm btn-outline-primary"
+                      href="{% url 'download_report_pdf_admin' s.id %}">
+                      <i class="fas fa-download mr-1"></i> Download
+                    </a>
+                  </div>
+                {% else %}
+                  <span class="badge-soft-warning">Pending</span>
+                {% endif %}
+              </td>
+              <td>{{ s.created_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">No PDFs generated yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const progressUrl = "{% url 'report_run_progress' run.id %}";
+  const itemsUrl = "{% url 'report_run_items_json' run.id %}";
+
+  function statusBadgeClass(status) {
+    if (status === "SUCCESS") return "badge-soft-success";
+    if (status === "PARTIAL") return "badge-soft-warning";
+    if (status === "FAILED" || status === "CANCELLED") return "badge-soft-danger";
+    if (status === "RUNNING") return "badge-soft-warning";
+    return "badge-soft-primary";
+  }
+
+  function itemBadgeHtml(status) {
+    let cls = "badge-soft-primary";
+
+    if (status === "SUCCESS") cls = "badge-soft-success";
+    else if (status === "FAILED") cls = "badge-soft-danger";
+    else if (status === "SKIPPED") cls = "badge-soft-secondary";
+    else if (status === "RUNNING") cls = "badge-soft-warning";
+
+    return `<span class="${cls}">${status || "-"}</span>`;
+  }
+
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function refreshItems() {
+    fetch(itemsUrl + "?_=" + Date.now(), {
+      cache: "no-store",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const table = document.getElementById("itemsTable");
+        if (!table) return;
+
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+
+        const rows = data.results || [];
+
+        if (!rows.length) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="text-center text-muted">
+                Items will appear after the queue starts.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = rows.map(item => `
+          <tr>
+            <td>${escapeHtml(item.student)}</td>
+            <td>${escapeHtml(item.level_code || "-")}</td>
+            <td>${escapeHtml(item.class_name || "-")}</td>
+            <td>${escapeHtml(item.stream_name || "-")}</td>
+            <td>${itemBadgeHtml(item.status)}</td>
+            <td>${escapeHtml(item.attempts || 0)}</td>
+            <td>
+              ${
+                item.error
+                ? `<small class="text-danger">${escapeHtml(item.error)}</small>`
+                : `<span class="text-muted">-</span>`
+              }
+            </td>
+          </tr>
+        `).join("");
+      })
+      .catch(() => {});
+  }
+
+  function poll() {
+    fetch(progressUrl + "?_=" + Date.now(), {
+      cache: "no-store",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+      .then(res => res.json())
+      .then(d => {
+        const statusText = document.getElementById("statusText");
+        statusText.innerText = d.status || "-";
+        statusText.className = statusBadgeClass(d.status || "");
+
+        document.getElementById("messageText").innerText = d.message || "";
+        document.getElementById("processed").innerText = d.processed || 0;
+        document.getElementById("failed").innerText = d.failed || 0;
+        document.getElementById("skipped").innerText = d.skipped || 0;
+        document.getElementById("done").innerText = d.done || 0;
+        document.getElementById("total").innerText = d.total || 0;
+        document.getElementById("avg").innerText = ((d.avg_seconds_per_student || 0)).toFixed(2);
+        document.getElementById("eta").innerText = d.eta_human || "N/A";
+
+        const pct = d.percent || 0;
+        const bar = document.getElementById("bar");
+        bar.style.width = pct + "%";
+        bar.innerText = pct + "%";
+        document.getElementById("percentText").innerText = pct;
+
+        const errBox = document.getElementById("errBox");
+        if (d.error) {
+          errBox.style.display = "";
+          errBox.innerText = d.error;
+        } else {
+          errBox.style.display = "none";
+        }
+
+        refreshItems();
+
+        if (!["SUCCESS", "PARTIAL", "FAILED", "CANCELLED"].includes(d.status)) {
+          setTimeout(poll, 2500);
+        } else {
+          const bar = document.getElementById("bar");
+          if (bar) {
+            bar.classList.remove("progress-bar-animated");
+          }
+
+          refreshItems();
+        }
+      })
+      .catch(() => {
+        setTimeout(poll, 4000);
+      });
+  }
+
+  poll();
+
+  function initDataTable(selector, orderIndex = 0, orderDir = "asc", pageLength = 25) {
+    if (typeof $ === "undefined" || !$.fn.DataTable) return;
+
+    const $table = $(selector);
+    if (!$table.length) return;
+
+    const hasRealRows = $table.find("tbody tr").length > 0 &&
+      $table.find("tbody tr td[colspan]").length === 0;
+
+    if (!hasRealRows) return;
+
+    if ($.fn.DataTable.isDataTable(selector)) {
+      return;
+    }
+
+    $table.DataTable({
+      pageLength: pageLength,
+      lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+      order: [[orderIndex, orderDir]],
+      responsive: true,
+      autoWidth: false
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initDataTable("#snapshotsTable", 5, "desc", 25);
+  });
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-history text-primary"></i> Student Imports</h3>
+    <small class="text-muted">Every file uploaded for this school and what happened to it.</small>
+  </div>
+  <a href="{% url 'student_bulk_upload' %}" class="btn btn-success btn-sm"><i class="fas fa-file-import mr-1"></i> New import</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm">
+        <thead class="thead-light">
+          <tr><th>Import</th><th>Uploaded</th><th>By</th><th>Status</th><th class="text-right">Rows</th><th class="text-right">Imported</th><th class="text-right">Failed</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for b in batches %}
+          <tr>
+            <td>{{ b.title|default:b }}{% if b.current_class %}<div class="small text-muted">{{ b.current_class.name }}</div>{% endif %}</td>
+            <td class="text-nowrap">{{ b.uploaded_at|date:"d M Y H:i" }}</td>
+            <td>{{ b.created_by.get_full_name|default:b.created_by.username|default:"-" }}</td>
+            <td><span class="badge {% if b.status == 'IMPORTED' %}badge-success{% elif b.status == 'FAILED' %}badge-danger{% elif b.is_busy %}badge-info{% else %}badge-secondary{% endif %}">{{ b.get_status_display }}</span></td>
+            <td class="text-right">{{ b.total_rows }}</td>
+            <td class="text-right">{{ b.imported_rows }}</td>
+            <td class="text-right">{{ b.failed_rows }}</td>
+            <td class="text-right">
+              {% if b.status == "MAPPING" %}
+                <a href="{% url 'student_bulk_mapping' b.id %}" class="btn btn-sm btn-outline-primary">Match columns</a>
+              {% else %}
+                <a href="{% url 'student_bulk_review' b.id %}" class="btn btn-sm btn-outline-primary">Open</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">No imports yet. <a href="{% url 'student_bulk_upload' %}">Import your first file</a>.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.has_other_pages %}
+    <ul class="pagination pagination-sm mb-0">
+      {% if page.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">Previous</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+      {% if page.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">Next</a></li>{% endif %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

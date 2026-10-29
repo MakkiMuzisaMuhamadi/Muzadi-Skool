@@ -1,0 +1,118 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load role_tags %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-list"></i> My Online Exams</h3>
+    <small class="text-muted">Create, edit and build questions. Only your allocated subjects/classes are shown.</small>
+  </div>
+  <div>
+    <a href="{% url 'teacher_exam_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> New Exam
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Opens</th>
+            <th>Closes</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for e in exams %}
+          <tr>
+            <td>
+              <a href="{% url 'teacher_exam_builder' e.pk %}" class="font-weight-bold text-primary">
+                {{ e.title }}
+              </a>
+              <div class="small text-muted mt-1">
+                Click title to {% if e.results_released %}view{% else %}open builder{% endif %}
+              </div>
+            </td>
+
+            <td>
+              {{ e.class_ref }}
+              {% if e.stream %}
+                <div class="small text-muted">{{ e.stream.name }}</div>
+              {% endif %}
+            </td>
+
+            <td>
+              {{ e.subject.name }}
+              {% if e.paper %}
+                <div class="small text-muted">{{ e.paper.paper_name }}</div>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if e.status == "PUBLISHED" %}
+                <span class="badge badge-success">Published</span>
+              {% elif e.status == "DRAFT" %}
+                <span class="badge badge-secondary">Draft</span>
+              {% else %}
+                <span class="badge badge-warning">{{ e.status }}</span>
+              {% endif %}
+
+              {% if e.results_released %}
+                <span class="badge badge-info ml-1">Results Released</span>
+              {% endif %}
+            </td>
+
+            <td>{{ e.opens_at|default:"—" }}</td>
+            <td>{{ e.closes_at|default:"—" }}</td>
+
+            <td class="text-right">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_exam_builder' e.pk %}">
+                <i class="fas fa-eye mr-1"></i>
+                {% if e.results_released %}View Exam{% else %}Builder{% endif %}
+              </a>
+
+              {% if not e.results_released %}
+                <a class="btn btn-outline-info btn-sm" href="{% url 'teacher_exam_update' e.pk %}">
+                  <i class="fas fa-edit mr-1"></i> Edit
+                </a>
+
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_exam_progress' e.id %}">
+                  <i class="fas fa-chart-line mr-1"></i> Progress
+                </a>
+
+                <a class="btn btn-outline-success btn-sm" href="{% url 'teacher_release_exam_results' e.id %}">
+                  <i class="fas fa-bullhorn mr-1"></i> Release Results
+                </a>
+
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                  <a class="btn btn-outline-danger btn-sm" href="{% url 'teacher_exam_delete' e.pk %}">
+                    <i class="fas fa-trash mr-1"></i> Delete
+                  </a>
+                {% endif %}
+              {% else %}
+              <a class="btn btn-outline-info btn-sm" href="{% url 'teacher_exam_results' e.id %}">
+                <i class="fas fa-poll mr-1"></i> View Results
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">No exams yet.</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

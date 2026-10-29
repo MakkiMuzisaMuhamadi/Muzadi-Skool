@@ -1,0 +1,772 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary">
+                <h4 class="card-title mb-0 text-white">
+                    <i class="fas fa-file-pdf mr-2"></i>PDF Gradesheet Generation Dashboard
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Inline Progress Section (No Modal) -->
+                <div id="progressSection" class="mb-4" style="display: none;">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-sync-alt fa-spin mr-2"></i>
+                                <span id="progressTitle">Generating PDFs...</span>
+                                <button type="button" class="close text-white float-right" onclick="hideProgress()">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="singleSchoolInfo" class="mb-3 p-3 bg-light rounded" style="display: none;">
+                                <h6><i class="fas fa-school mr-2"></i>School Information</h6>
+                                <div><strong>School:</strong> <span id="currentSchoolName">-</span></div>
+                                <div><strong>Type:</strong> <span id="generationType">Single School</span></div>
+                            </div>
+                            
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <span id="progressText">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Status:</strong> <span id="taskStatus" class="badge badge-info">Starting...</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Progress:</strong> <span id="progressCount">0/0</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Task ID:</strong> <span id="taskId" class="text-muted">-</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Current Activity:</strong> <span id="currentActivity" class="text-muted">-</span>
+                            </div>
+                            
+                            <!-- Real-time Debug Logs -->
+                            <div class="mt-3">
+                                <h6><i class="fas fa-terminal mr-2"></i>Generation Logs</h6>
+                                <div id="debugLogs" class="border rounded p-2 bg-dark text-light" style="max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;">
+                                    <div class="text-muted">Waiting for task to start...</div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="mt-3 text-right">
+                                <button type="button" class="btn btn-info btn-sm" id="closeProgress" style="display: none;" onclick="hideProgress()">Close</button>
+                                <button type="button" class="btn btn-warning btn-sm" id="cancelTask" style="display: none;">Cancel Task</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-info">
+                            <div class="card-body text-center">
+                                <h3>{{ total_schools }}</h3>
+                                <p class="mb-0">Total Schools</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <h3>{{ schools_with_pdf }}</h3>
+                                <p class="mb-0">PDFs Generated</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <h3>{{ schools_needing_update }}</h3>
+                                <p class="mb-0">Need Update</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h3>{{ completion_percentage }}%</h3>
+                                <p class="mb-0">Completion</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <!-- <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button onclick="startBulkGeneration('{% url 'generate_gradesheet_bulk' %}?level=UCE&priority=0', 'All Schools')" 
+                                    class="btn btn-success">
+                                <i class="fas fa-sync-alt mr-1"></i> Generate All PDFs
+                            </button>
+                            <button onclick="startBulkGeneration('{% url 'generate_gradesheet_bulk' %}?level=UCE&priority=5', 'High Priority Schools')" 
+                                    class="btn btn-warning">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Generate High Priority Only
+                            </button>
+                            <form method="POST" action="{% url 'clear_regeneration_flags' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-info" 
+                                        onclick="return confirm('Clear all regeneration flags?')">
+                                    <i class="fas fa-broom mr-1"></i> Clear Flags
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div> -->
+
+                <!-- Schools Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>School Name</th>
+                                <th>Candidates</th>
+                                <th>PDF Status</th>
+                                <th>Last Generated</th>
+                                <th>Marks Updated</th>
+                                <th>Priority</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for school in schools %}
+                            <tr>
+                                <td>{{ school.name }}</td>
+                                <td>{{ school.candidate_count }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if not school.gradesheet_pdf %}badge-danger
+                                        {% elif school.needs_regeneration %}badge-warning
+                                        {% else %}badge-success{% endif %}">
+                                        {% if not school.gradesheet_pdf %}Not Generated
+                                        {% elif school.needs_regeneration %}Needs Update
+                                        {% else %}Ready{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if school.gradesheet_generated_at %}
+                                        {{ school.gradesheet_generated_at|timesince }} ago
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if school.marks_last_updated %}
+                                        {{ school.marks_last_updated|timesince }} ago
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if school.regeneration_priority > 0 %}
+                                        <span class="badge badge-warning">{{ school.regeneration_priority }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button onclick="startSingleGeneration('{% url 'generate_gradesheet_manual' school.id %}', '{{ school.name|escapejs }}')" 
+                                                class="btn btn-outline-success" 
+                                                title="Generate PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </button>
+ 
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No schools found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTaskId = null;
+let progressInterval = null;
+let currentTaskType = null;
+
+function showProgress() {
+    $('#progressSection').show();
+    // Scroll to progress section
+    $('html, body').animate({
+        scrollTop: $('#progressSection').offset().top - 20
+    }, 500);
+}
+
+function hideProgress() {
+    $('#progressSection').hide();
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+function startSingleGeneration(url, schoolName) {
+    console.log('Starting single generation for:', schoolName, 'URL:', url);
+    
+    // Show inline progress section
+    showProgress();
+    
+    // Update progress for single school
+    $('#progressTitle').text(`Generating PDF for ${schoolName}`);
+    $('#singleSchoolInfo').show();
+    $('#currentSchoolName').text(schoolName);
+    $('#generationType').text('Single School');
+    
+    // Reset progress
+    updateProgress(0, 0, 1, `Starting PDF generation for ${schoolName}...`, 'PENDING');
+    addDebugLog(`🚀 Starting PDF generation for: ${schoolName}`, 'info');
+    
+    // Make AJAX call to start the task
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        // First check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Try to parse as JSON
+        return response.json().then(data => {
+            if (data.status === 'success') {
+                addDebugLog('✅ Task started successfully', 'success');
+                addDebugLog(`Task ID: ${data.task_id}`, 'info');
+                
+                // Store task ID and start checking progress
+                currentTaskId = data.task_id;
+                currentTaskType = 'single';
+                $('#taskId').text(data.task_id);
+                checkProgress();
+            } else {
+                throw new Error(data.message || 'Failed to start task');
+            }
+        }).catch(jsonError => {
+            // If JSON parsing fails, it might be an HTML response
+            throw new Error('Server returned an invalid response. Please check the server logs.');
+        });
+    })
+    .catch(error => {
+        console.error('Error starting task:', error);
+        addDebugLog(`❌ Failed to start task: ${error.message}`, 'error');
+        $('#taskStatus').removeClass('badge-info').addClass('badge-danger').text('FAILED');
+        $('#closeProgress').show();
+    });
+}
+
+function startBulkGeneration(url, description) {
+    console.log('Starting bulk generation:', description, 'URL:', url);
+    
+    // Show inline progress section
+    showProgress();
+    
+    // Update progress for bulk generation
+    $('#progressTitle').text(`Bulk PDF Generation - ${description}`);
+    $('#singleSchoolInfo').hide();
+    $('#generationType').text('Bulk Generation');
+    
+    // Reset progress
+    updateProgress(0, 0, 0, `Starting bulk PDF generation...`, 'PENDING');
+    addDebugLog(`🚀 Starting bulk PDF generation: ${description}`, 'info');
+    
+    // Make AJAX call to start the task
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        // First check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Try to parse as JSON
+        return response.json().then(data => {
+            if (data.status === 'success') {
+                addDebugLog('✅ Bulk task started successfully', 'success');
+                addDebugLog(`Task ID: ${data.task_id}`, 'info');
+                
+                // Store task ID and start checking progress
+                currentTaskId = data.task_id;
+                currentTaskType = 'bulk';
+                $('#taskId').text(data.task_id);
+                checkProgress();
+            } else {
+                throw new Error(data.message || 'Failed to start bulk task');
+            }
+        }).catch(jsonError => {
+            // If JSON parsing fails, it might be an HTML response
+            throw new Error('Server returned an invalid response. Please check the server logs.');
+        });
+    })
+    .catch(error => {
+        console.error('Error starting bulk task:', error);
+        addDebugLog(`❌ Failed to start bulk task: ${error.message}`, 'error');
+        $('#taskStatus').removeClass('badge-info').addClass('badge-danger').text('FAILED');
+        $('#closeProgress').show();
+    });
+}
+
+function checkProgress() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+    
+    progressInterval = setInterval(() => {
+        if (!currentTaskId) {
+            addDebugLog('⏳ Waiting for task to start...', 'info');
+            return;
+        }
+        
+        console.log('Checking progress for task:', currentTaskId);
+        
+        fetch(`/pdf-generation/task-status/${currentTaskId}/`)
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Full response data:', data);
+                
+                // Check if we have valid data
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response data');
+                }
+                
+                // FIX: Handle both data structures
+                // If progress data is in 'result' object, use that
+                // Otherwise use the root level data
+                let progressData = data;
+                if (data.result && typeof data.result === 'object') {
+                    console.log('Using data from result object');
+                    progressData = data.result;
+                    // Also include root level fields for backward compatibility
+                    progressData.state = progressData.state || data.state || data.status;
+                    progressData.task_id = data.task_id;
+                }
+                
+                // Handle both 'state' and 'status' fields
+                const state = progressData.state || progressData.status || 'PENDING';
+                const progress = parseInt(progressData.progress) || 0;
+                const current = parseInt(progressData.current) || 0;
+                const total = parseInt(progressData.total) || 1;
+                const currentSchool = progressData.current_school || '';
+                const taskType = progressData.type || currentTaskType || 'unknown';
+                
+                console.log(`Parsed: state=${state}, progress=${progress}, current=${current}, total=${total}, type=${taskType}`);
+                
+                // Update task type from server response
+                if (taskType !== 'unknown') {
+                    currentTaskType = taskType;
+                }
+                
+                // Update progress display
+                updateProgress(progress, current, total, currentSchool, state);
+                
+                // Handle different task states
+                handleTaskState(progressData, state, progress);
+                
+                // Check if task is completed
+                if (state === 'SUCCESS' || state === 'FAILURE') {
+                    handleTaskCompletion(progressData, state);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking progress:', error);
+                addDebugLog(`❌ Error checking task progress: ${error.message}`, 'error');
+            });
+    }, 2000);
+}
+function handleProgressUpdates(data, progress) {
+    const currentSchool = data.current_school || '';
+    
+    if (currentTaskType === 'single') {
+        // For single tasks, log progress with percentage
+        if (currentSchool && currentSchool.trim() !== '') {
+            if (currentSchool.includes('Initializing PDF generation')) {
+                addDebugLog(`🚀 ${currentSchool} (${progress}%)`, 'info');
+            } else if (currentSchool.includes('Preparing school data')) {
+                addDebugLog(`📋 ${currentSchool} (${progress}%)`, 'info');
+            } else if (currentSchool.includes('Setting up PDF document')) {
+                addDebugLog(`📄 ${currentSchool} (${progress}%)`, 'info');
+            } else if (currentSchool.includes('Starting PDF content generation')) {
+                addDebugLog(`🔄 ${currentSchool} (${progress}%)`, 'info');
+            } else if (currentSchool.includes('PDF content generated')) {
+                addDebugLog(`✅ ${currentSchool} (${progress}%)`, 'success');
+            } else if (currentSchool.includes('PDF file saved')) {
+                addDebugLog(`💾 ${currentSchool} (${progress}%)`, 'info');
+            } else if (currentSchool.includes('Finalizing database updates')) {
+                addDebugLog(`⚙️ ${currentSchool} (${progress}%)`, 'info');
+            } else if (currentSchool.includes('Completed:')) {
+                addDebugLog(`🎉 ${currentSchool} (${progress}%)`, 'success');
+            } else {
+                addDebugLog(`🔄 ${currentSchool} (${progress}%)`, 'info');
+            }
+        } else if (progress > 0) {
+            addDebugLog(`📈 Progress: ${progress}%`, 'info');
+        }
+    } else {
+        // For bulk tasks
+        const current = data.current || 0;
+        const total = data.total || 0;
+        if (currentSchool.includes('Starting bulk generation')) {
+            addDebugLog(`🚀 ${currentSchool}`, 'info');
+        } else if (currentSchool.includes('Bulk generation completed')) {
+            addDebugLog(`✅ ${currentSchool}`, 'success');
+        } else if (currentSchool && currentSchool.trim() !== '') {
+            addDebugLog(`📊 Processing: ${currentSchool} (${current}/${total})`, 'info');
+        } else if (progress > 0) {
+            addDebugLog(`📈 Overall progress: ${progress}%`, 'info');
+        }
+    }
+}
+
+function handleTaskState(data, state, progress) {
+    console.log('Handling task state:', state, 'Progress:', progress, 'Data:', data);
+    
+    switch(state) {
+        case 'PENDING':
+            if (!data.current_school || data.current_school.trim() === '') {
+                addDebugLog('⏳ Task is queued and waiting to start...', 'info');
+            } else {
+                addDebugLog(`⏳ ${data.current_school}`, 'info');
+            }
+            break;
+            
+        case 'STARTED':
+            addDebugLog('🚀 Task has started and is being processed...', 'info');
+            break;
+            
+        case 'PROGRESS':
+            handleProgressUpdates(data, progress);
+            break;
+            
+        case 'SUCCESS':
+            // Handled in completion
+            break;
+            
+        case 'FAILURE':
+            const errorMsg = data.error || data.current_school || 'Unknown error occurred';
+            addDebugLog(`💥 Task failed: ${errorMsg}`, 'error');
+            break;
+            
+        default:
+            addDebugLog(`ℹ️ Task state: ${state}`, 'info');
+    }
+}
+function handleTaskCompletion(data, state) {
+    console.log('Task completion:', state, data);
+    clearInterval(progressInterval);
+    
+    if (state === 'SUCCESS') {
+        $('#taskStatus').removeClass('badge-info badge-secondary badge-primary badge-warning badge-danger').addClass('badge-success');
+        $('#taskStatus').text('COMPLETED');
+        
+        if (currentTaskType === 'single') {
+            addDebugLog('🎉 Single school PDF generation completed successfully!', 'success');
+            if (data.school_name) {
+                addDebugLog(`✅ Generated PDF for: ${data.school_name}`, 'success');
+            }
+        } else if (currentTaskType === 'bulk') {
+            addDebugLog('🎉 Bulk PDF generation completed successfully!', 'success');
+            addDebugLog(`✅ Successfully processed ${data.success_count || 0} schools`, 'success');
+            if (data.failed_count > 0) {
+                addDebugLog(`⚠️ ${data.failed_count} schools failed to process`, 'warning');
+            }
+        }
+        
+        updateProgress(100, data.current || 1, data.total || 1, 'Task completed successfully', 'SUCCESS');
+        
+    } else {
+        $('#taskStatus').removeClass('badge-info badge-secondary badge-primary badge-warning badge-success').addClass('badge-danger');
+        $('#taskStatus').text('FAILED');
+        addDebugLog('💥 PDF generation failed!', 'error');
+        
+        if (data.error) {
+            addDebugLog(`❌ Error: ${data.error}`, 'error');
+        }
+    }
+    
+    $('#closeProgress').show();
+    $('#cancelTask').hide();
+    
+    // Auto-refresh page after 3 seconds
+    addDebugLog('🔄 Page will refresh in 3 seconds...', 'info');
+    setTimeout(() => {
+        window.location.reload();
+    }, 3000);
+}
+
+
+
+function updateProgress(progress, current, total, currentActivity, state) {
+    console.log(`updateProgress called: progress=${progress}, state=${state}, activity=${currentActivity}`);
+    
+    // Ensure progress is between 0-100
+    progress = Math.max(0, Math.min(100, progress));
+    
+    // Update progress bar
+    const progressBar = $('#progressBar');
+    const progressText = $('#progressText');
+    
+    progressBar.css('width', `${progress}%`);
+    progressBar.attr('aria-valuenow', progress);
+    progressText.text(`${progress}%`);
+    
+    // Update progress count based on task type and state
+    if (currentTaskType === 'single') {
+        if (state === 'PROGRESS' && progress > 0) {
+            $('#progressCount').text(`${progress}%`);
+        } else {
+            $('#progressCount').text(getStateDescription(state));
+        }
+    } else {
+        // For bulk tasks, show school count
+        if (total > 0 && state === 'PROGRESS') {
+            $('#progressCount').text(`${current}/${total} schools`);
+        } else {
+            $('#progressCount').text(getStateDescription(state));
+        }
+    }
+    
+    // Update current activity - show state if no activity provided
+    if (currentActivity && currentActivity.trim() !== '') {
+        $('#currentActivity').text(currentActivity);
+    } else {
+        $('#currentActivity').text(getStateDescription(state));
+    }
+    
+    // Update status with proper styling
+    const statusElement = $('#taskStatus');
+    statusElement.text(state);
+    
+    // Update status color based on state
+    updateStatusColor(state, statusElement);
+}
+
+function getStateDescription(state) {
+    const stateDescriptions = {
+        'PENDING': 'Task is queued and waiting to start...',
+        'STARTED': 'Task has started...',
+        'PROGRESS': 'Task is in progress...',
+        'SUCCESS': 'Task completed successfully!',
+        'FAILURE': 'Task failed',
+        'REVOKED': 'Task was cancelled',
+        'RETRY': 'Task is being retried...'
+    };
+    return stateDescriptions[state] || `Status: ${state}`;
+}
+
+function updateStatusColor(state, statusElement) {
+    const statusClasses = {
+        'PENDING': 'badge-secondary',
+        'STARTED': 'badge-info',
+        'PROGRESS': 'badge-primary',
+        'SUCCESS': 'badge-success',
+        'FAILURE': 'badge-danger',
+        'REVOKED': 'badge-warning',
+        'RETRY': 'badge-warning'
+    };
+    
+    // Remove all existing classes
+    statusElement.removeClass('badge-secondary badge-info badge-primary badge-success badge-danger badge-warning');
+    
+    // Add the appropriate class
+    const statusClass = statusClasses[state] || 'badge-secondary';
+    statusElement.addClass(statusClass);
+}
+// Update the start functions to set initial task type
+function startSingleGeneration(url, schoolName) {
+    console.log('Starting single generation for:', schoolName, 'URL:', url);
+    
+    // Set task type
+    currentTaskType = 'single';
+    
+    // Show inline progress section
+    showProgress();
+    
+    // Update progress for single school
+    $('#progressTitle').text(`Generating PDF for ${schoolName}`);
+    $('#singleSchoolInfo').show();
+    $('#currentSchoolName').text(schoolName);
+    $('#generationType').text('Single School');
+    
+    // Reset progress
+    updateProgress(0, 0, 1, `Starting PDF generation for ${schoolName}...`, 'PENDING');
+    addDebugLog(`🚀 Starting PDF generation for: ${schoolName}`, 'info');
+    
+    // Make AJAX call to start the task
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            addDebugLog('✅ Task started successfully', 'success');
+            addDebugLog(`Task ID: ${data.task_id}`, 'info');
+            
+            // Store task ID and start checking progress
+            currentTaskId = data.task_id;
+            $('#taskId').text(data.task_id);
+            checkProgress();
+        } else {
+            throw new Error(data.message || 'Failed to start task');
+        }
+    })
+    .catch(error => {
+        console.error('Error starting task:', error);
+        addDebugLog(`❌ Failed to start task: ${error.message}`, 'error');
+        $('#taskStatus').removeClass('badge-info').addClass('badge-danger').text('FAILED');
+        $('#closeProgress').show();
+    });
+}
+
+function startBulkGeneration(url, description) {
+    console.log('Starting bulk generation:', description, 'URL:', url);
+    
+    // Set task type
+    currentTaskType = 'bulk';
+    
+    // Show inline progress section
+    showProgress();
+    
+    // Update progress for bulk generation
+    $('#progressTitle').text(`Bulk PDF Generation - ${description}`);
+    $('#singleSchoolInfo').hide();
+    $('#generationType').text('Bulk Generation');
+    
+    // Reset progress
+    updateProgress(0, 0, 0, `Starting bulk PDF generation...`, 'PENDING');
+    addDebugLog(`🚀 Starting bulk PDF generation: ${description}`, 'info');
+    
+    // Make AJAX call to start the task
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            addDebugLog('✅ Bulk task started successfully', 'success');
+            addDebugLog(`Task ID: ${data.task_id}`, 'info');
+            
+            // Store task ID and start checking progress
+            currentTaskId = data.task_id;
+            $('#taskId').text(data.task_id);
+            checkProgress();
+        } else {
+            throw new Error(data.message || 'Failed to start bulk task');
+        }
+    })
+    .catch(error => {
+        console.error('Error starting bulk task:', error);
+        addDebugLog(`❌ Failed to start bulk task: ${error.message}`, 'error');
+        $('#taskStatus').removeClass('badge-info').addClass('badge-danger').text('FAILED');
+        $('#closeProgress').show();
+    });
+}
+
+function addDebugLog(message, type = 'info') {
+    const logsContainer = $('#debugLogs');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Color coding based on message type
+    let icon = '📝';
+    let colorClass = 'text-light';
+    
+    if (type === 'success') {
+        icon = '✅';
+        colorClass = 'text-success';
+    } else if (type === 'error') {
+        icon = '❌';
+        colorClass = 'text-danger';
+    } else if (type === 'warning') {
+        icon = '⚠️';
+        colorClass = 'text-warning';
+    } else if (type === 'info') {
+        icon = 'ℹ️';
+        colorClass = 'text-info';
+    }
+    
+    const logEntry = $(`<div class="${colorClass}"><span class="text-muted">[${timestamp}]</span> ${icon} ${message}</div>`);
+    logsContainer.append(logEntry);
+    
+    // Auto-scroll to bottom
+    logsContainer.scrollTop(logsContainer[0].scrollHeight);
+}
+
+// Auto-start progress if there's an active task
+$(document).ready(function() {
+    {% for task in active_tasks %}
+        currentTaskId = '{{ task.id }}';
+        currentTaskType = '{{ task.type }}';
+        
+        // Show progress section
+        showProgress();
+        
+        // Configure progress based on task type
+        if ('{{ task.type }}' === 'single') {
+            $('#progressTitle').text(`Generating PDF for {{ task.school_name }}`);
+            $('#singleSchoolInfo').show();
+            $('#currentSchoolName').text('{{ task.school_name }}');
+            $('#generationType').text('Single School');
+            addDebugLog('🔄 Resuming single school PDF generation...', 'info');
+        } else {
+            $('#progressTitle').text('Bulk PDF Generation');
+            $('#singleSchoolInfo').hide();
+            $('#generationType').text('Bulk Generation');
+            addDebugLog('🔄 Resuming bulk PDF generation...', 'info');
+        }
+        
+        $('#taskId').text('{{ task.id }}');
+        checkProgress();
+    {% endfor %}
+});
+</script>
+{% endblock %}

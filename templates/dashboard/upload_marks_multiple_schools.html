@@ -1,0 +1,453 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-upload"></i> Upload Marks for Multiple Schools</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form id="uploadForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="zip_file"><strong>Select Archive File:</strong></label>
+                    <input type="file" name="zip_file" class="form-control-file" required accept=".zip,.rar,.7z" />
+                    <small class="form-text text-muted">
+                        ZIP or RAR file containing Excel files. Each Excel file = one school.
+                    </small>
+                </div>
+                <button type="submit" class="btn btn-outline-success btn-lg">
+                    <i class="fas fa-upload"></i> Start Upload
+                </button>
+                <button type="button" id="cancelAll" class="btn btn-danger btn-lg d-none">
+                    <i class="fas fa-stop"></i> Cancel All
+                </button>
+            </form>
+            
+            <div id="schoolProgress" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Instructions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-file-archive"></i> Archive File Structure</h6>
+                    <ul>
+                        <li>One ZIP or RAR file containing multiple Excel files</li>
+                        <li>Supported formats: <code>.zip</code>, <code>.rar</code></li>
+                        <li>Each Excel filename becomes the school name</li>
+                        <li>Example: <code>KIBULI_SECONDARY_SCHOOL.xlsx</code></li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-file-excel"></i> Excel File Format</h6>
+                    <ul>
+                        <li>One sheet per subject</li>
+                        <li>Sheet name = Subject name</li>
+                        <li>Columns: Student Name, Paper1, Paper2, etc.</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Supported Formats Section -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6><i class="fas fa-check-circle"></i> Supported File Formats</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-archive fa-2x text-primary mb-2"></i>
+                                    <h6>ZIP Files</h6>
+                                    <small class="text-muted">.zip extension</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-archive fa-2x text-danger mb-2"></i>
+                                    <h6>RAR Files</h6>
+                                    <small class="text-muted">.rar extension</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-excel fa-2x text-success mb-2"></i>
+                                    <h6>Excel Files</h6>
+                                    <small class="text-muted">.xlsx, .xls</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+let taskId = null;
+let sessionKey = null;
+let progressInterval = null;
+let isProcessing = false;
+let startTime = null;
+let processedSchools = new Set();
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Format time
+function formatTime(seconds) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+        return `${hrs}h ${mins}m ${secs}s`;
+    } else if (mins > 0) {
+        return `${mins}m ${secs}s`;
+    } else {
+        return `${secs}s`;
+    }
+}
+
+// Validate file type before upload
+function validateFileType(file) {
+    const allowedExtensions = ['.zip', '.rar'];
+    const fileName = file.name.toLowerCase();
+    const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isValid) {
+        alert('Please select a valid ZIP or RAR file.');
+        return false;
+    }
+    
+    // Check file size (optional - limit to 100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+    if (file.size > maxSize) {
+        alert('File size too large. Please select a file smaller than 100MB.');
+        return false;
+    }
+    
+    return true;
+}
+
+// Handle form submission
+document.getElementById("uploadForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    
+    const fileInput = this.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
+    
+    // Validate file type
+    if (!validateFileType(file)) {
+        return;
+    }
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const cancelBtn = document.getElementById("cancelAll");
+    
+    // Reset state
+    isProcessing = true;
+    startTime = new Date();
+    processedSchools.clear();
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    cancelBtn.classList.remove('d-none');
+    
+    // Show initial processing message
+    document.getElementById("schoolProgress").innerHTML = `
+        <div class="alert alert-info">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-sync-alt fa-spin fa-2x mr-3"></i>
+                <div>
+                    <h5 class="mb-1">Processing Upload...</h5>
+                    <p class="mb-0">Starting to process your ${file.name} file. This may take a while for large uploads.</p>
+                </div>
+            </div>
+            <div class="mt-2">
+                <small><i class="fas fa-clock"></i> Started: ${new Date().toLocaleTimeString()}</small>
+                <br>
+                <small><i class="fas fa-file-archive"></i> File: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)</small>
+            </div>
+        </div>
+        <div id="progressContainer"></div>
+    `;
+
+    // Clean up previous uploads first, then start new upload
+    fetch("{% url 'uce_cleanup_uploads' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(() => {
+        return fetch("{% url 'uce_upload_marks_multiple_schools' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.task_id) {
+            taskId = data.task_id;
+            sessionKey = data.session_key;
+            // Start polling progress more frequently
+            progressInterval = setInterval(fetchProgress, 1000);
+        } else if (data.error) {
+            throw new Error(data.error);
+        } else {
+            throw new Error('Upload failed: No task ID received');
+        }
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        isProcessing = false;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+        cancelBtn.classList.add('d-none');
+        document.getElementById("schoolProgress").innerHTML = 
+            '<div class="alert alert-danger">Upload failed: ' + error.message + '</div>';
+    });
+});
+
+// Cancel all schools
+document.getElementById("cancelAll").addEventListener("click", function() {
+    if (!sessionKey) return;
+    
+    if (confirm('Are you sure you want to cancel all current uploads?')) {
+        fetch("{% url 'uce_cancel_all' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("cancelAll").classList.add('d-none');
+            document.getElementById("schoolProgress").innerHTML = 
+                '<div class="alert alert-warning">Upload canceled by user.</div>';
+            isProcessing = false;
+            clearInterval(progressInterval);
+        });
+    }
+});
+
+// Cancel individual school
+function cancelSchool(trackerId) {
+    if (confirm('Cancel this school upload?')) {
+        fetch("{% url 'uce_cancel_school_upload' 0 %}".replace('0', trackerId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const container = document.querySelector(`#school-${trackerId}`);
+            if (container) {
+                container.querySelector('button').remove();
+                const bar = container.querySelector('.progress-bar');
+                bar.classList.remove('bg-primary', 'progress-bar-striped', 'progress-bar-animated');
+                bar.classList.add('bg-danger');
+            }
+        });
+    }
+}
+
+// Fetch progress from backend
+function fetchProgress() {
+    if (!isProcessing) return;
+    
+    fetch("{% url 'uce_upload_progress' %}?task_name=marks_upload&t=" + new Date().getTime())
+    .then(response => response.json())
+    .then(data => {
+        const progressContainer = document.getElementById("progressContainer");
+        if (!progressContainer) return;
+        
+        const schools = data.filter(item => item.type === "school");
+        const overall = data.find(item => item.type === "overall");
+        
+        if (schools.length === 0 && !overall) {
+            progressContainer.innerHTML = `
+                <div class="text-center text-muted my-4">
+                    <i class="fas fa-circle-notch fa-spin fa-2x mb-2"></i>
+                    <p>Preparing files for processing...</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        let completedCount = schools.filter(s => s.completed).length;
+        let totalCount = schools.length;
+        
+        // Calculate elapsed time
+        const elapsedSeconds = Math.floor((new Date() - startTime) / 1000);
+        
+        // Show overall progress if available
+        if (overall) {
+            html += `
+                <div class="overall-progress mb-4 p-3 bg-light rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-tasks mr-2"></i><strong>${overall.school}</strong></h6>
+                        <span class="badge badge-primary">${overall.processed}/${overall.total} schools</span>
+                    </div>
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar ${overall.completed ? 'bg-success' : 'bg-info progress-bar-striped progress-bar-animated'}" 
+                             style="width: ${overall.percent}%"></div>
+                    </div>
+                    <div class="text-center mt-1">
+                        <small class="text-muted">${overall.percent}% Complete</small>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Show individual school progress
+        schools.forEach(school => {
+            const isComplete = school.completed || school.canceled || school.percent >= 100;
+            const isProcessing = !isComplete && !school.canceled;
+            
+            html += `
+                <div class="school-progress-item mb-2 ${isComplete ? 'completed' : 'processing'}" id="school-${school.id}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="school-name">
+                            <i class="fas ${isComplete ? (school.canceled ? 'fa-times-circle text-danger' : 'fa-check-circle text-success') : 'fa-sync-alt fa-spin text-primary'} mr-2"></i>
+                            <strong>${school.school}</strong>
+                            ${school.canceled ? '<span class="badge badge-danger ml-2">Canceled</span>' : ''}
+                        </div>
+                        <div class="school-stats">
+                            <small class="text-muted">${school.processed}/${school.total} • ${school.percent}%</small>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar ${school.canceled ? 'bg-danger' : isComplete ? 'bg-success' : 'bg-primary progress-bar-striped progress-bar-animated'}" 
+                             style="width: ${school.percent}%"></div>
+                    </div>
+                    ${isProcessing ? `
+                        <div class="text-right mt-1">
+                            <button class="btn btn-xs btn-outline-danger btn-sm" onclick="cancelSchool(${school.id})">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        // Update progress container
+        progressContainer.innerHTML = html;
+        
+        // Update header with live stats
+        const header = document.querySelector('#schoolProgress .alert-info h5');
+        if (header) {
+            header.innerHTML = `Processing Upload... (${completedCount}/${totalCount} schools completed)`;
+        }
+        
+        // Update time info
+        const timeInfo = document.querySelector('#schoolProgress .alert-info small');
+        if (timeInfo) {
+            timeInfo.innerHTML = `<i class="fas fa-clock"></i> Started: ${startTime.toLocaleTimeString()} • Elapsed: ${formatTime(elapsedSeconds)}`;
+        }
+        
+        // Check if all schools are done using overall progress
+        if (overall && overall.completed) {
+            clearInterval(progressInterval);
+            isProcessing = false;
+            document.getElementById("cancelAll").classList.add('d-none');
+            
+            // Update submit button
+            const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+            
+            // Show final completion message
+            document.getElementById("schoolProgress").innerHTML = `
+                <div class="alert alert-success">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x mr-3"></i>
+                        <div>
+                            <h5 class="mb-1">Upload Complete!</h5>
+                            <p class="mb-0">Successfully processed ${completedCount} schools in ${formatTime(elapsedSeconds)}.</p>
+                        </div>
+                    </div>
+                </div>
+                ${progressContainer.outerHTML}
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Progress fetch error:', error);
+    });
+}
+
+// Add some CSS for better visual appearance
+const style = document.createElement('style');
+style.textContent = `
+    .school-progress-item {
+        padding: 10px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    .school-progress-item.processing {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+    }
+    .school-progress-item.completed {
+        background-color: #f8fff9;
+        border-left: 4px solid #28a745;
+        opacity: 0.8;
+    }
+    .school-progress-item:hover {
+        background-color: #e9ecef;
+    }
+    .progress {
+        background-color: #e9ecef;
+    }
+    .school-name {
+        flex: 1;
+    }
+    .school-stats {
+        min-width: 80px;
+        text-align: right;
+    }
+    .file-format-card {
+        transition: transform 0.2s ease;
+    }
+    .file-format-card:hover {
+        transform: translateY(-2px);
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+{% endblock %}

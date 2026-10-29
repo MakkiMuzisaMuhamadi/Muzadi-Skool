@@ -1,0 +1,182 @@
+{% comment %} {% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-eye me-2"></i>Marks Preview - {{ school.name }}</h2>
+        <div>
+            <a href="{% url 'generate_marksheet' school.id %}" class="btn btn-outline-success me-2">
+                <i class="fas fa-file-pdf me-1"></i> Generate PDF
+            </a>
+            <a href="{% url 'marks_dashboard' school.id %}" class="btn btn-info">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 marksheet-table">
+                    <thead class="thead-dark">
+                        <!-- Header row 1: Subjects with colspan -->
+                        <tr>
+                            {% for item in header_row_1 %}
+                                <th colspan="{{ item.colspan }}" 
+                                    class="text-center align-middle {% if forloop.first %}student-col{% elif forloop.last %}total-col{% else %}subject-header{% endif %}">
+                                    {{ item.name }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+
+                        <!-- Header row 2: Paper codes -->
+                        <tr>
+                            {% for item in header_row_2 %}
+                                <th class="text-center paper-header {% if forloop.first %}student-col{% elif forloop.last %}total-col{% endif %}">
+                                    {{ item }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row in student_rows %}
+                        <tr class="{% cycle 'row-even' 'row-odd' %}">
+                            {% for value in row %}
+                                {% if forloop.first %}
+                                    <td class="student-name"><strong>{{ value }}</strong></td>
+                                {% else %}
+                                    <td class="mark-cell {% if forloop.last %}average-mark{% endif %}">
+                                        {% if value is not None %}
+                                            {{ value|floatformat:1 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                    <tfoot>
+                        <tr class="table-summary">
+                            {% for value in footer_row %}
+                                {% if forloop.first %}
+                                    <td class="student-col"><strong>{{ value }}</strong></td>
+                                {% else %}
+                                    <td class="fw-bold summary-cell {% if forloop.last %}average-mark{% endif %}">
+                                        {% if value is not None %}
+                                            {{ value|floatformat:1 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.marksheet-table {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.marksheet-table th {
+    background-color: #3a5e8c;
+    color: white;
+    font-weight: 600;
+    padding: 12px 8px;
+}
+
+.marksheet-table td {
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+.subject-header {
+    background-color: #4a6fa1 !important;
+    position: relative;
+    border-left: 3px solid #2c4d76 !important;
+    border-right: 3px solid #2c4d76 !important;
+}
+
+.paper-header {
+    background-color: #5c85bd !important;
+    font-weight: 500;
+}
+
+.student-col {
+    background-color: #3a5e8c !important;
+    min-width: 180px;
+}
+
+.total-col {
+    background-color: #2c4d76 !important;
+    font-weight: 700;
+}
+
+.mark-cell {
+    text-align: center;
+    border-right: 1px solid #e0e0e0;
+}
+
+/* Subject separation with thick vertical lines */
+{% for subject in subjects %}
+    {% with subject_index=forloop.counter0 %}
+    .marksheet-table th:nth-child({{ subject_index|add:2 }}),
+    .marksheet-table td:nth-child({{ subject_index|add:2 }}) {
+        border-right: 3px solid #2c4d76 !important;
+    }
+    {% endwith %}
+{% endfor %}
+
+/* Special styling for total and average columns */
+.marksheet-table th:nth-child({{ header_row_1|length }}),
+.marksheet-table td:nth-child({{ header_row_1|length }}) {
+    border-right: 3px solid #1e3959 !important;
+}
+
+.average-mark {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.row-even {
+    background-color: #f9f9f9;
+}
+
+.row-odd {
+    background-color: white;
+}
+
+.student-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.table-summary {
+    background-color: #e3f2fd;
+}
+
+.table-summary td {
+    border-top: 2px solid #2c4d76 !important;
+    font-weight: 600;
+}
+
+.summary-cell {
+    text-align: center;
+}
+
+.marksheet-table tbody tr:hover {
+    background-color: #f5f9ff;
+}
+</style>
+{% endblock %} {% endcomment %}

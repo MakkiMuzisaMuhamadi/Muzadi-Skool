@@ -1,0 +1,180 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-file-alt"></i> {{ action }} Exam</h3>
+    <small class="text-muted">Set scope + timing + publishing rules.</small>
+  </div>
+  <div>
+    <a href="{% url 'teacher_exam_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-4">
+          <label class="font-weight-normal">Class</label>
+          {{ form.class_ref }}
+        </div>
+        <div class="col-md-4">
+          <label class="font-weight-normal">Stream (optional)</label>
+          {{ form.stream }}
+        </div>
+        <div class="col-md-4">
+          <label class="font-weight-normal">Subject</label>
+          {{ form.subject }}
+        </div>
+
+        <div class="col-md-4 mt-3">
+          <label class="font-weight-normal">Paper (optional)</label>
+          {{ form.paper }}
+        </div>
+        <div class="col-md-8 mt-3">
+          <label class="font-weight-normal">Title</label>
+          {{ form.title }}
+        </div>
+
+        <div class="col-md-12 mt-3">
+          <label class="font-weight-normal">Instructions</label>
+          {{ form.instructions }}
+        </div>
+
+        <div class="col-md-4 mt-3">
+          <label class="font-weight-normal">Opens At</label>
+          {{ form.opens_at }}
+        </div>
+        <div class="col-md-4 mt-3">
+          <label class="font-weight-normal">Closes At</label>
+          {{ form.closes_at }}
+        </div>
+        <div class="col-md-4 mt-3">
+          <label class="font-weight-normal">Duration (minutes)</label>
+          {{ form.duration_minutes }}
+          <small class="text-muted d-block">0 = no timer</small>
+        </div>
+
+        <div class="col-md-3 mt-3">
+          <label class="font-weight-normal">Max Attempts</label>
+          {{ form.max_attempts }}
+        </div>
+        <div class="col-md-3 mt-3">
+          <label class="font-weight-normal">Marking Mode</label>
+          {{ form.marking_mode }}
+        </div>
+        <div class="col-md-3 mt-3">
+          <label class="font-weight-normal">Status</label>
+          {{ form.status }}
+        </div>
+
+        <div class="col-md-3 mt-4">
+          <div class="form-check">
+            {{ form.shuffle_questions }} <label class="form-check-label">Shuffle Questions</label>
+          </div>
+          <div class="form-check">
+            {{ form.shuffle_options }} <label class="form-check-label">Shuffle Options</label>
+          </div>
+          <div class="form-check">
+            {{ form.show_results_immediately }} <label class="form-check-label">Show results immediately</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex" style="gap:.5rem;">
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+        {% if exam %}
+          <a class="btn btn-outline-primary" href="{% url 'teacher_exam_builder' exam.pk %}">
+            <i class="fas fa-tools mr-1"></i> Go to Builder
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  const classSel  = document.getElementById("id_class_ref");
+  const streamSel = document.getElementById("id_stream");
+  const subjSel   = document.getElementById("id_subject");
+  const paperSel  = document.getElementById("id_paper");
+
+  const STREAMS_URL = "{% url 'ajax_exam_streams' %}";
+  const PAPERS_URL  = "{% url 'ajax_exam_papers' %}";
+
+  function clearOptions(sel, placeholder){
+    sel.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = placeholder;
+    sel.appendChild(opt);
+  }
+
+  async function loadStreams(){
+    if(!classSel || !streamSel) return;
+
+    const classId = classSel.value;
+    clearOptions(streamSel, "All Streams / Whole Class");
+
+    if(!classId) return;
+
+    const res = await fetch(`${STREAMS_URL}?class_id=${encodeURIComponent(classId)}`);
+    const data = await res.json();
+
+    (data.results || []).forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.name;
+      streamSel.appendChild(opt);
+    });
+  }
+
+  async function loadPapers(){
+    if(!subjSel || !paperSel) return;
+
+    const subjectId = subjSel.value;
+    clearOptions(paperSel, "No Paper (Use Subject only)");
+
+    if(!subjectId) return;
+
+    const res = await fetch(`${PAPERS_URL}?subject_id=${encodeURIComponent(subjectId)}`);
+    const data = await res.json();
+
+    (data.results || []).forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.name;
+      paperSel.appendChild(opt);
+    });
+  }
+
+  // When class changes, reload streams
+  if(classSel){
+    classSel.addEventListener("change", loadStreams);
+  }
+
+  // When subject changes, reload papers
+  if(subjSel){
+    subjSel.addEventListener("change", loadPapers);
+  }
+
+  // On page load: if editing OR on POST validation error, repopulate
+  window.addEventListener("load", async () => {
+    const existingStream = streamSel ? streamSel.value : "";
+    const existingPaper  = paperSel ? paperSel.value : "";
+
+    await loadStreams();
+    if(streamSel && existingStream) streamSel.value = existingStream;
+
+    await loadPapers();
+    if(paperSel && existingPaper) paperSel.value = existingPaper;
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div>
+      <h3 class="page-title mb-0">
+        <i class="fas fa-user-plus"></i> Enroll Student
+      </h3>
+      <small class="text-muted">Step 1 of 3 — Candidate Information</small>
+    </div>
+    <div>
+      <a href="{% url 'student_list' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Students
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stepper -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <div class="badge badge-primary mr-2" style="font-size: 0.95rem;">1</div>
+        <div>
+          <div class="font-weight-bold">Candidate Info</div>
+          <small class="text-muted">Names, DOB, class</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center mb-2 mb-md-0" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">2</div>
+        <div>
+          <div class="font-weight-bold">Parent/Guardian</div>
+          <small class="text-muted">Pick or add parent</small>
+        </div>
+      </div>
+
+      <div class="text-muted d-none d-md-block" style="opacity:.55;">
+        <i class="fas fa-angle-right mx-3"></i>
+      </div>
+
+      <div class="d-flex align-items-center" style="opacity:.55;">
+        <div class="badge badge-light border mr-2" style="font-size: 0.95rem;">3</div>
+        <div>
+          <div class="font-weight-bold">Confirm</div>
+          <small class="text-muted">Finish enrollment</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-lg-8">
+
+      <!-- Candidate Bio -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-user mr-2"></i> Candidate Details</h5>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label>First Name <span class="text-danger">*</span></label>
+              {{ form.first_name }}
+              {% for e in form.first_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>Middle Name</label>
+              {{ form.middle_name }}
+              {% for e in form.middle_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>Last Name <span class="text-danger">*</span></label>
+              {{ form.last_name }}
+              {% for e in form.last_name.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label>Date of Birth <span class="text-danger">*</span></label>
+              {{ form.date_of_birth }}
+              {% for e in form.date_of_birth.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>Gender <span class="text-danger">*</span></label>
+              {{ form.gender }}
+              {% for e in form.gender.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>Residence <span class="text-danger">*</span></label>
+              {{ form.residence }}
+              {% for e in form.residence.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Academic -->
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-school mr-2"></i> Academic Placement</h5>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label>Level <span class="text-danger">*</span></label>
+              {{ form.level }}
+              {% for e in form.level.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+
+            <div class="form-group col-md-4">
+              <label>Current Class</label>
+              {{ form.current_class }}
+              {% for e in form.current_class.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+            <div class="form-group col-md-4">
+              <label>Current Stream</label>
+              {{ form.stream }}
+              {% for e in form.stream.errors %}<small class="text-danger">{{ e }}</small>{% endfor %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Summary + Next -->
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fas fa-info-circle mr-2"></i> What happens next?</h5>
+
+          <ul class="text-muted pl-3">
+            <li>Step 1 saves candidate details as a <b>Draft</b>.</li>
+            <li>Step 2 lets you pick or add parent/guardian.</li>
+            <li>Step 3 confirms and creates the final Student record.</li>
+          </ul>
+
+          <button type="submit" class="btn btn-outline-success btn-block">
+            Save & Continue <i class="fas fa-arrow-right ml-1"></i>
+          </button>
+
+          {% if draft %}
+          <a href="{% url 'enroll_student_step2' draft.id %}" class="btn btn-outline-danger btn-block mt-2">
+            Skip to Step 2
+          </a>
+          {% endif %}
+
+          <a href="{% url 'student_list' %}" class="btn btn-light btn-block mt-2">
+            Cancel
+          </a>
+
+          <hr>
+
+          <small class="text-muted d-block">
+            <i class="fas fa-lock"></i> Admission number/date and display name will be auto-generated after final submission.
+          </small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+
+{% endblock %}
+{% block extrajs %}
+<script>
+(function () {
+  const levelSelect = document.getElementById("id_level");
+  const classSelect = document.getElementById("id_current_class");
+  const streamSelect = document.getElementById("id_stream");
+
+  if (!levelSelect || !classSelect || !streamSelect) return;
+
+  function resetClasses() {
+    classSelect.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "---------";
+    classSelect.appendChild(opt);
+  }
+
+  function resetStreams() {
+    streamSelect.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "---------";
+    streamSelect.appendChild(opt);
+  }
+
+  let classController = null;
+  let streamController = null;
+  let classRequestSeq = 0;
+  let streamRequestSeq = 0;
+
+  function loadClasses(levelId, selectedClassId = null, selectedStreamId = null) {
+    resetClasses();
+    resetStreams();
+
+    if (!levelId) return;
+
+    if (classController) classController.abort();
+    classController = new AbortController();
+
+    const seq = ++classRequestSeq;
+
+    fetch("{% url 'ajax_classes_by_level' %}?level_id=" + encodeURIComponent(levelId), {
+      signal: classController.signal
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (seq !== classRequestSeq) return;
+
+        (data.results || []).forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.id;
+          opt.textContent = item.name;
+
+          if (selectedClassId && String(item.id) === String(selectedClassId)) {
+            opt.selected = true;
+          }
+
+          classSelect.appendChild(opt);
+        });
+
+        if (selectedClassId) {
+          loadStreams(selectedClassId, selectedStreamId);
+        }
+      })
+      .catch(err => {
+        if (err.name !== "AbortError") {
+          resetClasses();
+          resetStreams();
+        }
+      });
+  }
+
+  function loadStreams(classId, selectedStreamId = null) {
+    resetStreams();
+    if (!classId) return;
+
+    if (streamController) streamController.abort();
+    streamController = new AbortController();
+
+    const seq = ++streamRequestSeq;
+
+    fetch("{% url 'ajax_streams_by_class' %}?class_id=" + encodeURIComponent(classId), {
+      signal: streamController.signal
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (seq !== streamRequestSeq) return;
+
+        (data.results || []).forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.id;
+          opt.textContent = item.name;
+
+          if (selectedStreamId && String(item.id) === String(selectedStreamId)) {
+            opt.selected = true;
+          }
+
+          streamSelect.appendChild(opt);
+        });
+      })
+      .catch(err => {
+        if (err.name !== "AbortError") resetStreams();
+      });
+  }
+
+  const initialLevel = levelSelect.value || "";
+  const initialClass = classSelect.value || "";
+  const initialStream = streamSelect.value || "";
+
+  resetClasses();
+  resetStreams();
+
+  if (initialLevel) {
+    loadClasses(initialLevel, initialClass, initialStream);
+  }
+
+  levelSelect.addEventListener("change", function () {
+    loadClasses(this.value, null, null);
+  });
+
+  classSelect.addEventListener("change", function () {
+    loadStreams(this.value, null);
+  });
+})();
+</script>
+{% endblock %}

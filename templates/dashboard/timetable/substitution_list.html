@@ -1,0 +1,69 @@
+{% extends "dashboard/base.html" %}
+{% load role_tags %}
+{% block content %}
+<div class="page-header mb-4 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-exchange-alt mr-2 text-primary"></i> Teacher Substitutions</h3>
+    <small class="text-muted">Track replacement teachers for timetable lessons.</small>
+  </div>
+        {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+  <div>
+
+    <a href="{% url 'substitution_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> New Substitution
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Class</th>
+          <th>Day / Period</th>
+          <th>Original Teacher</th>
+          <th>Substitute</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.date }}</td>
+          <td>
+            {{ item.timetable_entry.class_ref.name }}
+            <br><small class="text-muted">{{ item.timetable_entry.group_label }} &middot; {{ item.timetable_entry.subject|default:"" }}</small>
+          </td>
+          <td>
+            {{ item.timetable_entry.get_day_display }}<br>
+            <small class="text-muted">{{ item.timetable_entry.period.name }}</small>
+          </td>
+          <td>{{ item.original_teacher.user.get_full_name|default:"-" }}</td>
+          <td>{{ item.substitute_teacher.user.get_full_name|default:"-" }}{% if item.sms_sent %} <i class="fas fa-sms text-success" title="SMS sent"></i>{% endif %}</td>
+          <td>{{ item.reason|default:"-" }}</td>
+          <td>{% if item.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-secondary">Cancelled</span>{% endif %}</td>
+          <td class="text-right">
+            {% if item.is_active %}
+            <form method="post" action="{% url 'substitution_cancel' item.pk %}" onsubmit="return confirm('Cancel this substitution?');">{% csrf_token %}
+              <button class="btn btn-outline-danger btn-sm">Cancel</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center text-muted">No substitutions recorded.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

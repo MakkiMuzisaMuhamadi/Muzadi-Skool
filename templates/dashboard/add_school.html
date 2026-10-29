@@ -1,0 +1,289 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="container-fluid">
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="page-header">
+          <div class="row align-items-center">
+            <div class="col">
+              <h1 class="page-title">Add Schools - {{ education_level.name }}</h1>
+              <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+                  <li class="breadcrumb-item"><a href="{% url 'uce_school_list' %}">Schools</a></li>
+                  <li class="breadcrumb-item active">Add Schools</li>
+                </ol>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div class="row mb-4">
+      <div class="col-12">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabs -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <ul class="nav nav-tabs" id="schoolTabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link {% if not request.POST or not request.FILES %}active{% endif %}" id="single-tab" data-toggle="tab" href="#single" role="tab" aria-controls="single" aria-selected="true">
+              <i class="fas fa-plus-circle mr-2"></i>Add Single School
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.POST and request.FILES %}active{% endif %}" id="bulk-tab" data-toggle="tab" href="#bulk" role="tab" aria-controls="bulk" aria-selected="false">
+              <i class="fas fa-file-excel mr-2"></i>Bulk Upload (Excel)
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="row">
+      <div class="col-12">
+        <div class="tab-content" id="schoolTabsContent">
+
+          <!-- Single School Form -->
+          <div class="tab-pane fade {% if not request.POST or not request.FILES %}show active{% endif %}" id="single" role="tabpanel" aria-labelledby="single-tab">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title mb-0">Add Single School</h5>
+              </div>
+              <div class="card-body">
+                <form method="POST" action="{% url 'uce_add_school' education_level.code %}" id="singleSchoolForm">
+                  {% csrf_token %}
+                  <div class="form-group">
+                    <label for="id_name">School Name *</label>
+                    <input type="text" name="name" class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                      id="id_name" placeholder="Enter school name"
+                      value="{{ form.name.value|default:'' }}" required>
+                    <label for="id_name">Email Address</label>
+                    <input type="email" name="contact_email" class="form-control {% if form.contact_email.errors %}is-invalid{% endif %}"
+                      id="id_contact_email" placeholder="Enter School Email Address e.g info@umta.org"
+                      value="{{ form.contact_email.value|default:'' }}">
+                    {% if form.name.errors %}
+                    <div class="invalid-feedback">
+                      {% for error in form.name.errors %}
+                      {{ error }}
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="alert alert-info">
+                    <small>
+                      <i class="fas fa-info-circle mr-1"></i>
+                      School will be added for <strong>{{ education_level.name }}</strong> level.
+                    </small>
+                  </div>
+
+                  <div class="form-group mt-3">
+                    <button type="submit" class="btn btn-outline-success">
+                      <i class="fas fa-save mr-2"></i>Add School
+                    </button>
+                    <a href="{% url 'uce_school_list' %}" class="btn btn-outline-secondary">
+                      <i class="fas fa-arrow-left mr-2"></i>Back to List
+                    </a>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bulk Upload Form -->
+          <div class="tab-pane fade {% if request.POST and request.FILES %}show active{% endif %}" id="bulk" role="tabpanel" aria-labelledby="bulk-tab">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title mb-0">Bulk Upload Schools from Excel</h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <form method="POST" action="{% url 'uce_upload_schools_excel' education_level.code %}" enctype="multipart/form-data" id="bulkUploadForm">
+                      {% csrf_token %}
+                      
+                      <div class="form-group">
+                        <label for="excelFile">Select Excel File *</label>
+                        <input class="form-control" type="file" id="excelFile" name="file" accept=".xlsx, .xls" required>
+                        <small class="form-text text-muted">
+                          Supported formats: .xlsx, .xls (Max size: 10 MB)
+                        </small>
+                        {% if form.file.errors %}
+                        <div class="invalid-feedback d-block">
+                          {% for error in form.file.errors %}
+                          {{ error }}
+                          {% endfor %}
+                        </div>
+                        {% endif %}
+                      </div>
+
+                      <div class="alert alert-info">
+                        <small>
+                          <i class="fas fa-info-circle mr-1"></i>
+                          Schools will be added for <strong>{{ education_level.name }}</strong> level.
+                        </small>
+                      </div>
+
+                      <div class="form-group mt-3">
+                        <button type="submit" class="btn btn-success" id="uploadBtn">
+                          <i class="fas fa-upload mr-2"></i>Upload Schools
+                        </button>
+                        <a href="{% url 'uce_school_list' %}" class="btn btn-outline-secondary">
+                          <i class="fas fa-arrow-left mr-2"></i>Back to List
+                        </a>
+                      </div>
+                    </form>
+                  </div>
+
+                  <!-- Excel Format Guide -->
+                  <div class="col-md-4">
+                    <div class="card bg-light">
+                      <div class="card-header">
+                        <h6 class="card-title mb-0">Excel Format Guide</h6>
+                      </div>
+                      <div class="card-body">
+                        <p class="mb-2">Your Excel file should have:</p>
+                        <ul class="pl-3 mb-3">
+                          <li><strong>First column:</strong> School names</li>
+                          <li><strong>First row:</strong> Header (will be skipped)</li>
+                          <li><strong>Format:</strong> School names in column A</li>
+                        </ul>
+                        <div class="text-center">
+                          <a href="{% static 'templates/schools_template.xlsx' %}" class="btn btn-sm btn-outline-primary" id="downloadTemplate" download>
+                            <i class="fas fa-download mr-1"></i>Download Template
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div> <!-- row -->
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- tab-content -->
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Instructions</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Single School Entry</h6>
+                <ul>
+                  <li>Enter the school name in the text field</li>
+                  <li>School name will be automatically converted to uppercase</li>
+                  <li>System will check for duplicates before saving</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h6>Bulk Upload</h6>
+                <ul>
+                  <li>Prepare an Excel file with school names in the first column</li>
+                  <li>The first row should contain headers (will be skipped)</li>
+                  <li>Duplicate schools will be automatically skipped</li>
+                  <li>You'll receive a summary of added and skipped schools</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const fileInput = document.getElementById("excelFile");
+
+  // Display chosen file name
+  if (fileInput) {
+    fileInput.addEventListener("change", function (e) {
+      const fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose Excel file...";
+      e.target.classList.add("selected");
+      e.target.title = fileName;
+    });
+  }
+
+  // Tab activation by URL param
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('tab') === 'bulk') document.getElementById('bulk-tab').click();
+
+  // Bulk upload validation
+  const bulkUploadForm = document.getElementById('bulkUploadForm');
+  if (bulkUploadForm) {
+    bulkUploadForm.addEventListener('submit', function (e) {
+      const file = fileInput.files[0];
+      if (!file) {
+        e.preventDefault();
+        alert('Please select an Excel file to upload.');
+        return false;
+      }
+      const validExtensions = ['.xlsx', '.xls'];
+      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+      if (!validExtensions.includes(fileExtension)) {
+        e.preventDefault();
+        alert('Please select a valid Excel file (.xlsx or .xls).');
+        return false;
+      }
+
+      const uploadBtn = document.getElementById('uploadBtn');
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading...';
+    });
+  }
+
+  // Preserve tab state
+  $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    sessionStorage.setItem('activeSchoolTab', $(e.target).attr("href"));
+  });
+  const activeTab = sessionStorage.getItem('activeSchoolTab');
+  if (activeTab) $('#schoolTabs a[href="' + activeTab + '"]').tab('show');
+});
+</script>
+
+<style>
+.nav-tabs .nav-link.active {
+  font-weight: 600;
+}
+#uploadBtn:disabled {
+  cursor: not-allowed;
+}
+.custom-file-label.selected {
+  font-weight: 500;
+  color: #155724;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h3 class="page-title mb-0">
+      <i class="fas fa-list-alt"></i> Manual Charges
+    </h3>
+    <small class="text-muted">View and filter student and bulk manual charges</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'student_manual_charge_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-user-plus mr-1"></i> Student Charge
+    </a>
+    <a href="{% url 'bulk_manual_charge_create' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-users mr-1"></i> Bulk Charge
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get">
+      <div class="form-row align-items-end">
+        <div class="col-md-2">
+          <label>Academic Year</label>
+          <select name="academic_year" id="filter_academic_year" class="form-control">
+            <option value="">All</option>
+            {% for year in academic_years %}
+              <option value="{{ year.id }}" {% if request.GET.academic_year == year.id|stringformat:"s" %}selected{% endif %}>
+                {{ year.year }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label>Term</label>
+          <select name="term" id="filter_term" class="form-control">
+            <option value="">All</option>
+            {% for term_obj in terms %}
+              <option value="{{ term_obj.id }}" {% if request.GET.term == term_obj.id|stringformat:"s" %}selected{% endif %}>
+                {{ term_obj.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label>Class</label>
+          <select name="class_ref" id="filter_class_ref" class="form-control">
+            <option value="">All</option>
+            {% for cls in classes %}
+              <option value="{{ cls.id }}" {% if request.GET.class_ref == cls.id|stringformat:"s" %}selected{% endif %}>
+                {{ cls.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label>Fee Category</label>
+          <select name="fee_category" class="form-control">
+            <option value="">All</option>
+            {% for cat in fee_categories %}
+              <option value="{{ cat.id }}" {% if request.GET.fee_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label>Search</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Admission no, name, description">
+        </div>
+
+        <div class="col-md-1">
+          <button class="btn btn-primary btn-block">
+            <i class="fas fa-filter"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <a href="{% url 'manual_charge_list' %}" class="btn btn-light btn-sm">
+          <i class="fas fa-sync-alt mr-1"></i> Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-sm" id="manualChargesTable">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Academic Year</th>
+            <th>Term</th>
+            <th>Class</th>
+            <th>Stream</th>
+            <th>Fee Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ row.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <a href="{% url 'student_fee_statement' row.student.id %}">
+                {{ row.student.admission_number }} - {{ row.student.name }}
+              </a>
+            </td>
+            <td>{{ row.academic_year.year }}</td>
+            <td>{{ row.term.name }}</td>
+            <td>{{ row.class_ref.name|default:"-" }}</td>
+            <td>{{ row.stream.name|default:"-" }}</td>
+            <td>{{ row.fee_category.name }}</td>
+            <td>{{ row.description }}</td>
+            <td>UGX {{ row.amount|intcomma }}</td>
+            <td>
+              {% if row.status == "PAID" %}
+                <span class="badge badge-success">Paid</span>
+              {% elif row.status == "PARTIAL" %}
+                <span class="badge badge-warning">Partial</span>
+              {% elif row.status == "WAIVED" %}
+                <span class="badge badge-info">Waived</span>
+              {% else %}
+                <span class="badge badge-danger">Pending</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted">No manual charges found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  $(function () {
+    $('#manualChargesTable').DataTable({
+      pageLength: 25,
+      order: [[1, 'desc']]
+    });
+
+    const initialTerm = "{{ request.GET.term|default:'' }}";
+
+    function loadTerms(yearId, selectedValue = null) {
+      const $term = $('#filter_term');
+      $term.empty().append('<option value="">All</option>');
+      if (!yearId) return;
+
+      $.getJSON("{% url 'ajax_terms' %}", { year_id: yearId }, function (data) {
+        (data.results || []).forEach(function (item) {
+          const selected = selectedValue && String(selectedValue) === String(item.id) ? 'selected' : '';
+          $term.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+        });
+      });
+    }
+
+    $('#filter_academic_year').on('change', function () {
+      loadTerms($(this).val());
+    });
+
+    if ($('#filter_academic_year').val()) {
+      loadTerms($('#filter_academic_year').val(), initialTerm);
+    }
+  });
+</script>
+{% endblock %}

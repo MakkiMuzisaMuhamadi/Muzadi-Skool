@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-file-import"></i> Import SchoolPay codes</h3>
+  <small class="text-muted">Link each student to their SchoolPay payment code so payments post to the right child.</small>
+</div>
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-body">
+      <p>Upload an Excel (.xlsx) or CSV file with two columns: <strong>admission number</strong>, then <strong>SchoolPay code</strong>. A header row is fine. You can export the codes from your SchoolPay portal.</p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">{{ form.file }}{% if form.file.errors %}<div class="text-danger small">{{ form.file.errors|join:" " }}</div>{% endif %}</div>
+        <button class="btn btn-primary">Import codes</button>
+        <a href="{% url 'schoolpay_settings' %}" class="btn btn-light">Back</a>
+      </form>
+    </div></div>
+  </div>
+  {% if report %}
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body">
+      <h6>Result</h6>
+      <p class="mb-1">Codes saved: <strong>{{ report.updated }}</strong></p>
+      <p class="mb-1">Already correct: {{ report.unchanged }}</p>
+      {% if report.auto_posted %}<p class="mb-1 text-success">Waiting payments now posted: <strong>{{ report.auto_posted }}</strong></p>{% endif %}
+      {% if report.not_found %}<p class="mb-1 text-danger">Admission numbers not found ({{ report.not_found|length }}):</p><p class="small">{{ report.not_found|join:", " }}</p>{% endif %}
+      {% if report.conflicts %}<p class="mb-1 text-danger">Not saved, code already used:</p><ul class="small">{% for c in report.conflicts %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+    </div></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

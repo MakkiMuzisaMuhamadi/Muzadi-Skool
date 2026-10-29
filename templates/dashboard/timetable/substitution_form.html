@@ -1,0 +1,103 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-exchange-alt mr-2 text-primary"></i> {{ title }}</h3>
+    <small class="text-muted">Assign a substitute teacher for a lesson.</small>
+  </div>
+  <a href="{% url 'substitution_list' %}" class="btn btn-light btn-sm border">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger"><ul class="mb-0">{% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}</ul></div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label>{{ form.timetable_entry.label }}</label>
+          {{ form.timetable_entry }}
+          <div class="text-danger small">{{ form.timetable_entry.errors|striptags }}</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>{{ form.date.label }}</label>
+          {{ form.date }}
+          <div class="text-danger small">{{ form.date.errors|striptags }}</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>{{ form.substitute_teacher.label }}</label>
+          {{ form.substitute_teacher }}
+          <div class="text-danger small">{{ form.substitute_teacher.errors|striptags }}</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>{{ form.reason.label }}</label>
+          {{ form.reason }}
+          <div class="text-danger small">{{ form.reason.errors|striptags }}</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label>{{ form.notes.label }}</label>
+          {{ form.notes }}
+          <div class="text-danger small">{{ form.notes.errors|striptags }}</div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-check">
+            {{ form.notify_by_sms }}
+            <label class="form-check-label" for="{{ form.notify_by_sms.id_for_label }}">Send SMS to the substitute teacher</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary">Save</button>
+      <a href="{% url 'substitution_list' %}" class="btn btn-light border">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const entrySelect = document.getElementById("id_timetable_entry");
+  const dateInput = document.getElementById("id_date");
+  const substituteSelect = document.getElementById("id_substitute_teacher");
+  const hint = document.createElement("small");
+  hint.className = "form-text text-muted";
+  substituteSelect.parentNode.appendChild(hint);
+
+  function load() {
+    if (!entrySelect.value || !dateInput.value) {
+      hint.textContent = "Pick the lesson and date to list only teachers who are free.";
+      return;
+    }
+    const keep = substituteSelect.value;
+    fetch(`{% url 'ajax_tt_free_substitutes' %}?entry_id=${entrySelect.value}&date=${dateInput.value}`)
+      .then(res => res.json())
+      .then(data => {
+        const items = data.results || [];
+        substituteSelect.innerHTML = '<option value="">---------</option>';
+        items.forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.id; opt.textContent = item.name;
+          if (String(item.id) === String(keep)) opt.selected = true;
+          substituteSelect.appendChild(opt);
+        });
+        hint.textContent = items.length ? `${items.length} free teacher(s), least busy first.` : "No teacher is free at that time.";
+      });
+  }
+  entrySelect.addEventListener("change", load);
+  dateInput.addEventListener("change", load);
+  load();
+});
+</script>
+
+{% endblock %}

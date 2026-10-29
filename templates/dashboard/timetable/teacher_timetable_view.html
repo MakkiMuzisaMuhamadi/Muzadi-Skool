@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% include "dashboard/timetable/_tt_styles.html" %}
+
+<div class="page-header mb-4 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-1"><i class="fas fa-chalkboard-teacher mr-2 text-primary"></i> Teacher Timetable</h3>
+    <small class="text-muted">A teacher's full week across all current timetables (O-Level, A-Level...), unless you pick one.</small>
+  </div>
+  {% if selected_teacher %}
+  <div class="mt-2 mt-md-0 d-flex" style="gap:.5rem;">
+    <a href="{% url 'printable_teacher_timetable' %}?teacher={{ selected_teacher.pk }}{% if selected_timetable %}&timetable={{ selected_timetable.pk }}{% endif %}" target="_blank" class="btn btn-outline-dark btn-sm"><i class="fas fa-print mr-1"></i> Print</a>
+    <a href="{% url 'export_teacher_timetable_pdf' %}?teacher={{ selected_teacher.pk }}{% if selected_timetable %}&timetable={{ selected_timetable.pk }}{% endif %}" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-file-pdf mr-1"></i> PDF</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card tt-filter-card mb-3">
+  <div class="card-body">
+    <form method="get">
+      <div class="form-row">
+        <div class="form-group col-md-5 mb-2">
+          <label class="tt-filter-label">Timetable</label>
+          <select name="timetable" class="form-control">
+            <option value="">All current timetables</option>
+            {% for tt in timetables %}
+            <option value="{{ tt.id }}" {% if selected_timetable and selected_timetable.pk == tt.id %}selected{% endif %}>{{ tt.display_name }} ({{ tt.get_status_display }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-6 mb-2">
+          <label class="tt-filter-label">Teacher</label>
+          <select name="teacher" class="form-control">
+            <option value="">Select Teacher</option>
+            {% for teacher in teachers %}
+            <option value="{{ teacher.id }}" {% if selected_teacher and selected_teacher.pk == teacher.id %}selected{% endif %}>
+              {{ teacher.user.get_full_name|default:teacher.user.username }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group col-md-1 mb-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-4 mb-3"><div class="card tt-summary-card"><div class="card-body">
+    <div class="small text-muted">Teacher</div>
+    <div class="font-weight-bold">{{ subtitle|default:"-" }}</div>
+  </div></div></div>
+  <div class="col-md-4 mb-3"><div class="card tt-summary-card"><div class="card-body">
+    <div class="small text-muted">Weekly lesson periods</div>
+    <div class="font-weight-bold">{{ total_lessons }}</div>
+  </div></div></div>
+  <div class="col-md-4 mb-3"><div class="card tt-summary-card"><div class="card-body">
+    <div class="small text-muted">Teaching time</div>
+    <div class="font-weight-bold">{{ total_hours }} hrs</div>
+  </div></div></div>
+</div>
+
+<div class="card tt-grid-card">
+  <div class="card-body">
+    {% if selected_teacher %}
+      {% include "dashboard/timetable/_grid.html" with mode="teacher" can_edit=False %}
+    {% else %}
+      <div class="text-center text-muted p-4">Select a teacher.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

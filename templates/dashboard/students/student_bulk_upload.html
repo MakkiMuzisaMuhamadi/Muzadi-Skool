@@ -1,0 +1,188 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-file-import text-success"></i> Import Students</h3>
+    <small class="text-muted">Bring in a class list or the whole school's register from Excel.</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'student_bulk_template_download' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-download mr-1"></i> Download template
+    </a>
+    <a href="{% url 'student_bulk_batches' %}" class="btn btn-outline-success btn-sm">
+      <i class="fas fa-history mr-1"></i> Previous imports
+    </a>
+    <a href="{% url 'student_list' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <form method="post" enctype="multipart/form-data" class="card mb-3">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+        <h5 class="mb-3"><i class="fas fa-file-excel text-success mr-2"></i>Excel file</h5>
+        <div class="form-group">
+          {{ form.file }}
+          {% for e in form.file.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          <small class="text-muted d-block mt-1">
+            Use our template, or upload your own register as it is. You will match its columns on the next step.
+          </small>
+        </div>
+        <div class="form-group">
+          <label for="{{ form.title.id_for_label }}">Name for this import</label>
+          {{ form.title }}
+          <small class="text-muted">Optional, e.g. "Term 1 2026 whole school".</small>
+        </div>
+
+        <hr>
+        <h5 class="mb-1"><i class="fas fa-school mr-2"></i>Class placement</h5>
+        <p class="text-muted small mb-3">
+          If your file has a class column, leave the class blank: each learner goes to the class in their row.
+          If the file is one class, choose it here.
+        </p>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label for="id_level">{{ form.level.label }}</label>
+            {{ form.level }}
+            {% for e in form.level.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            <small class="text-muted">{{ form.level.help_text }}</small>
+          </div>
+          <div class="form-group col-md-4">
+            <label for="id_current_class">{{ form.current_class.label }}</label>
+            {{ form.current_class }}
+            {% for e in form.current_class.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            <small class="text-muted">Choose a level first.</small>
+          </div>
+          <div class="form-group col-md-4">
+            <label for="id_stream">{{ form.stream.label }}</label>
+            {{ form.stream }}
+            {% for e in form.stream.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <hr>
+        <h5 class="mb-3"><i class="fas fa-sliders-h mr-2"></i>Options</h5>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="{{ form.name_order.id_for_label }}">{{ form.name_order.label }}</label>
+            {{ form.name_order }}
+          </div>
+          <div class="form-group col-md-6">
+            <label for="{{ form.default_residence.id_for_label }}">{{ form.default_residence.label }}</label>
+            {{ form.default_residence }}
+          </div>
+        </div>
+        {% for field in form %}
+          {% if field.name == "allow_missing_dob" or field.name == "create_parents" or field.name == "generate_accounts" %}
+          <div class="form-check mb-2">
+            {{ field }}
+            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.help_text %}<small class="text-muted d-block">{{ field.help_text }}</small>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="card-footer bg-white">
+        <button type="submit" class="btn btn-success"><i class="fas fa-arrow-right mr-1"></i> Continue to match columns</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-2">How it works</h6>
+        <ol class="small pl-3 mb-0">
+          <li>Upload the file.</li>
+          <li>Check which column is which.</li>
+          <li>The system reads every row and flags errors and learners who already exist.</li>
+          <li>Fix rows on screen, then import. Parents, fee balances and logins are created too.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-2">Admission numbers</h6>
+        <p class="small text-muted mb-2">Existing numbers in the file are kept. New ones follow your school's format.</p>
+        <a href="{% url 'admission_number_settings' %}" class="btn btn-outline-success btn-sm">Set the format</a>
+      </div>
+    </div>
+    {% if recent_batches %}
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-2">Recent imports</h6>
+        <ul class="list-unstyled small mb-0">
+          {% for b in recent_batches %}
+          <li class="mb-1">
+            <a href="{% url 'student_bulk_review' b.id %}">{{ b.title|default:b }}</a>
+            <span class="text-muted">{{ b.get_status_display }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const levelSelect = document.getElementById("id_level");
+  const classSelect = document.getElementById("id_current_class");
+  const streamSelect = document.getElementById("id_stream");
+  if (!levelSelect || !classSelect || !streamSelect) return;
+
+  function reset(select, label) {
+    select.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = label;
+    select.appendChild(opt);
+  }
+
+  function fill(select, items, selectedId) {
+    (items || []).forEach(function (item) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.name;
+      if (selectedId && String(item.id) === String(selectedId)) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function loadStreams(classId, selectedStreamId) {
+    reset(streamSelect, "No stream / from file");
+    if (!classId) return;
+    fetch("{% url 'streams_by_class' %}?class_id=" + encodeURIComponent(classId))
+      .then(function (r) { return r.json(); })
+      .then(function (data) { fill(streamSelect, data.results, selectedStreamId); })
+      .catch(function () { reset(streamSelect, "No stream / from file"); });
+  }
+
+  function loadClasses(levelId, selectedClassId, selectedStreamId) {
+    reset(classSelect, "Class is in the file");
+    reset(streamSelect, "No stream / from file");
+    if (!levelId) return;
+    fetch("{% url 'ajax_classes_by_level' %}?level_id=" + encodeURIComponent(levelId))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        fill(classSelect, data.results, selectedClassId);
+        if (selectedClassId) loadStreams(selectedClassId, selectedStreamId);
+      })
+      .catch(function () { reset(classSelect, "Class is in the file"); });
+  }
+
+  const initialLevel = levelSelect.value, initialClass = classSelect.value, initialStream = streamSelect.value;
+  loadClasses(initialLevel, initialClass, initialStream);
+  levelSelect.addEventListener("change", function () { loadClasses(this.value); });
+  classSelect.addEventListener("change", function () { loadStreams(this.value); });
+})();
+</script>
+{% endblock %}

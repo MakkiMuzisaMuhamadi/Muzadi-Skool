@@ -1,0 +1,57 @@
+<!-- templates/uce/subject_marks_selection.html -->
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Generate Subject Mark Sheet
+                </h4>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3">School: {{ school.name }}</h5>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.subject.id_for_label }}" class="form-label">
+                            Select Subject
+                        </label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}
+                            <div class="text-danger">{{ form.subject.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-outline-success-success">
+                            <i class="fas fa-download me-2"></i>Generate Mark Sheet
+                        </button>
+                        <a href="{% url 'marks_dashboard' school.id %}" class="btn btn-info">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Available Subjects</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for subject in form.subject.field.queryset %}
+                    <div class="col-md-6 mb-2">
+                        <span class="badge bg-info">{{ subject.name }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

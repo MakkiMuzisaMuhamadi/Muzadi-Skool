@@ -1,0 +1,172 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+  <h3 class="page-title">Grading Scale: {{ grading_scale.name }}</h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'grading_scales_list' %}">Grading Scales</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ grading_scale.name }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="card-title">
+            Grades for {{ grading_scale.name }}
+            {% if grading_scale.is_active %}
+              <span class="badge badge-success ml-2">ACTIVE</span>
+            {% endif %}
+          </h4>
+          <div>
+            <a href="{% url 'grading_scales_list' %}" class="btn btn-info mr-2">
+              <i class="mdi mdi-arrow-left"></i> Back to Scales
+            </a>
+            <button class="btn btn-outline-success btn-add-grade" >
+              <i class="mdi mdi-plus"></i> Add Grade
+            </button>
+          </div>
+        </div>
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if grades %}
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Grade Letter</th>
+                <th>Grade Name</th>
+                <th>Scaled Score Range</th>
+                <th>Percentage Range</th>
+                <th>Points</th>
+                <th>Order</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for grade in grades %}
+              <tr>
+                <td>
+                  <strong class="h5">{{ grade.grade_letter }}</strong>
+                </td>
+                <td>{{ grade.grade_name }}</td>
+                <td>
+                  <span class="badge badge-info">{{ grade.min_scaled_score }} - {{ grade.max_scaled_score }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-primary">{{ grade.min_percentage }}% - {{ grade.max_percentage }}%</span>
+                </td>
+                <td>
+                  <span class="font-weight-bold">{{ grade.points }}</span> pts
+                </td>
+                <td>
+                  <span class="badge badge-success ml-2">{{ grade.order }}</span>
+                </td>
+                <td>
+      
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="mdi mdi-school-outline" style="font-size: 64px; color: #6c757d;"></i>
+          <h4 class="mt-3 text-muted">No Grades Found</h4>
+          <p class="text-muted">This grading scale doesn't have any grades yet.</p>
+          <button class="btn btn-outline-success btn-lg btn-add-grade" data-scale-pk="{{ grading_scale.pk }}">
+            <i class="mdi mdi-plus"></i> Add First Grade
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grade Summary Card -->
+{% if grades %}
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Grade Summary</h4>
+        <div class="row text-center">
+          <div class="col-4">
+            <div class="border-right">
+              <h3 class="text-primary">{{ grades.count }}</h3>
+              <p class="text-muted">Total Grades</p>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="border-right">
+              <h3 class="text-success">{{ grades.first.grade_letter }}</h3>
+              <p class="text-muted">Highest Grade</p>
+            </div>
+          </div>
+          <div class="col-4">
+            <div>
+              <h3 class="text-info">{{ grades.last.grade_letter }}</h3>
+              <p class="text-muted">Lowest Grade</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Scale Information</h4>
+        <table class="table table-borderless">
+          <tr>
+            <td><strong>Scale Name:</strong></td>
+            <td>{{ grading_scale.name }}</td>
+          </tr>
+          <tr>
+            <td><strong>Status:</strong></td>
+            <td>
+              {% if grading_scale.is_active %}
+                <span class="badge badge-success">Active</span>
+              {% else %}
+                <span class="badge badge-secondary">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Education Level:</strong></td>
+            <td>{{ grading_scale.level.name }}</td>
+          </tr>
+          <tr>
+            <td><strong>Created:</strong></td>
+            <td>{{ grading_scale.created_at|date:"M d, Y" }}</td>
+          </tr>
+          <tr>
+            <td><strong>Last Updated:</strong></td>
+            <td>{{ grading_scale.updated_at|date:"M d, Y" }}</td>
+          </tr>
+        </table>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

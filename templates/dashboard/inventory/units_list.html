@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-qrcode"></i> Tagged Units</h3>
+    <small class="text-muted">Each unit is a physical copy with a tag code (QR/Barcode)</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'inv_unit_create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Add Unit
+    </a>
+    <a href="{% url 'inv_unit_bulk_add' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-layer-group mr-1"></i> Bulk Add
+    </a>
+    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm">
+      <i class="fas fa-qrcode mr-1"></i> Scan
+    </a>
+    <a href="{% url 'inv_labels_select' %}?q={{ q|urlencode }}&status={{ status|urlencode }}"
+   class="btn btn-outline-info btn-sm">
+  <i class="fas fa-print mr-1"></i> Print Labels
+</a>
+{% comment %} <a href="{% url 'inv_labels_print' %}?q={{ q|urlencode }}&status={{ status|urlencode }}&limit=24"
+   target="_blank"
+   class="btn btn-outline-secondary btn-sm">
+  <i class="fas fa-print mr-1"></i> Print (24)
+</a> {% endcomment %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="form-inline mb-3">
+      <input class="form-control mr-2" name="q" placeholder="Search tag code..." value="{{ q }}">
+        <select class="form-control mr-2" name="status">
+        <option value="">All Status</option>
+        {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>
+            {{ label }}
+            </option>
+        {% endfor %}
+        </select>
+      <button class="btn btn-outline-primary">Filter</button>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>Item</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Location</th>
+            <th>Holder</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td><strong>{{ r.tag_code }}</strong></td>
+            <td>{{ r.item.name }}</td>
+            <td>{{ r.item.category.type }}</td>
+            <td>{{ r.status }}</td>
+            <td>{{ r.current_location|default:"—" }}</td>
+            <td>
+              {% if r.current_student %}
+                Student: {{ r.current_student }}
+              {% elif r.current_staff_name %}
+                Staff: {{ r.current_staff_name }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'inv_unit_detail' r.id %}">
+                <i class="fas fa-eye"></i> View
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-muted">No units found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

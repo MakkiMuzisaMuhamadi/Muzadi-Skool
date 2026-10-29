@@ -1,0 +1,182 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Rankings Dashboard - {{ current_level }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="page-header">
+    <h3 class="page-title">
+      <i class="fas fa-trophy text-warning mr-2"></i>
+      {{ current_level }} Rankings Dashboard
+    </h3>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'login' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Rankings</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Ranking Status Alert -->
+  {% if ranking_in_progress %}
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-sync-alt fa-spin me-2"></i>
+      <div>
+        <strong>Rankings are being calculated!</strong>
+        <p class="mb-0">Please wait while we process the latest data. This page will update automatically.</p>
+      </div>
+    </div>
+    <div class="mt-2">
+      <div class="progress" style="height: 6px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Ranking Management Card -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Ranking Management</h5>
+      <div class="d-flex gap-2 align-items-center">
+        <button id="recalculateRankings" class="btn btn-warning btn-sm" {% if ranking_in_progress %}disabled{% endif %}>
+          <i class="fas fa-sync-alt"></i> 
+          {% if ranking_in_progress %}Recalculating...{% else %}Recalculate All Rankings{% endif %}
+        </button>
+        <button id="clearRankingCache" class="btn btn-outline-danger btn-sm">
+          <i class="fas fa-broom"></i> Clear Cache
+        </button>
+        <div id="rankingStatus" class="ms-auto">
+          {% if ranking_in_progress %}
+          <span class="badge bg-info">
+            <i class="fas fa-spinner fa-spin"></i> Processing...
+          </span>
+          {% elif task_status == 'SUCCESS' %}
+          <span class="badge bg-success">
+            <i class="fas fa-check"></i> Up to date
+          </span>
+          {% else %}
+          <span class="badge bg-secondary">
+            <i class="fas fa-clock"></i> Ready
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Loading Placeholders -->
+  {% if ranking_in_progress %}
+  <!-- Show loading placeholders when rankings are being calculated -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <i class="fas fa-sync-alt fa-spin fa-2x text-primary mb-3"></i>
+          <h4>Calculating Rankings</h4>
+          <p class="text-muted">Please wait while we process the latest data...</p>
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <!-- Normal content when rankings are ready -->
+  <!-- Quick Stats -->
+  <div class="row">
+    <div class="col-md-3 grid-margin stretch-card">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="card-text">Top Schools</p>
+              <h4 class="mb-0">{{ top_schools|length }}</h4>
+            </div>
+            <div class="icon">
+              <i class="fas fa-medal fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ... rest of your existing stats and content ... -->
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Auto-refresh when task is in progress
+{% if ranking_in_progress and active_task_id %}
+function checkRankingStatus() {
+    $.get('{% url "uce_ranking_task_status" education_level.code active_task_id %}')
+        .done(function(data) {
+            if (data.status === 'SUCCESS') {
+                // Task completed, reload page to show new data
+                location.reload();
+            } else if (data.status === 'FAILURE') {
+                // Task failed, show error and stop checking
+                $('#rankingStatus').html('<span class="badge bg-danger"><i class="fas fa-times"></i> Calculation failed</span>');
+                $('.alert-info').removeClass('alert-info').addClass('alert-danger')
+                    .html('<i class="fas fa-exclamation-triangle"></i> Ranking calculation failed. Please try again.');
+            } else {
+                // Still processing, check again in 3 seconds
+                setTimeout(checkRankingStatus, 3000);
+            }
+        })
+        .fail(function() {
+            // If we can't check status, stop trying
+            console.error('Failed to check task status');
+        });
+}
+
+// Start checking status
+setTimeout(checkRankingStatus, 3000);
+{% endif %}
+
+// Manual recalculation
+$('#recalculateRankings').click(function() {
+    const $btn = $(this);
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Recalculating...');
+    
+    $.post('{% url "uce_trigger_ranking_recalc" education_level.code %}', {
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }).done(function(data) {
+        if (data.status === 'success') {
+            $('#rankingStatus').html('<span class="badge bg-info"><i class="fas fa-spinner fa-spin"></i> Started</span>');
+            // Reload page to show processing state
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
+        }
+    }).fail(function() {
+        $btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Recalculate All Rankings');
+        $('#rankingStatus').html('<span class="badge bg-danger"><i class="fas fa-times"></i> Failed</span>');
+    });
+});
+
+// Clear cache
+$('#clearRankingCache').click(function() {
+    const $btn = $(this);
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Clearing...');
+    
+    $.post('{% url "uce_clear_ranking_cache" education_level.code %}', {
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }).done(function(data) {
+        if (data.status === 'success') {
+            $('#rankingStatus').html('<span class="badge bg-warning"><i class="fas fa-check"></i> Cache cleared</span>');
+            // Reload to trigger recalculation
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
+        }
+    }).fail(function() {
+        $btn.prop('disabled', false).html('<i class="fas fa-broom"></i> Clear Cache');
+        $('#rankingStatus').html('<span class="badge bg-danger"><i class="fas fa-times"></i> Clear failed</span>');
+    });
+});
+</script>
+{% endblock %}

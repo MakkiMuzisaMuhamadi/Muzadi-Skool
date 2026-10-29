@@ -1,0 +1,255 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-tasks text-primary"></i> Review Import</h3>
+    <small class="text-muted">
+      {{ batch.title }}
+      {% if batch.current_class %} &middot; Class: {{ batch.current_class.name }}{% if batch.stream %} / {{ batch.stream.name }}{% endif %}{% else %} &middot; Classes from the file{% endif %}
+      &middot; <span class="badge badge-secondary">{{ batch.get_status_display }}</span>
+    </small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    {% if batch.status != "IMPORTING" and batch.status != "STAGING" and batch.imported_rows == 0 %}
+    <a href="{% url 'student_bulk_mapping' batch.id %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-columns mr-1"></i> Change columns</a>
+    {% endif %}
+    <a href="{% url 'student_bulk_batches' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> All imports</a>
+  </div>
+</div>
+
+{% if batch.is_busy %}
+<div class="card mb-3" id="progress-card" data-status-url="{% url 'student_bulk_status' batch.id %}">
+  <div class="card-body">
+    <h5 class="mb-2" id="progress-title">
+      {% if batch.status == "STAGING" %}Reading and checking the file...{% else %}Importing learners...{% endif %}
+    </h5>
+    <div class="progress mb-2" style="height: 22px;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar" role="progressbar"
+           style="width: {{ batch.progress_percent }}%;" aria-valuenow="{{ batch.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+        {{ batch.progress_percent }}%
+      </div>
+    </div>
+    <small class="text-muted" id="progress-text">{{ batch.progress_done }} of {{ batch.progress_total }} rows. You can leave this page; the work continues.</small>
+    <div id="stuck-box" class="alert alert-warning mt-3 mb-0 {% if not batch.looks_stuck %}d-none{% endif %}">
+      This has not started after two minutes, so the background worker may be off.
+      <form method="post" action="{% url 'student_bulk_run_here' batch.id %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-warning ml-2">Run it here instead</button>
+      </form>
+      <small class="d-block mt-1">Large files can take a few minutes this way. Keep the page open.</small>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if batch.status == "FAILED" and batch.error_message %}
+<div class="alert alert-danger">
+  <strong>The last step did not finish.</strong> {{ batch.error_message }}
+  <div class="mt-2">
+    {% if batch.imported_rows == 0 %}<a href="{% url 'student_bulk_mapping' batch.id %}" class="btn btn-sm btn-outline-danger">Check the columns again</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if batch.status == "IMPORTED" %}
+<div class="alert alert-success">
+  <strong>{{ batch.imported_rows }} learner(s) imported.</strong>
+  {% if batch.parents_created or batch.parents_linked %}
+    {{ batch.parents_created }} parent(s) created, {{ batch.parents_linked }} existing parent link(s) reused.
+  {% endif %}
+  {% if batch.balances_posted %} {{ batch.balances_posted }} fee balance(s) posted.{% endif %}
+  {% if batch.accounts_job_id %} Student logins are being created in the background (default password applies).{% endif %}
+  {% if batch.failed_rows %}<br><span class="text-danger">{{ batch.failed_rows }} row(s) failed. See the Failed tab.</span>{% endif %}
+  <div class="mt-2"><a href="{% url 'student_list' %}" class="btn btn-sm btn-success">Go to students</a></div>
+</div>
+{% endif %}
+
+{% if not batch.is_busy and batch.status != "MAPPING" %}
+<div class="row mb-3">
+  <div class="col-6 col-md-2 mb-2"><div class="card h-100"><div class="card-body py-2">
+    <div class="small text-muted">Rows</div><div class="h4 mb-0">{{ batch.total_rows }}</div></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card h-100 border-left-success"><div class="card-body py-2">
+    <div class="small text-muted">No errors</div><div class="h4 mb-0 text-success">{{ batch.valid_rows }}</div></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card h-100 border-left-danger"><div class="card-body py-2">
+    <div class="small text-muted">With errors</div><div class="h4 mb-0 text-danger">{{ batch.invalid_rows }}</div></div></div></div>
+  <div class="col-6 col-md-3 mb-2"><div class="card h-100 border-left-warning"><div class="card-body py-2">
+    <div class="small text-muted">Repeated in file</div><div class="h4 mb-0">{{ batch.duplicate_file_rows }}</div></div></div></div>
+  <div class="col-12 col-md-3 mb-2"><div class="card h-100 border-left-info"><div class="card-body py-2">
+    <div class="small text-muted">May already exist</div><div class="h4 mb-0">{{ batch.duplicate_db_rows }}</div></div></div></div>
+</div>
+
+<ul class="nav nav-tabs mb-0">
+  {% for key, label, count in filter_tabs %}
+    {% if count or key == "all" or key == current_filter %}
+    <li class="nav-item">
+      <a class="nav-link {% if key == current_filter %}active{% endif %}" href="?show={{ key }}">
+        {{ label }} <span class="badge badge-light">{{ count }}</span>
+      </a>
+    </li>
+    {% endif %}
+  {% endfor %}
+</ul>
+
+<div class="card border-top-0">
+  <div class="card-body">
+    <form method="post" class="d-flex flex-wrap mb-3">
+      {% csrf_token %}
+      <button name="bulk_action" value="create_ready" class="btn btn-outline-success btn-sm mr-2 mb-1">
+        <i class="fas fa-check-double mr-1"></i> Set all ready rows to Create
+      </button>
+      <button name="bulk_action" value="skip_attention" class="btn btn-outline-secondary btn-sm mr-2 mb-1">
+        <i class="fas fa-forward mr-1"></i> Skip all rows needing attention
+      </button>
+      {% if has_problem_rows %}
+      <a href="{% url 'student_bulk_error_rows' batch.id %}" class="btn btn-outline-danger btn-sm mb-1">
+        <i class="fas fa-file-download mr-1"></i> Download rows to fix
+      </a>
+      {% endif %}
+    </form>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="page" value="{{ page.number }}">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+          <thead class="thead-light">
+            <tr>
+              <th>Row</th>
+              <th>Learner</th>
+              <th>Class</th>
+              <th>Adm. no</th>
+              <th>Parent</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th style="width: 130px;">Action</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr class="{% if row.is_imported %}table-success{% elif not row.is_valid %}table-danger{% elif row.import_error %}table-warning{% endif %}">
+              <td>{{ row.row_number }}</td>
+              <td>
+                <strong>{{ row.full_name|default:"(no name)" }}</strong>
+                <div class="small text-muted">
+                  {{ row.get_gender_display|default:"?" }} &middot; {{ row.date_of_birth|date:"d/m/Y"|default:"no DOB" }} &middot; {{ row.get_residence_display|default:"?" }}
+                </div>
+              </td>
+              <td>
+                {% if row.resolved_class %}{{ row.resolved_class.name }}{% if row.resolved_stream %} / {{ row.resolved_stream.name }}{% endif %}
+                {% else %}<span class="text-danger">{{ row.class_name|default:"-" }}</span>{% endif %}
+              </td>
+              <td>{% if row.is_imported %}{{ row.imported_student.admission_number }}{% else %}{{ row.admission_number|default:"(new)" }}{% endif %}</td>
+              <td class="small">
+                {% if row.parent1_name or row.parent1_phone %}{{ row.parent1_name }}<br>{{ row.parent1_phone }}{% else %}-{% endif %}
+              </td>
+              <td>
+                {% if row.is_imported %}<span class="badge badge-success">Imported</span>
+                {% elif row.import_error %}<span class="badge badge-warning">Failed</span>
+                {% elif not row.is_valid %}<span class="badge badge-danger">Error</span>
+                {% elif row.is_duplicate_in_file %}<span class="badge badge-warning">Repeated</span>
+                {% elif row.is_possible_duplicate_in_db %}<span class="badge badge-info">May exist</span>
+                {% else %}<span class="badge badge-success">Ready</span>{% endif %}
+              </td>
+              <td class="small">
+                {% if row.validation_errors %}<div class="text-danger">{{ row.validation_errors }}</div>{% endif %}
+                {% if row.import_error %}<div class="text-danger">{{ row.import_error }}</div>{% endif %}
+                {% if row.duplicate_file_note %}<div class="text-warning">{{ row.duplicate_file_note }}</div>{% endif %}
+                {% if row.duplicate_db_note %}<div class="text-info">{{ row.duplicate_db_note }}</div>{% endif %}
+                {% if row.warnings %}<div class="text-muted">{{ row.warnings }}</div>{% endif %}
+              </td>
+              <td>
+                {% if row.is_imported %}
+                  -
+                {% else %}
+                <select name="action_{{ row.id }}" class="form-control form-control-sm">
+                  {% if row.is_valid %}<option value="CREATE" {% if row.action == "CREATE" %}selected{% endif %}>Create</option>{% endif %}
+                  <option value="SKIP" {% if row.action == "SKIP" %}selected{% endif %}>Skip</option>
+                  <option value="REVIEW" {% if row.action == "REVIEW" %}selected{% endif %}>Decide later</option>
+                </select>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.is_imported %}
+                  <a href="{% url 'student_list' %}" class="btn btn-sm btn-link p-0">View</a>
+                {% else %}
+                  <a href="{% url 'student_bulk_row_edit' batch.id row.id %}?show={{ current_filter }}" class="btn btn-sm btn-outline-primary">Fix</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted py-4">No rows in this view.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page.has_other_pages %}
+      <nav class="mb-3">
+        <ul class="pagination pagination-sm mb-0">
+          {% if page.has_previous %}<li class="page-item"><a class="page-link" href="?show={{ current_filter }}&page={{ page.previous_page_number }}">Previous</a></li>{% endif %}
+          <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+          {% if page.has_next %}<li class="page-item"><a class="page-link" href="?show={{ current_filter }}&page={{ page.next_page_number }}">Next</a></li>{% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+
+      <button type="submit" class="btn btn-outline-primary"><i class="fas fa-save mr-1"></i> Save decisions on this page</button>
+    </form>
+
+    <hr>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between">
+      <div class="mb-2">
+        <strong>{{ to_create }}</strong> to create &middot; {{ to_skip }} skipped &middot; {{ in_review }} decide later
+      </div>
+      <div class="d-flex flex-wrap">
+        {% if batch.imported_rows == 0 %}
+        <form method="post" action="{% url 'student_bulk_delete' batch.id %}" class="mr-2 mb-2"
+              onsubmit="return confirm('Delete this import and its uploaded file?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger"><i class="fas fa-trash mr-1"></i> Delete import</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'student_bulk_finalize' batch.id %}" class="mb-2"
+              onsubmit="return confirm('Import {{ to_create }} learner(s) now?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success" {% if not to_create %}disabled{% endif %}>
+            <i class="fas fa-check-circle mr-1"></i> Import {{ to_create }} learner(s)
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  const card = document.getElementById("progress-card");
+  if (!card) return;
+  const url = card.getAttribute("data-status-url");
+  const bar = document.getElementById("progress-bar");
+  const text = document.getElementById("progress-text");
+
+  function poll() {
+    fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        bar.style.width = d.percent + "%";
+        bar.setAttribute("aria-valuenow", d.percent);
+        bar.textContent = d.percent + "%";
+        text.textContent = d.done + " of " + d.total + " rows. You can leave this page; the work continues.";
+        document.getElementById("stuck-box").classList.toggle("d-none", !d.stuck);
+        if (d.busy) { setTimeout(poll, 3000); } else { window.location.reload(); }
+      })
+      .catch(function () { setTimeout(poll, 5000); });
+  }
+  setTimeout(poll, 1500);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-route mr-1"></i> Routes</h3>
+    <small class="text-muted">Manage transport routes, vehicles and riders.</small>
+  </div>
+  <div>
+    <a href="{% url 'transport_route_add' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus mr-1"></i> Add Route
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped" id="routesTable">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Vehicle</th>
+            <th>Driver</th>
+            <th class="text-center">Riders</th>
+            <th class="text-right">Monthly Fee</th>
+            <th class="text-center">Active</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td class="font-weight-bold">{{ r.route_name }}</td>
+            <td>{{ r.vehicle|default:"—" }}</td>
+            <td>{{ r.driver|default:"—" }}</td>
+            <td class="text-center">
+              <span class="badge badge-info">{{ r.current_riders }}</span>
+              {% if r.vehicle and r.vehicle.capacity %}
+                <span class="text-muted">/ {{ r.vehicle.capacity }}</span>
+              {% endif %}
+            </td>
+            <td class="text-right">{{ r.monthly_fee|default:"0" }}</td>
+            <td class="text-center">
+              {% if r.is_active %}<span class="badge badge-success">Yes</span>{% else %}<span class="badge badge-success">No</span>{% endif %}
+            </td>
+            <td class="text-right">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'transport_route_edit' r.id %}">
+                <i class="fas fa-edit"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No routes yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  try {
+    $(function () {
+      if ($.fn.DataTable) {
+        $('#routesTable').DataTable({
+          pageLength: 25,
+          order: [[0, 'asc']]
+        });
+      }
+    });
+  } catch(e){}
+</script>
+{% endblock %}
