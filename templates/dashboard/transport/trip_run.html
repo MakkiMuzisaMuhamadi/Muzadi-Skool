@@ -1,0 +1,127 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<style>
+  .rec { border-left: 4px solid #ccc; }
+  .rec[data-status="BOARDED"] { border-left-color: #007bff; }
+  .rec[data-status="DROPPED"] { border-left-color: #28a745; }
+  .rec[data-status="ABSENT"]  { border-left-color: #ffc107; }
+  .rec .btn { min-height: 42px; }
+  .tally { position: sticky; top: 64px; z-index: 5; }
+</style>
+
+<div class="page-header mb-2 d-flex flex-wrap align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">{{ trip.route }}: {{ trip.get_trip_type_display }}</h3>
+    <small class="text-muted">
+      {{ trip.date|date:"D j M Y" }} · {{ trip.vehicle|default:"No vehicle" }} · Driver {{ trip.driver|default:"not set" }}{% if trip.attendant %} · Attendant {{ trip.attendant }}{% endif %}
+    </small>
+  </div>
+  <a href="{% url 'transport_trips' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Trips</a>
+</div>
+
+{% if not editable %}
+<div class="alert alert-success d-flex justify-content-between align-items-center">
+  <span>This trip was closed {{ trip.completed_at|date:"g:i a" }}.</span>
+  {% if is_admin %}
+  <form method="post" action="{% url 'transport_trip_reopen' trip.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-dark">Reopen to correct</button></form>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card tally mb-3"><div class="card-body py-2 d-flex flex-wrap justify-content-between" style="gap:.5rem;">
+  <span>Not marked <strong id="c-PENDING">{{ counts.PENDING }}</strong></span>
+  <span class="text-primary">On the bus <strong id="c-BOARDED">{{ counts.BOARDED }}</strong></span>
+  {% if trip.trip_type == "EVENING" %}<span class="text-success">Dropped off <strong id="c-DROPPED">{{ counts.DROPPED }}</strong></span>{% endif %}
+  <span class="text-warning">Absent <strong id="c-ABSENT">{{ counts.ABSENT }}</strong></span>
+  <span class="text-muted">of {{ counts.TOTAL }}</span>
+  {% if alerts_on %}<span class="text-muted small"><i class="fas fa-sms"></i> Parents get SMS alerts</span>{% endif %}
+</div></div>
+
+{% for g in groups %}
+  <h6 class="mt-3 mb-2">
+    {{ g.name }}
+    {% if g.stop %}<small class="text-muted">
+      {% if trip.trip_type == "MORNING" and g.stop.morning_time %}{{ g.stop.morning_time|time:"g:i a" }}{% endif %}
+      {% if trip.trip_type == "EVENING" and g.stop.evening_time %}{{ g.stop.evening_time|time:"g:i a" }}{% endif %}
+      {% if g.stop.landmark %}, {{ g.stop.landmark }}{% endif %}
+    </small>{% endif %}
+  </h6>
+
+  {% for r in g.records %}
+  <div class="card rec mb-2" id="rec-{{ r.pk }}" data-status="{{ r.status }}">
+    <div class="card-body py-2">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <strong>{{ r.student.name }}</strong>
+          <small class="text-muted d-block">{{ r.student.current_class|default:"" }} {{ r.student.stream|default:"" }}</small>
+        </div>
+        <span class="badge status-label badge-{% if r.status == 'BOARDED' %}primary{% elif r.status == 'DROPPED' %}success{% elif r.status == 'ABSENT' %}warning{% else %}secondary{% endif %}">
+          {{ r.get_status_display }}{% if r.handed_to %}: {{ r.handed_to }}{% endif %}
+        </span>
+      </div>
+
+      {% if editable %}
+      <form method="post" action="{% url 'transport_trip_mark' r.pk %}" class="mark-form mt-2">
+        {% csrf_token %}
+        <div class="d-flex flex-wrap" style="gap:.4rem;">
+          <button name="status" value="BOARDED" class="btn btn-outline-primary flex-fill">On the bus</button>
+          {% if trip.trip_type == "EVENING" %}
+            <input type="text" name="handed_to" class="form-control flex-fill" style="max-width:220px" placeholder="Received by (optional)" value="{{ r.handed_to }}">
+            <button name="status" value="DROPPED" class="btn btn-outline-success flex-fill">Dropped off</button>
+          {% endif %}
+          <button name="status" value="ABSENT" class="btn btn-outline-warning flex-fill">Absent</button>
+          <button name="status" value="PENDING" class="btn btn-link btn-sm text-muted" title="Clear">Undo</button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+{% empty %}
+  <p class="text-muted">No children ride this trip. Add riders to the route first.</p>
+{% endfor %}
+
+{% if editable and groups %}
+<form method="post" action="{% url 'transport_trip_complete' trip.pk %}" class="mt-4 mb-5"
+      onsubmit="return confirm('Close this trip? You will not be able to change it afterwards.');">
+  {% csrf_token %}
+  <button class="btn btn-success btn-lg btn-block"><i class="fas fa-flag-checkered mr-1"></i>
+    {% if trip.trip_type == "EVENING" %}All children dropped off: close trip{% else %}Arrived at school: close trip{% endif %}
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var badgeClass = { PENDING: 'secondary', BOARDED: 'primary', DROPPED: 'success', ABSENT: 'warning' };
+  document.querySelectorAll('.mark-form').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      if (!window.fetch || !window.FormData || !e.submitter) return; // old phone: normal form post
+      e.preventDefault();
+      var data = new FormData(form);
+      data.set('status', e.submitter.value);
+      var buttons = form.querySelectorAll('button');
+      buttons.forEach(function (b) { b.disabled = true; });
+      fetch(form.action, { method: 'POST', body: data, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (!res.ok) { alert(res.error); return; }
+          var card = form.closest('.rec');
+          card.dataset.status = res.status;
+          var badge = card.querySelector('.status-label');
+          badge.className = 'badge status-label badge-' + badgeClass[res.status];
+          badge.textContent = res.label + (res.handed_to ? ': ' + res.handed_to : '');
+          Object.keys(res.counts).forEach(function (k) {
+            var el = document.getElementById('c-' + k);
+            if (el) el.textContent = res.counts[k];
+          });
+        })
+        .catch(function () { alert('Could not save. Check the internet connection and try again.'); })
+        .finally(function () { buttons.forEach(function (b) { b.disabled = false; }); });
+    });
+  });
+})();
+</script>
+{% endblock %}

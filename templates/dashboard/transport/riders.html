@@ -1,0 +1,78 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-users mr-1"></i> Riders</h3>
+    <small class="text-muted">Children who use school transport now.</small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    {% if f.route %}<a href="{% url 'transport_route_manifest' f.route %}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="fas fa-print mr-1"></i> Print this route</a>{% endif %}
+    {% if is_admin %}<a href="{% url 'transport_assign' %}{% if f.route %}?route={{ f.route }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus mr-1"></i> Add riders</a>{% endif %}
+  </div>
+</div>
+
+<form method="get" class="card mb-3"><div class="card-body py-3">
+  <div class="form-row align-items-end">
+    <div class="col-md-4 mb-2">
+      <label class="small mb-1">Route</label>
+      <select name="route" class="form-control">
+        <option value="">All routes</option>
+        {% for r in routes %}<option value="{{ r.pk }}" {% if f.route == r.pk|stringformat:"s" %}selected{% endif %}>{{ r }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 mb-2">
+      <label class="small mb-1">Class</label>
+      <select name="class_ref" class="form-control">
+        <option value="">All classes</option>
+        {% for c in classes %}<option value="{{ c.pk }}" {% if f.class_ref == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 mb-2">
+      <label class="small mb-1">Name or admission no.</label>
+      <input type="search" name="q" value="{{ f.q }}" class="form-control">
+    </div>
+    <div class="col-md-2 mb-2"><button class="btn btn-outline-primary btn-block">Show</button></div>
+  </div>
+</div></form>
+
+<div class="card"><div class="card-body">
+  <p class="text-muted small">{{ assignments|length }} rider{{ assignments|length|pluralize }}</p>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm">
+      <thead class="thead-light"><tr>
+        <th>Child</th><th>Class</th><th>Route</th><th>Stop</th><th>Rides</th>
+        <th class="text-right">Fee per term</th><th>Since</th><th class="text-right"></th>
+      </tr></thead>
+      <tbody>
+      {% for a in assignments %}
+        <tr>
+          <td class="font-weight-bold">{{ a.student.name }}<br><small class="text-muted">{{ a.student.admission_number }}</small></td>
+          <td>{{ a.student.current_class|default:"" }} {{ a.student.stream|default:"" }}</td>
+          <td>{{ a.route }}</td>
+          <td>{{ a.bus_stop|default:"—" }}</td>
+          <td>{{ a.get_trip_mode_display }}</td>
+          <td class="text-right">{{ a.fee|floatformat:0|intcomma }}</td>
+          <td>{{ a.start_date|date:"j M Y" }}</td>
+          <td class="text-right text-nowrap">
+            {% if is_admin %}
+            <a href="{% url 'transport_assignment_edit' a.pk %}" class="btn btn-outline-primary btn-sm" title="Change route or stop"><i class="fas fa-edit"></i></a>
+            <form method="post" action="{% url 'transport_unassign' a.pk %}" class="d-inline"
+                  onsubmit="return confirm('Remove {{ a.student.name|escapejs }} from transport from today?');">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn btn-outline-danger btn-sm" title="Remove from transport"><i class="fas fa-user-minus"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">
+          No riders match. {% if is_admin %}<a href="{% url 'transport_assign' %}">Add riders</a>.{% endif %}
+        </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

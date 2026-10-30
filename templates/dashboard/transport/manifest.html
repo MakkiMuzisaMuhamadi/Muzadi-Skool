@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ route }} rider list</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; color: #222; margin: 24px; font-size: 13px; }
+    h1 { font-size: 20px; margin: 0; }
+    .sub { color: #555; margin: 4px 0 14px; }
+    .crew { display: flex; flex-wrap: wrap; gap: 6px 24px; border: 1px solid #ccc; padding: 8px 12px; margin-bottom: 14px; }
+    .crew span b { display: block; font-size: 11px; color: #666; font-weight: normal; }
+    .stop { margin-top: 16px; page-break-inside: avoid; }
+    .stop h2 { font-size: 15px; margin: 0 0 4px; background: #f0f0f0; padding: 5px 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+    th { background: #fafafa; font-size: 12px; }
+    td.tick { width: 34px; }
+    .small { font-size: 11px; color: #555; }
+    .tools { margin-bottom: 14px; }
+    .tools a, .tools button { margin-right: 6px; font-size: 13px; }
+    .sign { margin-top: 28px; display: flex; gap: 40px; }
+    .sign div { flex: 1; border-top: 1px solid #333; padding-top: 4px; }
+    @media print { .tools { display: none; } body { margin: 10mm; } }
+  </style>
+</head>
+<body>
+  <div class="tools">
+    <button onclick="window.print()">Print</button>
+    <a href="?trip=">All riders</a>
+    <a href="?trip=MORNING">Morning only</a>
+    <a href="?trip=EVENING">Evening only</a>
+  </div>
+
+  <h1>{{ school.name }}: {{ route }} rider list</h1>
+  <p class="sub">
+    {% if trip_type == "MORNING" %}Morning pick-up{% elif trip_type == "EVENING" %}Evening drop-off{% else %}Morning and evening{% endif %}
+    · {{ count }} child{{ count|pluralize:"ren" }} · Printed {{ printed_at|date:"j M Y, g:i a" }}
+  </p>
+
+  <div class="crew">
+    <span><b>Vehicle</b>{{ route.vehicle|default:"Not set" }}</span>
+    <span><b>Driver</b>{{ route.effective_driver|default:"Not set" }}{% if route.effective_driver.contact1 %}, {{ route.effective_driver.contact1 }}{% endif %}</span>
+    <span><b>Attendant</b>{{ route.attendant|default:"None" }}{% if route.attendant.contact1 %}, {{ route.attendant.contact1 }}{% endif %}</span>
+    <span><b>Leaves</b>{{ route.morning_departure|time:"g:i a"|default:"—" }} morning, {{ route.evening_departure|time:"g:i a"|default:"—" }} evening</span>
+  </div>
+
+  {% for g in groups %}
+  <div class="stop">
+    <h2>{{ forloop.counter }}. {{ g.name }}
+      {% if g.stop %}<span class="small">
+        {% if g.stop.morning_time %}pick-up {{ g.stop.morning_time|time:"g:i a" }}{% endif %}
+        {% if g.stop.evening_time %}, drop-off {{ g.stop.evening_time|time:"g:i a" }}{% endif %}
+        {% if g.stop.landmark %}, {{ g.stop.landmark }}{% endif %}
+      </span>{% endif %}
+    </h2>
+    <table>
+      <thead><tr>
+        <th>Child</th><th>Class</th><th>Rides</th><th>Parents / who may pick up</th>
+        <th class="tick">AM</th><th class="tick">PM</th>
+      </tr></thead>
+      <tbody>
+      {% for r in g.riders %}
+        <tr>
+          <td><b>{{ r.a.student.name }}</b><br><span class="small">{{ r.a.student.admission_number }}</span></td>
+          <td>{{ r.a.student.current_class|default:"" }} {{ r.a.student.stream|default:"" }}</td>
+          <td>{{ r.a.get_trip_mode_display }}</td>
+          <td>
+            {% for c in r.contacts %}
+              {{ c.name }} ({{ c.relationship }}) {{ c.phone }}{% if c.can_pick_up %} ✓ may pick up{% endif %}<br>
+            {% empty %}
+              {{ r.a.student.emergency_contact_name }} {{ r.a.student.emergency_contact_phone }}
+            {% endfor %}
+          </td>
+          <td class="tick"></td><td class="tick"></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% empty %}
+  <p>No children are assigned to this route yet.</p>
+  {% endfor %}
+
+  <div class="sign">
+    <div>Driver's signature</div>
+    <div>Attendant's signature</div>
+    <div>Date</div>
+  </div>
+</body>
+</html>

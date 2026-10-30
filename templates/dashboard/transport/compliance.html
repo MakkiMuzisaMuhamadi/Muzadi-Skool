@@ -1,0 +1,63 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-file-contract mr-1"></i> Insurance and licences</h3>
+  <small class="text-muted">Items turn amber {{ days }} days before they expire. Change this in Transport settings.</small>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <h5 class="mb-3">Vehicles</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="thead-light"><tr><th>Vehicle</th><th>Insurance</th><th>Inspection</th><th>Operating licence</th><th></th></tr></thead>
+      <tbody>
+      {% for row in vehicles %}
+        <tr>
+          <td class="font-weight-bold"><a href="{% url 'transport_vehicle_detail' row.vehicle.pk %}">{{ row.vehicle }}</a></td>
+          {% for it in row.items %}
+          <td>
+            <span class="badge badge-{% if it.state == 'OK' %}success{% elif it.state == 'DUE' %}warning{% elif it.state == 'EXPIRED' %}danger{% else %}secondary{% endif %}">
+              {% if it.state == 'OK' %}Valid{% elif it.state == 'DUE' %}Due soon{% elif it.state == 'EXPIRED' %}Expired{% else %}Not recorded{% endif %}
+            </span>
+            {% if it.date %}<small class="d-block text-muted">{{ it.date|date:"j M Y" }}</small>{% endif %}
+          </td>
+          {% endfor %}
+          <td class="text-right">{% if is_admin %}<a href="{% url 'transport_vehicle_edit' row.vehicle.pk %}" class="btn btn-outline-primary btn-sm">Update dates</a>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-3">No vehicles in use.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+
+<div class="card"><div class="card-body">
+  <h5 class="mb-1">Drivers</h5>
+  <p class="text-muted small">Everyone set as a driver on a vehicle or route.</p>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="thead-light"><tr><th>Driver</th><th>Phone</th><th>Licence no.</th><th>Classes</th><th>Expiry</th><th></th></tr></thead>
+      <tbody>
+      {% for d in drivers %}
+        <tr>
+          <td class="font-weight-bold">{{ d.staff }}</td>
+          <td>{{ d.staff.contact1|default:"—" }}</td>
+          <td>{{ d.licence.licence_no|default:"—" }}</td>
+          <td>{{ d.licence.licence_classes|default:"—" }}</td>
+          <td>
+            <span class="badge badge-{% if d.state == 'OK' %}success{% elif d.state == 'DUE' %}warning{% elif d.state == 'EXPIRED' %}danger{% else %}secondary{% endif %}">
+              {% if d.state == 'OK' %}Valid{% elif d.state == 'DUE' %}Due soon{% elif d.state == 'EXPIRED' %}Expired{% else %}Not recorded{% endif %}
+            </span>
+            {% if d.licence.expiry_date %}<small class="d-block text-muted">{{ d.licence.expiry_date|date:"j M Y" }}</small>{% endif %}
+          </td>
+          <td class="text-right">{% if is_admin %}<a href="{% url 'transport_licence_edit' d.staff.pk %}" class="btn btn-outline-primary btn-sm">{% if d.licence %}Update{% else %}Add licence{% endif %}</a>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">No drivers set yet. Choose a driver on each vehicle or route.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

@@ -1047,41 +1047,57 @@
             {# INVENTORY SECTION #}
             {# ======================= #}
             {% include "dashboard/inventory/_nav.html" %}
-          <!-- ======================= -->
-          <!-- TRANSPORT SECTION -->
-          <!-- ======================= -->
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+
+            
+          <!-- =======================================================
+               TRANSPORT SECTION
+               ======================================================= -->
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TRANSPORT_OFFICER,BURSAR,TEACHER" %}
           <li class="nav-item">
-            <a class="nav-link" data-toggle="collapse" href="#transport" aria-expanded="false"
-              aria-controls="transport">
+            <a class="nav-link" data-toggle="collapse" href="#transport" aria-expanded="false" aria-controls="transport">
               <i class="fas fa-bus menu-icon"></i>
               <span class="menu-title">Transport</span>
               <i class="menu-arrow"></i>
             </a>
             <div class="collapse" id="transport">
               <ul class="nav flex-column sub-menu">
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TRANSPORT_OFFICER,BURSAR" %}
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'transport_vehicle_list' %}">
-                    <i class="fas fa-bus-alt menu-icon"></i>
-                    Vehicles
-                  </a>
+                  <a class="nav-link" href="{% url 'transport_dashboard' %}"><i class="fas fa-th-large menu-icon"></i> Overview</a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_trips' %}"><i class="fas fa-clipboard-check menu-icon"></i> Daily trips</a>
+                </li>
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TRANSPORT_OFFICER,BURSAR" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_students' %}"><i class="fas fa-users menu-icon"></i> Riders</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'transport_route_list' %}">
-                    <i class="fas fa-route menu-icon"></i>
-                    Routes
-                  </a>
+                  <a class="nav-link" href="{% url 'transport_route_list' %}"><i class="fas fa-route menu-icon"></i> Routes</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'transport_students' %}">
-                    <i class="fas fa-users menu-icon"></i>
-                    Transport Students
-                  </a>
+                  <a class="nav-link" href="{% url 'transport_vehicle_list' %}"><i class="fas fa-bus-alt menu-icon"></i> Vehicles</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_compliance' %}"><i class="fas fa-file-contract menu-icon"></i> Insurance &amp; licences</a>
+                </li>
+                {% endif %}
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_billing' %}"><i class="fas fa-file-invoice-dollar menu-icon"></i> Transport billing</a>
+                </li>
+                {% endif %}
+                {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TRANSPORT_OFFICER" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'transport_settings' %}"><i class="fas fa-cog menu-icon"></i> Transport settings</a>
+                </li>
+                {% endif %}
               </ul>
             </div>
           </li>
           {% endif %}
+
           <!-- ======================= -->
           <!-- HOSTEL SECTION -->
           <!-- ======================= -->

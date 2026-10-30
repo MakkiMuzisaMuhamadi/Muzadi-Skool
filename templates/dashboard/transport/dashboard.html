@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-bus mr-1"></i> Transport</h3>
+    <small class="text-muted">{{ today|date:"l j F Y" }}</small>
+  </div>
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    <a href="{% url 'transport_trips' %}" class="btn btn-primary btn-sm"><i class="fas fa-clipboard-check mr-1"></i> Daily trips</a>
+    {% if is_admin %}
+    <a href="{% url 'transport_assign' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-user-plus mr-1"></i> Add riders</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if still_on_bus %}
+<div class="alert alert-danger">
+  <i class="fas fa-exclamation-triangle mr-1"></i>
+  <strong>{{ still_on_bus }} child{{ still_on_bus|pluralize:"ren" }}</strong> still marked on the bus on this evening's trips.
+</div>
+{% endif %}
+
+<div class="row mb-3">
+  <div class="col-6 col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Riders</small><strong class="h4 mb-0">{{ stats.riders }}</strong>
+  </div></div>
+  <div class="col-6 col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Seats on active routes</small><strong class="h4 mb-0">{{ stats.seats|default:"—" }}</strong>
+  </div></div>
+  <div class="col-6 col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Routes</small><strong class="h4 mb-0">{{ stats.routes }}</strong>
+  </div></div>
+  <div class="col-6 col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Vehicles</small><strong class="h4 mb-0">{{ stats.vehicles }}</strong>
+  </div></div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="mb-3">Today's routes</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="thead-light"><tr>
+            <th>Route</th><th>Vehicle / driver</th><th class="text-center">Riders</th>
+            <th class="text-center">Morning</th><th class="text-center">Evening</th><th></th>
+          </tr></thead>
+          <tbody>
+          {% for row in route_rows %}
+            <tr>
+              <td class="font-weight-bold">{{ row.route }}</td>
+              <td>{{ row.route.vehicle|default:"No vehicle" }}<br><small class="text-muted">{{ row.route.effective_driver|default:"No driver" }}</small></td>
+              <td class="text-center">{{ row.route.current_riders }}{% if row.route.capacity %}<span class="text-muted">/{{ row.route.capacity }}</span>{% endif %}</td>
+              <td class="text-center">
+                {% if row.morning %}<a href="{% url 'transport_trip_run' row.morning.pk %}" class="badge badge-{% if row.morning.status == 'COMPLETED' %}success{% else %}primary{% endif %}">{{ row.morning.get_status_display }}</a>
+                {% else %}<span class="text-muted">Not started</span>{% endif %}
+              </td>
+              <td class="text-center">
+                {% if row.evening %}<a href="{% url 'transport_trip_run' row.evening.pk %}" class="badge badge-{% if row.evening.status == 'COMPLETED' %}success{% else %}primary{% endif %}">{{ row.evening.get_status_display }}</a>
+                {% else %}<span class="text-muted">Not started</span>{% endif %}
+              </td>
+              <td class="text-right"><a href="{% url 'transport_route_manifest' row.route.pk %}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Print rider list"><i class="fas fa-print"></i></a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">
+              No routes yet. {% if is_admin %}<a href="{% url 'transport_route_add' %}">Add your first route</a>.{% endif %}
+            </td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="mb-3">Needs attention</h5>
+      {% for a in alerts %}
+        <div class="d-flex justify-content-between align-items-start border-bottom py-2">
+          <div>{{ a.what }}<br><small class="text-muted">{% if a.date %}{{ a.date|date:"j M Y" }}{% else %}Not recorded{% endif %}</small></div>
+          <span class="badge badge-{% if a.state == 'EXPIRED' %}danger{% elif a.state == 'MISSING' %}secondary{% else %}warning{% endif %}">
+            {% if a.state == 'EXPIRED' %}Expired{% elif a.state == 'MISSING' %}Missing{% else %}Due soon{% endif %}
+          </span>
+        </div>
+      {% empty %}
+        <p class="text-muted mb-0">Insurance, inspections and licences are all up to date.</p>
+      {% endfor %}
+      <a href="{% url 'transport_compliance' %}" class="btn btn-link btn-sm px-0 mt-2">See all insurance and licences</a>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-user-edit mr-1"></i> {{ a.student.name }}</h3>
+    <small class="text-muted">Now on {{ a.route }}{% if a.bus_stop %}, {{ a.bus_stop }}{% endif %} since {{ a.start_date|date:"j M Y" }}</small>
+  </div>
+  <a href="{% url 'transport_students' %}?route={{ a.route_id }}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Riders</a>
+</div>
+
+<div class="row">
+  <div class="col-lg-7 mb-3">
+    <form method="post" class="card"><div class="card-body">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>Route</label>{{ form.route }}
+          <small class="text-danger">{{ form.route.errors|striptags }}</small>
+        </div>
+        <div class="form-group col-md-6">
+          <label>Stop</label>
+          <select name="stop" id="stopSelect" class="form-control" data-selected="{{ form.stop.value|default_if_none:'' }}"></select>
+          <small class="text-danger">{{ form.stop.errors|striptags }}</small>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6"><label>Rides</label>{{ form.trip_mode }}</div>
+        <div class="form-group col-md-6">
+          <label>{{ form.change_date.label }}</label>{{ form.change_date }}
+          <small class="text-muted">{{ form.change_date.help_text }}</small>
+        </div>
+      </div>
+      <div class="form-group"><label>Notes</label>{{ form.notes }}</div>
+      <p class="small text-muted">Moving a child to another route keeps the old route in their history. Fees already billed for this term are not changed; adjust them from the child's fee statement if needed.</p>
+      <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save changes</button>
+    </div></form>
+  </div>
+
+  <div class="col-lg-5 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="mb-3">Transport history</h5>
+      <table class="table table-sm mb-0">
+        <thead class="thead-light"><tr><th>Route</th><th>From</th><th>To</th></tr></thead>
+        <tbody>
+        {% for h in history %}
+          <tr>
+            <td>{{ h.route }}<br><small class="text-muted">{{ h.bus_stop|default:"" }} · {{ h.get_trip_mode_display }}</small></td>
+            <td>{{ h.start_date|date:"j M Y" }}</td>
+            <td>{% if h.is_active %}<span class="badge badge-success">Now</span>{% else %}{{ h.end_date|date:"j M Y" }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var route = document.getElementById('{{ form.route.id_for_label }}');
+  var stop = document.getElementById('stopSelect');
+  function loadStops() {
+    var wanted = stop.dataset.selected;
+    stop.innerHTML = '<option value="">Loading…</option>';
+    if (!route.value) { stop.innerHTML = '<option value="">Choose the route first</option>'; return; }
+    fetch('{% url "transport_ajax_stops" %}?route=' + encodeURIComponent(route.value))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        stop.innerHTML = '<option value="">' + (data.stops.length ? 'Choose a stop' : 'This route has no stops yet') + '</option>';
+        data.stops.forEach(function (s) {
+          var o = document.createElement('option');
+          o.value = s.id;
+          o.textContent = s.name + (s.time ? ' (' + s.time + ')' : '');
+          if (String(s.id) === String(wanted)) o.selected = true;
+          stop.appendChild(o);
+        });
+      });
+  }
+  route.addEventListener('change', function () { stop.dataset.selected = ''; loadStops(); });
+  loadStops();
+})();
+</script>
+{% endblock %}

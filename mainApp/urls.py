@@ -36,7 +36,6 @@
 # =============================================================================
 
 from django.urls import include, path
-
 from mainApp.views.ajax_views import *
 from mainApp.views.attendance_views import *
 from mainApp.views.calendar_views import *
@@ -78,7 +77,7 @@ from mainApp.views import timetable_views as tt
 # Marks upgrade: progress/approval, Excel round-trip, change history
 from mainApp.views import mark_entry_views, marks_excel_views, marks_control_views
 from mainApp.views import parent_views
-
+from mainApp.views.transport_views import *
 
 urlpatterns = [
 
@@ -744,16 +743,42 @@ urlpatterns = [
     # =========================================================================
     ## 22  TRANSPORT
     # =========================================================================
-    path('vehicles/', vehicle_list, name='transport_vehicle_list'),
-    path('vehicles/add/', vehicle_create, name='transport_vehicle_add'),
-    path('vehicles/<int:pk>/edit/', vehicle_update, name='transport_vehicle_edit'),
+    path('transport/', transport_dashboard, name='transport_dashboard'),
 
-    path('routes/', route_list, name='transport_route_list'),
-    path('routes/add/', route_create, name='transport_route_add'),
-    path('routes/<int:pk>/edit/', route_update, name='transport_route_edit'),
+    # Vehicles
+    path('transport/vehicles/', vehicle_list, name='transport_vehicle_list'),
+    path('transport/vehicles/add/', vehicle_create, name='transport_vehicle_add'),
+    path('transport/vehicles/<int:pk>/', transport_vehicle_detail, name='transport_vehicle_detail'),
+    path('transport/vehicles/<int:pk>/edit/', vehicle_update, name='transport_vehicle_edit'),
+    path('transport/vehicles/<int:pk>/logs/add/', transport_vehicle_log_add, name='transport_vehicle_log_add'),
+    path('transport/vehicle-logs/<int:pk>/delete/', transport_vehicle_log_delete, name='transport_vehicle_log_delete'),
 
-    path('transport/students/', transport_students, name='transport_students'),
-    path('students/<int:pk>/remove/', transport_unassign, name='transport_unassign'),  # removes a student from transport
+    # Routes
+    path('transport/routes/', route_list, name='transport_route_list'),
+    path('transport/routes/add/', route_create, name='transport_route_add'),
+    path('transport/routes/<int:pk>/edit/', route_update, name='transport_route_edit'),
+    path('transport/routes/<int:pk>/manifest/', transport_route_manifest, name='transport_route_manifest'),
+
+    # Riders
+    path('transport/riders/', transport_students, name='transport_students'),
+    path('transport/riders/add/', transport_assign, name='transport_assign'),
+    path('transport/riders/<int:pk>/edit/', transport_assignment_edit, name='transport_assignment_edit'),
+    path('transport/riders/<int:pk>/remove/', transport_unassign, name='transport_unassign'),
+    path('transport/ajax/stops/', transport_ajax_stops, name='transport_ajax_stops'),
+
+    # Daily trips
+    path('transport/trips/', transport_trips, name='transport_trips'),
+    path('transport/trips/start/', transport_trip_start, name='transport_trip_start'),
+    path('transport/trips/<int:pk>/', transport_trip_run, name='transport_trip_run'),
+    path('transport/trips/<int:pk>/complete/', transport_trip_complete, name='transport_trip_complete'),
+    path('transport/trips/<int:pk>/reopen/', transport_trip_reopen, name='transport_trip_reopen'),
+    path('transport/trip-records/<int:pk>/mark/', transport_trip_mark, name='transport_trip_mark'),
+
+    # Compliance, billing, settings
+    path('transport/compliance/', transport_compliance, name='transport_compliance'),
+    path('transport/licences/<int:staff_pk>/', transport_licence_edit, name='transport_licence_edit'),
+    path('transport/billing/', transport_billing, name='transport_billing'),
+    path('transport/settings/', transport_settings_view, name='transport_settings'),
 
     # =========================================================================
     ## 23  INVENTORY & LIBRARY

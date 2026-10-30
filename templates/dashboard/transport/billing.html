@@ -1,0 +1,85 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-file-invoice-dollar mr-1"></i> Transport billing</h3>
+    <small class="text-muted">Bills each rider their own route's fee for the term. Running it again only bills new riders.</small>
+  </div>
+  <form method="get" class="form-inline">
+    {{ form.term }}
+    <button class="btn btn-outline-primary btn-sm ml-2">Show</button>
+  </form>
+</div>
+
+{% if not setting.fee_category %}
+<div class="alert alert-warning">
+  Choose the transport fee category in <a href="{% url 'transport_settings' %}">Transport settings</a> before billing.
+</div>
+{% endif %}
+
+{% if term %}
+<div class="row mb-3">
+  <div class="col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Ready to bill</small>
+    <strong class="h5">{{ summary.NEW.count }}</strong> <span class="text-muted">· UGX {{ summary.NEW.total|floatformat:0|intcomma }}</span>
+  </div></div>
+  <div class="col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Already billed</small>
+    <strong class="h5">{{ summary.BILLED.count }}</strong> <span class="text-muted">· UGX {{ summary.BILLED.total|floatformat:0|intcomma }}</span>
+  </div></div>
+  <div class="col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Billed another way</small>
+    <strong class="h5">{{ summary.OTHER.count }}</strong>
+    <small class="d-block text-muted">Already charged in this category, e.g. by a fee structure</small>
+  </div></div>
+  <div class="col-md-3 mb-2"><div class="border rounded p-3 bg-white h-100">
+    <small class="text-muted d-block">Route has no fee</small>
+    <strong class="h5">{{ summary.ZERO.count }}</strong>
+    <small class="d-block text-muted">Set the fee on the route</small>
+  </div></div>
+</div>
+
+{% if summary.NEW.count and setting.fee_category %}
+<form method="post" class="mb-3"
+      onsubmit="return confirm('Bill {{ summary.NEW.count }} rider(s) UGX {{ summary.NEW.total|floatformat:0|intcomma }} for {{ term|escapejs }}?');">
+  {% csrf_token %}
+  <input type="hidden" name="term" value="{{ term.pk }}">
+  <button class="btn btn-success"><i class="fas fa-file-invoice mr-1"></i> Bill {{ summary.NEW.count }} rider{{ summary.NEW.count|pluralize }} for {{ term }}</button>
+</form>
+{% endif %}
+
+<div class="card"><div class="card-body">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="thead-light"><tr>
+        <th>Child</th><th>Class</th><th>Route</th><th>Rides</th><th class="text-right">Amount</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.a.student.name }}<br><small class="text-muted">{{ row.a.student.admission_number }}</small></td>
+          <td>{{ row.a.student.current_class|default:"" }}</td>
+          <td>{{ row.a.route }}</td>
+          <td>{{ row.a.get_trip_mode_display }}</td>
+          <td class="text-right">{{ row.amount|floatformat:0|intcomma }}</td>
+          <td>
+            {% if row.state == "NEW" %}<span class="badge badge-primary">Ready</span>
+            {% elif row.state == "BILLED" %}
+              <span class="badge badge-success">Billed</span>
+              {% if row.charge.fee_charge_id %}<a href="{% url 'student_fee_charge_detail' row.charge.fee_charge_id %}" class="small ml-1">Open charge</a>{% endif %}
+            {% elif row.state == "OTHER" %}<span class="badge badge-secondary">Billed another way</span>
+            {% else %}<span class="badge badge-warning">No fee set</span>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">No riders yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% else %}
+<p class="text-muted">Choose a term to see who will be billed.</p>
+{% endif %}
+{% endblock %}

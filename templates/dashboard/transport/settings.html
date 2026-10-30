@@ -1,0 +1,47 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-cog mr-1"></i> Transport settings</h3>
+  <small class="text-muted">These settings apply to this school only.</small>
+</div>
+
+<form method="post" style="max-width:820px;">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+  <div class="card mb-3"><div class="card-body">
+    <h5 class="mb-3">Billing</h5>
+    <div class="form-group">
+      <label>Transport fee category</label>{{ form.fee_category }}
+      <small class="text-muted">{{ form.fee_category.help_text }} Create it under Fees, Fee categories, if it is not listed.</small>
+    </div>
+    <div class="form-group mb-0">
+      <label>{{ form.expiry_warning_days.label }}</label>{{ form.expiry_warning_days }}
+      <small class="text-muted">{{ form.expiry_warning_days.help_text }}</small>
+    </div>
+  </div></div>
+
+  <div class="card mb-3"><div class="card-body">
+    <h5 class="mb-3">SMS alerts to parents</h5>
+    <div class="form-check mb-2">
+      {{ form.sms_alerts_enabled }} <label class="form-check-label font-weight-bold" for="{{ form.sms_alerts_enabled.id_for_label }}">{{ form.sms_alerts_enabled.label }}</label>
+      <small class="text-muted d-block">{{ form.sms_alerts_enabled.help_text }} Only parents who agreed to SMS and are set to receive SMS for that child get alerts.</small>
+    </div>
+    <div class="pl-3 mb-3">
+      <div class="form-check">{{ form.alert_on_board }} <label class="form-check-label" for="{{ form.alert_on_board.id_for_label }}">{{ form.alert_on_board.label }}</label></div>
+      <div class="form-check">{{ form.alert_on_drop }} <label class="form-check-label" for="{{ form.alert_on_drop.id_for_label }}">{{ form.alert_on_drop.label }}</label></div>
+      <div class="form-check">{{ form.alert_on_absent }} <label class="form-check-label" for="{{ form.alert_on_absent.id_for_label }}">{{ form.alert_on_absent.label }}</label></div>
+    </div>
+
+    <p class="small text-muted mb-2">
+      You can use these blanks in the messages: {parent} {student} {stop} {time} {route} {school}.
+      The drop-off message can also use {receiver}, which adds “, received by …” when the attendant types a name.
+    </p>
+    <div class="form-group"><label>Message when a child gets on the bus</label>{{ form.board_message }}</div>
+    <div class="form-group"><label>Message when a child is dropped off</label>{{ form.drop_message }}</div>
+    <div class="form-group mb-0"><label>Message when a child is missing at the morning stop</label>{{ form.absent_message }}</div>
+  </div></div>
+
+  <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save settings</button>
+</form>
+{% endblock %}

@@ -1,80 +1,51 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
-{% load role_tags %}
-
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-bus mr-1"></i> Vehicles</h3>
-    <small class="text-muted">Manage school transport vehicles.</small>
+    <h3 class="page-title mb-0"><i class="fas fa-bus-alt mr-1"></i> Vehicles</h3>
+    <small class="text-muted">School buses and vans, their drivers and papers.</small>
   </div>
-  <div>
-    <a href="{% url 'transport_vehicle_add' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> Add Vehicle
-    </a>
-  </div>
+  {% if is_admin %}
+  <a href="{% url 'transport_vehicle_add' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add vehicle</a>
+  {% endif %}
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-hover table-striped" id="vehiclesTable">
-        <thead>
-          <tr>
-            <th>Reg No.</th>
-            <th>Name</th>
-            <th>Type</th>
-            <th class="text-center">Capacity</th>
-            <th>Driver</th>
-            <th>Status</th>
-            <th class="text-center">Active</th>
-            <th class="text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for v in rows %}
-          <tr>
-            <td class="font-weight-bold">{{ v.reg_number }}</td>
-            <td>{{ v.name|default:"—" }}</td>
-            <td>{{ v.vehicle_type|default:"—" }}</td>
-            <td class="text-center">{{ v.capacity }}</td>
-            <td>{{ v.driver|default:"—" }}</td>
-            <td>
-              <span class="badge badge-{% if v.status == 'ACTIVE' %}success{% elif v.status == 'MAINTENANCE' %}warning{% else %}info{% endif %}">
-                {{ v.get_status_display }}
-              </span>
-            </td>
-            <td class="text-center">
-              {% if v.is_active %}<span class="badge badge-success">Yes</span>{% else %}<span class="badge badge-danger">No</span>{% endif %}
-            </td>
-            <td class="text-right">
-              <a class="btn btn-outline-primary btn-sm" href="{% url 'transport_vehicle_edit' v.id %}">
-                <i class="fas fa-edit"></i>
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="8" class="text-center text-muted py-4">No vehicles yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<div class="card"><div class="card-body">
+  <div class="table-responsive">
+    <table class="table table-hover table-striped" id="vehiclesTable">
+      <thead><tr>
+        <th>Reg no.</th><th>Name</th><th>Type</th><th class="text-center">Seats</th>
+        <th>Usual driver</th><th class="text-center">Routes</th><th>Status</th><th class="text-right"></th>
+      </tr></thead>
+      <tbody>
+      {% for v in rows %}
+        <tr>
+          <td class="font-weight-bold"><a href="{% url 'transport_vehicle_detail' v.pk %}">{{ v.reg_number }}</a></td>
+          <td>{{ v.name|default:"—" }}</td>
+          <td>{{ v.get_vehicle_type_display }}</td>
+          <td class="text-center">{{ v.capacity|default:"—" }}</td>
+          <td>{{ v.driver|default:"—" }}</td>
+          <td class="text-center">{{ v.route_count }}</td>
+          <td>
+            {% if not v.is_active %}<span class="badge badge-secondary">Retired</span>
+            {% else %}<span class="badge badge-{% if v.status == 'ACTIVE' %}success{% elif v.status == 'MAINTENANCE' %}warning{% else %}secondary{% endif %}">{{ v.get_status_display }}</span>{% endif %}
+          </td>
+          <td class="text-right">
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'transport_vehicle_detail' v.pk %}" title="Open"><i class="fas fa-eye"></i></a>
+            {% if is_admin %}<a class="btn btn-outline-primary btn-sm" href="{% url 'transport_vehicle_edit' v.pk %}" title="Edit"><i class="fas fa-edit"></i></a>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No vehicles yet. Add the school's buses first, then create routes.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
-</div>
-
+</div></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  try {
-    $(function () {
-      if ($.fn.DataTable) {
-        $('#vehiclesTable').DataTable({
-          pageLength: 25,
-          order: [[0, 'asc']]
-        });
-      }
-    });
-  } catch(e){}
+  try { $(function () { if ($.fn.DataTable && $('#vehiclesTable tbody tr td').length > 1) { $('#vehiclesTable').DataTable({ pageLength: 25 }); } }); } catch (e) {}
 </script>
 {% endblock %}

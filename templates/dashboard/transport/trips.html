@@ -1,0 +1,82 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-check mr-1"></i> Daily trips</h3>
+    <small class="text-muted">Open the register when the bus sets off, and tick each child on and off.</small>
+  </div>
+  {% if is_admin %}
+  <form method="get" class="form-inline">
+    <input type="date" name="date" value="{{ on_date|date:'Y-m-d' }}" class="form-control form-control-sm mr-2">
+    <button class="btn btn-outline-primary btn-sm">Go</button>
+  </form>
+  {% endif %}
+</div>
+
+<h5 class="mb-2">{{ on_date|date:"l j F Y" }}{% if is_today %} (today){% endif %}</h5>
+
+<div class="row">
+{% for row in rows %}
+  <div class="col-md-6 col-xl-4 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="mb-1">{{ row.route }}</h5>
+      <p class="text-muted small mb-3">{{ row.route.vehicle|default:"No vehicle" }} · {{ row.route.current_riders }} rider{{ row.route.current_riders|pluralize }}</p>
+
+      <div class="d-flex" style="gap:.5rem;">
+        {% if row.morning %}
+          <a href="{% url 'transport_trip_run' row.morning.pk %}" class="btn btn-{% if row.morning.status == 'COMPLETED' %}outline-success{% else %}success{% endif %} flex-fill">
+            <i class="fas fa-sun mr-1"></i> Morning<br><small>{{ row.morning.get_status_display }}</small>
+          </a>
+        {% else %}
+          <form method="post" action="{% url 'transport_trip_start' %}" class="flex-fill">
+            {% csrf_token %}
+            <input type="hidden" name="route" value="{{ row.route.pk }}">
+            <input type="hidden" name="trip_type" value="MORNING">
+            <input type="hidden" name="date" value="{{ on_date|date:'Y-m-d' }}">
+            <button class="btn btn-outline-primary btn-block"><i class="fas fa-sun mr-1"></i> Start morning</button>
+          </form>
+        {% endif %}
+
+        {% if row.evening %}
+          <a href="{% url 'transport_trip_run' row.evening.pk %}" class="btn btn-{% if row.evening.status == 'COMPLETED' %}outline-success{% else %}success{% endif %} flex-fill">
+            <i class="fas fa-moon mr-1"></i> Evening<br><small>{{ row.evening.get_status_display }}</small>
+          </a>
+        {% else %}
+          <form method="post" action="{% url 'transport_trip_start' %}" class="flex-fill">
+            {% csrf_token %}
+            <input type="hidden" name="route" value="{{ row.route.pk }}">
+            <input type="hidden" name="trip_type" value="EVENING">
+            <input type="hidden" name="date" value="{{ on_date|date:'Y-m-d' }}">
+            <button class="btn btn-outline-primary btn-block"><i class="fas fa-moon mr-1"></i> Start evening</button>
+          </form>
+        {% endif %}
+      </div>
+    </div></div>
+  </div>
+{% empty %}
+  <div class="col-12 text-muted">No routes are running. Add a route first.</div>
+{% endfor %}
+</div>
+
+<div class="card mt-2"><div class="card-body">
+  <h5 class="mb-3">Recent trips</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="thead-light"><tr><th>Date</th><th>Route</th><th>Trip</th><th class="text-center">Children</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for t in recent %}
+        <tr>
+          <td>{{ t.date|date:"D j M" }}</td>
+          <td><a href="{% url 'transport_trip_run' t.pk %}">{{ t.route }}</a></td>
+          <td>{{ t.get_trip_type_display }}</td>
+          <td class="text-center">{{ t.n }}</td>
+          <td><span class="badge badge-{% if t.status == 'COMPLETED' %}success{% else %}primary{% endif %}">{{ t.get_status_display }}</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-3">No trips recorded yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}
