@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> Student clearance</h3>
+  <small class="text-muted">Check that a student has returned everything and paid inventory charges before they leave or get their report.</small>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="form-inline" style="gap:.5rem;">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Admission no. or name" autofocus>
+    <button class="btn btn-primary">Find student</button>
+    <a href="{% url 'inv_report' 'holders' %}" class="ml-auto">Whole class list</a>
+  </form>
+  {% if matches %}
+    <div class="list-group mt-3">
+      {% for s in matches %}
+        <a class="list-group-item list-group-item-action" href="?student={{ s.pk }}">
+          <strong>{{ s.name }}</strong> <span class="text-muted">{{ s.admission_number }} · {{ s.current_class|default:"" }} {{ s.stream|default:"" }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% elif q %}
+    <p class="text-muted mt-3 mb-0">No student matches “{{ q }}”.</p>
+  {% endif %}
+</div></div>
+
+{% if result %}
+<div class="card {% if result.is_cleared %}border-success{% else %}border-danger{% endif %}"><div class="card-body">
+  <h4 class="mb-1">{{ result.student.name }} <small class="text-muted">{{ result.student.admission_number }}</small></h4>
+  {% if result.is_cleared %}
+    <p class="text-success mb-0"><i class="fas fa-check-circle mr-1"></i> Cleared. Holds no school items and owes no inventory charges.</p>
+  {% else %}
+    <p class="text-danger"><i class="fas fa-times-circle mr-1"></i> Not cleared.</p>
+    {% if result.units %}
+      <h6>Items still held ({{ result.units|length }}{% if result.overdue_count %}, {{ result.overdue_count }} overdue{% endif %})</h6>
+      <table class="table table-sm">
+        <thead><tr><th>Tag</th><th>Item</th><th>Kind</th><th>Due</th><th></th></tr></thead>
+        <tbody>
+        {% for u in result.units %}
+          <tr>
+            <td>{{ u.tag_code }}</td><td>{{ u.item.name }}</td><td>{{ u.get_current_loan_kind_display }}</td>
+            <td class="{% if u.is_overdue %}text-danger{% endif %}">{{ u.current_due_date|default:"—" }}</td>
+            <td class="text-right"><a class="btn btn-outline-primary btn-sm" href="{% url 'inv_unit_action' u.pk 'return' %}">Return</a>
+              <a class="btn btn-outline-danger btn-sm" href="{% url 'inv_unit_action' u.pk 'lost' %}">Lost</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+    {% if result.unpaid_charges %}
+      <h6>Unpaid inventory charges</h6>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Charge</th><th class="text-right">Balance</th></tr></thead>
+        <tbody>
+        {% for c in result.unpaid_charges %}
+          <tr><td>{{ c.description }}</td><td class="text-right">{{ c.balance|floatformat:2 }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <small class="text-muted">Collect these through Fees → Collect Fees.</small>
+    {% endif %}
+  {% endif %}
+</div></div>
+{% endif %}
+{% endblock %}

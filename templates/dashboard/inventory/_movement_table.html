@@ -1,0 +1,20 @@
+<div class="table-responsive"><table class="table table-sm table-striped mb-0">
+  <thead><tr><th>Date</th><th>Type</th><th>Item</th><th class="text-right">Qty</th><th>From</th><th>To / issued to</th><th class="text-right">Value</th><th>By</th><th>Note</th></tr></thead>
+  <tbody>
+  {% for m in rows %}
+    <tr>
+      <td class="text-nowrap">{{ m.occurred_on }}</td>
+      <td>{{ m.get_movement_type_display }}</td>
+      <td><a href="{% url 'inv_item_detail' m.item_id %}">{{ m.item.name|truncatechars:35 }}</a></td>
+      <td class="text-right">{% if m.from_location and not m.to_location %}−{% endif %}{{ m.quantity|floatformat:"-2" }}</td>
+      <td>{{ m.from_location|default:"" }}</td>
+      <td>{{ m.to_location|default:"" }}{% if m.issued_to_display %}{% if m.to_location %} · {% endif %}{{ m.issued_to_display }}{% endif %}</td>
+      <td class="text-right">{{ m.total_cost|floatformat:2 }}</td>
+      <td>{{ m.performed_by.get_full_name|default:m.performed_by|default:"—" }}</td>
+      <td class="text-muted small">{{ m.reference }} {{ m.remark|truncatechars:40 }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="9" class="text-muted">No movements.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>

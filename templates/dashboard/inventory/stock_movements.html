@@ -1,0 +1,19 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-exchange-alt"></i> Stock movements</h3>
+  <small class="text-muted">Every change to counted stock.</small>
+</div>
+<div class="card"><div class="card-body">
+  <form method="get" class="form-inline mb-3" style="gap:.5rem;">
+    <input class="form-control" name="q" placeholder="Item, department or reference" value="{{ q }}">
+    <select class="form-control" name="type">
+      <option value="">All types</option>
+      {% for v, l in type_choices %}<option value="{{ v }}" {% if type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-outline-primary">Filter</button>
+  </form>
+  {% include "dashboard/inventory/_movement_table.html" with rows=rows %}
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
+{% endblock %}

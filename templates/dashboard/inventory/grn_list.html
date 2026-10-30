@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-truck-loading"></i> Goods received</h3>
+    <small class="text-muted">A GRN records a delivery. Posting it gives tagged items their tags and adds counted items to stock.</small>
+  </div>
+  <a href="{% url 'inv_grn_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Record a delivery</a>
+</div>
+<div class="card"><div class="card-body">
+  <form method="get" class="form-inline mb-3" style="gap:.5rem;">
+    <select class="form-control" name="status" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="DRAFT" {% if status == "DRAFT" %}selected{% endif %}>Draft</option>
+      <option value="POSTED" {% if status == "POSTED" %}selected{% endif %}>Posted</option>
+    </select>
+  </form>
+  <div class="table-responsive"><table class="table table-striped mb-0">
+    <thead><tr><th>GRN</th><th>Date</th><th>Supplier</th><th>Order</th><th>Into</th><th>Status</th><th class="text-right">Value</th></tr></thead>
+    <tbody>
+    {% for g in rows %}
+      <tr>
+        <td><a href="{% url 'inv_grn_detail' g.pk %}" class="font-weight-bold">{{ g.grn_number }}</a></td>
+        <td>{{ g.received_date }}</td><td>{{ g.supplier }}</td><td>{{ g.purchase_order|default:"—" }}</td>
+        <td>{{ g.location }}</td>
+        <td>{% include "dashboard/inventory/_status_badge.html" with s=g.status %}</td>
+        <td class="text-right">{{ g.total|floatformat:2|intcomma }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No deliveries recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
+{% endblock %}

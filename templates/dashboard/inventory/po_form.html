@@ -1,0 +1,26 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <h3 class="page-title mb-0">{% if po.pk %}Edit {{ po.po_number }}{% else %}New purchase order{% endif %}</h3>
+  <a href="{% if po.pk %}{% url 'inv_po_detail' po.pk %}{% else %}{% url 'inv_pos' %}{% endif %}" class="btn btn-light btn-sm">Back</a>
+</div>
+<form method="post" novalidate>{% csrf_token %}
+  <div class="card mb-3"><div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-row">
+      {% for f in form %}
+        <div class="form-group {% if f.name == 'notes' %}col-12{% else %}col-md-4{% endif %}">
+          <label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+          {% for e in f.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div></div>
+  <div class="card mb-3"><div class="card-body">
+    <h5>Lines</h5>
+    {% include "dashboard/inventory/_line_formset.html" %}
+    <button class="btn btn-primary">Save draft</button>
+    <small class="text-muted ml-2">An administrator approves the order before goods are received.</small>
+  </div></div>
+</form>
+{% endblock %}

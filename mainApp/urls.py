@@ -45,8 +45,6 @@ from mainApp.views.communication_views import *
 from mainApp.views.fees_views import *
 from mainApp.views.health_views import *
 from mainApp.views.hostel_views import *
-from mainApp.views.inventory_labels_views import *
-from mainApp.views.inventory_views import *
 from mainApp.views.mark_entry_views import *
 from mainApp.views.marksheet_views import *
 from mainApp.views.online_exam_marking_views import *
@@ -760,40 +758,7 @@ urlpatterns = [
     # =========================================================================
     ## 23  INVENTORY & LIBRARY
     # =========================================================================
-    path('inventory/', inventory_dashboard, name='inv_dashboard'),
-
-    # Setup
-    path('categories/', categories_list, name='inv_categories'),
-    path('categories/new/', category_create, name='inv_category_create'),
-    path('locations/', locations_list, name='inv_locations'),
-    path('locations/new/', location_create, name='inv_location_create'),
-
-    # Items & units
-    path('items/', items_list, name='inv_items'),
-    path('items/new/', item_create, name='inv_item_create'),
-    path('units/', units_list, name='inv_units'),
-    path('units/new/', unit_create, name='inv_unit_create'),
-    path('units/bulk-add/', unit_bulk_add, name='inv_unit_bulk_add'),
-    path('units/<int:pk>/', unit_detail, name='inv_unit_detail'),
-
-    # Issue / return & history
-    path('scan/', issue_return_scan, name='inv_scan'),
-    path('transactions/', transactions_list, name='inv_transactions'),
-
-    # QR codes & labels
-    path('qr/<str:tag_code>.png', inv_qr_png, name='inv_qr_png'),
-    path('labels/select/', inv_labels_select, name='inv_labels_select'),
-    path('labels/print/', inv_labels_print, name='inv_labels_print'),
-    path('labels/item/<int:item_id>/', inv_labels_item, name='inv_labels_item'),
-
-    # AJAX
-    path('inventory/ajax/unit-lookup/', inv_ajax_unit_lookup, name='inv_ajax_unit_lookup'),
-    path('inventory/ajax/student-lookup/', inv_ajax_student_lookup, name='inv_ajax_student_lookup'),
-    path('inventory/ajax/issue/', inv_ajax_issue, name='inv_ajax_issue'),
-    path('inventory/ajax/return/', inv_ajax_return, name='inv_ajax_return'),
-    path('inventory/ajax/book-search/', inv_ajax_book_search, name='inv_ajax_book_search'),
-    path('inventory/ajax/borrower-search/', inv_ajax_borrower_search, name='inv_ajax_borrower_search'),
-    path('inventory/ajax/return-search/', inv_ajax_return_search, name='inv_ajax_return_search'),
+    path("inventory/", include("mainApp.inventory_urls")),
 
     # =========================================================================
     ## 24  TO-DO

@@ -1,0 +1,55 @@
+{% with r=request.user.profile.role %}
+{% if r == "SUPER_ADMIN" or r == "ADMIN" or r == "LIBRARIAN" or r == "STOREKEEPER" or r == "BURSAR" %}
+<li class="nav-item">
+  <a class="nav-link" data-toggle="collapse" href="#inventory" aria-expanded="false" aria-controls="inventory">
+    <i class="fas fa-boxes menu-icon"></i>
+    <span class="menu-title">Inventory</span>
+    <i class="menu-arrow"></i>
+  </a>
+  <div class="collapse" id="inventory">
+    <ul class="nav flex-column sub-menu">
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_dashboard' %}"><i class="fas fa-tachometer-alt menu-icon"></i> Overview</a></li>
+
+      {% if r == "SUPER_ADMIN" or r == "ADMIN" or r == "LIBRARIAN" or r == "STOREKEEPER" %}
+      <li class="nav-item nav-category">Daily work</li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_scan' %}"><i class="fas fa-qrcode menu-icon"></i> Issue / Return</a></li>
+      {% endif %}
+      {% if r == "SUPER_ADMIN" or r == "ADMIN" or r == "LIBRARIAN" %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_batches' %}"><i class="fas fa-book-reader menu-icon"></i> Term textbooks</a></li>
+      {% endif %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_clearance' %}"><i class="fas fa-user-check menu-icon"></i> Student clearance</a></li>
+
+      {% if r == "SUPER_ADMIN" or r == "ADMIN" or r == "LIBRARIAN" or r == "STOREKEEPER" %}
+      <li class="nav-item nav-category">Tagged items</li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_items' %}?type=LIBRARY"><i class="fas fa-book menu-icon"></i> Book titles</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_items' %}?type=ASSET"><i class="fas fa-desktop menu-icon"></i> Asset types</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_units' %}"><i class="fas fa-tags menu-icon"></i> All tagged copies</a></li>
+      {% endif %}
+
+      <li class="nav-item nav-category">Stores</li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_stock' %}"><i class="fas fa-warehouse menu-icon"></i> Stock on hand</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_stock_movements' %}"><i class="fas fa-exchange-alt menu-icon"></i> Stock movements</a></li>
+      {% if r == "SUPER_ADMIN" or r == "ADMIN" or r == "STOREKEEPER" or r == "BURSAR" %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_pos' %}"><i class="fas fa-file-signature menu-icon"></i> Purchase orders</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_grns' %}"><i class="fas fa-truck-loading menu-icon"></i> Goods received</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_suppliers' %}"><i class="fas fa-handshake menu-icon"></i> Suppliers</a></li>
+      {% endif %}
+
+      <li class="nav-item nav-category">Control</li>
+      {% if r == "SUPER_ADMIN" or r == "ADMIN" or r == "LIBRARIAN" or r == "STOREKEEPER" %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_stocktakes' %}"><i class="fas fa-clipboard-check menu-icon"></i> Stock takes</a></li>
+      {% endif %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_reports' %}"><i class="fas fa-chart-bar menu-icon"></i> Reports</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_transactions' %}"><i class="fas fa-list menu-icon"></i> Activity log</a></li>
+
+      {% if r == "SUPER_ADMIN" or r == "ADMIN" %}
+      <li class="nav-item nav-category">Setup</li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_categories' %}"><i class="fas fa-layer-group menu-icon"></i> Categories</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_locations' %}"><i class="fas fa-map-marker-alt menu-icon"></i> Locations</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inv_settings' %}"><i class="fas fa-cog menu-icon"></i> Settings</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</li>
+{% endif %}
+{% endwith %}

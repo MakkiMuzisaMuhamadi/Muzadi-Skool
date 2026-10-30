@@ -1,79 +1,72 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
 {% load humanize %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-tag"></i> Unit Details</h3>
-    <small class="text-muted">Tag: <strong>{{ unit.tag_code }}</strong></small>
+    <h3 class="page-title mb-0"><i class="fas fa-tag"></i> {{ unit.tag_code }}</h3>
+    <small class="text-muted"><a href="{% url 'inv_item_detail' unit.item_id %}">{{ unit.item.name }}</a> · {{ unit.item.category }}</small>
   </div>
-  <div class="d-flex" style="gap:.5rem;">
-    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm"><i class="fas fa-qrcode mr-1"></i> Scan</a>
-    <a href="{% url 'inv_units' %}" class="btn btn-primary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    {% for key, label, danger in actions %}
+      <a href="{% url 'inv_unit_action' unit.pk key %}" class="btn btn-sm {% if danger %}btn-outline-danger{% else %}btn-outline-primary{% endif %}">{{ label }}</a>
+    {% endfor %}
+    {% if unit.status == "AVAILABLE" %}<a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm"><i class="fas fa-qrcode mr-1"></i> Issue to student</a>{% endif %}
   </div>
 </div>
 
 <div class="row">
-  <div class="col-md-5">
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="mb-2">{{ unit.item.name }}</h5>
-        <div class="mb-1"><strong>Type:</strong> {{ unit.item.category.type }}</div>
-        <div class="mb-1"><strong>Status:</strong> {{ unit.status }}</div>
-        <div class="mb-1"><strong>Condition:</strong> {{ unit.condition }}</div>
-        <div class="mb-1"><strong>Location:</strong> {{ unit.current_location|default:"—" }}</div>
-        <div class="mb-1"><strong>Serial:</strong> {{ unit.serial_number|default:"—" }}</div>
-        <div class="mb-1"><strong>Notes:</strong> <span class="text-muted">{{ unit.notes|default:"—" }}</span></div>
-
-        <hr>
-        <div><strong>Holder</strong></div>
-        {% if unit.current_student %}
-          <div>Student: {{ unit.current_student }}</div>
-        {% elif unit.current_staff_name %}
-          <div>Staff: {{ unit.current_staff_name }}</div>
-        {% else %}
-          <div class="text-muted">No current holder.</div>
-        {% endif %}
+  <div class="col-lg-5 mb-3">
+    <div class="card mb-3"><div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>{% include "dashboard/inventory/_status_badge.html" with s=unit.status %} <span class="text-muted ml-1">{{ unit.get_condition_display }}</span></div>
+        <img src="{% url 'inv_qr_png' unit.tag_code %}" alt="QR code for {{ unit.tag_code }}" width="72" height="72">
       </div>
-    </div>
+      {% if unit.is_out %}
+        <div class="border rounded p-2 mb-3 {% if unit.is_overdue %}border-danger{% endif %}">
+          <div class="font-weight-bold">{{ unit.holder_display }}</div>
+          <small class="text-muted">{{ unit.get_current_loan_kind_display }}{% if unit.current_due_date %} · due {{ unit.current_due_date }}{% endif %}</small>
+          {% if unit.is_overdue %}<div class="text-danger small">{{ unit.overdue_days }} day(s) overdue</div>{% endif %}
+        </div>
+      {% endif %}
+      <dl class="row mb-0">
+        <dt class="col-5">Location</dt><dd class="col-7">{{ unit.current_location|default:"—" }}</dd>
+        <dt class="col-5">Serial no.</dt><dd class="col-7">{{ unit.serial_number|default:"—" }}</dd>
+        <dt class="col-5">Cost</dt><dd class="col-7">{{ unit.unit_cost|floatformat:2|intcomma }}</dd>
+        {% if unit.item.useful_life_years %}<dt class="col-5">Current value</dt><dd class="col-7">{{ unit.current_value|floatformat:2|intcomma }}</dd>{% endif %}
+        <dt class="col-5">Purchased</dt><dd class="col-7">{{ unit.purchase_date|default:"—" }}</dd>
+        <dt class="col-5">Supplier</dt><dd class="col-7">{{ unit.supplier|default:"—" }}</dd>
+        {% if unit.goods_receipt_line %}<dt class="col-5">Received on</dt><dd class="col-7"><a href="{% url 'inv_grn_detail' unit.goods_receipt_line.goods_receipt_id %}">{{ unit.goods_receipt_line.goods_receipt }}</a></dd>{% endif %}
+        <dt class="col-5">Funding</dt><dd class="col-7">{{ unit.funding_source|default:"—" }}</dd>
+        <dt class="col-5">Warranty until</dt><dd class="col-7">{{ unit.warranty_expiry|default:"—" }}</dd>
+        {% if unit.notes %}<dt class="col-5">Notes</dt><dd class="col-7">{{ unit.notes|linebreaksbr }}</dd>{% endif %}
+      </dl>
+      <a href="{% url 'inv_unit_edit' unit.pk %}" class="btn btn-light btn-sm mt-2"><i class="fas fa-pen mr-1"></i> Edit details</a>
+    </div></div>
   </div>
 
-  <div class="col-md-7">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="mb-2">Recent Activity</h5>
-        <div class="table-responsive">
-          <table class="table table-sm table-striped">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Type</th>
-                <th>By</th>
-                <th>Student/Staff</th>
-                <th>Remark</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in tx %}
-              <tr>
-                <td>{{ r.created_at|naturaltime }}</td>
-                <td><strong>{{ r.tx_type }}</strong></td>
-                <td>{{ r.performed_by|default:"—" }}</td>
-                <td>
-                  {% if r.student %}{{ r.student }}{% elif r.staff_name %}{{ r.staff_name }}{% else %}—{% endif %}
-                </td>
-                <td class="text-muted">{{ r.remark|default:"—" }}</td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="5" class="text-muted">No transactions for this unit yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <small class="text-muted">Showing latest 100 records.</small>
+  <div class="col-lg-7 mb-3">
+    <div class="card"><div class="card-body">
+      <h5 class="mb-2">History</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0">
+          <thead><tr><th>When</th><th>Action</th><th>Holder</th><th>Where</th><th>By</th><th>Note</th></tr></thead>
+          <tbody>
+          {% for r in tx %}
+            <tr>
+              <td class="text-nowrap" title="{{ r.created_at }}">{{ r.created_at|naturaltime }}</td>
+              <td><strong>{{ r.get_tx_type_display }}</strong>{% if r.due_date and r.tx_type == "ISSUE" %}<small class="d-block text-muted">due {{ r.due_date }}</small>{% endif %}</td>
+              <td>{{ r.holder_display|default:"—" }}</td>
+              <td class="small">{% if r.from_location and r.to_location and r.from_location != r.to_location %}{{ r.from_location }} → {{ r.to_location }}{% else %}{{ r.to_location|default:r.from_location|default:"" }}{% endif %}</td>
+              <td>{{ r.performed_by.get_full_name|default:r.performed_by|default:"—" }}</td>
+              <td class="small text-muted">{{ r.remark|default:"" }}{% if r.charge_amount %}<span class="d-block text-danger">Billed {{ r.charge_amount|floatformat:2|intcomma }}</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted">No history yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </div></div>
   </div>
 </div>
 {% endblock %}

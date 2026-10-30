@@ -1,0 +1,13 @@
+{% if s == "AVAILABLE" %}<span class="badge badge-success">Available</span>
+{% elif s == "ISSUED" %}<span class="badge badge-warning">Issued</span>
+{% elif s == "ALLOCATED" %}<span class="badge badge-info">Allocated</span>
+{% elif s == "UNDER_REPAIR" %}<span class="badge badge-secondary">Under repair</span>
+{% elif s == "LOST" %}<span class="badge badge-danger">Lost</span>
+{% elif s == "DISPOSED" %}<span class="badge badge-dark">Disposed</span>
+{% elif s == "DRAFT" %}<span class="badge badge-secondary">Draft</span>
+{% elif s == "APPROVED" %}<span class="badge badge-primary">Approved</span>
+{% elif s == "PARTIAL" %}<span class="badge badge-warning">Partly received</span>
+{% elif s == "RECEIVED" or s == "POSTED" or s == "COMPLETED" %}<span class="badge badge-success">{{ s|title }}</span>
+{% elif s == "CANCELLED" %}<span class="badge badge-dark">Cancelled</span>
+{% elif s == "OPEN" %}<span class="badge badge-warning">In progress</span>
+{% else %}<span class="badge badge-light">{{ s }}</span>{% endif %}

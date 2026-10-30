@@ -1,92 +1,68 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-qrcode"></i> Tagged Units</h3>
-    <small class="text-muted">Each unit is a physical copy with a tag code (QR/Barcode)</small>
+    <h3 class="page-title mb-0"><i class="fas fa-tags"></i> Tagged copies</h3>
+    <small class="text-muted">Each row is one physical item with its own QR tag.</small>
   </div>
-  <div class="d-flex" style="gap:.5rem;">
-    <a href="{% url 'inv_unit_create' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> Add Unit
-    </a>
-    <a href="{% url 'inv_unit_bulk_add' %}" class="btn btn-outline-primary btn-sm">
-      <i class="fas fa-layer-group mr-1"></i> Bulk Add
-    </a>
-    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm">
-      <i class="fas fa-qrcode mr-1"></i> Scan
-    </a>
-    <a href="{% url 'inv_labels_select' %}?q={{ q|urlencode }}&status={{ status|urlencode }}"
-   class="btn btn-outline-info btn-sm">
-  <i class="fas fa-print mr-1"></i> Print Labels
-</a>
-{% comment %} <a href="{% url 'inv_labels_print' %}?q={{ q|urlencode }}&status={{ status|urlencode }}&limit=24"
-   target="_blank"
-   class="btn btn-outline-secondary btn-sm">
-  <i class="fas fa-print mr-1"></i> Print (24)
-</a> {% endcomment %}
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    <a href="{% url 'inv_unit_create' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add one</a>
+    <a href="{% url 'inv_unit_bulk_add' %}{% if item_id %}?item={{ item_id }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-layer-group mr-1"></i> Add in bulk</a>
+    <a href="{% url 'inv_labels_select' %}?q={{ q|urlencode }}&status={{ status|urlencode }}&type={{ type|urlencode }}" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Print labels</a>
   </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="form-inline mb-3">
-      <input class="form-control mr-2" name="q" placeholder="Search tag code..." value="{{ q }}">
-        <select class="form-control mr-2" name="status">
-        <option value="">All Status</option>
-        {% for value,label in status_choices %}
-            <option value="{{ value }}" {% if status == value %}selected{% endif %}>
-            {{ label }}
-            </option>
-        {% endfor %}
-        </select>
-      <button class="btn btn-outline-primary">Filter</button>
-    </form>
-
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Tag</th>
-            <th>Item</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Location</th>
-            <th>Holder</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in rows %}
-          <tr>
-            <td><strong>{{ r.tag_code }}</strong></td>
-            <td>{{ r.item.name }}</td>
-            <td>{{ r.item.category.type }}</td>
-            <td>{{ r.status }}</td>
-            <td>{{ r.current_location|default:"—" }}</td>
-            <td>
-              {% if r.current_student %}
-                Student: {{ r.current_student }}
-              {% elif r.current_staff_name %}
-                Staff: {{ r.current_staff_name }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td class="text-right">
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'inv_unit_detail' r.id %}">
-                <i class="fas fa-eye"></i> View
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="7" class="text-muted">No units found.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="card"><div class="card-body">
+  <form method="get" class="form-row mb-3">
+    {% if item_id %}<input type="hidden" name="item" value="{{ item_id }}">{% endif %}
+    <div class="col-md-3 mb-2"><input class="form-control" name="q" placeholder="Tag, title or serial no." value="{{ q }}"></div>
+    <div class="col-md-2 mb-2">
+      <select class="form-control" name="status">
+        <option value="">Any status</option>
+        {% for value, label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
     </div>
+    <div class="col-md-2 mb-2">
+      <select class="form-control" name="type">
+        <option value="">Any type</option>
+        <option value="LIBRARY" {% if type == "LIBRARY" %}selected{% endif %}>Library</option>
+        <option value="ASSET" {% if type == "ASSET" %}selected{% endif %}>Assets</option>
+        <option value="GENERAL" {% if type == "GENERAL" %}selected{% endif %}>General</option>
+      </select>
+    </div>
+    <div class="col-md-2 mb-2">
+      <select class="form-control" name="location">
+        <option value="">Any location</option>
+        {% for l in locations %}<option value="{{ l.pk }}" {% if location_id == l.pk|stringformat:"s" %}selected{% endif %}>{{ l.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 mb-2 d-flex align-items-center" style="gap:.5rem;">
+      <div class="form-check mr-2"><input class="form-check-input" type="checkbox" name="overdue" value="1" id="od" {% if overdue %}checked{% endif %}><label class="form-check-label" for="od">Overdue</label></div>
+      <button class="btn btn-outline-primary">Filter</button>
+      <a class="btn btn-light" href="{% url 'inv_units' %}">Reset</a>
+    </div>
+  </form>
 
+  <div class="table-responsive">
+    <table class="table table-striped table-hover mb-0">
+      <thead><tr><th>Tag</th><th>Item</th><th>Status</th><th>Condition</th><th>Location</th><th>Held by</th><th>Due</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><a class="font-weight-bold" href="{% url 'inv_unit_detail' r.pk %}">{{ r.tag_code }}</a></td>
+          <td>{{ r.item.name|truncatechars:45 }}<small class="d-block text-muted">{{ r.item.category.get_type_display }}</small></td>
+          <td>{% include "dashboard/inventory/_status_badge.html" with s=r.status %}</td>
+          <td>{{ r.get_condition_display }}</td>
+          <td>{{ r.current_location|default:"—" }}</td>
+          <td>{{ r.holder_display|default:"—" }}</td>
+          <td>{% if r.current_due_date %}<span class="{% if r.is_overdue %}text-danger font-weight-bold{% endif %}">{{ r.current_due_date }}{% if r.is_overdue %} ({{ r.overdue_days }}d late){% endif %}</span>{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-muted">No copies match these filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
-</div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
 {% endblock %}

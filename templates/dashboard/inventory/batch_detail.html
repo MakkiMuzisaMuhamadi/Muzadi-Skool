@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">{{ batch.item.name }}</h3>
+    <small class="text-muted">{{ batch.class_ref }}{% if batch.stream %} {{ batch.stream }}{% endif %} · issued {{ batch.created_at|date:"Y-m-d" }} · due {{ batch.due_date }}{% if batch.term %} · {{ batch.term }}{% endif %}</small>
+  </div>
+  <a href="{% url 'inv_batches' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
+</div>
+
+<div class="card"><div class="card-body">
+  <p class="mb-3">{{ batch.issued_count }} issued{% if batch.shortage_count %}, <span class="text-danger">{{ batch.shortage_count }} student(s) got none (not enough copies)</span>{% endif %}. {{ outstanding|length }} still out.</p>
+  {% if outstanding %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="table-responsive"><table class="table table-sm table-striped">
+      <thead><tr><th><input type="checkbox" id="checkAll" aria-label="Select all"></th><th>Adm. no</th><th>Student</th><th>Tag</th><th>Due</th></tr></thead>
+      <tbody>
+      {% for tx in outstanding %}
+        <tr>
+          <td><input type="checkbox" name="unit_ids" value="{{ tx.unit_id }}" class="row-check" aria-label="Select {{ tx.unit.tag_code }}"></td>
+          <td>{{ tx.student.admission_number }}</td>
+          <td>{{ tx.student.name }}</td>
+          <td><a href="{% url 'inv_unit_detail' tx.unit_id %}">{{ tx.unit.tag_code }}</a></td>
+          <td class="{% if tx.is_overdue %}text-danger{% endif %}">{{ tx.due_date }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <div class="form-inline" style="gap:.5rem;">
+      <label for="cond">Condition on return</label>
+      <select name="condition" id="cond" class="form-control form-control-sm">
+        <option value="">Keep current</option>
+        {% for v, l in condition_choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-primary btn-sm">Mark selected as returned</button>
+    </div>
+    <small class="text-muted d-block mt-2">Tip: for individual returns you can also scan books at the Issue / Return desk.</small>
+  </form>
+  <script>
+    document.getElementById("checkAll").addEventListener("change", function (e) {
+      document.querySelectorAll(".row-check").forEach(function (c) { c.checked = e.target.checked; });
+    });
+  </script>
+  {% else %}
+    <div class="alert alert-success mb-0">Every copy from this issue has come back.</div>
+  {% endif %}
+</div></div>
+{% endblock %}

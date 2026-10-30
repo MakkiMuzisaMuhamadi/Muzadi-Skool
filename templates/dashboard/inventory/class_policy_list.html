@@ -1,0 +1,38 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">Class borrowing rules</h3>
+    <small class="text-muted">
+      School-wide rule: {{ settings.student_max_loans|default:"no limit" }} item(s) for {{ settings.student_loan_days }} days.
+      Add a class here to give it a different rule.
+    </small>
+  </div>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'inv_settings' %}" class="btn btn-light btn-sm">Settings</a>
+    <a href="{% url 'inv_class_policy_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add class rule</a>
+  </div>
+</div>
+<div class="card"><div class="card-body">
+  <table class="table table-striped mb-0">
+    <thead><tr><th>Class</th><th>Items at once</th><th>Loan period</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.class_ref }}</td>
+        <td>{{ r.max_loans|default:"No limit" }}</td>
+        <td>{{ r.loan_days }} days</td>
+        <td class="text-right">
+          <a href="{% url 'inv_class_policy_edit' r.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>
+          <form method="post" action="{% url 'inv_class_policy_delete' r.pk %}" class="d-inline">{% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove this rule?')">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="text-muted">Every class uses the school-wide rule.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

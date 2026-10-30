@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
+  <div>
+    <h3 class="page-title mb-0">{{ po.po_number }} {% include "dashboard/inventory/_status_badge.html" with s=po.status %}</h3>
+    <small class="text-muted">{{ po.supplier }} · ordered {{ po.order_date }}{% if po.expected_date %} · expected {{ po.expected_date }}{% endif %}
+      {% if po.approved_by %} · approved by {{ po.approved_by.get_full_name|default:po.approved_by }}{% endif %}</small>
+  </div>
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    {% if po.is_editable %}<a href="{% url 'inv_po_edit' po.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>{% endif %}
+    {% if po.status == "DRAFT" and can_approve %}
+      <form method="post" action="{% url 'inv_po_approve' po.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm">Approve</button></form>
+    {% endif %}
+    {% if po.can_receive %}<a href="{% url 'inv_grn_create' %}?po={{ po.pk }}" class="btn btn-success btn-sm"><i class="fas fa-truck-loading mr-1"></i> Receive goods</a>{% endif %}
+    {% if po.status == "PARTIAL" %}
+      <form method="post" action="{% url 'inv_po_close' po.pk %}" onsubmit="return confirm('Close this order? Outstanding items will no longer be expected.')">{% csrf_token %}
+        <button class="btn btn-outline-secondary btn-sm">Close short</button></form>
+    {% endif %}
+    {% if po.status == "DRAFT" or po.status == "APPROVED" %}
+      <form method="post" action="{% url 'inv_po_cancel' po.pk %}" onsubmit="return confirm('Cancel this order?')">{% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm">Cancel order</button></form>
+    {% endif %}
+  </div>
+</div>
+<div class="card mb-3"><div class="card-body">
+  <div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>Item</th><th>Description</th><th class="text-right">Ordered</th><th class="text-right">Received</th><th class="text-right">Outstanding</th><th class="text-right">Unit cost</th><th class="text-right">Total</th></tr></thead>
+    <tbody>
+    {% for l in lines %}
+      <tr>
+        <td>{{ l.item }}</td><td>{{ l.description }}</td>
+        <td class="text-right">{{ l.quantity|floatformat:"-2" }}</td>
+        <td class="text-right">{{ l.received_quantity|floatformat:"-2" }}</td>
+        <td class="text-right">{{ l.outstanding|floatformat:"-2" }}</td>
+        <td class="text-right">{{ l.unit_cost|floatformat:2|intcomma }}</td>
+        <td class="text-right">{{ l.line_total|floatformat:2|intcomma }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><th colspan="6" class="text-right">Total</th><th class="text-right">{{ po.total|floatformat:2|intcomma }}</th></tr></tfoot>
+  </table></div>
+  {% if po.notes %}<p class="text-muted small mt-3 mb-0">{{ po.notes|linebreaksbr }}</p>{% endif %}
+</div></div>
+<div class="card"><div class="card-body">
+  <h5>Deliveries</h5>
+  <ul class="mb-0">
+    {% for g in receipts %}
+      <li><a href="{% url 'inv_grn_detail' g.pk %}">{{ g.grn_number }}</a> · {{ g.received_date }} · {{ g.location }} · {{ g.get_status_display }}</li>
+    {% empty %}
+      <li class="text-muted">Nothing received yet.</li>
+    {% endfor %}
+  </ul>
+</div></div>
+{% endblock %}

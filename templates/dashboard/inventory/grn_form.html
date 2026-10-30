@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">{% if grn.pk %}Edit {{ grn.grn_number }}{% else %}Record a delivery{% endif %}</h3>
+    {% if po %}<small class="text-muted">Against order {{ po.po_number }} ({{ po.supplier }}). Outstanding quantities are filled in; change them to what actually arrived.</small>{% endif %}
+  </div>
+  <a href="{% if grn.pk %}{% url 'inv_grn_detail' grn.pk %}{% else %}{% url 'inv_grns' %}{% endif %}" class="btn btn-light btn-sm">Back</a>
+</div>
+<form method="post" novalidate>{% csrf_token %}
+  <div class="card mb-3"><div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-row">
+      {% for f in form %}
+        <div class="form-group {% if f.name == 'notes' %}col-12{% else %}col-md-4{% endif %}">
+          <label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+          {% if f.name == "purchase_order" and not po %}<small class="form-text text-muted">To receive against an order, open the order and press “Receive goods”.</small>{% endif %}
+          {% for e in f.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div></div>
+  <div class="card mb-3"><div class="card-body">
+    <h5>What arrived</h5>
+    {% include "dashboard/inventory/_line_formset.html" %}
+    <button class="btn btn-primary">Save draft</button>
+    <small class="text-muted ml-2">Nothing changes in stock until you post the GRN.</small>
+  </div></div>
+</form>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-check"></i> Stock takes</h3>
+    <small class="text-muted">Physically check one room at a time: scan every tag, count the stores, then reconcile.</small>
+  </div>
+  <a href="{% url 'inv_stocktake_start' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Start a stock take</a>
+</div>
+<div class="card"><div class="card-body">
+  <div class="table-responsive"><table class="table table-striped mb-0">
+    <thead><tr><th>Reference</th><th>Location</th><th>Started</th><th>Status</th><th class="text-right">Expected</th><th class="text-right">Scanned</th><th class="text-right">Missing</th></tr></thead>
+    <tbody>
+    {% for s in rows %}
+      <tr>
+        <td><a href="{% url 'inv_stocktake_detail' s.pk %}" class="font-weight-bold">{{ s.reference }}</a></td>
+        <td>{{ s.location }}</td>
+        <td>{{ s.created_at|date:"Y-m-d" }} <small class="text-muted">{{ s.started_by.get_full_name|default:s.started_by }}</small></td>
+        <td>{% include "dashboard/inventory/_status_badge.html" with s=s.status %}</td>
+        <td class="text-right">{{ s.result.expected|default:"—" }}</td>
+        <td class="text-right">{{ s.result.scanned|default:"—" }}</td>
+        <td class="text-right">{% if s.result.missing_tags %}<span class="text-danger">{{ s.result.missing_tags|length }}</span>{% elif s.status == "COMPLETED" %}0{% else %}—{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No stock takes yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
+{% endblock %}

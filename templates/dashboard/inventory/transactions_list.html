@@ -1,99 +1,42 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
 {% load humanize %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
-  <div>
-    <h3 class="page-title mb-0"><i class="fas fa-list"></i> Transactions Log</h3>
-    <small class="text-muted">Audit trail of all inventory actions</small>
-  </div>
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-list"></i> Activity log</h3>
+  <small class="text-muted">Every movement of every tagged item. Records are never edited or deleted.</small>
 </div>
-
-<div class="card">
-  <div class="card-body">
-    <form method="get" class="form-inline mb-3">
-      <input class="form-control mr-2" name="q" placeholder="Search tag..." value="{{ q }}">
-        <select class="form-control mr-2" name="tx_type">
-        <option value="">All Types</option>
-        {% for value,label in tx_choices %}
-            <option value="{{ value }}" {% if tx_type == value %}selected{% endif %}>
-            {{ label }}
-            </option>
-        {% endfor %}
-        </select>
-      <button class="btn btn-outline-primary">Filter</button>
-    </form>
-
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead>
+<div class="card"><div class="card-body">
+  <form method="get" class="form-inline mb-3" style="gap:.5rem;">
+    <input class="form-control" name="q" placeholder="Tag, title, adm. no or staff" value="{{ q }}">
+    <select class="form-control" name="tx_type">
+      <option value="">All actions</option>
+      {% for value, label in tx_choices %}<option value="{{ value }}" {% if tx_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-outline-primary">Filter</button>
+    <a class="btn btn-light" href="{% url 'inv_transactions' %}">Reset</a>
+  </form>
+  <div class="table-responsive">
+    <table class="table table-striped table-sm mb-0">
+      <thead><tr><th>When</th><th>Action</th><th>Tag</th><th>Item</th><th>Holder</th><th>Due</th><th>Returned</th><th>By</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
         <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Tag</th>
-            <th>Item</th>
-            <th>Student/Staff</th>
-            <th>Due</th>
-            <th>Status</th>
-            <th>By</th>
-            <th>Remark</th>
+          <td class="text-nowrap" title="{{ r.created_at }}">{{ r.created_at|naturaltime }}</td>
+          <td><strong>{{ r.get_tx_type_display }}</strong></td>
+          <td><a href="{% url 'inv_unit_detail' r.unit_id %}">{{ r.unit.tag_code }}</a></td>
+          <td>{{ r.unit.item.name|truncatechars:35 }}</td>
+          <td>{{ r.holder_display|default:"—" }}</td>
+          <td>{% if r.tx_type == "ISSUE" and r.due_date %}<span class="{% if r.is_overdue %}text-danger font-weight-bold{% endif %}">{{ r.due_date }}</span>{% else %}—{% endif %}</td>
+          <td>{% if r.tx_type == "ISSUE" or r.tx_type == "ALLOCATE" %}{% if r.returned_at %}{{ r.returned_at|date:"Y-m-d" }}{% else %}<span class="badge badge-warning">Still out</span>{% endif %}{% else %}—{% endif %}</td>
+          <td>{{ r.performed_by.get_full_name|default:r.performed_by|default:"—" }}</td>
+          <td class="small text-muted">{{ r.remark|truncatechars:50 }}{% if r.charge_amount %} <span class="text-danger">Billed {{ r.charge_amount|floatformat:2|intcomma }}</span>{% endif %}</td>
         </tr>
-        </thead>
-        <tbody>
-            {% for r in rows %}
-            <tr>
-            <td>{{ r.created_at|naturaltime }}</td>
-
-            <td><strong>{{ r.tx_type }}</strong></td>
-
-            <td>{{ r.unit.tag_code }}</td>
-
-            <td>{{ r.unit.item.name }}</td>
-
-            <td>
-                {% if r.student %}
-                {{ r.student }}
-                {% elif r.staff_name %}
-                {{ r.staff_name }}
-                {% else %}
-                —
-                {% endif %}
-            </td>
-
-            <td>
-                {% if r.tx_type == "ISSUE" and r.due_date %}
-                {{ r.due_date }}
-                {% else %}
-                —
-                {% endif %}
-            </td>
-
-            <td>
-                {# overdue means: ISSUE tx + due_date passed + unit still ISSUED #}
-                {% if r.tx_type == "ISSUE" and r.due_date and r.due_date < today and r.unit.status == "ISSUED" %}
-                <span class="badge badge-danger">OVERDUE</span>
-                {% elif r.tx_type == "ISSUE" and r.unit.status == "ISSUED" %}
-                <span class="badge badge-warning">OUT</span>
-                {% elif r.tx_type == "RETURN" %}
-                <span class="badge badge-success">RETURNED</span>
-                {% else %}
-                <span class="badge badge-success">{{ r.unit.status }}</span>
-                {% endif %}
-            </td>
-
-            <td>{{ r.performed_by|default:"—" }}</td>
-
-            <td class="text-muted">{{ r.remark|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="9" class="text-muted">No transactions found.</td></tr>
-            {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <small class="text-muted">Showing latest 500 records (performance safe).</small>
+      {% empty %}
+        <tr><td colspan="9" class="text-muted">No activity matches.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
-</div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
 {% endblock %}

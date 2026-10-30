@@ -1,0 +1,29 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <h3 class="page-title mb-0"><i class="fas fa-handshake"></i> Suppliers</h3>
+  <a href="{% url 'inv_supplier_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add supplier</a>
+</div>
+<div class="card"><div class="card-body">
+  <form method="get" class="form-inline mb-3" style="gap:.5rem;">
+    <input class="form-control" name="q" placeholder="Name, contact or phone" value="{{ q }}">
+    <button class="btn btn-outline-primary">Search</button>
+  </form>
+  <div class="table-responsive"><table class="table table-striped mb-0">
+    <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>TIN</th><th class="text-right">Orders</th><th></th></tr></thead>
+    <tbody>
+    {% for s in rows %}
+      <tr>
+        <td>{{ s.name }}{% if not s.is_active %} <span class="badge badge-light">Inactive</span>{% endif %}</td>
+        <td>{{ s.contact_person|default:"—" }}</td><td>{{ s.phone|default:"—" }}</td><td>{{ s.email|default:"—" }}</td>
+        <td>{{ s.tin|default:"—" }}</td><td class="text-right">{{ s.order_count }}</td>
+        <td class="text-right"><a class="btn btn-outline-primary btn-sm" href="{% url 'inv_supplier_edit' s.pk %}">Edit</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No suppliers yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
+{% endblock %}

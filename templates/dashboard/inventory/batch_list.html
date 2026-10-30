@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-book-reader"></i> Term textbooks</h3>
+    <small class="text-muted">Books handed out to whole classes. Open one to record end-of-term returns.</small>
+  </div>
+  <a href="{% url 'inv_class_issue' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Issue to a class</a>
+</div>
+<div class="card"><div class="card-body">
+  <div class="table-responsive"><table class="table table-striped mb-0">
+    <thead><tr><th>Issued</th><th>Book</th><th>Class</th><th>Term</th><th>Due</th><th class="text-right">Issued</th><th class="text-right">Short</th><th class="text-right">Still out</th></tr></thead>
+    <tbody>
+    {% for b in rows %}
+      <tr>
+        <td><a href="{% url 'inv_batch_detail' b.pk %}">{{ b.created_at|date:"Y-m-d" }}</a></td>
+        <td>{{ b.item.name }}</td>
+        <td>{{ b.class_ref }}{% if b.stream %} {{ b.stream }}{% endif %}</td>
+        <td>{{ b.term|default:"—" }}</td>
+        <td>{{ b.due_date }}</td>
+        <td class="text-right">{{ b.issued_count }}</td>
+        <td class="text-right">{% if b.shortage_count %}<span class="text-danger">{{ b.shortage_count }}</span>{% else %}0{% endif %}</td>
+        <td class="text-right">{% if b.outstanding %}<span class="badge badge-warning">{{ b.outstanding }}</span>{% else %}<span class="badge badge-success">All back</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-muted">No class issues yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
+  <div>
+    <h3 class="page-title mb-0">{{ st.reference }} · {{ st.location }} {% include "dashboard/inventory/_status_badge.html" with s=st.status %}</h3>
+    <small class="text-muted">Started {{ st.created_at|date:"Y-m-d H:i" }}{% if st.notes %} · {{ st.notes }}{% endif %}</small>
+  </div>
+  <a href="{% url 'inv_stocktakes' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> All stock takes</a>
+</div>
+
+{% if summary %}
+<div class="row">
+  <div class="col-lg-6 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5>1. Scan tagged items</h5>
+      <p class="text-muted small">Scan with a USB scanner or type the tag and press Enter. Each scan is saved straight away.</p>
+      <form method="post" action="{% url 'inv_stocktake_scan' st.pk %}" id="scanForm" class="mb-2">{% csrf_token %}
+        <div class="input-group">
+          <input name="tag_code" id="scanInput" class="form-control form-control-lg" placeholder="Scan tag…" autocomplete="off" autofocus>
+          <div class="input-group-append"><button class="btn btn-primary">Record</button></div>
+        </div>
+      </form>
+      <div id="scanFeedback" class="small mb-3" aria-live="polite"></div>
+      <p class="mb-2"><strong id="scannedCount">{{ summary.scanned_count }}</strong> scanned of {{ summary.expected_count }} expected here.</p>
+      <ul class="list-unstyled small mb-0" id="scanList">
+        {% for s in recent_scans %}<li>{{ s.unit.tag_code }} <span class="text-muted">{{ s.unit.item.name|truncatechars:40 }}</span></li>{% endfor %}
+      </ul>
+    </div></div>
+  </div>
+
+  <div class="col-lg-6 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5>2. Count stores</h5>
+      <p class="text-muted small">For counted items kept here, enter what is physically on the shelf.</p>
+      <form method="post" action="{% url 'inv_stocktake_count' st.pk %}" class="form-row">{% csrf_token %}
+        <div class="col-7 mb-2">{{ count_form.item }}</div>
+        <div class="col-3 mb-2">{{ count_form.counted_quantity }}</div>
+        <div class="col-2 mb-2"><button class="btn btn-outline-primary btn-block">Save</button></div>
+      </form>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Item</th><th class="text-right">System</th><th class="text-right">Counted</th><th class="text-right">Difference</th></tr></thead>
+        <tbody>
+        {% for row in summary.counts %}
+          <tr>
+            <td>{{ row.count.item }}</td>
+            <td class="text-right">{{ row.system|floatformat:"-2" }}</td>
+            <td class="text-right">{{ row.count.counted_quantity|floatformat:"-2" }}</td>
+            <td class="text-right {% if row.variance < 0 %}text-danger{% elif row.variance > 0 %}text-success{% endif %}">{{ row.variance|floatformat:"-2" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-muted">No counts yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <h5>3. Review and finish</h5>
+  <div class="row">
+    <div class="col-md-6">
+      <h6 class="text-danger">Not found yet ({{ summary.missing|length }})</h6>
+      <ul class="small">{% for u in summary.missing|slice:":50" %}<li>{{ u.tag_code }} · {{ u.item.name|truncatechars:40 }}</li>{% empty %}<li class="text-muted">Everything expected here has been scanned.</li>{% endfor %}</ul>
+      {% if summary.missing|length > 50 %}<p class="small text-muted">…and {{ summary.missing|length|add:"-50" }} more.</p>{% endif %}
+    </div>
+    <div class="col-md-6">
+      {% if summary.misplaced %}<h6>Found here but recorded elsewhere ({{ summary.misplaced|length }})</h6>
+        <ul class="small">{% for u in summary.misplaced %}<li>{{ u.tag_code }} · recorded at {{ u.current_location|default:"no location" }}</li>{% endfor %}</ul>{% endif %}
+      {% if summary.was_lost %}<h6>Marked lost but found ({{ summary.was_lost|length }})</h6>
+        <ul class="small">{% for u in summary.was_lost %}<li>{{ u.tag_code }}</li>{% endfor %}</ul>{% endif %}
+      {% if summary.on_loan %}<h6>Scanned but recorded as on loan ({{ summary.on_loan|length }})</h6>
+        <ul class="small">{% for u in summary.on_loan %}<li>{{ u.tag_code }} · {{ u.holder_display }}. Return it at the desk if it is back.</li>{% endfor %}</ul>{% endif %}
+    </div>
+  </div>
+  <form method="post" action="{% url 'inv_stocktake_complete' st.pk %}" onsubmit="return confirm('Complete the stock take and apply the selected changes?')">{% csrf_token %}
+    {% for f in complete_form %}
+      <div class="form-check">{{ f }} <label class="form-check-label" for="{{ f.id_for_label }}">{{ f.label }}</label></div>
+    {% endfor %}
+    <div class="d-flex mt-3" style="gap:.5rem;">
+      <button class="btn btn-success">Complete stock take</button>
+    </div>
+  </form>
+  <form method="post" action="{% url 'inv_stocktake_cancel' st.pk %}" class="mt-2" onsubmit="return confirm('Cancel? Scans and counts are discarded and nothing changes.')">{% csrf_token %}
+    <button class="btn btn-link text-danger p-0">Cancel this stock take</button>
+  </form>
+</div></div>
+
+<script>
+  (function () {
+    var form = document.getElementById("scanForm"), input = document.getElementById("scanInput");
+    var feedback = document.getElementById("scanFeedback"), list = document.getElementById("scanList");
+    var counter = document.getElementById("scannedCount");
+    var colours = {found: "text-success", duplicate: "text-muted"};
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var tag = input.value.trim();
+      if (!tag) return;
+      fetch(form.action, {method: "POST", body: new FormData(form), headers: {"X-Requested-With": "XMLHttpRequest"}})
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { feedback.className = "small mb-3 text-danger"; feedback.textContent = data.error; return; }
+          feedback.className = "small mb-3 " + (colours[data.outcome] || "text-warning");
+          feedback.textContent = data.unit.tag_code + ": " + data.message;
+          if (data.outcome !== "duplicate") {
+            counter.textContent = parseInt(counter.textContent, 10) + 1;
+            var li = document.createElement("li");
+            li.textContent = data.unit.tag_code + " " + data.unit.item;
+            list.prepend(li);
+          }
+        })
+        .catch(function () { feedback.className = "small mb-3 text-danger"; feedback.textContent = "Could not reach the server. Try again."; })
+        .finally(function () { input.value = ""; input.focus(); });
+    });
+  })();
+</script>
+{% else %}
+<div class="card"><div class="card-body">
+  {% if st.status == "COMPLETED" %}
+    <p>Completed {{ st.completed_at|date:"Y-m-d H:i" }} by {{ st.completed_by.get_full_name|default:st.completed_by }}.</p>
+    <table class="table table-sm" style="max-width:520px;">
+      <tr><td>Expected tagged items</td><td class="text-right">{{ st.result.expected }}</td></tr>
+      <tr><td>Scanned</td><td class="text-right">{{ st.result.scanned }}</td></tr>
+      <tr><td>Not found</td><td class="text-right">{{ st.result.missing_tags|length }}{% if st.result.missing_marked_lost %} (marked lost){% endif %}</td></tr>
+      <tr><td>Moved here (misplaced)</td><td class="text-right">{{ st.result.misplaced_tags|length }}</td></tr>
+      <tr><td>Lost items found</td><td class="text-right">{{ st.result.found_lost_tags|length }}</td></tr>
+      <tr><td>Stock lines corrected</td><td class="text-right">{{ st.result.stock_lines_adjusted }}</td></tr>
+    </table>
+    {% if st.result.missing_tags %}<h6>Tags not found</h6><p class="small">{{ st.result.missing_tags|join:", " }}</p>{% endif %}
+  {% else %}
+    <p class="mb-0 text-muted">This stock take was cancelled. Nothing was changed.</p>
+  {% endif %}
+</div></div>
+{% endif %}
+{% endblock %}

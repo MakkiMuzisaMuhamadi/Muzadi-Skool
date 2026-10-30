@@ -1,74 +1,111 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
-
+{% load humanize %}
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-boxes"></i> Inventory Dashboard</h3>
-    <small class="text-muted">Overview of inventory records and activity</small>
+    <h3 class="page-title mb-0"><i class="fas fa-boxes"></i> Inventory</h3>
+    <small class="text-muted">Library, assets and stores in one place</small>
   </div>
-  <div class="d-flex" style="gap:.5rem;">
-    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm">
-      <i class="fas fa-qrcode mr-1"></i> Scan Issue/Return
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm"><i class="fas fa-qrcode mr-1"></i> Issue / Return</a>
+    <a href="{% url 'inv_stock_op' 'issue' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-dolly mr-1"></i> Issue stock</a>
+    <a href="{% url 'inv_grn_create' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-truck-loading mr-1"></i> Receive goods</a>
+  </div>
+</div>
+
+{% if settings_missing_fee_category and request.user.profile.role == "SUPER_ADMIN" or settings_missing_fee_category and request.user.profile.role == "ADMIN" %}
+<div class="alert alert-warning">
+  Students cannot be billed for lost or damaged items until you choose a fee category.
+  <a href="{% url 'inv_settings' %}" class="alert-link">Open inventory settings</a>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-6 col-lg-3 mb-3">
+    <a class="card h-100 text-reset" href="{% url 'inv_units' %}?status=ISSUED">
+      <div class="card-body">
+        <div class="h2 mb-0">{{ on_loan|intcomma }}</div>
+        <div class="text-muted">Items out on loan</div>
+      </div>
     </a>
-    <a href="{% url 'inv_unit_bulk_add' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> Bulk Add Units
+  </div>
+  <div class="col-6 col-lg-3 mb-3">
+    <a class="card h-100 text-reset {% if overdue %}border-danger{% endif %}" href="{% url 'inv_report' 'overdue' %}">
+      <div class="card-body">
+        <div class="h2 mb-0 {% if overdue %}text-danger{% endif %}">{{ overdue|intcomma }}</div>
+        <div class="text-muted">Overdue</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3 mb-3">
+    <a class="card h-100 text-reset {% if low_stock %}border-warning{% endif %}" href="{% url 'inv_report' 'low-stock' %}">
+      <div class="card-body">
+        <div class="h2 mb-0">{{ low_stock|intcomma }}</div>
+        <div class="text-muted">Stock lines low</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3 mb-3">
+    <a class="card h-100 text-reset" href="{% url 'inv_stock' %}">
+      <div class="card-body">
+        <div class="h2 mb-0">{{ stock_value|floatformat:0|intcomma }}</div>
+        <div class="text-muted">Value of stores</div>
+      </div>
     </a>
   </div>
 </div>
 
 <div class="row">
-  <div class="col-md-3 mb-3">
-    <div class="card">
-      <div class="card-body text-center">
-        <div class="h2 mb-0">{{ counts.categories }}</div>
-        <div class="text-muted">Categories</div>
-        <a class="btn btn-link btn-sm" href="{% url 'inv_categories' %}">Manage</a>
+  <div class="col-lg-5 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="mb-3">Tagged items</h5>
+        <table class="table table-sm mb-3">
+          <tr><td>Titles / asset types</td><td class="text-right">{{ titles|intcomma }}</td></tr>
+          <tr><td>Tagged copies</td><td class="text-right">{{ units_total|intcomma }}</td></tr>
+          <tr><td>Available</td><td class="text-right">{{ status_counts.AVAILABLE|default:0|intcomma }}</td></tr>
+          <tr><td>Allocated</td><td class="text-right">{{ status_counts.ALLOCATED|default:0|intcomma }}</td></tr>
+          <tr><td>Under repair</td><td class="text-right">{{ status_counts.UNDER_REPAIR|default:0|intcomma }}</td></tr>
+          <tr><td>Lost</td><td class="text-right">{{ status_counts.LOST|default:0|intcomma }}</td></tr>
+        </table>
+        <h5 class="mb-2">Stores &amp; purchasing</h5>
+        <table class="table table-sm mb-0">
+          <tr><td>Counted stock lines</td><td class="text-right">{{ counted_items|intcomma }}</td></tr>
+          <tr><td><a href="{% url 'inv_pos' %}?status=DRAFT">Orders waiting for approval</a></td><td class="text-right">{{ draft_pos }}</td></tr>
+          <tr><td><a href="{% url 'inv_pos' %}?status=APPROVED">Orders waiting for delivery</a></td><td class="text-right">{{ open_pos }}</td></tr>
+          <tr><td><a href="{% url 'inv_stocktakes' %}">Stock takes in progress</a></td><td class="text-right">{{ open_stock_takes }}</td></tr>
+        </table>
       </div>
     </div>
   </div>
 
-  <div class="col-md-3 mb-3">
-    <div class="card">
-      <div class="card-body text-center">
-        <div class="h2 mb-0">{{ counts.items }}</div>
-        <div class="text-muted">Items (Titles/Types)</div>
-        <a class="btn btn-link btn-sm" href="{% url 'inv_items' %}">View</a>
+  <div class="col-lg-7 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">Recent activity</h5>
+          <a href="{% url 'inv_transactions' %}" class="btn btn-link btn-sm">Full log</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped mb-0">
+            <thead><tr><th>When</th><th>Action</th><th>Item</th><th>Holder</th><th>By</th></tr></thead>
+            <tbody>
+              {% for r in recent %}
+              <tr>
+                <td class="text-nowrap">{{ r.created_at|naturaltime }}</td>
+                <td>{{ r.get_tx_type_display }}</td>
+                <td><a href="{% url 'inv_unit_detail' r.unit_id %}">{{ r.unit.tag_code }}</a> <small class="text-muted">{{ r.unit.item.name|truncatechars:30 }}</small></td>
+                <td>{{ r.holder_display|default:"—" }}</td>
+                <td>{{ r.performed_by.get_full_name|default:r.performed_by|default:"—" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted">Nothing yet. Start by adding categories, locations and items.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="card">
-      <div class="card-body text-center">
-        <div class="h2 mb-0">{{ counts.units }}</div>
-        <div class="text-muted">Asset Tags</div>
-        <a class="btn btn-link btn-sm" href="{% url 'inv_units' %}">View</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="card">
-      <div class="card-body text-center">
-        <div class="h2 mb-0">{{ counts.tx }}</div>
-        <div class="text-muted">Transactions</div>
-        <a class="btn btn-link btn-sm" href="{% url 'inv_transactions' %}">Audit Log</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-body">
-    <h5 class="mb-2">Quick Setup Checklist</h5>
-    <ol class="mb-0">
-      <li>Create Categories (Library / Assets).</li>
-      <li>Create Locations (Library, Stores, Labs, Offices).</li>
-      <li>Create Items (Book titles / Asset types).</li>
-      <li>Add Tags (Tagged copies) and print QR labels.</li>
-      <li>Use Scan Issue/Return for daily operations.</li>
-    </ol>
   </div>
 </div>
 {% endblock %}

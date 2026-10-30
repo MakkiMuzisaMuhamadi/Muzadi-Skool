@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
+  <div>
+    <h3 class="page-title mb-0">{{ grn.grn_number }} {% include "dashboard/inventory/_status_badge.html" with s=grn.status %}</h3>
+    <small class="text-muted">{{ grn.supplier }} · {{ grn.received_date }} · into {{ grn.location }}
+      {% if grn.purchase_order %} · order <a href="{% url 'inv_po_detail' grn.purchase_order_id %}">{{ grn.purchase_order }}</a>{% endif %}
+      {% if grn.delivery_note_no %} · delivery note {{ grn.delivery_note_no }}{% endif %}
+      {% if grn.invoice_no %} · invoice {{ grn.invoice_no }}{% endif %}</small>
+  </div>
+  {% if grn.status == "DRAFT" %}
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'inv_grn_edit' grn.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>
+    <form method="post" action="{% url 'inv_grn_post' grn.pk %}" onsubmit="return confirm('Post this delivery into stock? It cannot be edited afterwards.')">{% csrf_token %}
+      <button class="btn btn-success btn-sm"><i class="fas fa-check mr-1"></i> Post into stock</button></form>
+  </div>
+  {% else %}
+    <small class="text-muted">Posted {{ grn.posted_at|date:"Y-m-d H:i" }} by {{ grn.posted_by.get_full_name|default:grn.posted_by }}</small>
+  {% endif %}
+</div>
+<div class="card"><div class="card-body">
+  <div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>Item</th><th>Tracking</th><th class="text-right">Quantity</th><th class="text-right">Unit cost</th><th class="text-right">Total</th><th>Result</th></tr></thead>
+    <tbody>
+    {% for l in lines %}
+      <tr>
+        <td><a href="{% url 'inv_item_detail' l.item_id %}">{{ l.item }}</a></td>
+        <td>{% if l.item.is_serialized %}Tagged{% else %}Counted{% endif %}</td>
+        <td class="text-right">{{ l.quantity|floatformat:"-2" }}</td>
+        <td class="text-right">{{ l.unit_cost|floatformat:2|intcomma }}</td>
+        <td class="text-right">{{ l.line_total|floatformat:2|intcomma }}</td>
+        <td class="small">
+          {% if grn.status == "POSTED" %}
+            {% if l.item.is_serialized %}
+              {% with units=l.units.all %}{% if units %}{% with last=units|last %}Tags {{ units.0.tag_code }} – {{ last.tag_code }}{% endwith %}{% endif %}{% endwith %}
+              <a href="{% url 'inv_labels_item' l.item_id %}?limit=240" class="ml-1">Print labels</a>
+            {% else %}Added to stock{% endif %}
+          {% else %}<span class="text-muted">Waiting to be posted</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><th colspan="4" class="text-right">Total</th><th class="text-right">{{ grn.total|floatformat:2|intcomma }}</th><th></th></tr></tfoot>
+  </table></div>
+  {% if grn.notes %}<p class="text-muted small mt-3 mb-0">{{ grn.notes|linebreaksbr }}</p>{% endif %}
+</div></div>
+{% endblock %}

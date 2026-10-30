@@ -1,0 +1,35 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-file-signature"></i> Purchase orders</h3>
+    <small class="text-muted">Draft → approved → received. Goods are received against an order with a GRN.</small>
+  </div>
+  <a href="{% url 'inv_po_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> New order</a>
+</div>
+<div class="card"><div class="card-body">
+  <form method="get" class="form-inline mb-3" style="gap:.5rem;">
+    <select class="form-control" name="status" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      {% for v, l in status_choices %}<option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select>
+  </form>
+  <div class="table-responsive"><table class="table table-striped mb-0">
+    <thead><tr><th>Number</th><th>Date</th><th>Supplier</th><th>Status</th><th class="text-right">Total</th></tr></thead>
+    <tbody>
+    {% for po in rows %}
+      <tr>
+        <td><a href="{% url 'inv_po_detail' po.pk %}" class="font-weight-bold">{{ po.po_number }}</a></td>
+        <td>{{ po.order_date }}</td><td>{{ po.supplier }}</td>
+        <td>{% include "dashboard/inventory/_status_badge.html" with s=po.status %}</td>
+        <td class="text-right">{{ po.total|floatformat:2|intcomma }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-muted">No purchase orders.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include "dashboard/inventory/_pagination.html" %}
+</div></div>
+{% endblock %}

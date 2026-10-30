@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0">{{ title }}</h3>
+    {% if subtitle %}<small class="text-muted">{{ subtitle }}</small>{% endif %}
+  </div>
+  {% if back_url %}<a href="{{ back_url }}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>{% endif %}
+</div>
+
+<div class="card" style="max-width: 920px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>
+      {% endif %}
+      {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+      <div class="form-row">
+        {% for field in form.visible_fields %}
+          <div class="form-group {% if field.field.widget.attrs.rows %}col-12{% else %}col-md-6{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="form-check mt-md-4">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+            {% for e in field.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-flex align-items-center" style="gap:.5rem;">
+        <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>
+        {% if allow_again %}
+          <button type="submit" name="again" value="1" class="btn btn-outline-primary">{{ submit_label }} and add another</button>
+        {% endif %}
+        {% if back_url %}<a href="{{ back_url }}" class="btn btn-light">Cancel</a>{% endif %}
+        {% if extra_link %}<a href="{{ extra_link.0 }}" class="ml-auto">{{ extra_link.1 }}</a>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{# Expects: formset, columns (list of field names) #}
+{{ formset.management_form }}
+{% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+<div class="table-responsive">
+  <table class="table table-sm" id="lineTable">
+    <thead>
+      <tr>
+        {% for f in formset.empty_form.visible_fields %}{% if f.name != "DELETE" %}<th>{{ f.label }}</th>{% endif %}{% endfor %}
+        <th class="text-center">Remove</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for form in formset %}
+      <tr>
+        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+        {% for f in form.visible_fields %}{% if f.name != "DELETE" %}
+          <td>{{ f }}{% for e in f.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}</td>
+        {% endif %}{% endfor %}
+        <td class="text-center">{% if form.DELETE %}{{ form.DELETE }}{% endif %}</td>
+      </tr>
+      {% if form.non_field_errors %}<tr><td colspan="9" class="text-danger small">{{ form.non_field_errors|join:" " }}</td></tr>{% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<template id="emptyLine">
+  <tr>
+    {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+    {% for f in formset.empty_form.visible_fields %}{% if f.name != "DELETE" %}<td>{{ f }}</td>{% endif %}{% endfor %}
+    <td class="text-center">{{ formset.empty_form.DELETE }}</td>
+  </tr>
+</template>
+<button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="addLine"><i class="fas fa-plus mr-1"></i> Add line</button>
+<script>
+  (function () {
+    var total = document.getElementById("id_{{ formset.prefix }}-TOTAL_FORMS");
+    document.getElementById("addLine").addEventListener("click", function () {
+      var html = document.getElementById("emptyLine").innerHTML.replace(/__prefix__/g, total.value);
+      document.querySelector("#lineTable tbody").insertAdjacentHTML("beforeend", html);
+      total.value = parseInt(total.value, 10) + 1;
+    });
+  })();
+</script>
