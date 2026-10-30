@@ -1004,7 +1004,7 @@
           <!-- ======================= -->
           <!-- HEALTH SECTION -->
           <!-- ======================= -->
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,NURSE" %}
           <li class="nav-item">
             <a class="nav-link" data-toggle="collapse" href="#health" aria-expanded="false"
               aria-controls="health">
@@ -1015,21 +1015,27 @@
             <div class="collapse" id="health">
               <ul class="nav flex-column sub-menu">
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'health_medical_records' %}">
-                    <i class="fas fa-file-medical menu-icon"></i>
-                    Medical Records
+                  <a class="nav-link" href="{% url 'health_dashboard' %}">
+                    <i class="fas fa-chart-line menu-icon"></i>
+                    Health overview
                   </a>
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'health_sickbay_list' %}">
                     <i class="fas fa-clipboard-list menu-icon"></i>
-                    Sick Bay Register
+                    Sick bay register
                   </a>
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'health_medication_list' %}">
                     <i class="fas fa-pills menu-icon"></i>
-                    Medication Records
+                    Medication log
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'health_medical_records' %}">
+                    <i class="fas fa-file-medical menu-icon"></i>
+                    Medical records
                   </a>
                 </li>
               </ul>

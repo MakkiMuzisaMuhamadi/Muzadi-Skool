@@ -1,0 +1,94 @@
+{# Filter bar. Context: filters, classes, streams. Optional: show_dates, show_category, show_outcome, flag_choices, show_voided #}
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body pb-2">
+    <form method="get" class="form-row align-items-end">
+      <div class="col-lg-2 col-md-4 mb-2">
+        <label class="small text-muted mb-1" for="filterClass">Class</label>
+        <select name="class" id="filterClass" class="form-control">
+          <option value="">All classes</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if filters.class == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 col-md-4 mb-2">
+        <label class="small text-muted mb-1" for="filterStream">Stream</label>
+        <select name="stream" id="filterStream" class="form-control">
+          <option value="">All streams</option>
+          {% for s in streams %}<option value="{{ s.id }}" {% if filters.stream == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-3 col-md-4 mb-2">
+        <label class="small text-muted mb-1" for="filterQ">Search</label>
+        <input type="search" name="q" id="filterQ" value="{{ filters.q }}" class="form-control" placeholder="Name, admission no. or keyword">
+      </div>
+      {% if show_dates %}
+      <div class="col-lg-2 col-md-3 mb-2">
+        <label class="small text-muted mb-1" for="filterFrom">From</label>
+        <input type="date" name="from" id="filterFrom" value="{{ filters.from }}" class="form-control">
+      </div>
+      <div class="col-lg-2 col-md-3 mb-2">
+        <label class="small text-muted mb-1" for="filterTo">To</label>
+        <input type="date" name="to" id="filterTo" value="{{ filters.to }}" class="form-control">
+      </div>
+      {% endif %}
+      {% if show_category %}
+      <div class="col-lg-2 col-md-3 mb-2">
+        <label class="small text-muted mb-1" for="filterCat">Type of illness</label>
+        <select name="category" id="filterCat" class="form-control">
+          <option value="">All types</option>
+          {% for v, l in category_choices %}<option value="{{ v }}" {% if filters.category == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      {% if show_outcome %}
+      <div class="col-lg-2 col-md-3 mb-2">
+        <label class="small text-muted mb-1" for="filterOutcome">Outcome</label>
+        <select name="outcome" id="filterOutcome" class="form-control">
+          <option value="">All outcomes</option>
+          {% for v, l in outcome_choices %}<option value="{{ v }}" {% if filters.outcome == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      {% if flag_choices %}
+      <div class="col-lg-2 col-md-3 mb-2">
+        <label class="small text-muted mb-1" for="filterFlag">Show only</label>
+        <select name="flag" id="filterFlag" class="form-control">
+          <option value="">All students</option>
+          {% for v, l in flag_choices %}<option value="{{ v }}" {% if filters.flag == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      {% if show_voided %}
+      <div class="col-lg-2 col-md-3 mb-2">
+        <div class="custom-control custom-checkbox mb-2">
+          <input type="checkbox" class="custom-control-input" id="filterVoided" name="voided" value="1" {% if filters.voided == "1" %}checked{% endif %}>
+          <label class="custom-control-label small" for="filterVoided">Show voided records only</label>
+        </div>
+      </div>
+      {% endif %}
+      <div class="col-auto mb-2">
+        <button class="btn btn-primary"><i class="fas fa-filter mr-1"></i> Apply</button>
+        <a href="{{ request.path }}" class="btn btn-light">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  var classSel = document.getElementById("filterClass");
+  var streamSel = document.getElementById("filterStream");
+  if (!classSel || !streamSel) return;
+  classSel.addEventListener("change", function () {
+    streamSel.innerHTML = '<option value="">All streams</option>';
+    if (!this.value) return;
+    fetch("{% url 'health_ajax_streams' %}?class_id=" + encodeURIComponent(this.value), {credentials: "same-origin"})
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        (data.results || []).forEach(function (s) {
+          var o = document.createElement("option");
+          o.value = s.id; o.textContent = s.text;
+          streamSel.appendChild(o);
+        });
+      });
+  });
+})();
+</script>

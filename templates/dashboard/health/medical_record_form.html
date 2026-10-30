@@ -1,53 +1,165 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-file-medical text-info"></i> {{ title }}</h3>
-    <small class="text-muted">{{ student.name }} — {{ student.admission_number }}</small>
+    <h3 class="page-title mb-0"><i class="fas fa-file-medical text-info"></i> {{ student.name }}</h3>
+    <small class="text-muted">{{ student.admission_number }}, {{ student.current_class.name|default:"" }} {{ student.stream.name|default:"" }}</small>
   </div>
-  <div>
-    <a href="{% url 'health_medical_records' %}" class="btn btn-outline-primary btn-sm">
-      <i class="fas fa-arrow-left mr-1"></i> Back
-    </a>
+  <div class="d-flex" style="gap:.5rem;">
+    <a href="{% url 'health_student_card' student.id %}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="fas fa-print mr-1"></i> Health card</a>
+    <a href="{% url 'health_sickbay_add' %}?student={{ student.id }}" class="btn btn-outline-danger btn-sm"><i class="fas fa-plus mr-1"></i> Sick bay visit</a>
+    <a href="{% url 'health_medical_records' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
+{% include "dashboard/health/_nav.html" with active="records" %}
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#details" role="tab">Medical details</a></li>
+  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#immunisations" role="tab">Immunisations <span class="badge badge-light">{{ immunizations|length }}</span></a></li>
+  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#history" role="tab">History</a></li>
+</ul>
+
+<div class="tab-content">
+  <!-- Details -->
+  <div class="tab-pane fade show active" id="details" role="tabpanel">
     <form method="post" novalidate>
       {% csrf_token %}
-
       <div class="row">
-        <div class="col-md-4">
-          <label class="small text-muted mb-1">Blood Group</label>
-          {{ form.blood_group }}
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+            <h6 class="mb-3">Allergies and needs</h6>
+            {% include "dashboard/health/_field.html" with f=mform.known_allergies %}
+            {% include "dashboard/health/_field.html" with f=pform.chronic_conditions %}
+            {% include "dashboard/health/_field.html" with f=pform.regular_medication %}
+            {% include "dashboard/health/_field.html" with f=mform.special_needs %}
+            {% include "dashboard/health/_field.html" with f=mform.dietary_restrictions %}
+          </div></div>
+          <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+            <h6 class="mb-3">Body measurements</h6>
+            <div class="form-row">
+              <div class="col-md-3">{% include "dashboard/health/_field.html" with f=mform.blood_group %}</div>
+              <div class="col-md-3">{% include "dashboard/health/_field.html" with f=pform.height_cm %}</div>
+              <div class="col-md-3">{% include "dashboard/health/_field.html" with f=pform.weight_kg %}</div>
+              <div class="col-md-3">{% include "dashboard/health/_field.html" with f=pform.measured_on %}</div>
+            </div>
+          </div></div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+            <h6 class="mb-3">Consent to treat</h6>
+            {% include "dashboard/health/_field.html" with f=pform.consent_to_treat %}
+            <div class="form-row">
+              <div class="col-md-7">{% include "dashboard/health/_field.html" with f=pform.consent_given_by %}</div>
+              <div class="col-md-5">{% include "dashboard/health/_field.html" with f=pform.consent_date %}</div>
+            </div>
+          </div></div>
+          <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+            <h6 class="mb-3">In an emergency</h6>
+            <p class="small text-muted mb-2">Emergency contact: {{ student.emergency_contact_name|default:"not recorded" }}
+              {% if student.emergency_contact_phone %}({{ student.emergency_contact_phone }}){% endif %}. Change it on the student's profile.</p>
+            {% include "dashboard/health/_field.html" with f=pform.preferred_facility %}
+            <div class="form-row">
+              <div class="col-md-6">{% include "dashboard/health/_field.html" with f=pform.doctor_name %}</div>
+              <div class="col-md-6">{% include "dashboard/health/_field.html" with f=pform.doctor_phone %}</div>
+            </div>
+            <div class="form-row">
+              <div class="col-md-6">{% include "dashboard/health/_field.html" with f=pform.insurance_provider %}</div>
+              <div class="col-md-6">{% include "dashboard/health/_field.html" with f=pform.insurance_number %}</div>
+            </div>
+            {% include "dashboard/health/_field.html" with f=pform.notes %}
+          </div></div>
         </div>
       </div>
-
-      <div class="row mt-3">
-        <div class="col-md-6">
-          <label class="small text-muted mb-1">Known Allergies</label>
-          {{ form.known_allergies }}
-        </div>
-        <div class="col-md-6">
-          <label class="small text-muted mb-1">Special Needs</label>
-          {{ form.special_needs }}
-        </div>
-      </div>
-
-      <div class="mt-3">
-        <label class="small text-muted mb-1">Dietary Restrictions</label>
-        {{ form.dietary_restrictions }}
-      </div>
-
-      <div class="mt-4 d-flex" style="gap:.5rem;">
-        <button class="btn btn-success">
-          <i class="fas fa-save mr-1"></i> {{ action }}
-        </button>
-        <a href="{% url 'health_medical_records' %}" class="btn btn-light">Cancel</a>
-      </div>
+      <button class="btn btn-success"><i class="fas fa-save mr-1"></i> Save medical record</button>
     </form>
   </div>
+
+  <!-- Immunisations -->
+  <div class="tab-pane fade" id="immunisations" role="tabpanel">
+    <div class="row">
+      <div class="col-lg-7 mb-3">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Vaccine</th><th>Dose</th><th>Date</th><th>Where</th><th></th></tr></thead>
+            <tbody>
+            {% for i in immunizations %}
+              <tr>
+                <td class="font-weight-bold">{{ i.vaccine_label }}{% if i.notes %}<div class="small text-muted font-weight-normal">{{ i.notes }}</div>{% endif %}</td>
+                <td>{{ i.dose_number }}</td><td>{{ i.date_given|date:"d M Y"|default:"-" }}</td><td class="small">{{ i.given_at|default:"-" }}</td>
+                <td class="text-right">
+                  <form method="post" action="{% url 'health_immunization_delete' i.id %}" onsubmit="return confirm('Remove this immunisation?');">{% csrf_token %}
+                    <button class="btn btn-sm btn-link text-danger p-0" title="Remove"><i class="fas fa-times"></i></button></form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-muted">No immunisations recorded. Copy them from the child health card when the parent brings it.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div></div>
+      </div>
+      <div class="col-lg-5 mb-3">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+          <h6 class="mb-3">Add immunisation</h6>
+          <form method="post" action="{% url 'health_immunization_add' student.id %}" novalidate>
+            {% csrf_token %}
+            <div class="form-row">
+              <div class="col-md-8">{% include "dashboard/health/_field.html" with f=iform.vaccine %}</div>
+              <div class="col-md-4">{% include "dashboard/health/_field.html" with f=iform.dose_number %}</div>
+            </div>
+            {% include "dashboard/health/_field.html" with f=iform.other_vaccine %}
+            <div class="form-row">
+              <div class="col-md-6">{% include "dashboard/health/_field.html" with f=iform.date_given %}</div>
+              <div class="col-md-6">{% include "dashboard/health/_field.html" with f=iform.given_at %}</div>
+            </div>
+            {% include "dashboard/health/_field.html" with f=iform.notes %}
+            <button class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add immunisation</button>
+          </form>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="tab-pane fade" id="history" role="tabpanel">
+    <div class="row">
+      <div class="col-lg-6 mb-3">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+          <h6 class="mb-3">Recent sick bay visits</h6>
+          {% for v in visits %}
+            <div class="border-bottom py-2 small">
+              <a href="{% url 'health_sickbay_edit' v.id %}" class="font-weight-bold">{{ v.visit_date|date:"d M Y H:i" }}</a>
+              <span class="badge badge-{{ v.outcome_badge }}">{{ v.get_outcome_display }}</span>
+              <div class="text-muted">{{ v.diagnosis|default:v.symptoms|default:"-"|truncatechars:80 }}</div>
+            </div>
+          {% empty %}<p class="small text-muted mb-0">No visits.</p>{% endfor %}
+          <h6 class="mt-4 mb-3">Recent medication</h6>
+          {% for m in meds %}
+            <div class="border-bottom py-2 small"><strong>{{ m.medicine_name }}</strong> {{ m.dosage }}, {{ m.given_on|date:"d M Y" }}</div>
+          {% empty %}<p class="small text-muted mb-0">None.</p>{% endfor %}
+        </div></div>
+      </div>
+      <div class="col-lg-6 mb-3">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+          <h6 class="mb-3">Changes to this record</h6>
+          {% for h in history %}
+            <div class="border-bottom py-2 small">
+              <div><strong>{{ h.field_label }}</strong> <span class="text-muted">by {{ h.changed_by.get_full_name|default:h.changed_by.username|default:"unknown" }}, {{ h.changed_at|date:"d M Y H:i" }}</span></div>
+              {% if h.old_value %}<div class="text-muted"><del>{{ h.old_value|truncatechars:120 }}</del></div>{% endif %}
+              {% if h.new_value %}<div>{{ h.new_value|truncatechars:120 }}</div>{% endif %}
+            </div>
+          {% empty %}<p class="small text-muted mb-0">No changes recorded yet.</p>{% endfor %}
+        </div></div>
+      </div>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // Open the tab named in the address (e.g. after adding an immunisation)
+  if (location.hash) { try { $('a[href="' + location.hash + '"]').tab('show'); } catch (e) {} }
+</script>
 {% endblock %}

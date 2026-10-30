@@ -1,330 +1,66 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
-{% load role_tags %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
-    <h3 class="page-title mb-0">
-      <i class="fas fa-clipboard-list text-info"></i> Sick Bay Register
-    </h3>
-    <small class="text-muted">Record and track sick bay visits. Filter by class/stream/date/search.</small>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-list text-danger"></i> Sick bay register</h3>
+    <small class="text-muted">Every visit to the sick bay, newest first.</small>
   </div>
-
   <div class="d-flex" style="gap:.5rem;">
-    <a href="{% url 'health_sickbay_add' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> New Visit
-    </a>
-  </div>
-</div>
-<!-- Summary -->
-<div class="row mb-3">
-  <div class="col-md-3 mb-2">
-    <div class="card">
-      <div class="card-body py-3">
-        <div class="text-muted small">Total (shown)</div>
-        <div class="h4 mb-0" id="sbTotal">0</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3 mb-2">
-    <div class="card">
-      <div class="card-body py-3">
-        <div class="text-muted small">Last 7 days</div>
-        <div class="h4 mb-0" id="sbWeek">0</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3 mb-2">
-    <div class="card">
-      <div class="card-body py-3">
-        <div class="text-muted small">Admitted</div>
-        <div class="h4 mb-0" id="sbAdmitted">0</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3 mb-2">
-    <div class="card">
-      <div class="card-body py-3">
-        <div class="text-muted small">Referred</div>
-        <div class="h4 mb-0" id="sbReferred">0</div>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Filters -->
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2 align-items-end" id="filterForm">
-      <div class="col-md-3">
-        <label class="small text-muted mb-1">Class</label>
-        <select name="class" id="filterClass" class="form-select">
-          <option value="">All Classes</option>
-          {% for c in classes %}
-            <option value="{{ c.id }}" {% if filters.class == c.id|stringformat:"s" %}selected{% endif %}>
-              {{ c.name }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-md-3">
-        <label class="small text-muted mb-1">Stream</label>
-        <select name="stream" id="filterStream" class="form-select">
-          <option value="">All Streams</option>
-          {% for s in streams %}
-            <option value="{{ s.id }}" {% if filters.stream == s.id|stringformat:"s" %}selected{% endif %}>
-              {{ s.name }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-md-2">
-        <label class="small text-muted mb-1">From</label>
-        <input type="date" name="from" class="form-control" value="{{ filters.from }}">
-      </div>
-
-      <div class="col-md-2">
-        <label class="small text-muted mb-1">To</label>
-        <input type="date" name="to" class="form-control" value="{{ filters.to }}">
-      </div>
-
-      <div class="col-md-4 mt-2">
-        <label class="small text-muted mb-1">Search</label>
-        <input type="text" name="q" class="form-control"
-               placeholder="Student / Adm No / Symptoms / Diagnosis..."
-               value="{{ filters.q }}">
-      </div>
-
-      <div class="col-md-2 mt-2 d-flex" style="gap:.5rem;">
-        <button class="btn btn-outline-success w-100" type="submit">
-          <i class="fas fa-filter mr-1"></i> Filter
-        </button>
-        <a class="btn btn-outline-primary w-100" href="{% url 'health_sickbay_list' %}">
-          Reset
-        </a>
-      </div>
-    </form>
+    <a href="{% url 'health_sickbay_export' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-file-csv mr-1"></i> Download CSV</a>
+    <a href="{% url 'health_sickbay_add' %}" class="btn btn-danger btn-sm"><i class="fas fa-plus mr-1"></i> Record visit</a>
   </div>
 </div>
 
-<!-- Table -->
-<div class="card">
+{% include "dashboard/health/_nav.html" with active="sickbay" %}
+
+<div class="row mb-1">
+  <div class="col-6 col-md-3 mb-3"><div class="card border-0 shadow-sm"><div class="card-body py-3"><div class="text-muted small">Matching visits</div><div class="h4 mb-0">{{ totals.total }}</div></div></div></div>
+  <div class="col-6 col-md-3 mb-3"><div class="card border-0 shadow-sm"><div class="card-body py-3"><div class="text-muted small">Of these, today</div><div class="h4 mb-0">{{ totals.today }}</div></div></div></div>
+  <div class="col-6 col-md-3 mb-3"><div class="card border-0 shadow-sm"><div class="card-body py-3"><div class="text-muted small">Of these, referred</div><div class="h4 mb-0">{{ totals.referred }}</div></div></div></div>
+  <div class="col-6 col-md-3 mb-3"><div class="card border-0 shadow-sm"><div class="card-body py-3"><div class="text-muted small">In sick bay now</div><div class="h4 mb-0 {% if in_now %}text-danger{% endif %}">{{ in_now }}</div></div></div></div>
+</div>
+
+{% include "dashboard/health/_filters.html" with show_dates=True show_category=True show_outcome=True show_voided=True %}
+
+<div class="card border-0 shadow-sm">
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover" id="sickbayTable">
+      <table class="table table-hover">
         <thead>
-          <tr>
-            <th>Date</th>
-            <th>Student</th>
-            <th>Class</th>
-            <th>Stream</th>
-            <th>Symptoms</th>
-            <th>Diagnosis</th>
-            <th>Temp</th>
-            <th>Status</th>
-            <th class="text-right">Action</th>
-          </tr>
+          <tr><th>Time in</th><th>Student</th><th>Class</th><th>Complaint</th><th>Temp</th><th>Outcome</th><th>Parent</th><th class="text-right">Actions</th></tr>
         </thead>
         <tbody>
-          {% for r in rows %}
-          <tr>
+        {% for v in page %}
+          <tr {% if not v.is_active %}class="text-muted"{% endif %}>
+            <td class="text-nowrap"><div class="font-weight-bold">{{ v.visit_date|date:"d M Y" }}</div><small class="text-muted">{{ v.visit_date|date:"H:i" }}{% if v.time_out %} to {{ v.time_out|date:"H:i" }}{% endif %}</small></td>
+            <td><div class="font-weight-bold">{{ v.student.name }}</div><small class="text-muted">{{ v.student.admission_number }}</small></td>
+            <td>{{ v.class_ref.name|default:"-" }} {{ v.stream.name|default:"" }}</td>
             <td>
-              <div class="font-weight-bold">{{ r.visit_date|date:"Y-m-d" }}</div>
-              <small class="text-muted">{{ r.visit_date|date:"H:i" }}</small>
+              {% if v.condition_category %}<div class="small font-weight-bold">{{ v.get_condition_category_display }}</div>{% endif %}
+              <div class="small text-muted">{{ v.diagnosis|default:v.symptoms|default:"-"|truncatechars:50 }}</div>
             </td>
-
+            <td>{% if v.temperature_c %}<span class="{% if v.temperature_c >= 37.5 %}text-danger font-weight-bold{% endif %}">{{ v.temperature_c }}°</span>{% else %}-{% endif %}</td>
             <td>
-              <div class="d-flex align-items-center">
-                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mr-2"
-                     style="width:36px;height:36px;">
-                  <i class="fas fa-user text-muted"></i>
-                </div>
-                <div>
-                  <div class="font-weight-bold">{{ r.student.name }}</div>
-                  <small class="text-muted">{{ r.student.admission_number }}</small>
-                </div>
-              </div>
+              {% if v.is_active %}<span class="badge badge-{{ v.outcome_badge }}">{{ v.get_outcome_display }}</span>
+                {% if v.referred_to %}<div class="small text-muted">{{ v.referred_to|truncatechars:25 }}</div>{% endif %}
+              {% else %}<span class="badge badge-secondary">Voided</span><div class="small">{{ v.void_reason|truncatechars:40 }}</div>{% endif %}
             </td>
-
-            <td>{{ r.class_ref.name|default:"-" }}</td>
-            <td>{{ r.stream.name|default:"-" }}</td>
-
-            <td class="text-muted">{{ r.symptoms|default:"-"|truncatechars:30 }}</td>
-            <td class="text-muted">{{ r.diagnosis|default:"-"|truncatechars:30 }}</td>
-
-            <td>
-              {% if r.temperature_c %}
-                <span class="badge badge-light">{{ r.temperature_c }}°C</span>
-              {% else %}
-                <span class="text-muted">-</span>
+            <td>{% if v.parent_notified %}<i class="fas fa-sms text-success" title="{{ v.parent_notify_status }}"></i>{% else %}<span class="text-muted small">-</span>{% endif %}</td>
+            <td class="text-right text-nowrap">
+              {% if v.is_active %}
+              <a href="{% url 'health_sickbay_edit' v.id %}" class="btn btn-sm btn-outline-primary" title="Open"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'health_medication_add' %}?visit={{ v.id }}" class="btn btn-sm btn-outline-info" title="Give medication"><i class="fas fa-pills"></i></a>
+              <a href="{% url 'health_sickbay_void' v.id %}" class="btn btn-sm btn-outline-danger" title="Void"><i class="fas fa-ban"></i></a>
               {% endif %}
-            </td>
-
-            <td>
-              {% if r.admitted %}
-                <span class="badge badge-warning">Admitted</span>
-              {% else %}
-                <span class="badge badge-success">Outpatient</span>
-              {% endif %}
-              {% if r.referred_to %}
-                <span class="badge badge-info">Referred</span>
-              {% endif %}
-            </td>
-
-            <td class="text-right">
-              <div class="btn-group">
-                <a href="{% url 'health_sickbay_edit' r.id %}" class="btn btn-sm btn-outline-info">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <a href="{% url 'health_sickbay_delete' r.id %}" class="btn btn-sm btn-outline-danger">
-                  <i class="fas fa-trash"></i>
-                </a>
-              </div>
             </td>
           </tr>
-          {% empty %}
-          <tr>
-            <td colspan="9" class="text-center text-muted py-4">No sick bay visits found.</td>
-          </tr>
-          {% endfor %}
+        {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">No visits match these filters. <a href="{% url 'health_sickbay_add' %}">Record a visit</a></td></tr>
+        {% endfor %}
         </tbody>
       </table>
     </div>
-
-    {% if is_paginated %}
-    <div class="d-flex justify-content-between align-items-center mt-3">
-      <div class="text-muted small">
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-      </div>
-      <div class="btn-group">
-        {% if page_obj.has_previous %}
-          <a class="btn btn-outline-secondary btn-sm" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Prev</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-          <a class="btn btn-outline-secondary btn-sm" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
+    {% include "dashboard/health/_pagination.html" %}
   </div>
 </div>
-<script>
-  const STREAMS_URL = "{% url 'ajax_streams_by_class' %}";
-  async function loadStreams(classId, selectedStream){
-    const streamSel = document.getElementById("filterStream");
-    if(!streamSel) return;
-
-    // show loading state
-    streamSel.innerHTML = '<option value="">Loading streams...</option>';
-
-    if(!classId){
-      streamSel.innerHTML = '<option value="">All Streams</option>';
-      return;
-    }
-
-    try{
-      const res = await fetch(`${STREAMS_URL}?class_id=${encodeURIComponent(classId)}`);
-      const data = await res.json();
-
-      streamSel.innerHTML = '<option value="">All Streams</option>';
-
-      (data.results || []).forEach(r => {
-        const opt = document.createElement("option");
-        opt.value = r.id;
-        opt.textContent = r.name;
-        streamSel.appendChild(opt);
-      });
-
-      if(selectedStream){
-        streamSel.value = String(selectedStream);
-      }
-    } catch(e){
-      streamSel.innerHTML = '<option value="">All Streams</option>';
-      console.error("Failed loading streams:", e);
-    }
-  }
-
-  // ----------------------------
-  // Summary helpers (unchanged)
-  // ----------------------------
-  function parseYmd(text){
-    const m = (text || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if(!m) return null;
-    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  }
-
-  function daysDiff(a, b){
-    const A = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
-    const B = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
-    return Math.floor((A - B) / 86400000);
-  }
-
-  function updateSickbaySummary(){
-    const tbody = document.querySelector("#sickbayTable tbody");
-    if(!tbody) return;
-
-    const rows = Array.from(tbody.querySelectorAll("tr")).filter(r => r.children.length > 1);
-    const today = new Date();
-
-    let total = 0, week = 0, admitted = 0, referred = 0;
-
-    rows.forEach(tr => {
-      total += 1;
-
-      const dateText = tr.children[0]?.querySelector(".font-weight-bold")?.textContent || "";
-      const d = parseYmd(dateText);
-      if(d){
-        const diff = daysDiff(today, d);
-        if(diff >= 0 && diff <= 6) week += 1;
-      }
-
-      const statusText = (tr.children[7]?.textContent || "").toLowerCase();
-      if(statusText.includes("admitted")) admitted += 1;
-      if(statusText.includes("referred")) referred += 1;
-    });
-
-    document.getElementById("sbTotal").textContent = total;
-    document.getElementById("sbWeek").textContent = week;
-    document.getElementById("sbAdmitted").textContent = admitted;
-    document.getElementById("sbReferred").textContent = referred;
-  }
-
-  // ----------------------------
-  // ✅ DOM ready
-  // ----------------------------
-  document.addEventListener("DOMContentLoaded", function(){
-    const classSel = document.getElementById("filterClass");
-    const streamSel = document.getElementById("filterStream");
-
-    // ✅ preload streams when page loads (after filtering)
-    const selectedClass = classSel ? classSel.value : "";
-    const selectedStream = "{{ filters.stream }}";
-    if(selectedClass){
-      loadStreams(selectedClass, selectedStream);
-    } else {
-      // ensure nice default label
-      if(streamSel) streamSel.innerHTML = '<option value="">All Streams</option>';
-    }
-
-    // ✅ load streams immediately when class changes
-    if(classSel){
-      classSel.addEventListener("change", function(){
-        loadStreams(this.value, "");  // reset stream when class changes
-      });
-    }
-
-    // summary + datatable redraw
-    updateSickbaySummary();
-    try {
-      const table = $('#sickbayTable').DataTable({ pageLength: 25, order: [] });
-      table.on('draw', function(){ updateSickbaySummary(); });
-    } catch(e){}
-  });
-</script>
 {% endblock %}
-

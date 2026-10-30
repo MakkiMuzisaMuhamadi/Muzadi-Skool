@@ -1,0 +1,120 @@
+{# Search-as-you-type student picker. Context: form (with a hidden "student" field), picked (dict or None) #}
+<div class="mb-3">
+  {{ form.student }}
+  <label class="small text-muted mb-1" for="studentSearch">Student</label>
+  <div class="position-relative" id="studentSearchBox">
+    <input type="search" id="studentSearch" class="form-control {% if form.student.errors %}is-invalid{% endif %}"
+           placeholder="Type a name or admission number" autocomplete="off" aria-describedby="studentSearchHelp">
+    <div id="studentResults" class="list-group position-absolute w-100 shadow" style="z-index:1050;max-height:320px;overflow:auto;"></div>
+    <small id="studentSearchHelp" class="form-text text-muted">At least 2 letters. Allergies and conditions show once you pick.</small>
+  </div>
+  <div id="studentCard"></div>
+  {% for e in form.student.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+</div>
+{{ picked|json_script:"pickedStudentData" }}
+<script>
+(function () {
+  var URL = "{% url 'health_ajax_student_search' %}";
+  var hidden = document.getElementById("{{ form.student.id_for_label }}");
+  var search = document.getElementById("studentSearch");
+  var box = document.getElementById("studentSearchBox");
+  var results = document.getElementById("studentResults");
+  var card = document.getElementById("studentCard");
+  var timer = null;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+
+  function classLine(s) {
+    return [s.adm, [s.class_name, s.stream_name].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  }
+
+  function showCard(s) {
+    card.innerHTML = "";
+    if (!s) { box.hidden = false; return; }
+    box.hidden = true;
+
+    var wrap = el("div", "border rounded p-3 bg-light");
+    var top = el("div", "d-flex justify-content-between align-items-start");
+    var who = el("div");
+    who.appendChild(el("div", "font-weight-bold", s.name));
+    who.appendChild(el("small", "text-muted", classLine(s) + (s.blood_group ? ". Blood group " + s.blood_group : "")));
+    top.appendChild(who);
+    var change = el("button", "btn btn-sm btn-outline-secondary", "Change student");
+    change.type = "button";
+    change.addEventListener("click", function () {
+      hidden.value = ""; window.healthPickedStudent = null;
+      document.dispatchEvent(new CustomEvent("health:student", {detail: null}));
+      showCard(null); search.value = ""; search.focus();
+    });
+    top.appendChild(change);
+    wrap.appendChild(top);
+
+    if (s.allergies && s.allergies.length) {
+      var a = el("div", "alert alert-danger py-2 px-3 mt-2 mb-0");
+      a.appendChild(el("i", "fas fa-exclamation-triangle mr-1"));
+      a.appendChild(el("strong", "", "Allergies: "));
+      a.appendChild(document.createTextNode(s.allergies_text));
+      wrap.appendChild(a);
+    }
+    if (s.chronic) {
+      var c = el("div", "alert alert-warning py-2 px-3 mt-2 mb-0");
+      c.appendChild(el("strong", "", "Conditions: "));
+      c.appendChild(document.createTextNode(s.chronic + (s.regular_medication ? ". Regular medicine: " + s.regular_medication : "")));
+      wrap.appendChild(c);
+    }
+    if (!s.consent) {
+      wrap.appendChild(el("div", "small text-muted mt-2", "No parent consent to treat is recorded for this student."));
+    }
+    card.appendChild(wrap);
+  }
+
+  function choose(s) {
+    hidden.value = s.id;
+    window.healthPickedStudent = s;
+    results.innerHTML = "";
+    showCard(s);
+    document.dispatchEvent(new CustomEvent("health:student", {detail: s}));
+  }
+
+  function render(list) {
+    results.innerHTML = "";
+    if (!list.length) {
+      results.appendChild(el("div", "list-group-item text-muted small", "No student matches that. Check the spelling or admission number."));
+      return;
+    }
+    list.forEach(function (s) {
+      var b = el("button", "list-group-item list-group-item-action");
+      b.type = "button";
+      var row = el("div", "d-flex justify-content-between");
+      row.appendChild(el("span", "font-weight-bold", s.name));
+      if (s.allergies && s.allergies.length) row.appendChild(el("span", "badge badge-danger align-self-center", "Allergy"));
+      b.appendChild(row);
+      b.appendChild(el("small", "text-muted", classLine(s)));
+      b.addEventListener("click", function () { choose(s); });
+      results.appendChild(b);
+    });
+  }
+
+  search.addEventListener("input", function () {
+    clearTimeout(timer);
+    var q = this.value.trim();
+    if (q.length < 2) { results.innerHTML = ""; return; }
+    timer = setTimeout(function () {
+      fetch(URL + "?q=" + encodeURIComponent(q), {credentials: "same-origin"})
+        .then(function (r) { return r.json(); })
+        .then(function (d) { render(d.results || []); })
+        .catch(function () { results.innerHTML = ""; });
+    }, 250);
+  });
+  search.addEventListener("keydown", function (e) { if (e.key === "Enter") e.preventDefault(); });
+  document.addEventListener("click", function (e) { if (!box.contains(e.target)) results.innerHTML = ""; });
+
+  var initial = JSON.parse(document.getElementById("pickedStudentData").textContent);
+  if (initial) { hidden.value = initial.id; window.healthPickedStudent = initial; showCard(initial); }
+})();
+</script>

@@ -685,24 +685,33 @@ urlpatterns = [
     # =========================================================================
     ## 20  HEALTH
     # =========================================================================
+    path('health/', health_dashboard, name='health_dashboard'),
+
     # Medical records
     path('medical/', medical_records_list, name='health_medical_records'),
     path('medical/<int:pk>/edit/', medical_record_update, name='health_medical_record_edit'),
+    path('medical/<int:pk>/card/', student_health_card, name='health_student_card'),
+    path('medical/<int:pk>/immunisations/add/', immunization_add, name='health_immunization_add'),
+    path('medical/immunisations/<int:pk>/delete/', immunization_delete, name='health_immunization_delete'),
 
     # Sick bay register
-    path('sickbay/', SickBayVisitListView.as_view(), name='health_sickbay_list'),
-    path('sickbay/add/', SickBayVisitCreateView.as_view(), name='health_sickbay_add'),
-    path('sickbay/<int:pk>/edit/', SickBayVisitUpdateView.as_view(), name='health_sickbay_edit'),
-    path('sickbay/<int:pk>/delete/', SickBayVisitDeleteView.as_view(), name='health_sickbay_delete'),
+    path('sickbay/', sickbay_list, name='health_sickbay_list'),
+    path('sickbay/add/', sickbay_create, name='health_sickbay_add'),
+    path('sickbay/export/', sickbay_export, name='health_sickbay_export'),
+    path('sickbay/<int:pk>/edit/', sickbay_update, name='health_sickbay_edit'),
+    path('sickbay/<int:pk>/discharge/', sickbay_discharge, name='health_sickbay_discharge'),
+    path('sickbay/<int:pk>/notify/', sickbay_notify, name='health_sickbay_notify'),
+    path('sickbay/<int:pk>/void/', sickbay_void, name='health_sickbay_void'),
 
     # Medication records
-    path('medication/', MedicationRecordListView.as_view(), name='health_medication_list'),
-    path('medication/add/', MedicationRecordCreateView.as_view(), name='health_medication_add'),
-    path('medication/<int:pk>/edit/', MedicationRecordUpdateView.as_view(), name='health_medication_edit'),
-    path('medication/<int:pk>/delete/', MedicationRecordDeleteView.as_view(), name='health_medication_delete'),
+    path('medication/', medication_list, name='health_medication_list'),
+    path('medication/add/', medication_create, name='health_medication_add'),
+    path('medication/<int:pk>/edit/', medication_update, name='health_medication_edit'),
+    path('medication/<int:pk>/void/', medication_void, name='health_medication_void'),
 
-    path('ajax/students/', ajax_student_search, name='health_ajax_student_search'),
-
+    # AJAX (health staff only)
+    path('health/ajax/students/', ajax_health_student_search, name='health_ajax_student_search'),
+    path('health/ajax/streams/', ajax_health_streams, name='health_ajax_streams'),
     # =========================================================================
     ## 21  BOARDING / HOSTELS
     # =========================================================================

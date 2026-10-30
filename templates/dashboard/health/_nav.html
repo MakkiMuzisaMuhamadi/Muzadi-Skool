@@ -1,0 +1,7 @@
+{# Tabs shared by all Health Records pages. Pass active="dashboard|sickbay|medication|records" #}
+<ul class="nav nav-pills mb-3" style="gap:.25rem;">
+  <li class="nav-item"><a class="nav-link {% if active == 'dashboard' %}active{% endif %}" href="{% url 'health_dashboard' %}"><i class="fas fa-chart-line mr-1"></i> Overview</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'sickbay' %}active{% endif %}" href="{% url 'health_sickbay_list' %}"><i class="fas fa-clipboard-list mr-1"></i> Sick bay register</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'medication' %}active{% endif %}" href="{% url 'health_medication_list' %}"><i class="fas fa-pills mr-1"></i> Medication log</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'records' %}active{% endif %}" href="{% url 'health_medical_records' %}"><i class="fas fa-file-medical mr-1"></i> Medical records</a></li>
+</ul>

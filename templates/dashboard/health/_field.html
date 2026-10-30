@@ -1,0 +1,15 @@
+{# Renders one form field: label, input, help text, errors. Usage: include with f=form.field_name #}
+{% if f.field.widget.input_type == "checkbox" %}
+<div class="custom-control custom-checkbox mb-2">
+  {{ f }}
+  <label class="custom-control-label" for="{{ f.id_for_label }}">{{ f.label }}</label>
+  {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+</div>
+{% else %}
+<div class="form-group">
+  <label class="small text-muted mb-1" for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+  {{ f }}
+  {% if f.help_text %}<small class="form-text text-muted">{{ f.help_text }}</small>{% endif %}
+  {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+</div>
+{% endif %}

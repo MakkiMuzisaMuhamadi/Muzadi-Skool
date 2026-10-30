@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health card: {{ student.name }}</title>
+<style>
+  :root { --ink:#1d2433; --muted:#5f6b7a; --line:#d5dbe3; --alert:#b42318; --alert-bg:#fdecea; --warn-bg:#fff6e0; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); margin: 0; background: #eef1f5; font-size: 13px; line-height: 1.45; }
+  .sheet { max-width: 800px; margin: 24px auto; background: #fff; padding: 28px 32px; border: 1px solid var(--line); }
+  header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 12px; margin-bottom: 16px; gap: 16px; }
+  header img { height: 56px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 14px; margin: 18px 0 6px; padding-bottom: 3px; border-bottom: 1px solid var(--line); }
+  .muted { color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 16px; }
+  .grid div span { display: block; color: var(--muted); font-size: 11px; }
+  .alert { background: var(--alert-bg); color: var(--alert); border-left: 4px solid var(--alert); padding: 8px 12px; font-weight: 600; margin-bottom: 8px; }
+  .warn { background: var(--warn-bg); border-left: 4px solid #b7791f; padding: 8px 12px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; color: var(--muted); font-weight: 600; }
+  footer { margin-top: 20px; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
+  .toolbar { max-width: 800px; margin: 16px auto 0; text-align: right; }
+  .toolbar button { font: inherit; padding: 6px 14px; cursor: pointer; }
+  @media print { body { background: #fff; } .sheet { margin: 0; border: 0; padding: 0; } .toolbar { display: none; } }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } .sheet { padding: 18px; } }
+</style>
+</head>
+<body>
+<div class="toolbar"><button onclick="window.print()">Print</button></div>
+<div class="sheet">
+  <header>
+    <div>
+      <h1>Student health card</h1>
+      <div class="muted">{{ school.name }}{% if school.contact_phone %}, {{ school.contact_phone }}{% endif %}</div>
+    </div>
+    {% if school.logo %}<img src="{{ school.logo.url }}" alt="">{% endif %}
+  </header>
+
+  <div class="grid">
+    <div><span>Name</span><strong>{{ student.name }}</strong></div>
+    <div><span>Admission no.</span>{{ student.admission_number }}</div>
+    <div><span>Class</span>{{ student.current_class.name|default:"-" }} {{ student.stream.name|default:"" }}</div>
+    <div><span>Date of birth</span>{{ student.date_of_birth|date:"d M Y"|default:"-" }}</div>
+    <div><span>Blood group</span>{{ student.blood_group|default:"Not known" }}</div>
+    <div><span>Height / weight</span>{% if profile.height_cm %}{{ profile.height_cm }} cm{% else %}-{% endif %} / {% if profile.weight_kg %}{{ profile.weight_kg }} kg{% else %}-{% endif %}</div>
+  </div>
+
+  <h2>Important</h2>
+  {% if allergies %}<div class="alert">Allergic to: {{ student.known_allergies }}</div>{% else %}<p class="muted">No allergies recorded.</p>{% endif %}
+  {% if profile.chronic_conditions %}<div class="warn"><strong>Conditions:</strong> {{ profile.chronic_conditions }}</div>{% endif %}
+  {% if profile.regular_medication %}<div class="warn"><strong>Regular medicine:</strong> {{ profile.regular_medication }}</div>{% endif %}
+  {% if student.special_needs %}<p><strong>Special needs:</strong> {{ student.special_needs }}</p>{% endif %}
+  {% if student.dietary_restrictions %}<p><strong>Diet:</strong> {{ student.dietary_restrictions }}</p>{% endif %}
+
+  <h2>In an emergency</h2>
+  <table>
+    <tr><th>Contact</th><th>Relationship</th><th>Phone</th></tr>
+    {% for g in guardians %}
+      <tr><td>{{ g.parent.full_name }}{% if g.is_primary %} (primary){% endif %}{% if g.is_emergency_contact %} (emergency){% endif %}</td>
+          <td>{{ g.get_relationship_display }}</td><td>{{ g.parent.phone|default:"-" }}{% if g.parent.alternate_phone %}, {{ g.parent.alternate_phone }}{% endif %}</td></tr>
+    {% empty %}
+      <tr><td>{{ student.emergency_contact_name|default:"Not recorded" }}</td><td>{{ student.emergency_contact_relationship|default:"-" }}</td><td>{{ student.emergency_contact_phone|default:"-" }}</td></tr>
+    {% endfor %}
+  </table>
+  <div class="grid" style="margin-top:8px;">
+    <div><span>Preferred hospital / clinic</span>{{ profile.preferred_facility|default:"-" }}</div>
+    <div><span>Family doctor</span>{{ profile.doctor_name|default:"-" }} {{ profile.doctor_phone }}</div>
+    <div><span>Insurance</span>{{ profile.insurance_provider|default:"-" }} {{ profile.insurance_number }}</div>
+    <div><span>Consent to treat</span>{% if profile.consent_to_treat %}Yes, by {{ profile.consent_given_by }}{% if profile.consent_date %} on {{ profile.consent_date|date:"d M Y" }}{% endif %}{% else %}Not recorded{% endif %}</div>
+  </div>
+
+  <h2>Immunisations</h2>
+  <table>
+    <tr><th>Vaccine</th><th>Dose</th><th>Date</th><th>Where</th></tr>
+    {% for i in immunizations %}
+      <tr><td>{{ i.vaccine_label }}</td><td>{{ i.dose_number }}</td><td>{{ i.date_given|date:"d M Y"|default:"-" }}</td><td>{{ i.given_at|default:"-" }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="muted">None recorded.</td></tr>{% endfor %}
+  </table>
+
+  <h2>Recent sick bay visits</h2>
+  <table>
+    <tr><th>Date</th><th>Complaint</th><th>Outcome</th></tr>
+    {% for v in visits %}
+      <tr><td>{{ v.visit_date|date:"d M Y" }}</td><td>{{ v.diagnosis|default:v.symptoms|default:"-"|truncatechars:70 }}</td><td>{{ v.get_outcome_display }}</td></tr>
+    {% empty %}<tr><td colspan="3" class="muted">None.</td></tr>{% endfor %}
+  </table>
+
+  <footer><span>Confidential medical information. Keep in the student's health file.</span><span>Printed {{ printed_at|date:"d M Y H:i" }}</span></footer>
+</div>
+</body>
+</html>

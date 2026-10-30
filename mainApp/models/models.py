@@ -30,8 +30,8 @@ ROLE_CHOICES = [
     ("TEACHER", "Teacher"),
     ("STUDENT", "Student"),
     ("BURSAR", "Bursar"),
+    ("NURSE", "School nurse"),
 ]
-
 class EducationLevel(AuditMixin, RecycleBinMixin, models.Model):
     code = models.CharField(max_length=10, choices=LEVEL_CHOICES, unique=True)
     name = models.CharField(max_length=100)
@@ -296,6 +296,8 @@ class Profile(AuditMixin, RecycleBinMixin, models.Model):
         ("ADMIN", "Admin"),
         ("TEACHER", "Teacher"),
         ("STUDENT", "Student"),
+        ("BURSAR", "Bursar"),
+        ("NURSE", "School nurse"),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
