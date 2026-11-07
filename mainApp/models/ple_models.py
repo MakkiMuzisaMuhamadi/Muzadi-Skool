@@ -25,7 +25,24 @@ class PLEGradingScale(models.Model):
         help_text="Minimum number of subjects required for final PLE grading."
     )
 
+    division_classes = models.ManyToManyField(
+        "mainApp.Class",
+        blank=True,
+        related_name="ple_division_scales",
+        help_text=(
+            "Classes whose report shows aggregates and division (e.g. P.4 - P.7). "
+            "Leave empty to show division for every class. Classes not selected "
+            "(e.g. P.1 - P.3 thematic) show grades and average only."
+        ),
+    )
+
     is_active = models.BooleanField(default=True)
+
+    def shows_division_for(self, class_ref_id) -> bool:
+        ids = list(self.division_classes.values_list("id", flat=True))
+        if not ids:
+            return True
+        return bool(class_ref_id) and int(class_ref_id) in ids
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

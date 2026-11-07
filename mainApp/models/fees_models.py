@@ -395,6 +395,20 @@ class FeeCollectionSetting(AuditMixin, models.Model):
         max_digits=12, decimal_places=2, default=0,
         help_text="Discounts/waivers by a bursar above this amount wait for an admin. 0 = always wait.")
 
+    # ---- Report card release (fees hold) ----
+    REPORT_HOLD_BASIS_CHOICES = [
+        ("TERM", "This term's fees only (uses the clearance percentage above)"),
+        ("ALL", "Full balance, including arrears from earlier terms"),
+    ]
+    withhold_reports_for_defaulters = models.BooleanField(
+        default=False,
+        help_text="Students and parents cannot open report cards until fees are cleared. "
+                  "Staff can still view and print every report card.")
+    report_hold_basis = models.CharField(max_length=10, choices=REPORT_HOLD_BASIS_CHOICES, default="TERM")
+    report_hold_allowance = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text="A balance up to this amount (UGX) is ignored, e.g. 10000. 0 = must be fully cleared.")
+
     def __str__(self):
         return f"Fee Settings - {self.school.name}"
 

@@ -25,7 +25,7 @@
         <p class="mb-2"><strong>Name:</strong> {{ student.name }}</p>
         <p class="mb-2"><strong>Admission:</strong> {{ student.admission_number }}</p>
         <p class="mb-2"><strong>Status:</strong> {{ student.get_academic_status_display }}</p>
-        <p class="mb-2"><strong>Last Class:</strong> {{ student.current_class|default:"-" }}</p>
+        <p class="mb-2"><strong>Completed:</strong> {{ student.last_completed_class.name|default:student.current_class.name|default:"-" }}{% if student.completed_level_at %} ({{ student.completed_level_at }}){% endif %}</p>
         <p class="mb-0"><strong>Level:</strong> {{ student.level|default:"-" }}</p>
       </div>
     </div>
@@ -38,18 +38,21 @@
 
         <form method="post">
           {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger py-2">{{ form.non_field_errors|join:" " }}</div>{% endif %}
           <div class="form-row">
             <div class="col-md-4 mb-3">
-              <label class="small text-muted mb-1">Level</label>
+              <label class="small text-muted mb-1">Level (optional filter)</label>
               {{ form.to_level }}
             </div>
             <div class="col-md-4 mb-3">
               <label class="small text-muted mb-1">Class</label>
               {{ form.to_class }}
+              {% for e in form.to_class.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
             </div>
             <div class="col-md-4 mb-3">
               <label class="small text-muted mb-1">Stream</label>
               {{ form.to_stream }}
+              {% for e in form.to_stream.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
             </div>
           </div>
 
@@ -62,4 +65,56 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function () {
+  var level = document.getElementById('id_to_level');
+  var klass = document.getElementById('id_to_class');
+  var stream = document.getElementById('id_to_stream');
+  if (!klass || !stream) return;
+
+  // Remember every class option with its level so the level box can filter them.
+  var allClasses = Array.prototype.map.call(klass.options, function (o) {
+    return { value: o.value, text: o.text };
+  });
+  var classLevel = {{ class_levels_json|safe }};
+
+  function filterClasses() {
+    var lv = level ? level.value : '';
+    var current = klass.value;
+    klass.innerHTML = '';
+    allClasses.forEach(function (c) {
+      if (!c.value || !lv || String(classLevel[c.value]) === String(lv)) {
+        var o = document.createElement('option');
+        o.value = c.value; o.text = c.text;
+        if (c.value === current) o.selected = true;
+        klass.appendChild(o);
+      }
+    });
+  }
+
+  function loadStreams(selected) {
+    stream.innerHTML = '<option value="">---------</option>';
+    if (!klass.value) return;
+    fetch("{% url 'streams_by_class' %}?class_id=" + encodeURIComponent(klass.value), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        (data.results || []).forEach(function (s) {
+          var o = document.createElement('option');
+          o.value = s.id; o.text = s.name;
+          if (String(s.id) === String(selected)) o.selected = true;
+          stream.appendChild(o);
+        });
+      });
+  }
+
+  if (level) level.addEventListener('change', function () { filterClasses(); loadStreams(''); });
+  klass.addEventListener('change', function () { loadStreams(''); });
+
+  var initialStream = "{{ form.to_stream.value|default_if_none:'' }}";
+  if (klass.value && stream.options.length <= 1) loadStreams(initialStream);
+})();
+</script>
 {% endblock %}

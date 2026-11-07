@@ -14,9 +14,11 @@ class PLEGradingScaleForm(forms.ModelForm):
         fields = [
             "name",
             "required_subjects",
+            "division_classes",
             "is_active",
         ]
         widgets = {
+            "division_classes": forms.CheckboxSelectMultiple(),
             "name": forms.TextInput(attrs={"class": BOOTSTRAP_INPUT}),
             "required_subjects": forms.NumberInput(attrs={"class": BOOTSTRAP_INPUT, "min": 1}),
             "is_active": forms.CheckboxInput(),
@@ -25,6 +27,14 @@ class PLEGradingScaleForm(forms.ModelForm):
     def __init__(self, *args, school=None, **kwargs):
         self.school = school
         super().__init__(*args, **kwargs)
+        from mainApp.models.models import Class
+
+        self.fields["division_classes"].required = False
+        self.fields["division_classes"].label = "Classes that show aggregates & division"
+        self.fields["division_classes"].queryset = (
+            Class.objects.filter(school=school, level__code="PLE").order_by("name")
+            if school else Class.objects.none()
+        )
 
     def clean_name(self):
         name = (self.cleaned_data.get("name") or "").strip()

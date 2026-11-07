@@ -46,7 +46,22 @@
           {{ form.code }}
           <div class="text-danger small">{{ form.code.errors }}</div>
         </div>
+        {% if form.source %}
+        <div class="form-group col-md-3">
+          <label for="{{ form.source.id_for_label }}">Where marks come from</label>
+          {{ form.source }}
+          <div class="text-danger small">{{ form.source.errors }}</div>
+        </div>
+        {% endif %}
       </div>
+      {% if form.source %}
+      <div class="alert alert-info small py-2">
+        <strong>Activities of Integration (AOI):</strong> for UCE/UACE you can add one exam type with
+        this source (e.g. name "AOI", weight 20, max mark 20). Teachers do not enter marks for it &mdash;
+        the system converts each learner's average competency score (0&ndash;3) for the subject into this
+        column automatically. The remaining exam types (e.g. End of Term) then carry the other 80%.
+      </div>
+      {% endif %}
 
       <div class="form-row">
         <div class="form-group col-md-4">

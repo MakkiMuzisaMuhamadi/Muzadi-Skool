@@ -1,0 +1,9 @@
+{% extends "tenancy/_page.html" %}
+{% block title %}{{ school.name }} – suspended{% endblock %}
+{% block body %}
+<div class="icon">⏸️</div>
+<h1>{{ school.name }}'s account is paused</h1>
+<p>{% if subscription.suspended_reason %}{{ subscription.suspended_reason }}{% else %}The school's subscription has been paused by Muzadi Technologies.{% endif %}</p>
+<p>Your data is safe. The school administration can contact Muzadi Technologies to switch the account back on.</p>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn" type="submit">Sign out</button></form>
+{% endblock %}

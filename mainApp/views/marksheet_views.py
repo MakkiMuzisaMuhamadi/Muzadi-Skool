@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from mainApp.academic_period import year_queryset
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -11,9 +12,12 @@ from mainApp.models.calendar import AcademicYear, Term
 from mainApp.models.models import EducationLevel
 from mainApp.views.teacher_alloc_utils import get_current_school
 from mainApp.promotion_rules import validate_marks_entry_open
-from mainApp.report_configs.academic_history_service import (
-    finalize_term_academic_records,
-    reopen_term_academic_records,
+from mainApp.term_status import (
+    finalize_term_for_school,
+    get_term_status,
+    marks_entry_open,
+    reopen_term_for_school,
+    reporting_finalized,
 )
 
 
@@ -68,9 +72,10 @@ def marksheet_control_list(request):
     ctx = {
         "title": "Marksheet Control",
         "sheets": qs,
-        "years": AcademicYear.objects.filter(is_active=True).order_by("-year"),
+        "years": year_queryset(school),
         "levels": EducationLevel.objects.filter(is_active=True).order_by("order", "name"),
         "selected_term_obj": selected_term,
+        "selected_term_status": get_term_status(school, selected_term) if selected_term else None,
         "filters": {
             "academic_year": year_id,
             "term": term_id,
@@ -99,7 +104,7 @@ def close_marksheet(request, pk):
         return redirect("marksheet_control_list")
 
     try:
-        validate_marks_entry_open(sheet.term)
+        validate_marks_entry_open(sheet.term, sheet.school)
     except ValidationError as e:
         messages.error(request, "; ".join(e.messages))
         return redirect("marksheet_control_list")
@@ -125,7 +130,7 @@ def reopen_marksheet(request, pk):
         return redirect("marksheet_control_list")
 
     try:
-        validate_marks_entry_open(sheet.term)
+        validate_marks_entry_open(sheet.term, sheet.school)
     except ValidationError as e:
         messages.error(request, "; ".join(e.messages))
         return redirect("marksheet_control_list")
@@ -158,31 +163,18 @@ def finalize_term_marks_entry(request):
         messages.error(request, "No marksheets found for this school in the selected term.")
         return redirect("marksheet_control_list")
 
-    if not term.is_marks_entry_open and term.is_reporting_finalized:
-        messages.info(request, f"{term.name} is already finalized.")
+    if reporting_finalized(school, term):
+        messages.info(request, f"{term.name} is already finalized for your school.")
         return redirect(f"{request.META.get('HTTP_REFERER', '')}" or "marksheet_control_list")
 
-    term.is_marks_entry_open = False
-    term.is_reporting_finalized = True
-    if getattr(term, "is_final_term", False):
-        term.is_promotion_allowed = True
-
-    term.save(update_fields=[
-        "is_marks_entry_open",
-        "is_reporting_finalized",
-        "is_promotion_allowed",
-    ])
-
-    finalize_term_academic_records(
-        school=school,
-        academic_year=term.academic_year,
-        term=term,
-        user=request.user,
-    )
+    # Only THIS school is finalized; other schools using the same term are not touched.
+    status = finalize_term_for_school(school=school, term=term, user=request.user)
+    if status.is_promotion_allowed:
+        messages.info(request, f"{term.name} is the final term: year-end promotion is now allowed.")
 
     messages.success(
         request,
-        f"{term.name} has been closed for marks entry and finalized for reporting."
+        f"{term.name} has been closed for marks entry and finalized for reporting (your school only)."
     )
     return redirect(f"{request.META.get('HTTP_REFERER', '')}" or "marksheet_control_list")
 
@@ -209,27 +201,14 @@ def reopen_term_marks_entry(request):
         messages.error(request, "No marksheets found for this school in the selected term.")
         return redirect("marksheet_control_list")
 
-    if term.is_marks_entry_open and not term.is_reporting_finalized:
+    if marks_entry_open(school, term) and not reporting_finalized(school, term):
         messages.info(request, f"{term.name} is already open.")
         return redirect(f"{request.META.get('HTTP_REFERER', '')}" or "marksheet_control_list")
 
-    term.is_marks_entry_open = True
-    term.is_reporting_finalized = False
-    term.is_promotion_allowed = False
-    term.save(update_fields=[
-        "is_marks_entry_open",
-        "is_reporting_finalized",
-        "is_promotion_allowed",
-    ])
-
-    reopen_term_academic_records(
-        school=school,
-        academic_year=term.academic_year,
-        term=term,
-    )
+    reopen_term_for_school(school=school, term=term, user=request.user)
 
     messages.success(
         request,
-        f"{term.name} has been reopened for marks entry."
+        f"{term.name} has been reopened for marks entry (your school only)."
     )
     return redirect(f"{request.META.get('HTTP_REFERER', '')}" or "marksheet_control_list")

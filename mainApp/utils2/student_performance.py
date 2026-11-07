@@ -492,7 +492,7 @@ def _build_uce_performance(*, student, school, academic_year, term, class_ref, s
     final_grade = overall.get("final_grade") or ""
 
     is_rankable = (
-        final_grade not in ["", "U", "X"]
+        final_grade not in ["", "U", "X", "Result 2"]  # Result 2 = UNEB-mode "not graded"
         and attempted_subjects >= required_subjects
     )
 

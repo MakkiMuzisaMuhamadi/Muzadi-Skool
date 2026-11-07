@@ -1,12 +1,12 @@
 {% extends "dashboard/base.html" %}
 {% block content %}
-<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-id-card"></i> Report Card Templates</h3>
-    <small class="text-muted">Manage school-specific report card designs</small>
+    <h3 class="page-title mb-0"><i class="fas fa-id-card"></i> Report Card Designs</h3>
+    <small class="text-muted">One active design per level (PLE, UCE, UACE) is used when report cards are generated.</small>
   </div>
-  <a href="{% url 'report_template_create' %}" class="btn btn-primary btn-sm">
-    <i class="fas fa-plus mr-1"></i> New Template
+  <a href="{% url 'report_template_create' %}" class="btn btn-primary btn-sm mt-2 mt-md-0">
+    <i class="fas fa-plus mr-1"></i> New Design
   </a>
 </div>
 
@@ -18,36 +18,55 @@
           <tr>
             <th>Name</th>
             <th>Level</th>
-            <th>Title</th>
+            <th>Title on card</th>
             <th>Status</th>
-            <th width="220">Actions</th>
+            <th style="min-width: 360px;">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for row in rows %}
           <tr>
-            <td>{{ row.name }}</td>
+            <td><strong>{{ row.name }}</strong></td>
             <td>{{ row.level }}</td>
             <td>{{ row.report_title }}</td>
             <td>
               {% if row.is_active %}
-                <span class="badge badge-success">Active</span>
+                <span class="badge badge-success">In use</span>
               {% else %}
-                <span class="badge badge-secondary">Inactive</span>
+                <span class="badge badge-secondary">Not in use</span>
               {% endif %}
             </td>
             <td>
-            <a href="{% url 'report_template_edit' row.pk %}" class="btn btn-sm btn-info">Basic Settings</a>
-            <a href="{% url 'report_template_sections_edit' row.pk %}" class="btn btn-sm btn-warning">Sections</a>
-            <a href="{% url 'report_template_signatures_edit' row.pk %}" class="btn btn-sm btn-danger">Signatures</a>
-            {% if not row.is_active %}
-            <a href="{% url 'report_template_activate' row.pk %}" class="btn btn-sm btn-success">Activate</a>
-            {% endif %}
+              <div class="d-flex flex-wrap" style="gap:.35rem;">
+                <a href="{% url 'report_template_sections_edit' row.pk %}" class="btn btn-sm btn-warning">
+                  <i class="fas fa-stream mr-1"></i> Sections
+                </a>
+                <a href="{% url 'report_template_edit' row.pk %}" class="btn btn-sm btn-info">
+                  <i class="fas fa-palette mr-1"></i> Design
+                </a>
+                <a href="{% url 'report_template_signatures_edit' row.pk %}" class="btn btn-sm btn-outline-danger">
+                  <i class="fas fa-signature mr-1"></i> Signatures
+                </a>
+                <a href="{% url 'report_template_preview' row.pk %}" target="_blank" class="btn btn-sm btn-outline-success">
+                  <i class="fas fa-eye mr-1"></i> Preview
+                </a>
+                {% if not row.is_active %}
+                <form method="post" action="{% url 'report_template_activate' row.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-success"
+                          onclick="return confirm('Use this design for all {{ row.level }} report cards from now on?');">
+                    <i class="fas fa-check mr-1"></i> Use this design
+                  </button>
+                </form>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" class="text-center text-muted">No templates yet.</td>
+            <td colspan="5" class="text-center text-muted py-4">
+              No designs yet. Create one design for each level your school teaches.
+            </td>
           </tr>
           {% endfor %}
         </tbody>

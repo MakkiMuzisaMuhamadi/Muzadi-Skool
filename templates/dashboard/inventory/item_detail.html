@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
@@ -7,15 +8,15 @@
   </div>
   <div class="d-flex flex-wrap" style="gap:.5rem;">
     {% if item.is_serialized %}
-      <a href="{% url 'inv_unit_bulk_add' %}?item={{ item.pk }}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add copies</a>
-      <a href="{% url 'inv_labels_item' item.pk %}?limit=24" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Labels</a>
-      {% if item.category.type == "LIBRARY" %}<a href="{% url 'inv_class_issue' %}" class="btn btn-outline-primary btn-sm">Issue to a class</a>{% endif %}
+      {% if request.user|can_open:"inv_unit_bulk_add" %}<a href="{% url 'inv_unit_bulk_add' %}?item={{ item.pk }}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add copies</a>{% endif %}
+      {% if request.user|can_open:"inv_labels_item" %}<a href="{% url 'inv_labels_item' item.pk %}?limit=24" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Labels</a>{% endif %}
+      {% if item.category.type == "LIBRARY" %}{% if request.user|can_open:"inv_class_issue" %}<a href="{% url 'inv_class_issue' %}" class="btn btn-outline-primary btn-sm">Issue to a class</a>{% endif %}{% endif %}
     {% else %}
-      <a href="{% url 'inv_stock_op' 'receive' %}?item={{ item.pk }}" class="btn btn-primary btn-sm">Receive</a>
-      <a href="{% url 'inv_stock_op' 'issue' %}?item={{ item.pk }}" class="btn btn-outline-primary btn-sm">Issue</a>
-      <a href="{% url 'inv_stock_op' 'transfer' %}?item={{ item.pk }}" class="btn btn-outline-secondary btn-sm">Move</a>
+      {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'receive' %}?item={{ item.pk }}" class="btn btn-primary btn-sm">Receive</a>{% endif %}
+      {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'issue' %}?item={{ item.pk }}" class="btn btn-outline-primary btn-sm">Issue</a>{% endif %}
+      {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'transfer' %}?item={{ item.pk }}" class="btn btn-outline-secondary btn-sm">Move</a>{% endif %}
     {% endif %}
-    <a href="{% url 'inv_item_edit' item.pk %}" class="btn btn-light btn-sm"><i class="fas fa-pen mr-1"></i> Edit</a>
+    {% if request.user|can_open:"inv_item_edit" %}<a href="{% url 'inv_item_edit' item.pk %}" class="btn btn-light btn-sm"><i class="fas fa-pen mr-1"></i> Edit</a>{% endif %}
   </div>
 </div>
 
@@ -50,13 +51,13 @@
       </div></div>
       <div class="card"><div class="card-body">
         <div class="d-flex justify-content-between mb-2"><h5 class="mb-0">Copies</h5>
-          <a href="{% url 'inv_units' %}?item={{ item.pk }}" class="btn btn-link btn-sm">Open full list</a></div>
+          {% if request.user|can_open:"inv_units" %}<a href="{% url 'inv_units' %}?item={{ item.pk }}" class="btn btn-link btn-sm">Open full list</a>{% endif %}</div>
         <div class="table-responsive"><table class="table table-sm table-striped mb-0">
           <thead><tr><th>Tag</th><th>Status</th><th>Location</th><th>Held by</th><th>Due</th></tr></thead>
           <tbody>
           {% for u in units %}
             <tr>
-              <td><a href="{% url 'inv_unit_detail' u.pk %}">{{ u.tag_code }}</a></td>
+              <td>{% if request.user|can_open:"inv_unit_detail" %}<a href="{% url 'inv_unit_detail' u.pk %}">{{ u.tag_code }}</a>{% else %}{{ u.tag_code }}{% endif %}</td>
               <td>{% include "dashboard/inventory/_status_badge.html" with s=u.status %}</td>
               <td>{{ u.current_location|default:"—" }}</td>
               <td>{{ u.holder_display|default:"—" }}</td>

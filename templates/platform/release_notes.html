@@ -1,0 +1,29 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-bullhorn"></i> Release notes</h3>
+    <small class="text-muted">After an upgrade, tell schools what changed. Published notes appear under "What's new" with a red count.</small>
+  </div>
+  <a href="{% url 'platform_release_note_new' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus-circle mr-1"></i> New note</a>
+</div>
+<div class="card"><div class="card-body"><div class="table-responsive">
+<table class="table table-sm table-hover mb-0">
+  <thead class="thead-light"><tr><th>Version</th><th>Title</th><th>Who sees it</th><th>Schools</th><th>Status</th><th>Read by</th></tr></thead>
+  <tbody>
+  {% for n in notes %}
+    <tr>
+      <td>{{ n.version }}</td>
+      <td><a href="{% url 'platform_release_note_edit' n.pk %}">{{ n.title }}</a></td>
+      <td>{{ n.get_audience_display }}</td>
+      <td>{% with s=n.schools.all %}{% if s %}{{ s|join:", " }}{% else %}All schools{% endif %}{% endwith %}</td>
+      <td>{% if n.is_published %}<span class="badge badge-success">Published {{ n.published_at|date:"j M Y" }}</span>{% else %}<span class="badge badge-secondary">Draft</span>{% endif %}</td>
+      <td>{{ n.reads.count }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-center text-muted py-4">No release notes yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div></div>
+{% endblock %}

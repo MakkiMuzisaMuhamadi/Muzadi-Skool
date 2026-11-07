@@ -1,4 +1,5 @@
 from django import forms
+from mainApp.tenancy import scope
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.forms import inlineformset_factory
@@ -86,8 +87,8 @@ class TeacherDraftAllocationForm(BootstrapMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["class_ref"].queryset = Class.objects.select_related("level").order_by("level__order", "name")
-        self.fields["stream"].queryset = Stream.objects.all()
+        self.fields["class_ref"].queryset = scope(Class.objects.all()).select_related("level").order_by("level__order", "name")
+        self.fields["stream"].queryset = scope(Stream.objects.all(), "class_ref__school")
         self.fields["subject"].queryset = Subject.objects.all().order_by("name")
         self.fields["papers"].queryset = Paper.objects.all()
         self.fields["class_ref"].required = False
@@ -209,13 +210,13 @@ class TeacherTeachingAllocationForm(BootstrapMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         keep = Q(pk=self.instance.teacher_id) if self.instance.pk else Q(pk__in=[])
-        self.fields["teacher"].queryset = Teacher.objects.filter(Q(status=StaffStatus.ACTIVE) | keep).select_related("user")
+        self.fields["teacher"].queryset = scope(Teacher.objects.filter(Q(status=StaffStatus.ACTIVE) | keep), "user__profile__school").select_related("user")
         self.fields["academic_year"].queryset = _ordered_years()
         self.fields["academic_year"].required = True
         if not self.instance.pk:
             self.fields["academic_year"].initial = current_academic_year()
-        self.fields["class_ref"].queryset = Class.objects.select_related("level").order_by("level__order", "name")
-        self.fields["stream"].queryset = Stream.objects.all()
+        self.fields["class_ref"].queryset = scope(Class.objects.all()).select_related("level").order_by("level__order", "name")
+        self.fields["stream"].queryset = scope(Stream.objects.all(), "class_ref__school")
         self.fields["subject"].queryset = Subject.objects.all().order_by("name")
         self.fields["papers"].queryset = Paper.objects.all()
         self._style()
@@ -241,11 +242,11 @@ class ClassTeacherAssignmentForm(BootstrapMixin, forms.ModelForm):
         self.fields["academic_year"].queryset = _ordered_years()
         if not self.instance.pk:
             self.fields["academic_year"].initial = current_academic_year()
-        self.fields["class_ref"].queryset = Class.objects.select_related("level").order_by("level__order", "name")
-        self.fields["stream"].queryset = Stream.objects.select_related("class_ref").order_by("class_ref__name", "name")
+        self.fields["class_ref"].queryset = scope(Class.objects.all()).select_related("level").order_by("level__order", "name")
+        self.fields["stream"].queryset = scope(Stream.objects.all(), "class_ref__school").select_related("class_ref").order_by("class_ref__name", "name")
         self.fields["stream"].label_from_instance = lambda s: f"{s.class_ref.name} - {s.name}"
         keep = Q(pk=self.instance.teacher_id) if self.instance.pk else Q(pk__in=[])
-        self.fields["teacher"].queryset = Teacher.objects.filter(Q(status=StaffStatus.ACTIVE) | keep).select_related("user")
+        self.fields["teacher"].queryset = scope(Teacher.objects.filter(Q(status=StaffStatus.ACTIVE) | keep), "user__profile__school").select_related("user")
         self._style()
 
 
@@ -284,9 +285,9 @@ class StaffResponsibilityForm(BootstrapMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         keep = Q(pk=self.instance.teacher_id) if self.instance.pk else Q(pk__in=[])
-        self.fields["teacher"].queryset = Teacher.objects.filter(
+        self.fields["teacher"].queryset = scope(Teacher.objects.filter(
             Q(status__in=[StaffStatus.ACTIVE, StaffStatus.ON_LEAVE]) | keep
-        ).select_related("user")
+        ), "user__profile__school").select_related("user")
         self._style()
 
     def clean_department(self):

@@ -1,0 +1,81 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-project-diagram"></i> {{ title }}</h3>
+    <small class="text-muted">
+      UCE / UACE. UNEB requires a project work score; learners without one are not graded (Result 2).
+    </small>
+  </div>
+  <a href="{% url 'competency_definition_list' %}" class="btn btn-outline-primary btn-sm">
+    <i class="fas fa-tasks mr-1"></i> Competencies
+  </a>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+{% include "dashboard/competency/_picker.html" %}
+
+{% if rows is not None %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <strong>{{ class_ref }}</strong>{% if stream %} &bull; {{ stream.name }}{% endif %}
+      &bull; {{ term.academic_year }} {{ term }}
+      &bull; {% if subject %}{{ subject.name }}{% else %}Integrated project{% endif %}
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>Project title for everyone <small class="text-muted">(used when a row's title is blank)</small></label>
+          <input type="text" name="default_title" class="form-control" maxlength="255" placeholder="e.g. Making a water filter">
+        </div>
+        <div class="form-group col-md-2">
+          <label>Marked out of</label>
+          <input type="number" step="0.1" min="1" name="max_mark" class="form-control" value="{{ max_mark|floatformat:'-1' }}">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-striped w-100">
+          <thead>
+            <tr>
+              <th style="width:50px">#</th>
+              <th>Learner</th>
+              <th>Project title</th>
+              <th style="width:110px">Mark</th>
+              <th style="width:90px">Grade</th>
+              <th>Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            {% with st=row.student p=row.project %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td><strong>{{ st }}</strong></td>
+              <td><input type="text" class="form-control form-control-sm" name="title_{{ st.id }}" value="{{ p.title|default:'' }}" maxlength="255"></td>
+              <td><input type="number" step="0.1" min="0" class="form-control form-control-sm" name="mark_{{ st.id }}" value="{% if p.mark is not None %}{{ p.mark|floatformat:'-1' }}{% endif %}"></td>
+              <td><input type="text" class="form-control form-control-sm" name="grade_{{ st.id }}" value="{{ p.grade|default:'' }}" maxlength="5"></td>
+              <td><input type="text" class="form-control form-control-sm" name="remark_{{ st.id }}" value="{{ p.remark|default:'' }}" maxlength="255"></td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No learners found in this class for the term.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <small class="text-muted d-block mb-2">Clear every box in a row to remove that learner's project score.</small>
+      <button class="btn btn-success"><i class="fas fa-save mr-1"></i> Save</button>
+    </div>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

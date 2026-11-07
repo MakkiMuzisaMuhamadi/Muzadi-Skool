@@ -4,13 +4,19 @@
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
     <h3 class="page-title mb-0">
-      <i class="fas fa-list-alt"></i> {{ title|default:"Competencies (UCE)" }}
+      <i class="fas fa-list-alt"></i> {{ title|default:"Competencies (UCE / UACE)" }}
     </h3>
     <small class="text-muted">Create competency statements, then enter remarks/scores per student.</small>
   </div>
   <div>
     <a href="{% url 'competency_definition_create' %}" class="btn btn-primary btn-sm">
       <i class="fas fa-plus mr-1"></i> New Competency
+    </a>
+    <a href="{% url 'project_entry' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-project-diagram mr-1"></i> Project Work
+    </a>
+    <a href="{% url 'generic_skill_rating_entry' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-lightbulb mr-1"></i> Generic Skills
     </a>
   </div>
 </div>

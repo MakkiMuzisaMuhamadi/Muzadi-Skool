@@ -3,8 +3,12 @@ from __future__ import annotations
 import tempfile
 import zipfile
 
+from functools import wraps
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.utils import timezone
 from django.db.models import Q
 from django.http import Http404, JsonResponse, FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -19,11 +23,16 @@ from mainApp.models.reporting_task_celery_models import (
     ReportCardSnapshot,
 )
 from mainApp.report_configs.report_precheck import check_report_readiness
+from mainApp.report_configs.report_access import (
+    bulk_fee_holds,
+    report_access_for,
+)
 from mainApp.tasks.report_tasks import (
     start_report_run,
     retry_failed_report_items,
     sync_report_run_progress,
 )
+from mainApp.term_status import reporting_finalized
 
 
 REPORT_QUEUE_NAME = "reports"
@@ -40,6 +49,27 @@ TERMINAL_RUN_STATUSES = [
     ReportRun.Status.FAILED,
     ReportRun.Status.CANCELLED,
 ]
+
+
+ADMIN_ROLES = ("SUPER_ADMIN", "ADMIN")
+
+
+def _is_report_admin(user):
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return getattr(getattr(user, "profile", None), "role", "") in ADMIN_ROLES
+
+
+def report_admin_required(view_func):
+    """Generating, printing and releasing report cards is for admins only."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not _is_report_admin(request.user):
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 def _user_school(request):
@@ -174,7 +204,8 @@ def _report_center_context(
 
     school = _user_school(request)
 
-    academic_years = AcademicYear.objects.filter(is_active=True).order_by("-start_date")
+    # All years (not only the active one) so past report cards can be re-printed.
+    academic_years = AcademicYear.objects.all().order_by("-start_date")
     classes = Class.objects.select_related("level").all().order_by("level__order", "name")
 
     if school and not request.user.is_superuser:
@@ -307,6 +338,7 @@ def _active_duplicate_run(*, school, year, term, filters, class_ref=None, stream
 
 
 @login_required
+@report_admin_required
 def report_command_center(request):
     filters = _read_filters(request)
 
@@ -491,6 +523,7 @@ def report_command_center(request):
 
 
 @login_required
+@report_admin_required
 def report_run_list(request):
     school = _user_school(request)
 
@@ -534,6 +567,7 @@ def report_run_list(request):
 
 
 @login_required
+@report_admin_required
 def report_run_detail(request, run_id):
     run = get_object_or_404(
         ReportRun.objects.select_related(
@@ -559,7 +593,7 @@ def report_run_detail(request, run_id):
         .order_by("status", "student__first_name", "student__last_name")[:500]
     )
 
-    snapshots = (
+    snapshots = list(
         ReportCardSnapshot.objects
         .filter(run=run, pdf__isnull=False)
         .exclude(pdf="")
@@ -567,14 +601,33 @@ def report_run_detail(request, run_id):
         .order_by("student__first_name", "student__last_name")[:500]
     )
 
+    holds = bulk_fee_holds(run.school, run.term, [snap.student_id for snap in snapshots])
+    for snap in snapshots:
+        snap.fee_hold = holds.get(snap.student_id)
+
+    released = sum(1 for snap in snapshots if snap.is_published and snap.is_latest)
+    latest = sum(1 for snap in snapshots if snap.is_latest)
+    on_hold = sum(1 for snap in snapshots if snap.is_latest and snap.fee_hold and snap.fee_hold.held)
+
+    from mainApp.models.fees_models import FeeCollectionSetting
+    fee_setting = FeeCollectionSetting.for_school(run.school)
+
     return render(request, "dashboard/reports/report_run_detail.html", {
         "run": run,
         "items": items,
         "snapshots": snapshots,
+        "release": {
+            "latest": latest,
+            "released": released,
+            "drafts": latest - released,
+            "on_hold": on_hold,
+            "hold_enabled": fee_setting.withhold_reports_for_defaulters,
+        },
     })
 
 
 @login_required
+@report_admin_required
 def report_run_progress(request, run_id):
     run = get_object_or_404(ReportRun, id=run_id)
 
@@ -613,6 +666,7 @@ def report_run_progress(request, run_id):
 
 
 @login_required
+@report_admin_required
 def report_run_items_json(request, run_id):
     run = get_object_or_404(ReportRun, id=run_id)
 
@@ -664,6 +718,7 @@ def report_run_items_json(request, run_id):
 
 @require_POST
 @login_required
+@report_admin_required
 def report_run_stop(request, run_id):
     run = get_object_or_404(ReportRun, id=run_id)
 
@@ -687,6 +742,7 @@ def report_run_stop(request, run_id):
 
 @require_POST
 @login_required
+@report_admin_required
 def report_run_retry_failed(request, run_id):
     run = get_object_or_404(ReportRun, id=run_id)
 
@@ -714,6 +770,7 @@ def report_run_retry_failed(request, run_id):
 
 @require_POST
 @login_required
+@report_admin_required
 def report_run_rerun(request, run_id):
     old_run = get_object_or_404(ReportRun, id=run_id)
 
@@ -721,7 +778,7 @@ def report_run_rerun(request, run_id):
     if school and not request.user.is_superuser and old_run.school_id != school.id:
         raise Http404
 
-    if old_run.term.is_marks_entry_open or not old_run.term.is_reporting_finalized:
+    if not reporting_finalized(old_run.school, old_run.term):
         messages.error(
             request,
             f"Finalize marks for {old_run.term.name} before generating report cards.",
@@ -776,6 +833,7 @@ def report_run_rerun(request, run_id):
 
 
 @login_required
+@report_admin_required
 def view_report_pdf_admin(request, snapshot_id):
     snap = get_object_or_404(
         ReportCardSnapshot.objects.select_related(
@@ -806,6 +864,7 @@ def view_report_pdf_admin(request, snapshot_id):
 
 
 @login_required
+@report_admin_required
 def download_report_pdf_admin(request, snapshot_id):
     snap = get_object_or_404(
         ReportCardSnapshot.objects.select_related(
@@ -836,6 +895,7 @@ def download_report_pdf_admin(request, snapshot_id):
 
 
 @login_required
+@report_admin_required
 def report_run_download_zip(request, run_id):
     run = get_object_or_404(
         ReportRun.objects.select_related("academic_year", "term", "school"),
@@ -853,6 +913,13 @@ def report_run_download_zip(request, run_id):
         .select_related("student")
         .order_by("student__first_name", "student__last_name", "id")
     )
+
+    # ?cleared=1 -> leave out learners whose report cards are on fees hold (for printing)
+    cleared_only = request.GET.get("cleared") == "1"
+    if cleared_only:
+        holds = bulk_fee_holds(run.school, run.term, snaps.values_list("student_id", flat=True))
+        held_ids = [sid for sid, h in holds.items() if h.held]
+        snaps = snaps.exclude(student_id__in=held_ids)
 
     tmp = tempfile.TemporaryFile()
 
@@ -878,7 +945,7 @@ def report_run_download_zip(request, run_id):
     return FileResponse(
         tmp,
         as_attachment=True,
-        filename=f"Report_Run_{run.id}.zip",
+        filename=f"Report_Run_{run.id}{'_cleared' if cleared_only else ''}.zip",
         content_type="application/zip",
     )
 
@@ -931,6 +998,7 @@ def ajax_report_streams(request):
 
 
 @login_required
+@report_admin_required
 def ajax_report_students(request):
     class_ref_id = request.GET.get("class_ref_id")
     stream_id = request.GET.get("stream_id")
@@ -977,23 +1045,29 @@ def student_my_reports(request):
     if not student:
         raise Http404
 
-    reports = (
+    reports = list(
         ReportCardSnapshot.objects.select_related(
             "academic_year",
             "term",
             "class_ref",
             "stream",
+            "student",
+            "student__school",
         )
         .filter(
             student=student,
             is_latest=True,
+            is_published=True,
             pdf__isnull=False,
         )
         .exclude(pdf="")
         .order_by("-created_at")
     )
 
-    latest_report_id = reports.first().id if reports.exists() else None
+    for r in reports:
+        r.access = report_access_for(r, request.user)
+
+    latest_report_id = reports[0].id if reports else None
 
     return render(
         request,
@@ -1013,7 +1087,7 @@ def view_report_pdf_student(request, snapshot_id):
         raise Http404
 
     snap = get_object_or_404(
-        ReportCardSnapshot.objects.select_related("academic_year", "term"),
+        ReportCardSnapshot.objects.select_related("academic_year", "term", "student", "student__school"),
         id=snapshot_id,
         student=student,
         is_latest=True,
@@ -1021,6 +1095,11 @@ def view_report_pdf_student(request, snapshot_id):
 
     if not snap.pdf:
         raise Http404
+
+    access = report_access_for(snap, request.user)
+    if not access.allowed:
+        messages.warning(request, access.reason)
+        return redirect("student_my_reports")
 
     filename = snap.pdf.name.split("/")[-1] or f"report_{snap.id}.pdf"
 
@@ -1039,7 +1118,7 @@ def download_report_pdf_student(request, snapshot_id):
         raise Http404
 
     snap = get_object_or_404(
-        ReportCardSnapshot.objects.select_related("academic_year", "term"),
+        ReportCardSnapshot.objects.select_related("academic_year", "term", "student", "student__school"),
         id=snapshot_id,
         student=student,
         is_latest=True,
@@ -1047,6 +1126,11 @@ def download_report_pdf_student(request, snapshot_id):
 
     if not snap.pdf:
         raise Http404
+
+    access = report_access_for(snap, request.user)
+    if not access.allowed:
+        messages.warning(request, access.reason)
+        return redirect("student_my_reports")
 
     filename = snap.pdf.name.split("/")[-1] or f"report_{snap.id}.pdf"
 

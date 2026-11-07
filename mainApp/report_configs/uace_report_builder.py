@@ -9,6 +9,12 @@ from mainApp.models.report_terms_models import ReportAutoCommentRule
 from mainApp.models.student import Student
 from mainApp.models.calendar import AcademicYear, Term
 from mainApp.models.competency_models import ReportComment
+from mainApp.report_configs.uce_report_builder import _build_report_terms_for_uce
+from mainApp.report_configs.competency_report_helpers import (
+    build_competency_rows,
+    build_generic_skill_rows,
+    build_project_rows,
+)
 from mainApp.models.models import StudentPromotionDecision
 from mainApp.models.exams_models import ExamType, MarkEntryExam
 from mainApp.report_configs.academic_helpers import get_next_term_begin_display
@@ -67,38 +73,10 @@ def _student_display_name(student: Student) -> str:
     ).strip() or getattr(student, "full_name", "") or getattr(student, "first_name", "") or str(student)
 
 
-def get_report_promotion_text(*, school, student, academic_year_id):
-    decision = (
-        StudentPromotionDecision.objects.filter(
-            school=school,
-            student=student,
-            academic_year_id=academic_year_id,
-        )
-        .select_related("to_class", "from_class")
-        .order_by("-id")
-        .first()
-    )
+def get_report_promotion_text(*, school, student, academic_year_id, term_id=None):
+    from mainApp.report_configs.academic_helpers import get_report_promotion_text as _text
 
-    if not decision:
-        return ""
-
-    if decision.status == "PROMOTED":
-        if decision.to_class:
-            return f"Promoted to Next Class ({decision.to_class.name})"
-        return "Promoted to Next Class"
-
-    if decision.status == "RETAINED":
-        if decision.from_class:
-            return f"Retained in Current Class ({decision.from_class.name})"
-        return "Retained in Current Class"
-
-    if decision.status == "COMPLETED_CYCLE":
-        return "Completed Cycle, Awaiting Readmission"
-
-    if decision.status == "GRADUATED":
-        return "Graduated"
-
-    return decision.get_status_display() or ""
+    return _text(school=school, student=student, academic_year_id=academic_year_id, term_id=term_id)
 
 
 def _initials_from_user(user) -> str:
@@ -393,9 +371,30 @@ def build_uace_report_payload(
         school=school,
         student=student,
         academic_year_id=academic_year_id,
+        term_id=term_id,
     )
 
     grade_ranges = build_uace_grade_ranges(scale)
+
+    # Competency-based curriculum sections (abridged A-Level curriculum: AOI, projects, generic skills)
+    section_kwargs = dict(
+        school=school,
+        level_id=level_id,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        class_ref_id=class_ref_id,
+        stream_id=stream_id,
+        student=student,
+    )
+    competencies_rows = build_competency_rows(**section_kwargs)
+    projects = build_project_rows(**section_kwargs)
+    generic_skills = build_generic_skill_rows(
+        school=school,
+        level_id=level_id,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        student=student,
+    )
 
     meta_class = getattr(getattr(academic_record, "class_ref", None), "name", "") if academic_record else ""
     meta_stream = getattr(getattr(academic_record, "stream", None), "name", "") if academic_record else ""
@@ -423,8 +422,10 @@ def build_uace_report_payload(
 
         # Keep empty because UACE template should not render papers/exam breakdown.
         "assessment_breakdown": [],
-        "competencies_rows": [],
-        "projects": [],
+        "competencies_rows": competencies_rows,
+        "projects": projects,
+        "generic_skills": generic_skills,
+        "ca_weight_percent": float(getattr(scale, "ca_weight_percent", 0) or 0) if scale else 0,
 
         "principal_points": overall.get("principal_points"),
         "subsidiary_points": overall.get("subsidiary_points"),
@@ -454,7 +455,8 @@ def build_uace_report_payload(
 
         # New UACE grade legend from NewUACEGradeBand.
         "grade_ranges": grade_ranges,
-        "report_terms": {},
+        # Key words / identifier bands (1-3) explain the competency scores.
+        "report_terms": _build_report_terms_for_uce(school, level_id),
 
         "school": {
             "name": getattr(school, "name", "") or "SCHOOL",

@@ -392,6 +392,32 @@ def ajax_terms(request):
         "results": [{"id": t.id, "text": t.name} for t in qs]
     })
 
+@login_required
+def ajax_year_terms(request):
+    """
+    Terms of one academic year, plus the term to pre-select for this school.
+    GET /ajax/year-terms/?year_id=12  ->  {"results": [{"id": 40, "text": "Term 1", "is_current": true}],
+                                          "current_term_id": 40, "current_year_id": 12}
+    Used by every Year -> Term dropdown pair (see templates/dashboard/partials/_year_term_js.html).
+    """
+    from mainApp.academic_period import current_term_for_year, school_current_year, terms_for_year
+
+    school = getattr(getattr(request.user, "profile", None), "school", None)
+    year_id = request.GET.get("year_id") or request.GET.get("academic_year") or ""
+    current_year = school_current_year(school)
+    if not str(year_id).isdigit():
+        return JsonResponse({"results": [], "current_term_id": None,
+                             "current_year_id": getattr(current_year, "id", None)})
+    current = current_term_for_year(school, int(year_id))
+    cur_id = getattr(current, "id", None)
+    return JsonResponse({
+        "results": [{"id": t.id, "text": t.name, "name": t.name, "is_current": t.id == cur_id}
+                    for t in terms_for_year(year_id)],
+        "current_term_id": cur_id,
+        "current_year_id": getattr(current_year, "id", None),
+    })
+
+
 def _user_school(request):
     # Most of your system uses profile.school
     return getattr(request.user.profile, "school", None)
@@ -444,20 +470,6 @@ def ajax_teacher_classes(request):
 
     allocs = teacher_alloc_qs(request.user, school)
     qs = Class.objects.filter(id__in=allocs.values("class_ref_id")).distinct().values("id", "name")
-    return JsonResponse({"results": list(qs)})
-
-
-@login_required
-def ajax_teacher_streams(request):
-    school = get_current_school(request)
-    class_id = request.GET.get("class_id")
-
-    if not hasattr(request.user, "teacher"):
-        qs = Stream.objects.filter(class_ref__school=school, class_ref_id=class_id).values("id", "name")
-        return JsonResponse({"results": list(qs)})
-
-    allocs = teacher_alloc_qs(request.user, school).filter(class_ref_id=class_id)
-    qs = Stream.objects.filter(id__in=allocs.values("stream_id")).distinct().values("id", "name")
     return JsonResponse({"results": list(qs)})
 
 
@@ -558,6 +570,7 @@ def ajax_exam_types_for_class(request):
             scheme__is_active=True,
             is_active=True,
         )
+        .exclude(source="AOI")  # AOI columns are filled automatically from competencies
         .select_related("scheme", "scheme__level")
         .order_by("order", "name")
         .distinct()
@@ -666,56 +679,10 @@ def ajax_mc_classes(request):
     return JsonResponse({
         "results": [{"id": r["class_ref_id"], "name": r["class_ref__name"]} for r in qs]
     })
-@login_required
-def ajax_terms_for_year(request):
-    year_id = request.GET.get("academic_year_id")
-    if not year_id:
-        return JsonResponse({"results": []})
-
-    qs = Term.objects.filter(academic_year_id=year_id).order_by("order", "name")
-    return JsonResponse({
-        "results": [{"id": t.id, "text": t.name} for t in qs]
-    })
 
 
 @login_required
-def ajax_report_streams(request):
-    class_ref_id = request.GET.get("class_ref_id")
-    if not class_ref_id:
-        return JsonResponse({"results": []})
-
-    qs = Stream.objects.filter(class_ref_id=class_ref_id).order_by("name")
-    return JsonResponse({
-        "results": [{"id": s.id, "text": s.name} for s in qs]
-    })
-
-
-@login_required
-def ajax_report_students(request):
-    class_ref_id = request.GET.get("class_ref_id")
-    stream_id = request.GET.get("stream_id")
-
-    qs = Student.objects.filter(is_active=True)
-
-    if class_ref_id:
-        qs = qs.filter(current_class_id=class_ref_id)
-    if stream_id:
-        qs = qs.filter(stream_id=stream_id)
-
-    qs = qs.order_by("first_name", "last_name")[:200]
-
-    return JsonResponse({
-        "results": [
-            {
-                "id": s.id,
-                "text": f"{s} ({getattr(s, 'admission_number', '')})",
-            }
-            for s in qs
-        ]
-    })
-
-@login_required
-@role_required(["TEACHER"])
+@role_required(["TEACHER", "ADMIN", "SUPER_ADMIN"])
 @require_GET
 def ajax_topic_meta(request):
     school, uce = _ensure_uce_access(request)
@@ -730,7 +697,7 @@ def ajax_topic_meta(request):
         Topic.objects.select_related("class_ref", "subject"),
         id=int(topic_id),
         school=school,
-        level=uce,
+        level__in=uce,  # list of UCE/UACE levels offered by the school
     )
 
     return JsonResponse({
@@ -743,11 +710,13 @@ def ajax_topic_meta(request):
 
 
 @login_required
-@role_required(["TEACHER"])
+@role_required(["TEACHER", "ADMIN", "SUPER_ADMIN"])
 @require_GET
-def ajax_teacher_streams(request):
+def ajax_cbc_teacher_streams(request):
     """
-    Streams are loaded AFTER topic selection (topic provides class).
+    Competency (CBC) statement form: streams are loaded AFTER topic selection (topic provides class).
+    URL names: 'ajax_cbc_teacher_streams' (use this) and the old 'ajax_teacher_streams'.
+    Enter Marks does NOT use this; it uses /marks/filter-options/.
     Returns only streams teacher is allowed to teach in that class.
     """
     school, uce = _ensure_uce_access(request)
@@ -759,9 +728,10 @@ def ajax_teacher_streams(request):
         return JsonResponse({"results": []})
 
     allocs = _teacher_allocs(request).filter(class_ref_id=int(class_id))
+    is_admin = getattr(getattr(request.user, "profile", None), "role", "") in ("ADMIN", "SUPER_ADMIN")
 
-    # class-wide allocation (stream null) -> return all class streams
-    if allocs.filter(stream__isnull=True).exists():
+    # admins, or class-wide allocation (stream null) -> return all class streams
+    if is_admin or allocs.filter(stream__isnull=True).exists():
         qs = Stream.objects.filter(class_ref_id=int(class_id)).order_by("name")
     else:
         stream_ids = allocs.values_list("stream_id", flat=True)
@@ -774,7 +744,7 @@ def ajax_teacher_streams(request):
 # ---------------------------
 
 @login_required
-@role_required(["TEACHER"])
+@role_required(["TEACHER", "ADMIN", "SUPER_ADMIN"])
 @require_GET
 def ajax_terms_by_year(request):
     school, uce = _ensure_uce_access(request)
@@ -787,9 +757,6 @@ def ajax_terms_by_year(request):
 
     qs = Term.objects.filter(academic_year_id=int(ay)).order_by("order")
     return JsonResponse({"results": [{"id": t.id, "name": str(t)} for t in qs]})
-
-def get_school(request):
-    return getattr(getattr(request.user, "profile", None), "school", None)
 
 
 @login_required

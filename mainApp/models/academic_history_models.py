@@ -18,6 +18,7 @@ class StudentAcademicRecord(AuditMixin, models.Model):
         ("FINALIZED", "Finalized"),
         ("PROMOTED_AFTER_TERM", "Promoted After Term"),
         ("RETAINED_AFTER_TERM", "Retained After Term"),
+        ("DEMOTED_AFTER_TERM", "Demoted After Term"),
         ("COMPLETED_CYCLE_AFTER_TERM", "Completed Cycle After Term"),
         ("GRADUATED_AFTER_TERM", "Graduated After Term"),
     ]

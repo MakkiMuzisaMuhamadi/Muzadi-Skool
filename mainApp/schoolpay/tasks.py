@@ -62,6 +62,7 @@ def send_payment_sms(self, transaction_id):
     if not txn or not txn.student:
         return 0
 
+    from mainApp.messaging_wallet import SmsNotAllowed
     from mainApp.sms_service import AfricaTalkingSMS, pick_parent_number
 
     student = txn.student
@@ -83,12 +84,16 @@ def send_payment_sms(self, transaction_id):
     if not numbers:
         return 0
 
-    sms = AfricaTalkingSMS()
+    sms = AfricaTalkingSMS(school=txn.school)
     sent = 0
     for number in numbers:
         try:
             sms.send_one(message, number)
             sent += 1
+        except SmsNotAllowed as exc:
+            # SMS off / no credit: retrying will not help.
+            logger.info("SchoolPay SMS for %s not sent: %s", txn.school, exc)
+            return sent
         except Exception as exc:
             logger.warning("SchoolPay SMS to %s failed: %s", number, exc)
             if sent == 0:

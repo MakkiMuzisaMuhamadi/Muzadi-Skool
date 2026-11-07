@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="page-header mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap w-100" style="gap:.5rem;">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-file-alt"></i> Report cards</h3>
+      <small class="text-muted">{{ child.name|default:child.first_name }}{% if child.current_class %} · {{ child.current_class.name }}{% endif %}</small>
+    </div>
+    <a href="{% url 'parent_portal' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> My children</a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    {% if reports %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="thead-light"><tr><th>Report</th><th>Class</th><th>Generated</th><th class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>
+              <strong>{{ report.term.name }} {{ report.academic_year.year }}</strong>
+              {% if report.id == latest_report_id %}<span class="badge badge-success ml-1">NEW</span>{% endif %}
+            </td>
+            <td>{{ report.class_ref.name|default:"-" }}{% if report.stream %} · {{ report.stream.name }}{% endif %}</td>
+            <td>{{ report.created_at|date:"d M Y" }}</td>
+            <td class="text-right">
+              {% if report.access.allowed %}
+                <a href="{% url 'parent_report_view' report.id %}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye mr-1"></i> View</a>
+                <a href="{% url 'parent_report_download' report.id %}" class="btn btn-sm btn-primary"><i class="fas fa-download mr-1"></i> Download</a>
+              {% else %}
+                <span class="badge badge-danger p-2"><i class="fas fa-lock mr-1"></i> Withheld – fees balance UGX {{ report.access.balance|floatformat:0|intcomma }}</span>
+                <small class="d-block text-muted mt-1">Clear the balance with the bursar to open it.</small>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="mb-0 text-muted">No report cards have been published for this child yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

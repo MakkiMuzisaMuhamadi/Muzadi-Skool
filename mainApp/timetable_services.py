@@ -489,7 +489,7 @@ def notify_substitute(sub):
     if not sub.notify_by_sms or sub.sms_sent or not sub.substitute_teacher_id:
         return False
     try:
-        from mainApp.services.sms_service import AfricaTalkingSMS, is_valid_ug_number, normalize_ug_number
+        from mainApp.sms_service import AfricaTalkingSMS, is_valid_ug_number, normalize_ug_number
 
         teacher = sub.substitute_teacher
         number = normalize_ug_number(teacher.contact1 or "") or normalize_ug_number(teacher.contact2 or "")
@@ -501,7 +501,7 @@ def notify_substitute(sub):
             f"{entry.subject or ''}, {sub.date:%a %d %b}, {entry.period.name} "
             f"({entry.period.start_time:%H:%M}). Covering for {teacher_name(sub.original_teacher)}."
         )
-        AfricaTalkingSMS().send_one(" ".join(message.split()), number)
+        AfricaTalkingSMS(school=sub.school).send_one(" ".join(message.split()), number)
         TeacherSubstitution.objects.filter(pk=sub.pk).update(sms_sent=True)
         return True
     except Exception:  # SMS must never break saving a substitution

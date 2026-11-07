@@ -1,0 +1,67 @@
+{# Type-to-search student box. Needs `form` with a StudentSearchMixin student field. #}
+<div class="mb-3 student-picker" data-url="{% url 'ajax_boarding_student_search' %}">
+  <label class="form-label font-weight-bold" for="studentSearchBox">Student <span class="text-danger">*</span></label>
+  {{ form.student }}
+  <div class="position-relative">
+    <input type="text" id="studentSearchBox" class="form-control" autocomplete="off"
+           placeholder="Type at least 2 letters of the name or admission number"
+           value="{{ form.student_label }}" aria-autocomplete="list" aria-controls="studentSearchResults">
+    <div id="studentSearchResults" class="list-group position-absolute w-100 shadow-sm" role="listbox"
+         style="z-index: 1050; max-height: 300px; overflow-y: auto; display: none;"></div>
+  </div>
+  {% if form.student.help_text %}<small class="form-text text-muted">{{ form.student.help_text }}</small>{% endif %}
+  {% for e in form.student.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+</div>
+<script>
+(function(){
+  var wrap = document.currentScript.previousElementSibling;
+  var hidden = wrap.querySelector("input[type=hidden][data-student-search]");
+  var box = wrap.querySelector("#studentSearchBox"), list = wrap.querySelector("#studentSearchResults");
+  var mode = hidden.dataset.studentSearch, timer = null, chosenLabel = box.value, active = -1;
+  hidden.dataset.gender = "{{ form.student_gender|default:'' }}";
+
+  function close(){ list.style.display = "none"; list.innerHTML = ""; active = -1; }
+  function pick(r){
+    hidden.value = r.id; hidden.dataset.gender = r.gender; box.value = chosenLabel = r.label; close();
+    hidden.dispatchEvent(new Event("change"));      // other scripts (dormitory filter, parents list) react to this
+  }
+  function show(results, q){
+    list.innerHTML = "";
+    if(!results.length){ list.innerHTML = '<div class="list-group-item text-muted small">No student matches "' + q.replace(/</g,"&lt;") + '"</div>'; }
+    results.forEach(function(r){
+      var a = document.createElement("button");
+      a.type = "button"; a.className = "list-group-item list-group-item-action py-2"; a.setAttribute("role", "option");
+      a.innerHTML = '<span></span> <small class="text-muted"></small>';
+      a.firstChild.textContent = r.label; a.lastChild.textContent = r.gender_label;
+      a.addEventListener("mousedown", function(ev){ ev.preventDefault(); pick(r); });
+      a._r = r; list.appendChild(a);
+    });
+    list.style.display = "block";
+  }
+  box.addEventListener("input", function(){
+    var q = box.value.trim();
+    if(hidden.value && box.value !== chosenLabel){ hidden.value = ""; hidden.dataset.gender = ""; hidden.dispatchEvent(new Event("change")); }
+    clearTimeout(timer);
+    if(q.length < 2){ close(); return; }
+    timer = setTimeout(async function(){       // wait until the user pauses typing
+      try {
+        var res = await fetch(wrap.dataset.url + "?mode=" + mode + "&q=" + encodeURIComponent(q), {headers: {"X-Requested-With": "XMLHttpRequest"}});
+        if(box.value.trim() === q) show((await res.json()).results || [], q);
+      } catch(e) { close(); }
+    }, 250);
+  });
+  box.addEventListener("keydown", function(ev){
+    var items = list.querySelectorAll("button");
+    if(!items.length) return;
+    if(ev.key === "ArrowDown" || ev.key === "ArrowUp"){
+      ev.preventDefault();
+      active = (active + (ev.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+      items.forEach(function(b, i){ b.classList.toggle("active", i === active); });
+      items[active].scrollIntoView({block: "nearest"});
+    } else if(ev.key === "Enter"){
+      ev.preventDefault(); pick(items[Math.max(active, 0)]._r);
+    } else if(ev.key === "Escape"){ close(); }
+  });
+  box.addEventListener("blur", function(){ setTimeout(close, 150); if(!hidden.value) box.value = ""; });
+})();
+</script>

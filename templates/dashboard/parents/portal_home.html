@@ -1,0 +1,46 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="page-header mb-3">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-child"></i> My Children</h3>
+    <small class="text-muted">Hello {{ parent.first_name }}. Parent ID: <strong>{{ parent.parent_id }}</strong></small>
+  </div>
+</div>
+
+{% if children %}
+<div class="row">
+  {% for item in children %}
+  {% with s=item.student %}
+  <div class="col-md-6 col-xl-4 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title mb-1">{{ s.name|default:s.first_name }}</h4>
+        <p class="text-muted mb-3">
+          {{ s.school.name }}<br>
+          {% if s.current_class %}{{ s.current_class.name }}{% endif %}{% if s.stream %} · {{ s.stream.name }}{% endif %}
+          {% if s.admission_number %}<br>Admission no. {{ s.admission_number }}{% endif %}
+        </p>
+        {% if item.link %}
+        <p class="small mb-3">
+          You are recorded as: <strong>{{ item.link.get_relationship_display }}</strong>
+          {% if item.link.is_primary %}<span class="badge badge-success ml-1">Primary contact</span>{% endif %}
+          {% if item.link.is_fee_payer %}<span class="badge badge-info ml-1">Pays fees</span>{% endif %}
+        </p>
+        {% endif %}
+        <a href="{% url 'parent_child_reports' s.id %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-file-alt mr-1"></i> Report cards
+          {% if item.report_count %}<span class="badge badge-light ml-1">{{ item.report_count }}</span>{% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="card-body">
+  <p class="mb-0">No children are linked to your account yet. Please contact the school office.</p>
+</div></div>
+{% endif %}
+{% endblock %}

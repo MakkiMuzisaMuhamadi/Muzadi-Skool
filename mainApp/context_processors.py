@@ -1,4 +1,6 @@
 # mainApp/context_processors.py
+from django.conf import settings
+
 from mainApp.models.models import School
 from mainApp.models.calendar import *
 from django.utils import timezone
@@ -44,8 +46,16 @@ def school_context(request):
             except AttributeError:
                 pass
 
-        # For non-authenticated users or users without school, use default school
-        default_school = School.objects.filter(is_default=True, is_active=True).first()
+        # For non-authenticated users: the school of this web address (stmarys.<domain>).
+        default_school = getattr(request, "school", None)
+        tenant = getattr(request, "tenant", None)
+        if default_school is None and tenant is not None and tenant.is_platform:
+            context['school_name'] = getattr(settings, "APP_NAME", "Muzadi School System")
+            context['short_name'] = "Muzadi"
+            context['school_moto'] = "School management for Uganda"
+            return context
+        if default_school is None:
+            default_school = School.objects.filter(is_default=True, is_active=True).first()
 
         if not default_school:
             default_school = School.objects.filter(is_active=True).first()
@@ -91,6 +101,7 @@ def academic_context(request):
     try:
         current_academic_year = None
         current_term = None
+        school = None
 
         # Try to get from user's school if authenticated
         if request.user.is_authenticated:
@@ -158,6 +169,11 @@ def academic_context(request):
         # Add term to context if found
         if current_term:
             context['current_term'] = current_term
+            try:
+                from mainApp.term_status import get_term_status
+                context['current_term_status'] = get_term_status(school, current_term) if school else None
+            except Exception:
+                context['current_term_status'] = None
             context['current_term_name'] = current_term.name
             context['current_term_short'] = current_term.short_name or current_term.name
 
@@ -320,4 +336,55 @@ def dashboard_stats_context(request):
     level_ids = list(school.level.values_list("id", flat=True))
     ctx["total_subjects"] = Subject.objects.filter(level_id__in=level_ids).count()
 
+    return ctx
+
+def platform_context(request):
+    """
+    Subscription banner, optional modules (to hide menus), SMS balance warning,
+    "What's new" count and platform links. All cheap: a few small queries.
+    """
+    from mainApp import tenancy
+    from mainApp.models.platform_models import ALL_MODULES, SchoolSubscription
+
+    tenant = getattr(request, "tenant", None)
+    school = getattr(request, "school", None)
+    user = getattr(request, "user", None)
+    ctx = {
+        "school_modules": set(ALL_MODULES),
+        "is_platform_user": bool(user and user.is_authenticated and tenancy.is_platform_user(user)),
+        "is_platform_address": bool(tenant and tenant.is_platform),
+        "tenancy_enabled": tenancy.tenancy_enabled(),
+    }
+    if not (user and user.is_authenticated):
+        return ctx
+
+    try:
+        from mainApp import subscriptions
+        if school is not None:
+            ctx["school_modules"] = subscriptions.modules_for(school)
+            sub = subscriptions.subscription_for(school)
+            if sub is not None:
+                state = sub.state()
+                ctx["subscription"] = sub
+                ctx["subscription_state"] = state
+                days = sub.days_left()
+                ctx["subscription_days_left"] = days
+                role = tenancy.user_role(user)
+                # Admins see a reminder 14 days before the end; everybody sees grace / read-only.
+                show = state in (SchoolSubscription.STATE_GRACE, SchoolSubscription.STATE_READ_ONLY) or (
+                    role in ("ADMIN", "SUPER_ADMIN", "BURSAR") and days is not None and 0 <= days <= 14
+                )
+                ctx["show_subscription_banner"] = show
+
+            if tenancy.user_role(user) in ("ADMIN", "SUPER_ADMIN"):
+                from mainApp.models.platform_models import SchoolMessagingAccount
+                acc = SchoolMessagingAccount.objects.filter(school=school).first()
+                if acc is not None and acc.sms_enabled and acc.is_low:
+                    ctx["sms_low_balance"] = acc.credit_units
+
+        from mainApp.platform_services import unread_release_notes_count
+        ctx["whats_new_count"] = unread_release_notes_count(user, school)
+    except Exception:  # a banner must never break a page
+        import logging
+        logging.getLogger(__name__).exception("platform_context failed")
     return ctx

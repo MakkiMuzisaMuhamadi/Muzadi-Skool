@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% load humanize %}
 {% block content %}
 <div class="page-header mb-3">
@@ -23,7 +24,7 @@
         <tr>
           <td class="text-nowrap" title="{{ r.created_at }}">{{ r.created_at|naturaltime }}</td>
           <td><strong>{{ r.get_tx_type_display }}</strong></td>
-          <td><a href="{% url 'inv_unit_detail' r.unit_id %}">{{ r.unit.tag_code }}</a></td>
+          <td>{% if request.user|can_open:"inv_unit_detail" %}<a href="{% url 'inv_unit_detail' r.unit_id %}">{{ r.unit.tag_code }}</a>{% else %}{{ r.unit.tag_code }}{% endif %}</td>
           <td>{{ r.unit.item.name|truncatechars:35 }}</td>
           <td>{{ r.holder_display|default:"—" }}</td>
           <td>{% if r.tx_type == "ISSUE" and r.due_date %}<span class="{% if r.is_overdue %}text-danger font-weight-bold{% endif %}">{{ r.due_date }}</span>{% else %}—{% endif %}</td>

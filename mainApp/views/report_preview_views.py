@@ -6,6 +6,19 @@ from mainApp.models.reporting_task_celery_models import ReportCardSnapshot
 from mainApp.models.report_template_models import ReportCardTemplate
 from mainApp.report_configs.report_template_service import get_active_report_template
 from mainApp.report_configs.report_html_renderer import render_report_card_pdf
+from mainApp.views.reports_views import _user_school, report_admin_required
+
+
+def _snapshot_for_staff(request, snapshot_id):
+    """Admin-only, and only report cards of the admin's own school."""
+    snapshot = get_object_or_404(
+        ReportCardSnapshot.objects.select_related("run", "student", "template", "class_ref", "class_ref__level"),
+        id=snapshot_id,
+    )
+    school = _user_school(request)
+    if school and not request.user.is_superuser and snapshot.run.school_id != school.id:
+        raise Http404
+    return snapshot
 
 
 def _build_template_context(snapshot, template):
@@ -109,11 +122,9 @@ def _build_template_context(snapshot, template):
 
 
 @login_required
+@report_admin_required
 def report_snapshot_preview_html(request, snapshot_id):
-    snapshot = get_object_or_404(
-        ReportCardSnapshot.objects.select_related("student", "template", "class_ref", "class_ref__level"),
-        id=snapshot_id,
-    )
+    snapshot = _snapshot_for_staff(request, snapshot_id)
 
     level_code = ""
     if snapshot.class_ref and getattr(snapshot.class_ref, "level", None):
@@ -126,19 +137,20 @@ def report_snapshot_preview_html(request, snapshot_id):
     template = snapshot.template or get_active_report_template(snapshot.student.school, level_code)
     context = _build_template_context(snapshot, template)
 
+    code = (context.get("level_code") or "").upper()
     template_name = "dashboard/reports/pdf/report_card.html"
-    if context.get("level_code") == "PLE":
+    if code == "PLE":
         template_name = "dashboard/reports/pdf/report_card_ple.html"
+    elif code == "UACE":
+        template_name = "dashboard/reports/pdf/report_card_uace.html"
 
     return render(request, template_name, context)
 
 
 @login_required
+@report_admin_required
 def report_snapshot_download_pdf(request, snapshot_id):
-    snapshot = get_object_or_404(
-        ReportCardSnapshot.objects.select_related("student", "template", "class_ref", "class_ref__level"),
-        id=snapshot_id,
-    )
+    snapshot = _snapshot_for_staff(request, snapshot_id)
 
     level_code = ""
     if snapshot.class_ref and getattr(snapshot.class_ref, "level", None):

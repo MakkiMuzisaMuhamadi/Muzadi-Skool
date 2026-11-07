@@ -1,0 +1,155 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ school_name }}{% endblock %}</title>
+    {% include "pwa/_head.html" %}
+
+    <link rel="stylesheet" href="{% static 'vendors/iconfonts/font-awesome/css/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendors/css/vendor.bundle.base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        /* Muzadi brand colours (from the "M" logo) */
+        :root {
+            --brand: #1e6fd9; --brand-dark: #1a4fc4; --brand-light: #22b8e6; --navy: #1b2a4a;
+            --ink: #1f2a44; --muted: #667085; --line: #e3e8f2; --tint: #eef4ff;
+        }
+        body {
+            background:
+                radial-gradient(900px 500px at -10% -10%, rgba(34,184,230,.16), transparent 60%),
+                radial-gradient(800px 500px at 110% 110%, rgba(30,111,217,.16), transparent 60%),
+                #f4f7fc;
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; color: var(--ink);
+        }
+        .auth-wrapper { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+                        justify-content: center; padding: 24px 16px; }
+        .auth-card {
+            width: 100%; max-width: {% block card_width %}440px{% endblock %}; background: #fff; border-radius: 20px;
+            padding: 30px 36px 32px; box-shadow: 0 18px 50px rgba(27,42,74,.10); animation: fadeIn .6s ease;
+            border-top: 4px solid transparent;
+            background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, var(--brand-light), var(--brand), var(--brand-dark));
+            background-origin: border-box; background-clip: padding-box, border-box;
+        }
+        @media (max-width: 480px) { .auth-card { padding: 24px 20px 26px; border-radius: 16px; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: none; } }
+
+        /* brand header: M mark + "Muzadi Technologies" */
+        .brand { display: flex; align-items: center; justify-content: center; gap: 12px; text-decoration: none; }
+        .brand img { width: 54px; height: 54px; flex: none; }
+        .brand-text { text-align: left; line-height: 1.1; }
+        .brand-name { font-size: 1.45rem; font-weight: 800; letter-spacing: -.01em; color: var(--navy); white-space: nowrap; }
+        .brand-name span { color: var(--brand); }
+        .brand-tag { display: block; margin-top: 4px; font-size: .78rem; font-style: italic; color: var(--muted); letter-spacing: .02em; }
+        @media (max-width: 360px) { .brand img { width: 44px; height: 44px; } .brand-name { font-size: 1.2rem; } }
+        .brand-divider { height: 1px; background: var(--line); margin: 20px 0 18px; }
+
+        .title { font-size: 1.35rem; font-weight: 700; text-align: center; margin-bottom: 2px; color: var(--ink); }
+        .subtitle { text-align: center; margin-bottom: 22px; color: var(--muted); line-height: 1.5; font-size: .92rem; }
+        .form-group { position: relative; margin-bottom: 18px; }
+        .form-group label { font-weight: 600; font-size: .9rem; color: #344054; margin-bottom: 6px; }
+        .form-control { border-radius: 10px; height: 48px; font-size: 1rem; border: 1px solid #d0d5dd; }
+        .form-control.has-toggle { padding-right: 45px; }
+        .form-control:focus { border-color: var(--brand); box-shadow: 0 0 0 .2rem rgba(30,111,217,.18); }
+        .form-text { font-size: .82rem; }
+        .password-toggle {
+            position: absolute; right: 12px; bottom: 12px; background: none; border: none;
+            color: #777; cursor: pointer; font-size: 1.1rem;
+        }
+        .btn-main {
+            width: 100%; height: 48px; border-radius: 10px; border: none; color: #fff;
+            background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 55%, var(--brand-dark) 100%);
+            font-size: 1.05rem; font-weight: 600; transition: filter .2s, box-shadow .2s;
+            box-shadow: 0 6px 18px rgba(30,111,217,.28);
+        }
+        .btn-main:hover, .btn-main:focus { filter: brightness(1.06); color: #fff; box-shadow: 0 8px 22px rgba(30,111,217,.36); }
+        .btn-main:focus-visible { outline: 3px solid #9cc3ff; outline-offset: 2px; }
+        .btn-main:disabled { opacity: .7; }
+        .link-row { text-align: center; margin-top: 16px; font-size: .92rem; }
+        .link-row a { color: var(--brand); font-weight: 500; }
+
+        /* tabs */
+        .auth-tabs { display: flex; background: var(--tint); border-radius: 12px; padding: 4px; margin-bottom: 22px; }
+        .auth-tabs a {
+            flex: 1; text-align: center; padding: 10px 6px; border-radius: 9px; color: #4f5d8a;
+            font-weight: 600; font-size: .95rem; text-decoration: none;
+        }
+        .auth-tabs a.active { background: #fff; color: var(--brand); box-shadow: 0 2px 8px rgba(30,111,217,.15); }
+
+        /* choice cards (send code by SMS / email) */
+        .choice { display: flex; align-items: center; gap: 14px; border: 2px solid var(--line); border-radius: 12px;
+                  padding: 14px 16px; margin-bottom: 12px; cursor: pointer; }
+        .choice:hover { border-color: #a9c8f5; }
+        .choice input { width: 18px; height: 18px; }
+        .choice.selected { border-color: var(--brand); background: #f5f9ff; }
+        .choice i { font-size: 1.4rem; color: var(--brand); width: 26px; text-align: center; }
+        .choice .muted { color: #777; font-size: .88rem; }
+
+        /* messages */
+        .alert { padding: 13px 16px; border-radius: 12px; margin-bottom: 14px; font-weight: 500;
+                 display: flex; align-items: flex-start; gap: 10px; }
+        .alert-error, .alert-danger { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; border-left: 5px solid #e53e3e; }
+        .alert-success { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; border-left: 5px solid #38a169; }
+        .alert-warning { background: #fffaf0; color: #744210; border: 1px solid #fbd38d; border-left: 5px solid #ed8936; }
+        .alert-info { background: #ebf8ff; color: #2c5282; border: 1px solid #90cdf4; border-left: 5px solid #3182ce; }
+        .alert .alert-content { flex: 1; line-height: 1.4; }
+        .alert-close { background: none; border: none; color: inherit; opacity: .6; font-size: 1.2rem; line-height: 1; }
+        .help-list { font-size: .82rem; color: #666; padding-left: 18px; margin: 6px 0 0; }
+
+        .auth-footer { margin-top: 18px; font-size: .8rem; color: var(--muted); text-align: center; }
+        .auth-footer strong { color: var(--navy); font-weight: 600; }
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="brand" aria-label="Muzadi Technologies">
+            <img src="{% static 'images/muzadi-mark.png' %}" alt="" width="54" height="54">
+            <div class="brand-text">
+                <div class="brand-name">Muzadi <span>Technologies</span></div>
+                <small class="brand-tag">Innovate. Integrate. Inspire.</small>
+            </div>
+        </div>
+        <div class="brand-divider"></div>
+        <h2 class="title">{% block heading %}{{ school_name }}{% endblock %}</h2>
+        <p class="subtitle">{% block subheading %}School Management System{% endblock %}</p>
+
+        <div class="alert-container" role="status" aria-live="polite">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <div class="alert-content">{{ message }}</div>
+                    <button type="button" class="alert-close" aria-label="Close" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% block content %}{% endblock %}
+    </div>
+    <p class="auth-footer">&copy; {% now "Y" %} <strong>Muzadi Technologies</strong> &middot; School Management System</p>
+</div>
+
+<script>
+    // Show / hide password buttons
+    document.querySelectorAll('.password-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = document.getElementById(btn.dataset.target);
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.querySelector('i').className = show ? 'far fa-eye-slash' : 'far fa-eye';
+            btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+    });
+    // Stop double submits on slow connections
+    document.querySelectorAll('form[data-once]').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            var b = form.querySelector('button[type=submit]');
+            if (b) { setTimeout(function () { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Please wait...'; }, 0); }
+        });
+    });
+</script>
+{% include "pwa/_install.html" %}
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,4 +1,5 @@
 from mainApp.grading_checks import ple_scale_issues
+from mainApp.academic_period import year_queryset
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -65,6 +66,7 @@ def ple_grading_scale_create(request):
         if form_valid and grade_valid and division_valid:
             with transaction.atomic():
                 scale.save()
+                form.save_m2m()  # division classes
 
                 grade_formset.instance = scale
                 grade_formset.save()
@@ -121,6 +123,7 @@ def ple_grading_scale_edit(request, pk):
             obj = form.save(commit=False)
             obj.school = school
             obj.save()
+            form.save_m2m()  # division classes
 
             grade_formset.instance = obj
             grade_formset.save()
@@ -208,7 +211,7 @@ def ple_grading_scale_view(request, pk):
 def ple_results_preview(request):
     school = get_current_school(request)
 
-    years = AcademicYear.objects.filter(is_active=True).order_by("-year")
+    years = year_queryset(school)
     terms = Term.objects.all().order_by("order", "name")
     classes = Class.objects.filter(school=school, level__code="PLE").order_by("name")
     exam_types = ExamType.objects.filter(

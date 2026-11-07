@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% with tab=visit|yesno:"visit,exeat" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas {% if visit %}fa-user-friends{% else %}fa-sign-out-alt{% endif %}"></i> {{ title }}</h3>
+  <small class="text-muted">{% if visit %}Record who came to see a boarder.{% else %}Only parents marked "Allowed to pick up" can be chosen.{% endif %}</small>
+</div>
+
+<div class="card" style="max-width: 900px;"><div class="card-body">
+  <form method="post" novalidate id="pickupForm" data-guardians-url="{% url 'ajax_boarding_guardians' %}">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+    <div class="row">
+      {% for field in form %}
+        <div class="{% if field.name == 'student' or field.name == 'reason' or field.name == 'items_brought' %}col-md-12{% else %}col-md-6{% endif %}">
+          {% if field.name == "student" %}
+            {% include "dashboard/hostel/_student_picker.html" %}
+            <div id="guardianInfo" class="small mb-3"></div>
+          {% else %}
+            {% include "dashboard/hostel/_field.html" %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="d-flex justify-content-end">
+      <a href="{% if visit %}{% url 'boarding_visit_list' %}{% else %}{% url 'boarding_exeat_list' %}{% endif %}" class="btn btn-light mr-2">Cancel</a>
+      <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> {% if visit %}Sign visitor in{% else %}Save exeat{% endif %}</button>
+    </div>
+  </form>
+</div></div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+(function(){
+  var form = document.getElementById("pickupForm"), stu = document.getElementById("id_student"), info = document.getElementById("guardianInfo");
+  var parentSel = document.getElementById("id_pickup_guardian") || document.getElementById("id_guardian");
+  if(!stu || !parentSel) return;
+  var keep = parentSel.value;
+
+  async function load(){
+    parentSel.innerHTML = '<option value="">---------</option>';
+    info.innerHTML = "";
+    if(!stu.value) return;
+    var j = await (await fetch(form.dataset.guardiansUrl + "?student_id=" + stu.value)).json();
+    if(!j.guardians.length){ info.innerHTML = '<span class="text-warning">No parents are linked to this student. Type the pickup person instead.</span>'; return; }
+    var lines = [];
+    j.guardians.forEach(function(g){
+      var o = document.createElement("option");
+      o.value = g.id; o.textContent = g.name + " (" + g.relationship + ")" + (g.can_pick_up ? "" : " - NOT allowed to pick up");
+      if(!g.can_pick_up && document.getElementById("id_pickup_guardian")) o.disabled = true;
+      if(String(g.id) === keep) o.selected = true;
+      parentSel.appendChild(o);
+      lines.push("<b>" + g.name + "</b> " + g.relationship + ", " + (g.phone || "no phone") + (g.can_pick_up ? "" : ' <span class="text-danger">not allowed to pick up</span>'));
+    });
+    info.innerHTML = '<div class="text-muted">Linked parents:</div>' + lines.join("<br>");
+  }
+  stu.addEventListener("change", function(){ keep = ""; load(); });
+  load();
+})();
+</script>
+{% endblock %}

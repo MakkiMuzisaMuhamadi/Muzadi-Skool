@@ -1,100 +1,66 @@
 {% extends "dashboard/base.html" %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> Hostel Assignments</h3>
-    <small class="text-muted">Allocate rooms/beds to boarding students.</small>
+    <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> Allocations</h3>
+    <small class="text-muted">Who sleeps where. Ending or moving keeps the history.</small>
   </div>
-  <div class="d-flex" style="gap:.5rem;">
-    <a href="{% url 'hostel_assignment_create' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> Add Assignment
-    </a>
-  </div>
-</div>
-
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label">Status</label>
-        <select class="form-select" name="active">
-          <option value="">All</option>
-          <option value="1" {% if request.GET.active == "1" %}selected{% endif %}>Active</option>
-          <option value="0" {% if request.GET.active == "0" %}selected{% endif %}>Inactive</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filter</button>
-      </div>
-      <div class="col-md-3">
-        <a href="{% url 'hostel_assignment_list' %}" class="btn btn-outline-danger w-100">
-          <i class="fas fa-undo"></i> Reset
-        </a>
-      </div>
-    </form>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'hostel_release_allocations' %}" class="btn btn-outline-danger btn-sm"><i class="fas fa-sync-alt mr-1"></i> Free beds for new year</a>
+    <a href="{% url 'hostel_auto_allocate' %}" class="btn btn-success btn-sm"><i class="fas fa-magic mr-1"></i> Auto-allocate</a>
+    <a href="{% url 'hostel_assignment_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Give a bed</a>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body table-responsive">
-    <table id="assignTable" class="table table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Student</th>
-          <th>Hostel</th>
-          <th>Room</th>
-          <th>Bed</th>
-          <th>Start</th>
-          <th>End</th>
-          <th>Status</th>
-          <th class="text-right" style="width: 120px;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in rows %}
-          <tr>
-            <td class="fw-semibold">{{ a.student.name }}</td>
-            <td>{{ a.hostel.name }}</td>
-            <td>{{ a.room.room_number }}</td>
-            <td>{{ a.bed.bed_number }}</td>
-            <td>{{ a.start_date }}</td>
-            <td>{{ a.end_date|default:"-" }}</td>
-            <td>
-              {% if a.is_active %}
-                <span class="badge bg-success text-white">Active</span>
-              {% else %}
-                <span class="badge bg-danger text-white">Inactive</span>
-              {% endif %}
-            </td>
-            <td class="text-right">
-              <a href="{% url 'hostel_assignment_update' a.id %}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="{% url 'hostel_assignment_delete' a.id %}" class="btn btn-outline-danger btn-sm">
-                <i class="fas fa-trash"></i>
-              </a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="8" class="text-center text-muted py-4">No assignments found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+{% if unallocated_count %}
+<div class="alert alert-warning py-2">
+  <i class="fas fa-exclamation-triangle mr-1"></i> {{ unallocated_count }} boarder(s) have no bed.
+  <a href="{% url 'boarders_list' %}?allocation=none">See them</a> or <a href="{% url 'hostel_auto_allocate' %}">auto-allocate</a>.
 </div>
+{% endif %}
 
-<script>
-  (function(){
-    try {
-      if (window.$ && $.fn.DataTable) {
-        $('#assignTable').DataTable({
-          pageLength: 25,
-          order: [[4,'desc']],
-          responsive: true
-        });
-      }
-    } catch(e) {}
-  })();
-</script>
+<form method="get" class="row mb-3">
+  <div class="col-md-3 mb-2"><input type="text" name="q" value="{{ g.q|default:'' }}" class="form-control" placeholder="Name or admission no."></div>
+  <div class="col-md-3 mb-2"><select name="hostel_id" class="form-control">
+    <option value="">All dormitories</option>
+    {% for h in hostels %}<option value="{{ h.id }}" {% if g.hostel_id == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>{% endfor %}
+  </select></div>
+  <div class="col-md-3 mb-2"><select name="active" class="form-control">
+    <option value="1" {% if active == "1" %}selected{% endif %}>Current</option>
+    <option value="0" {% if active == "0" %}selected{% endif %}>History (ended)</option>
+    <option value="all" {% if active == "all" %}selected{% endif %}>All</option>
+  </select></div>
+  <div class="col-md-3 mb-2"><button class="btn btn-success"><i class="fas fa-filter mr-1"></i> Apply</button></div>
+</form>
+
+<div class="card"><div class="card-body">
+  <table id="allocTable" class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>Student</th><th>Class</th><th>Dormitory</th><th>Room</th><th>Bed</th><th>From</th><th>To</th><th>Term</th><th class="text-right">Actions</th></tr></thead>
+    <tbody>
+    {% for a in rows %}
+      <tr>
+        <td class="font-weight-bold">{{ a.student.name }} <small class="text-muted d-block">{{ a.student.admission_number }}</small></td>
+        <td>{{ a.student.current_class.name|default:"-" }}</td>
+        <td>{{ a.hostel.name }}</td>
+        <td>{{ a.room.room_number }}</td>
+        <td>{{ a.bed.bed_number }}</td>
+        <td>{{ a.start_date|date:"d M Y" }}</td>
+        <td>{% if a.is_active %}<span class="badge bg-success text-white">Current</span>{% else %}{{ a.end_date|date:"d M Y" }}<small class="text-muted d-block">{{ a.get_end_reason_display }}</small>{% endif %}</td>
+        <td>{{ a.term.name|default:"-" }}</td>
+        <td class="text-right text-nowrap">
+          {% if a.is_active %}
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'hostel_assignment_move' a.id %}" title="Move to another bed"><i class="fas fa-exchange-alt"></i> Move</a>
+            <a class="btn btn-sm btn-outline-warning" href="{% url 'hostel_assignment_end' a.id %}" title="End allocation"><i class="fas fa-door-closed"></i> End</a>
+          {% endif %}
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'hostel_assignment_update' a.id %}" title="Notes"><i class="fas fa-edit"></i></a>
+          <a class="btn btn-sm btn-outline-danger" href="{% url 'hostel_assignment_delete' a.id %}" title="Delete (mistakes only)"><i class="fas fa-trash"></i></a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9" class="text-center text-muted py-4">No allocations match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
 {% endblock %}
+{% block extrajs %}{% with table_id="allocTable" %}{% include "dashboard/hostel/_datatable.html" %}{% endwith %}{% endblock %}

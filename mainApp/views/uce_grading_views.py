@@ -1,5 +1,6 @@
 from mainApp.grading_checks import uce_scale_issues
 # mainApp/views/uce_grading_views.py
+from mainApp.academic_period import year_queryset
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -170,7 +171,7 @@ def uce_results_preview(request):
     """
     school = get_current_school(request)
 
-    years = AcademicYear.objects.filter(is_active=True).order_by("-year")
+    years = year_queryset(school)
     terms = Term.objects.all().order_by("order", "name")
     classes = Class.objects.filter(school=school, level__code="UCE").order_by("name")
     exam_types = ExamType.objects.filter(scheme__school=school, scheme__level__code="UCE", is_active=True).order_by("name")

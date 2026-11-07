@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 def send_sms_campaign(campaign_id, batch_size=50):
     """Send every PENDING message of an SmsCampaign (used by fee reminders). Safe to run twice."""
     from mainApp.models.communication_models import SmsMessage
+    from mainApp.models.communication_models import SmsCampaign
     from mainApp.sms_service import AfricaTalkingSMS
 
-    svc = AfricaTalkingSMS()
+    campaign = SmsCampaign.objects.select_related("school").filter(pk=campaign_id).first()
+    svc = AfricaTalkingSMS(school=campaign.school if campaign else None)
     sent = failed = 0
     while True:
         batch = list(SmsMessage.objects.filter(campaign_id=campaign_id, status="PENDING")

@@ -1,0 +1,113 @@
+{% comment %}
+  Automatic sign-out after inactivity (see mainApp/session_timeout.py).
+  Included by dashboard/base.html. Renders nothing when the timeout is off.
+{% endcomment %}
+{% if session_idle_timeout %}
+<div id="idleWarning" role="alertdialog" aria-live="assertive" aria-labelledby="idleWarningTitle"
+     style="position:fixed;inset:0;z-index:20000;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;color:#1f2937;border-radius:12px;max-width:380px;width:100%;padding:22px 22px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25);text-align:center;">
+    <div style="font-size:30px;line-height:1;margin-bottom:8px;color:#f59e0b;"><i class="fas fa-user-clock"></i></div>
+    <h5 id="idleWarningTitle" style="margin:0 0 6px;font-weight:600;">Are you still there?</h5>
+    <p style="margin:0 0 14px;font-size:.92rem;color:#4b5563;">
+      For your security you will be signed out in <strong id="idleCountdown">1:00</strong>.
+    </p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button type="button" id="idleStay" class="btn btn-primary btn-sm">Stay signed in</button>
+      <button type="button" id="idleLeave" class="btn btn-outline-secondary btn-sm">Sign out now</button>
+    </div>
+  </div>
+</div>
+<form id="idleLogoutForm" method="post" action="{{ session_idle_logout_url }}" hidden>{% csrf_token %}</form>
+<script>
+(function () {
+  var TIMEOUT = {{ session_idle_timeout|default:0 }} * 1000;
+  var WARNING = {{ session_idle_warning|default:60 }} * 1000;
+  var PING_EVERY = Math.min(60000, Math.max(15000, TIMEOUT / 4));
+  var KEEPALIVE_URL = "{{ session_keepalive_url }}";
+  var STORE_KEY = "mz_last_activity";
+  if (!TIMEOUT) return;
+
+  var box = document.getElementById('idleWarning');
+  var countdown = document.getElementById('idleCountdown');
+  var form = document.getElementById('idleLogoutForm');
+  var csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
+  var memoryLast = Date.now();
+  var lastPing = Date.now();   // the page load itself counted as activity
+  var signingOut = false;
+  var warningOpen = false;
+  function showWarning() { warningOpen = true; box.style.display = 'flex'; document.getElementById('idleStay').focus(); }
+  function hideWarning() { warningOpen = false; box.style.display = 'none'; }
+
+  // Activity is shared between tabs of the same browser (localStorage may be blocked).
+  function readLast() {
+    try { var v = parseInt(window.localStorage.getItem(STORE_KEY), 10); if (v > memoryLast) memoryLast = v; } catch (e) {}
+    return memoryLast;
+  }
+  function writeLast(t) {
+    memoryLast = t;
+    try { window.localStorage.setItem(STORE_KEY, String(t)); } catch (e) {}
+  }
+
+  function ping() {
+    lastPing = Date.now();
+    return fetch(KEEPALIVE_URL, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' }
+    }).then(function (r) {
+      if (r.status === 401) { signOut(); }
+    }).catch(function () { /* offline: the server decides next time */ });
+  }
+
+  function signOut() {
+    if (signingOut) return;
+    signingOut = true;
+    form.submit();
+  }
+
+  function activity() {
+    if (signingOut || warningOpen) return;   // while the warning is open only the button counts
+    var now = Date.now();
+    writeLast(now);
+    if (now - lastPing >= PING_EVERY) ping();
+  }
+
+  ['mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'].forEach(function (ev) {
+    window.addEventListener(ev, activity, { passive: true, capture: true });
+  });
+  var lastMove = 0;
+  window.addEventListener('mousemove', function () {
+    var now = Date.now();
+    if (now - lastMove > 5000) { lastMove = now; activity(); }
+  }, { passive: true });
+
+  document.getElementById('idleStay').addEventListener('click', function () {
+    hideWarning();
+    writeLast(Date.now());
+    ping();
+  });
+  document.getElementById('idleLeave').addEventListener('click', signOut);
+
+  function fmt(ms) {
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+
+  function tick() {
+    if (signingOut) return;
+    var idle = Date.now() - readLast();
+    var left = TIMEOUT - idle;
+    if (left <= 0) { signOut(); return; }
+    if (left <= WARNING) {
+      countdown.textContent = fmt(left);
+      if (!warningOpen) showWarning();
+    } else if (warningOpen) {
+      hideWarning();   // another tab was used
+    }
+  }
+
+  writeLast(Date.now());
+  setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
+})();
+</script>
+{% endif %}

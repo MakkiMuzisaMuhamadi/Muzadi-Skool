@@ -1,0 +1,20 @@
+# /etc/systemd/system/school360-celery-reports.service  - report card PDFs
+# Heavy (WeasyPrint). Keep concurrency low on a small VPS; raise it (or start a
+# second copy) in report-card week.
+[Unit]
+Description=School360 Celery worker (reports queue)
+After=network.target redis-server.service postgresql.service
+
+[Service]
+User=school360
+Group=www-data
+WorkingDirectory=/srv/school360/app
+EnvironmentFile=/srv/school360/app/.env
+ExecStart=/srv/school360/venv/bin/celery -A school360 worker -Q reports -l info \
+    --pool=prefork --concurrency=1 --prefetch-multiplier=1 --hostname=reports@%%h
+Restart=always
+RestartSec=10
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

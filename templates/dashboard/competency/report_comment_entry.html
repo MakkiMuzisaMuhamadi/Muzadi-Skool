@@ -1,0 +1,119 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<style>
+  .lc-result { font-size: .8rem; line-height: 1.3; }
+  .lc-result .big { font-size: 1rem; font-weight: 800; }
+  .lc-auto { font-size: .75rem; color: #6c757d; margin-top: .2rem; }
+  .lc-auto b { color: #495057; }
+  .lc-table textarea { min-width: 220px; }
+</style>
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-comment-dots"></i> {{ title }}</h3>
+    <small class="text-muted">
+      Write a personal comment, conduct and activities for each learner. Leave a comment box blank to use the
+      automatic comment (shown in grey under the box){% if is_admin %} from <a href="{% url 'report_auto_comment_list' %}">Report Setup &rarr; Automatic Comments</a>{% endif %}.
+    </small>
+  </div>
+</div>
+
+{% include "dashboard/competency/_picker.html" %}
+
+{% if rows is not None %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+      <div>
+        <strong>{{ class_ref }}</strong>{% if stream %} &bull; {{ stream.name }}{% endif %} &bull; {{ term.academic_year }} {{ term }}
+        {% if not is_admin %}<small class="text-muted ml-2">(Head teacher comments and promotion text are set by the admin.)</small>{% endif %}
+      </div>
+      <button class="btn btn-success btn-sm mt-2 mt-md-0"><i class="fas fa-save mr-1"></i> Save all</button>
+    </div>
+    <div class="card-body">
+      {% if not has_performance %}
+        <div class="alert alert-light border small mb-3">
+          <i class="fas fa-info-circle"></i>
+          Results (average, grade, position) appear here once the term's results have been computed
+          (Report Command Center &rarr; Generate). You can still write comments now.
+        </div>
+      {% endif %}
+
+      <datalist id="conductOptions">
+        {% for c in conduct_choices %}<option value="{{ c }}">{% endfor %}
+      </datalist>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-striped w-100 lc-table">
+          <thead>
+            <tr>
+              <th style="width:16%">Learner</th>
+              <th style="width:11%">Result</th>
+              <th>Class teacher comment</th>
+              <th>Head teacher comment</th>
+              <th style="width:16%">Conduct &amp; activities</th>
+              {% if is_admin %}<th style="width:12%">Promotion text (optional)</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            {% with st=row.student c=row.comment p=row.perf %}
+            <tr>
+              <td><strong>{{ st }}</strong><br><small class="text-muted">{{ st.admission_number }}</small></td>
+              <td class="lc-result">
+                {% if p %}
+                  {% if level_code == "PLE" and p.division %}
+                    <div class="big">{{ p.division }}</div>
+                    <div>Agg: {{ p.aggregate|default:"-" }}</div>
+                  {% elif level_code == "UACE" %}
+                    <div class="big">{{ p.points|default:"-" }} pts</div>
+                  {% else %}
+                    <div class="big">{{ p.grade_letter|default:"-" }}</div>
+                  {% endif %}
+                  <div>Avg: {{ p.percentage|floatformat:1 }}%</div>
+                  {% if p.class_position %}<div>Pos: {{ p.class_position }}</div>{% endif %}
+                  {% if p.trend == "IMPROVED" %}<span class="text-success small"><i class="fas fa-arrow-up"></i> improved</span>
+                  {% elif p.trend == "DECLINED" %}<span class="text-danger small"><i class="fas fa-arrow-down"></i> dropped</span>{% endif %}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                <textarea name="ct_{{ st.id }}" rows="2" class="form-control form-control-sm" placeholder="Leave blank for the automatic comment">{{ c.class_teacher_comment|default:'' }}</textarea>
+                {% if row.auto_ct %}<div class="lc-auto"><b>Automatic:</b> {{ row.auto_ct }}</div>{% endif %}
+              </td>
+              <td>
+                {% if is_admin %}
+                  <textarea name="ht_{{ st.id }}" rows="2" class="form-control form-control-sm" placeholder="Leave blank for the automatic comment">{{ c.head_teacher_comment|default:'' }}</textarea>
+                  {% if row.auto_ht %}<div class="lc-auto"><b>Automatic:</b> {{ row.auto_ht }}</div>{% endif %}
+                {% else %}
+                  <span class="text-muted small">{{ c.head_teacher_comment|default:row.auto_ht|default:"Automatic" }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <input type="text" name="cd_{{ st.id }}" list="conductOptions" maxlength="60"
+                       class="form-control form-control-sm mb-1" placeholder="Conduct, e.g. Very good"
+                       value="{{ c.conduct|default:'' }}">
+                <input type="text" name="cc_{{ st.id }}" maxlength="255"
+                       class="form-control form-control-sm" placeholder="Clubs, sports, roles"
+                       value="{{ c.co_curricular|default:'' }}">
+              </td>
+              {% if is_admin %}
+              <td><input type="text" name="pr_{{ st.id }}" maxlength="120" class="form-control form-control-sm" value="{{ c.promotion_state|default:'' }}" placeholder="From promotion"></td>
+              {% endif %}
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No learners found in this class for the term.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-success"><i class="fas fa-save mr-1"></i> Save all</button>
+    </div>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

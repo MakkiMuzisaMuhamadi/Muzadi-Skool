@@ -231,6 +231,35 @@ def compute_ple_subject_percentage(
     return final_pct.quantize(Decimal("0.01"))
 
 
+def ple_subjects_offered_in_class(
+    *,
+    school,
+    academic_year_id,
+    term_id,
+    class_ref_id,
+    stream_id,
+) -> set:
+    """
+    Subject ids that have marks entered for this class/term (any learner).
+    This keeps P.7 subjects off a P.1 report and vice versa.
+    """
+    qs = MarkEntryExam.objects.filter(
+        marksheet__school=school,
+        marksheet__academic_year_id=academic_year_id,
+        marksheet__term_id=term_id,
+        marksheet__class_ref_id=class_ref_id,
+        marksheet__level__code="PLE",
+        marksheet__exam_type__applies_to="SUBJECT",
+        marksheet__exam_type__is_active=True,
+        subject__isnull=False,
+    )
+    if stream_id:
+        qs = qs.filter(marksheet__stream_id=stream_id)
+    else:
+        qs = qs.filter(marksheet__stream__isnull=True)
+    return set(qs.values_list("subject_id", flat=True).distinct())
+
+
 def compute_ple_overall_for_student(
     *,
     school,
@@ -244,14 +273,31 @@ def compute_ple_overall_for_student(
 ) -> dict:
     # IMPORTANT:
     # Your Subject model does not have is_active, so do not filter by it.
-    subjects = Subject.objects.filter(
-        level_id=level_id,
-    ).order_by("short_name", "name")
+    all_subjects = list(
+        Subject.objects.filter(level_id=level_id).order_by("short_name", "name")
+    )
+
+    # Only subjects taught/marked in this class (P.1 vs P.7 differ).
+    offered_ids = ple_subjects_offered_in_class(
+        school=school,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        class_ref_id=class_ref_id,
+        stream_id=stream_id,
+    )
+    subjects = [s for s in all_subjects if s.id in offered_ids] if offered_ids else all_subjects
+
+    # Only examinable subjects (English, Maths, Science, SST) add to aggregates.
+    # If a school has not marked any subject as counting, fall back to all.
+    aggregate_flags = {s.id: bool(getattr(s, "include_in_aggregate", True)) for s in subjects}
+    if subjects and not any(aggregate_flags.values()):
+        aggregate_flags = {sid: True for sid in aggregate_flags}
 
     subject_details = []
     attempted_subjects = 0
     valid_graded_subjects = 0
     total_aggregates = 0
+    all_pcts: List[Decimal] = []
 
     for subj in subjects:
         pct = compute_ple_subject_percentage(
@@ -265,16 +311,24 @@ def compute_ple_overall_for_student(
         )
 
         grade_data = ple_grade_for_percentage(scale, pct)
+        counts = aggregate_flags.get(subj.id, True)
 
         row = {
             "subject": subj,
             "percentage": float(pct) if pct is not None else None,
             "grade": grade_data["grade_letter"],
             "grade_name": grade_data["grade_name"],
-            "aggregate_point": grade_data["aggregate_point"],
+            "aggregate_point": grade_data["aggregate_point"] if counts else None,
             "attempted": pct is not None,
+            "counts_for_aggregate": counts,
         }
         subject_details.append(row)
+
+        if pct is not None:
+            all_pcts.append(_D(pct))
+
+        if not counts:
+            continue
 
         if pct is not None:
             attempted_subjects += 1
@@ -284,48 +338,38 @@ def compute_ple_overall_for_student(
             total_aggregates += grade_data["aggregate_point"]
 
     required = scale.required_subjects if scale else 0
+    average_percentage = (
+        float((sum(all_pcts, Decimal("0")) / Decimal(len(all_pcts))).quantize(Decimal("0.1")))
+        if all_pcts else None
+    )
+    shows_division = scale.shows_division_for(class_ref_id) if scale else True
 
-    if not scale:
-        return {
-            "student": student,
-            "attempted_subjects": attempted_subjects,
-            "required_subjects": required,
-            "total_aggregates": None,
-            "final_division": "X",
-            "subject_details": subject_details,
-            "remarks": "No active PLE grading scale.",
-        }
-
-    if attempted_subjects < required:
-        return {
-            "student": student,
-            "attempted_subjects": attempted_subjects,
-            "required_subjects": required,
-            "total_aggregates": None,
-            "final_division": "X",
-            "subject_details": subject_details,
-            "remarks": "Ungraded because the student did not attempt all required subjects.",
-        }
-
-    if valid_graded_subjects < required:
-        return {
-            "student": student,
-            "attempted_subjects": attempted_subjects,
-            "required_subjects": required,
-            "total_aggregates": None,
-            "final_division": "X",
-            "subject_details": subject_details,
-            "remarks": "Ungraded because some attempted subjects could not be mapped to grading boundaries.",
-        }
-
-    division_data = ple_division_for_aggregate(scale, total_aggregates)
-
-    return {
+    base = {
         "student": student,
         "attempted_subjects": attempted_subjects,
         "required_subjects": required,
-        "total_aggregates": total_aggregates,
-        "final_division": division_data["division"],
         "subject_details": subject_details,
-        "remarks": division_data["remarks"],
+        "average_percentage": average_percentage,
+        "shows_division": shows_division,
     }
+
+    if not scale:
+        return {**base, "total_aggregates": None, "final_division": "X",
+                "remarks": "No active PLE grading scale."}
+
+    # Classes that do not use divisions (e.g. P.1 - P.3 thematic): grades + average only.
+    if not shows_division:
+        return {**base, "total_aggregates": None, "final_division": "", "remarks": ""}
+
+    if attempted_subjects < required:
+        return {**base, "total_aggregates": None, "final_division": "X",
+                "remarks": "Ungraded because the student did not attempt all required subjects."}
+
+    if valid_graded_subjects < required:
+        return {**base, "total_aggregates": None, "final_division": "X",
+                "remarks": "Ungraded because some attempted subjects could not be mapped to grading boundaries."}
+
+    division_data = ple_division_for_aggregate(scale, total_aggregates)
+
+    return {**base, "total_aggregates": total_aggregates,
+            "final_division": division_data["division"], "remarks": division_data["remarks"]}

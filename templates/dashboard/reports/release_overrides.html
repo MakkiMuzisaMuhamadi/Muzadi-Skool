@@ -1,0 +1,122 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> Allowed Despite Balance</h3>
+  <small class="text-muted">Let individual learners see their report card even though fees are not cleared.</small>
+</div>
+
+{% if not setting.withhold_reports_for_defaulters %}
+  <div class="alert alert-info">
+    Report cards are <b>not</b> being withheld for fees right now, so nobody is on hold.
+    Turn it on in <a href="{% url 'report_release_settings' %}">Fees Hold Settings</a>.
+  </div>
+{% endif %}
+
+<form method="get" class="card mb-3">
+  <div class="card-body pb-1">
+    <div class="form-row align-items-end">
+      <div class="form-group col-md-4">
+        <label>Term</label>
+        <select name="term_id" class="form-control">
+          {% for t in terms %}
+            <option value="{{ t.id }}" {% if term and t.id == term.id %}selected{% endif %}>{{ t.academic_year }} - {{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label>Class</label>
+        <select name="class_ref_id" class="form-control">
+          <option value="">Select class</option>
+          {% for c in classes %}
+            <option value="{{ c.id }}" {% if class_ref and c.id == class_ref.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label>Stream</label>
+        <select name="stream_id" class="form-control">
+          <option value="">All streams</option>
+          {% for s in streams %}
+            <option value="{{ s.id }}" {% if stream and s.id == stream.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-2">
+        <button class="btn btn-primary btn-block"><i class="fas fa-search"></i> Show</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if class_ref %}
+<div class="card mb-3">
+  <div class="card-header"><strong>{{ class_ref }}{% if stream %} {{ stream.name }}{% endif %} &bull; {{ term }}</strong> &mdash; learners on fees hold</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr><th>Learner</th><th>Balance</th><th>Status</th><th style="min-width: 340px;">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.student }}</strong><br><small class="text-muted">{{ row.student.admission_number }}</small></td>
+            <td>UGX {{ row.hold.balance|floatformat:0|intcomma }}</td>
+            <td>
+              {% if row.override %}
+                <span class="badge badge-success">Allowed</span>
+                <small class="d-block text-muted">{{ row.override.reason }}{% if row.override.allowed_by %} &ndash; {{ row.override.allowed_by.get_full_name|default:row.override.allowed_by.username }}{% endif %}</small>
+              {% else %}
+                <span class="badge badge-danger">On hold</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" class="form-inline" style="gap:.35rem;">
+                {% csrf_token %}
+                <input type="hidden" name="student_id" value="{{ row.student.id }}">
+                <input type="hidden" name="term_id" value="{{ term.id }}">
+                {% if row.override %}
+                  <button name="action" value="revoke" class="btn btn-sm btn-outline-danger">Hold again</button>
+                {% else %}
+                  <input type="text" name="reason" class="form-control form-control-sm" style="min-width: 220px;"
+                         placeholder="Reason, e.g. payment plan" maxlength="255">
+                  <button name="action" value="allow" class="btn btn-sm btn-success">Allow</button>
+                {% endif %}
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted py-3">No learner in this class is on fees hold for this term.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><strong>Everyone allowed for {{ term }}</strong></div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>Learner</th><th>Class</th><th>Reason</th><th>Allowed by</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for o in all_overrides %}
+          <tr>
+            <td>{{ o.student }}</td>
+            <td>{{ o.student.current_class|default:"-" }}</td>
+            <td>{{ o.reason }}</td>
+            <td>{{ o.allowed_by.get_full_name|default:o.allowed_by.username|default:"-" }}</td>
+            <td>{{ o.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">Nobody yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

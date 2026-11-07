@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% with tab="visit" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-user-friends"></i> Visitors</h3>
+    <small class="text-muted">{{ day|date:"l d M Y" }}: {{ rows|length }} visit(s), {{ inside }} visitor(s) still inside.</small>
+  </div>
+  <a href="{% url 'boarding_visit_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Sign in a visitor</a>
+</div>
+
+<form method="get" class="form-inline mb-3">
+  <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-control mr-2" onchange="this.form.submit()">
+  <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="fas fa-print"></i></button>
+</form>
+
+<div class="card"><div class="card-body">
+  <table class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>In</th><th>Visitor</th><th>Phone</th><th>Visiting</th><th>Items brought</th><th>Out</th></tr></thead>
+    <tbody>
+    {% for v in rows %}
+      <tr>
+        <td>{{ v.time_in|date:"H:i" }}</td>
+        <td class="font-weight-bold">{{ v.visitor_name }}<small class="text-muted d-block">{{ v.relationship }}{% if v.id_number %} | ID {{ v.id_number }}{% endif %}</small></td>
+        <td>{{ v.visitor_phone|default:"-" }}</td>
+        <td>{{ v.student.name }}<small class="text-muted d-block">{{ v.student.current_class.name|default:"" }}</small></td>
+        <td>{{ v.items_brought|default:"-"|linebreaksbr }}</td>
+        <td>{% if v.time_out %}{{ v.time_out|date:"H:i" }}{% else %}
+          <form method="post" action="{% url 'boarding_visit_sign_out' v.id %}">{% csrf_token %}<button class="btn btn-sm btn-outline-primary">Sign out</button></form>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No visitors recorded on this day.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

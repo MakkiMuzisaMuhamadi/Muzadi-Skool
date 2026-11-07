@@ -9,18 +9,35 @@ from mainApp.models.report_template_models import (
 
 
 DEFAULT_SECTIONS = [
+    # (key, title, recommended order) - the order a parent reads a report card
     ("student_info", "Student Information", 1),
     ("academic_table", "Academic Performance", 2),
     ("summary_strip", "Average / Overall", 3),
     ("competencies", "Competency Assessment", 4),
     ("projects", "Projects", 5),
-    ("teacher_comment", "Class Teacher Comment", 6),
-    ("head_comment", "Head Teacher Comment", 7),
-    ("promotion", "Promotion / Recommendation", 8),
-    ("grade_legend", "Grade Legend", 9),
-    ("signatures", "Signatures", 10),
+    ("generic_skills", "Generic Skills & Values", 6),
+    ("attendance", "Attendance", 7),
+    ("conduct", "Conduct & Co-curricular Activities", 8),
+    ("teacher_comment", "Class Teacher Comment", 9),
+    ("head_comment", "Head Teacher Comment", 10),
+    ("promotion", "Promotion / Recommendation", 11),
     ("next_term", "Next Term Begins", 12),
+    ("fees", "Fees", 13),
+    ("grade_legend", "Grade Legend", 14),
+    ("signatures", "Signatures", 15),
 ]
+
+RECOMMENDED_ORDER = {key: order for key, _title, order in DEFAULT_SECTIONS}
+
+# Template switches that duplicate a section's "Visible" tick. The Sections page is
+# the one place to control them; these are kept in step with it.
+SECTION_SHOW_FLAGS = {
+    "teacher_comment": "show_class_teacher_comment",
+    "head_comment": "show_head_teacher_comment",
+    "promotion": "show_promotion_status",
+    "grade_legend": "show_grade_legend",
+    "signatures": "show_signatures",
+}
 
 
 def ensure_default_template_sections(template: ReportCardTemplate):
@@ -36,6 +53,27 @@ def ensure_default_template_sections(template: ReportCardTemplate):
                 is_visible=True,
                 is_boxed=True,
             )
+
+
+def reset_sections_to_recommended_order(template: ReportCardTemplate):
+    ensure_default_template_sections(template)
+    for section in template.sections.all():
+        order = RECOMMENDED_ORDER.get(section.section_key)
+        if order and section.sort_order != order:
+            section.sort_order = order
+            section.save(update_fields=["sort_order"])
+
+
+def sync_show_flags_from_sections(template: ReportCardTemplate):
+    """Make the old show_* switches follow the section 'Visible' ticks."""
+    changed = []
+    visible = dict(template.sections.values_list("section_key", "is_visible"))
+    for key, flag in SECTION_SHOW_FLAGS.items():
+        if key in visible and getattr(template, flag) != visible[key]:
+            setattr(template, flag, visible[key])
+            changed.append(flag)
+    if changed:
+        template.save(update_fields=changed + ["updated_at"])
 
 
 def ensure_default_signature_roles(template: ReportCardTemplate):
@@ -116,6 +154,9 @@ def serialize_template_snapshot(template: Optional[ReportCardTemplate]) -> Dict[
     if not template:
         return {}
 
+    # Older templates do not have newer sections (e.g. Generic Skills) yet.
+    ensure_default_template_sections(template)
+
     signature_roles = []
 
     for r in template.signature_roles.all().order_by("sort_order", "id"):
@@ -188,7 +229,8 @@ def serialize_template_snapshot(template: Optional[ReportCardTemplate]) -> Dict[
                 "custom_text": s.custom_text,
                 "config_json": s.config_json,
             }
-            for s in template.sections.all().order_by("sort_order", "id")
+            # fresh query: prefetched sections would miss ones just added above
+            for s in ReportCardSection.objects.filter(template=template).order_by("sort_order", "id")
         ],
 
         "signature_roles": signature_roles,

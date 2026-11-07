@@ -7,10 +7,13 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
+from urllib.parse import urlencode
 
 from mainApp.decorators import role_required
 from mainApp.forms.forms_exams import MarksFilterForm
+from mainApp.academic_period import school_current_year_term
+from mainApp.marks_filters import MarksFilterOptions, teacher_mark_lists
 from mainApp.models.calendar import AcademicYear, Term
 from mainApp.models.exams_models import ExamType, MarkEntryExam, MarkEntryWindow, MarkSheet
 from mainApp.models.models import Class, Stream
@@ -34,11 +37,12 @@ from mainApp.views.teacher_alloc_utils import get_current_school
 # ---------------------------------------------------------------------------
 # Shared: read the filter and resolve the selected session
 # ---------------------------------------------------------------------------
-def resolve_selection(request, school, data=None):
+def resolve_selection(request, school, data=None, notify=True):
     """
     Validates the Year/Term/Class/Stream/ExamType/Subject/Paper selection.
     Returns (filter_form, selection_dict_or_None).
     Raises PermissionDenied if the user may not enter marks for the selection.
+    notify=False: do not add flash messages (used by the offline app's JSON endpoints).
     """
     filter_form = MarksFilterForm(data=data if data is not None else (request.GET or None),
                                   school=school, user=request.user)
@@ -63,6 +67,12 @@ def resolve_selection(request, school, data=None):
         filter_form.add_error("exam_type", "This exam type belongs to a different term/year.")
     if exam_type.scheme.level_id != class_ref.level_id:
         filter_form.add_error("exam_type", "This exam type is for a different level than the class.")
+    if getattr(exam_type, "source", "MARKS") == "AOI":
+        filter_form.add_error(
+            "exam_type",
+            "Marks for this exam type are filled automatically from competency (AOI) scores. "
+            "Enter scores under Competencies instead.",
+        )
 
     if exam_type.applies_to == "SUBJECT":
         if not subject:
@@ -76,15 +86,17 @@ def resolve_selection(request, school, data=None):
         filter_form.add_error("exam_type", "Invalid exam type configuration.")
 
     try:
-        validate_marks_entry_open(term)
+        validate_marks_entry_open(term, school)
     except ValidationError as e:
         # Not fatal for viewing — the page shows marks read-only.
-        messages.warning(request, "; ".join(e.messages))
+        if notify:
+            messages.warning(request, "; ".join(e.messages))
 
     if filter_form.errors:
         return filter_form, None
 
-    assert_can_enter_marks(request.user, class_ref=class_ref, stream=stream, subject=subject, paper=paper)
+    assert_can_enter_marks(request.user, class_ref=class_ref, stream=stream, subject=subject, paper=paper,
+                           academic_year=ay)
 
     return filter_form, {
         "academic_year": ay,
@@ -159,6 +171,44 @@ def build_session(request, school, sel):
 
 
 # ---------------------------------------------------------------------------
+# Dropdown options (one call returns every list, already filtered)
+# ---------------------------------------------------------------------------
+@login_required
+@role_required(list(ENTRY_ROLES))
+@require_GET
+def marks_filter_options(request):
+    """
+    GET /marks/filter-options/?academic_year=..&term=..&class_ref=..&stream=..&exam_type=..&subject=..&paper=..
+    Returns the options of every dropdown for the current selection.
+    Teachers only get what is allocated to them. defaults=1 opens on the school's current year/term.
+    """
+    school = get_current_school(request)
+    opts = MarksFilterOptions(request.user, school, request.GET, defaults=request.GET.get("defaults") == "1")
+    return JsonResponse(opts.as_json())
+
+
+def _my_lists(request, school, filter_form):
+    """Quick links for a teacher: every mark list of the selected (or current) term."""
+    if not hasattr(request.user, "teacher") or is_admin(request.user):
+        return []
+    sel = filter_form.options.selected
+    year = AcademicYear.objects.filter(id=sel.get("academic_year") or 0).first()
+    term = Term.objects.filter(id=sel.get("term") or 0, academic_year=year).first() if year else None
+    if not term:
+        year, term = school_current_year_term(school)
+    current = {k: v for k, v in request.GET.items() if v and k in sel}
+    items = []
+    for item in teacher_mark_lists(request.user, school, year, term):
+        params = item["params"]
+        items.append({
+            "title": item["title"], "exam": item["exam"], "url": "?" + urlencode(params),
+            "active": all(current.get(k) == v for k, v in params.items() if k != "subject" or not params.get("paper"))
+                      and set(current) <= set(params),
+        })
+    return items
+
+
+# ---------------------------------------------------------------------------
 # Enter Marks page
 # ---------------------------------------------------------------------------
 @login_required
@@ -183,6 +233,7 @@ def marks_entry(request):
         "can_submit": False,
         "is_admin": is_admin(request.user),
         "query_string": request.GET.urlencode(),
+        "my_lists": _my_lists(request, school, filter_form),
     }
 
     if sel:
@@ -293,14 +344,14 @@ def marks_submit(request):
 
     ids = [i for i in (request.POST.get("window_ids") or "").split(",") if i.strip().isdigit()]
     windows = MarkEntryWindow.objects.select_related(
-        "marksheet", "marksheet__term", "marksheet__class_ref", "marksheet__stream", "subject", "paper", "paper__subject",
+        "marksheet", "marksheet__term", "marksheet__academic_year", "marksheet__class_ref", "marksheet__stream", "subject", "paper", "paper__subject",
     ).filter(id__in=ids, marksheet__school=school)
 
     submitted = 0
     for w in windows:
         try:
             assert_can_enter_marks(request.user, class_ref=w.marksheet.class_ref, stream=w.marksheet.stream,
-                                   subject=w.subject, paper=w.paper)
+                                   subject=w.subject, paper=w.paper, academic_year=w.marksheet.academic_year)
         except PermissionDenied:
             continue
         if w.submission_status not in ("DRAFT", "RETURNED"):
@@ -348,7 +399,8 @@ def marks_audit(request):
         if not is_admin(request.user):
             assert_can_enter_marks(request.user, class_ref=class_ref, stream=stream,
                                    subject=subject if exam_type.applies_to == "SUBJECT" else None,
-                                   paper=paper if exam_type.applies_to == "PAPER" else None)
+                                   paper=paper if exam_type.applies_to == "PAPER" else None,
+                                   academic_year=exam_type.scheme.academic_year)
 
         marks = MarkEntryExam.objects.filter(
             marksheet__school=school,

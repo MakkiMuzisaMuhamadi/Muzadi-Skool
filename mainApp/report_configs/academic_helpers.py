@@ -56,3 +56,54 @@ def get_next_term_begin_display(*, academic_year_id, term_id) -> str:
 
 
 
+
+
+def get_report_promotion_text(*, school, student, academic_year_id, term_id=None):
+    """
+    The 'Status / Recommendation' line on a report card.
+
+    Promotion is a year-end decision, so it only appears on the report of
+    the term the decision belongs to (the final term). Term 1 / Term 2
+    reports of the same year stay blank even if regenerated later.
+    Drafts are shown too, because final-term reports are printed before
+    the learners are actually moved.
+    """
+    decision = (
+        StudentPromotionDecision.objects.filter(
+            school=school,
+            student=student,
+            academic_year_id=academic_year_id,
+        )
+        .select_related("to_class", "from_class")
+        .order_by("-id")
+        .first()
+    )
+
+    if not decision:
+        return ""
+    if term_id and decision.term_id and int(decision.term_id) != int(term_id):
+        return ""
+
+    if decision.status == "PROMOTED":
+        if decision.to_class:
+            return f"Promoted to Next Class ({decision.to_class.name})"
+        return "Promoted to Next Class"
+
+    if decision.status == "RETAINED":
+        if decision.from_class:
+            return f"Retained in Current Class ({decision.from_class.name})"
+        return "Retained in Current Class"
+
+    if decision.status == "DEMOTED":
+        if decision.to_class:
+            return f"Demoted to {decision.to_class.name}"
+        return "Demoted to a Lower Class"
+
+    if decision.status == "COMPLETED_CYCLE":
+        return "Completed Cycle, Awaiting Readmission"
+
+    if decision.status == "GRADUATED":
+        return "Graduated"
+
+    # PENDING / CANCELLED: nothing decided yet.
+    return ""

@@ -24,6 +24,7 @@ class UACEGradingScaleForm(forms.ModelForm):
             "required_subsidiary_subjects",
             "require_general_paper",
             "max_total_points",
+            "ca_weight_percent",
             "is_active",
         ]
         widgets = {
@@ -45,6 +46,12 @@ class UACEGradingScaleForm(forms.ModelForm):
             "max_total_points": forms.NumberInput(attrs={
                 "class": BOOTSTRAP_INPUT,
                 "min": 1,
+            }),
+            "ca_weight_percent": forms.NumberInput(attrs={
+                "class": BOOTSTRAP_INPUT,
+                "min": 0,
+                "max": 100,
+                "step": "0.01",
             }),
             "is_active": forms.CheckboxInput(attrs={
                 "class": BOOTSTRAP_CHECK,

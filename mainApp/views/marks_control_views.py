@@ -7,6 +7,7 @@ Admin side of marks entry:
   - Review one list: see every mark, approve or return with a note.
   - Marks Change History.
 """
+from mainApp.academic_period import current_term_for_year, school_current_year, year_queryset
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -29,6 +30,7 @@ from mainApp.marks_service import (
     window_progress,
 )
 from mainApp.views.teacher_alloc_utils import get_current_school
+from mainApp.term_status import marks_entry_open
 
 ADMINS = list(ADMIN_ROLES)
 
@@ -50,13 +52,13 @@ def _back(request, fallback):
 
 
 def _filters(request, school):
-    years = AcademicYear.objects.filter(is_active=True).order_by("-year")
+    years = year_queryset(school)
     year_id = request.GET.get("academic_year") or ""
-    year = years.filter(id=year_id).first() if year_id else years.first()
+    year = years.filter(id=year_id).first() if year_id else (school_current_year(school) or years.first())
 
     terms = Term.objects.filter(academic_year=year).order_by("order") if year else Term.objects.none()
     term_id = request.GET.get("term") or ""
-    term = terms.filter(id=term_id).first() if term_id else (terms.filter(is_current=True).first() or terms.first())
+    term = terms.filter(id=term_id).first() if term_id else (current_term_for_year(school, year) or terms.first())
 
     classes = Class.objects.filter(school=school).order_by("name")
     class_ref = classes.filter(id=request.GET.get("class_ref") or 0).first()
@@ -155,7 +157,7 @@ def marks_progress_bulk(request):
         messages.success(request, f"Deadline removed from {done} list(s).")
     elif action in ("close", "reopen", "approve"):
         for w in windows:
-            if not w.marksheet.term.is_marks_entry_open:
+            if not marks_entry_open(w.marksheet.school, w.marksheet.term):
                 continue
             if action == "close" and not w.is_locked:
                 w.close(request.user); done += 1
@@ -247,6 +249,7 @@ def marks_window_review(request, pk):
         "rows": rows,
         "stats": stats,
         "history": history,
+        "term_open": marks_entry_open(sheet.school, sheet.term),
     })
 
 
@@ -261,7 +264,7 @@ def marks_window_action(request, pk):
     action = request.POST.get("action")
     note = (request.POST.get("note") or "").strip()[:1000]
 
-    if not window.marksheet.term.is_marks_entry_open:
+    if not marks_entry_open(window.marksheet.school, window.marksheet.term):
         messages.error(request, "This term is finalized. Reopen the term first.")
         return redirect("marks_window_review", pk=pk)
 

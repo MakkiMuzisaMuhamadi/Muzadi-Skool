@@ -138,7 +138,7 @@
     streamSel.innerHTML = '<option value="">---------</option>';
     if(!classId) return;
 
-    fetch("{% url 'ajax_teacher_streams' %}?class_id=" + classId)
+    fetch("{% url 'ajax_cbc_teacher_streams' %}?class_id=" + classId)
       .then(r => r.json())
       .then(resp => {
         (resp.results || []).forEach(s => {

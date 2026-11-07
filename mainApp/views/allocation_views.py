@@ -6,6 +6,8 @@ Replaces teacher_allocation_* views that used to live in subject_views.py.
 """
 import json
 
+from mainApp.tenancy import scope
+from mainApp.tenancy import for_school
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -83,7 +85,7 @@ def teacher_allocation_data(request):
     search_value = request.GET.get("search[value]", "").strip()
 
     qs = (
-        TeacherTeachingAllocation.all_years.filter(academic_year=year)
+        scope(TeacherTeachingAllocation.all_years.filter(academic_year=year), "class_ref__school")
         .select_related("teacher__user", "class_ref", "class_ref__level", "stream", "subject")
         .prefetch_related("papers")
     )
@@ -188,8 +190,8 @@ def teacher_allocation_create(request):
 @role_required(ADMIN_ROLES)
 def teacher_allocation_edit(request, pk):
     allocation = get_object_or_404(
-        TeacherTeachingAllocation.all_years.select_related("teacher__user", "class_ref", "stream", "subject")
-        .prefetch_related("papers"),
+        for_school(TeacherTeachingAllocation.all_years.select_related("teacher__user", "class_ref", "stream", "subject")
+        .prefetch_related("papers"), request, "class_ref__school"),
         pk=pk,
     )
     if request.method == "POST":
@@ -212,7 +214,8 @@ def teacher_allocation_edit(request, pk):
 @role_required(ADMIN_ROLES)
 def teacher_allocation_delete(request, pk):
     allocation = get_object_or_404(
-        TeacherTeachingAllocation.all_years.select_related("teacher__user", "class_ref", "stream", "subject"),
+        for_school(TeacherTeachingAllocation.all_years.select_related("teacher__user", "class_ref", "stream", "subject"),
+                   request, "class_ref__school"),
         pk=pk,
     )
     if request.method == "POST":
@@ -350,14 +353,14 @@ def allocation_import_review(request):
 def class_teacher_list(request):
     year = _selected_year(request)
     assignments = (
-        ClassTeacherAssignment.all_years.filter(academic_year=year)
+        scope(ClassTeacherAssignment.all_years.filter(academic_year=year), "class_ref__school")
         .select_related("class_ref__level", "stream", "teacher__user")
     )
     assigned = {(a.class_ref_id, a.stream_id) for a in assignments}
 
     from mainApp.models.models import Class
     without = []
-    for cls in Class.objects.select_related("level").prefetch_related("streams").order_by("level__order", "name"):
+    for cls in scope(Class.objects.all()).select_related("level").prefetch_related("streams").order_by("level__order", "name"):
         streams = list(cls.streams.all())
         if (cls.id, None) in assigned:
             continue
@@ -380,7 +383,7 @@ def class_teacher_list(request):
 @login_required
 @role_required(ADMIN_ROLES)
 def class_teacher_form(request, pk=None):
-    instance = get_object_or_404(ClassTeacherAssignment.all_years, pk=pk) if pk else None
+    instance = get_object_or_404(for_school(ClassTeacherAssignment.all_years.all(), request, "class_ref__school"), pk=pk) if pk else None
     if request.method == "POST":
         form = ClassTeacherAssignmentForm(request.POST, instance=instance)
         if form.is_valid():
@@ -406,7 +409,7 @@ def class_teacher_form(request, pk=None):
 @login_required
 @role_required(ADMIN_ROLES)
 def class_teacher_delete(request, pk):
-    obj = get_object_or_404(ClassTeacherAssignment.all_years.select_related("class_ref", "stream", "teacher__user"), pk=pk)
+    obj = get_object_or_404(for_school(ClassTeacherAssignment.all_years.select_related("class_ref", "stream", "teacher__user"), request, "class_ref__school"), pk=pk)
     if request.method == "POST":
         year_id = obj.academic_year_id
         obj.delete()

@@ -411,16 +411,22 @@ def create_campaign(request, school, form):
 # Sending
 # ---------------------------------------------------------------------------
 class Senders:
-    """Creates the SMS / WhatsApp clients only when they are actually needed."""
-    def __init__(self):
-        self._sms = None
+    """Creates the SMS / WhatsApp clients only when they are actually needed (one SMS client per school)."""
+    def __init__(self, school=None):
+        self.school = school
+        self._sms = {}
         self._wa = None
+
+    def sms_for(self, msg):
+        school = self.school or getattr(msg, "school", None)
+        key = getattr(school, "pk", None)
+        if key not in self._sms:
+            self._sms[key] = AfricaTalkingSMS(school=school)
+        return self._sms[key]
 
     @property
     def sms(self):
-        if self._sms is None:
-            self._sms = AfricaTalkingSMS()
-        return self._sms
+        return self.sms_for(None)
 
     @property
     def wa(self):
@@ -444,11 +450,12 @@ def _fail(msg, detail):
 
 def send_sms(senders, msg, prefix=""):
     try:
-        resp = senders.sms.send_one(message=msg.text, to_number=msg.to_number, enqueue=True) or {}
+        client = senders.sms_for(msg)
+        resp = client.send_one(message=msg.text, to_number=msg.to_number, enqueue=True) or {}
     except Exception as e:
         return _fail(msg, f"{prefix}{e}")
 
-    result = senders.sms.parse_response(resp)
+    result = AfricaTalkingSMS.parse_response(resp)
     msg.raw_response = resp
     msg.provider = "AFRICASTALKING"
     msg.provider_message_id = result["message_id"]
@@ -483,6 +490,9 @@ def send_whatsapp(senders, msg, prefix=""):
     tpl = msg.campaign.wa_template
     if tpl is None:
         return _fail(msg, f"{prefix}WhatsApp template was deleted")
+    from mainApp.messaging_wallet import whatsapp_allowed
+    if not whatsapp_allowed(msg.school):
+        return fall_back_to_sms(senders, msg, f"{prefix}WhatsApp is switched off for this school")
 
     try:
         resp = senders.wa.send_template(
@@ -894,7 +904,7 @@ def _apply_whatsapp_status(st, senders):
         if code in NOT_ON_WHATSAPP_CODES:
             reason += " (number can't receive WhatsApp)"
         msg.save(update_fields=["raw_dlr", "updated_at"])
-        senders = senders or Senders()
+        senders = senders or Senders(school=msg.school)
         # Sends the SMS version when the campaign is "WhatsApp, SMS if not on WhatsApp";
         # otherwise just marks the message as undelivered.
         fall_back_to_sms(senders, msg, reason)

@@ -1,0 +1,44 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Offline Marks - Muzadi</title>
+  {% include "pwa/_head.html" %}
+  <link rel="stylesheet" href="{% static 'pwa/offline-marks.css' %}">
+</head>
+{# This page holds NO personal data: the phone keeps a copy of it so it opens without internet. #}
+{# Names and marks come from the phone's storage (IndexedDB) or from the /api/ addresses below. #}
+<body
+  data-url-me="{% url 'offline_marks_me' %}"
+  data-url-lists="{% url 'offline_marks_lists' %}"
+  data-url-package="{% url 'offline_marks_package' %}"
+  data-url-sync="{% url 'offline_marks_sync' %}"
+  data-url-dashboard="{% url 'dashboard' %}"
+  data-url-entry="{% url 'marks_entry' %}"
+  data-url-login="{% url 'login' %}"
+  data-url-sw="{% url 'pwa_service_worker' %}">
+
+<header class="om-top">
+  <button type="button" class="om-icon-btn" id="omBack" aria-label="Back" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <a class="om-brand" id="omHome" href="#">
+    <img src="{% static 'pwa/icons/icon-192.png' %}" alt="" width="32" height="32">
+    <span><strong id="omTitle">Offline Marks</strong><small id="omSub">Muzadi School System</small></span>
+  </a>
+  <span class="om-net" id="omNet" role="status" aria-live="polite">…</span>
+</header>
+
+<main class="om-main" id="omMain" tabindex="-1">
+  <div class="om-loading">Opening…</div>
+</main>
+
+<div class="om-toast" id="omToast" role="status" aria-live="polite"></div>
+
+<noscript><p class="om-note">Please turn on JavaScript to use Offline Marks.</p></noscript>
+
+<script src="{% static 'pwa/offline-marks-store.js' %}"></script>
+<script src="{% static 'pwa/offline-marks-app.js' %}"></script>
+</body>
+</html>

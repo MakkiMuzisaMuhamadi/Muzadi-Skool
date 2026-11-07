@@ -13,7 +13,7 @@ from mainApp.models.teacher_models import (
 
 
 def _sync(instance):
-    from mainApp.services.teacher_service import sync_teacher_levels
+    from mainApp.teacher_service import sync_teacher_levels
 
     try:
         teacher = Teacher.objects.select_related("user__profile").get(pk=instance.teacher_id)

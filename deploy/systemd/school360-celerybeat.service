@@ -1,0 +1,17 @@
+# /etc/systemd/system/school360-celerybeat.service  - hourly SchoolPay sync, report resume
+[Unit]
+Description=School360 Celery beat (scheduler)
+After=network.target redis-server.service
+
+[Service]
+User=school360
+Group=www-data
+WorkingDirectory=/srv/school360/app
+EnvironmentFile=/srv/school360/app/.env
+ExecStart=/srv/school360/venv/bin/celery -A school360 beat -l info \
+    --schedule=/srv/school360/celerybeat-schedule
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

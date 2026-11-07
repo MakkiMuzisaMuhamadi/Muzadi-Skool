@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
@@ -8,8 +9,8 @@
     <small class="text-muted">One row per title or type. Open a row to see its copies or stock.</small>
   </div>
   <div class="d-flex" style="gap:.5rem;">
-    <a href="{% url 'inv_item_create' %}{% if type %}?type={{ type }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add item</a>
-    <a href="{% url 'inv_labels_select' %}" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Print labels</a>
+    {% if request.user|can_open:"inv_item_create" %}<a href="{% url 'inv_item_create' %}{% if type %}?type={{ type }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add item</a>{% endif %}
+    {% if request.user|can_open:"inv_labels_select" %}<a href="{% url 'inv_labels_select' %}" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Print labels</a>{% endif %}
   </div>
 </div>
 
@@ -53,13 +54,13 @@
           </td>
           <td class="text-right text-nowrap">
             {% if r.is_serialized %}
-              <a class="btn btn-outline-primary btn-sm" href="{% url 'inv_unit_bulk_add' %}?item={{ r.pk }}" title="Add copies"><i class="fas fa-plus"></i></a>
-              <a class="btn btn-outline-success btn-sm" href="{% url 'inv_labels_item' r.pk %}?limit=24" title="Print labels"><i class="fas fa-print"></i></a>
+              {% if request.user|can_open:"inv_unit_bulk_add" %}<a class="btn btn-outline-primary btn-sm" href="{% url 'inv_unit_bulk_add' %}?item={{ r.pk }}" title="Add copies"><i class="fas fa-plus"></i></a>{% endif %}
+              {% if request.user|can_open:"inv_labels_item" %}<a class="btn btn-outline-success btn-sm" href="{% url 'inv_labels_item' r.pk %}?limit=24" title="Print labels"><i class="fas fa-print"></i></a>{% endif %}
             {% else %}
-              <a class="btn btn-outline-primary btn-sm" href="{% url 'inv_stock_op' 'receive' %}?item={{ r.pk }}" title="Receive stock"><i class="fas fa-plus"></i></a>
-              <a class="btn btn-outline-secondary btn-sm" href="{% url 'inv_stock_op' 'issue' %}?item={{ r.pk }}" title="Issue stock"><i class="fas fa-dolly"></i></a>
+              {% if request.user|can_open:"inv_stock_op" %}<a class="btn btn-outline-primary btn-sm" href="{% url 'inv_stock_op' 'receive' %}?item={{ r.pk }}" title="Receive stock"><i class="fas fa-plus"></i></a>{% endif %}
+              {% if request.user|can_open:"inv_stock_op" %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'inv_stock_op' 'issue' %}?item={{ r.pk }}" title="Issue stock"><i class="fas fa-dolly"></i></a>{% endif %}
             {% endif %}
-            <a class="btn btn-light btn-sm" href="{% url 'inv_item_edit' r.pk %}" title="Edit"><i class="fas fa-pen"></i></a>
+            {% if request.user|can_open:"inv_item_edit" %}<a class="btn btn-light btn-sm" href="{% url 'inv_item_edit' r.pk %}" title="Edit"><i class="fas fa-pen"></i></a>{% endif %}
           </td>
         </tr>
       {% empty %}

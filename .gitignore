@@ -3,9 +3,12 @@ __pycache__/
 *.pyc
 *.sqlite3
 .env
-
+.env.example
 staticfiles/
 media/
 generated_pdfs/
 DATABASE BACKUPS/
 *.sql
+logs/
+dump.rdb
+celerybeat-schedule

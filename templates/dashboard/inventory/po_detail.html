@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% load humanize %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
@@ -8,11 +9,11 @@
       {% if po.approved_by %} · approved by {{ po.approved_by.get_full_name|default:po.approved_by }}{% endif %}</small>
   </div>
   <div class="d-flex flex-wrap" style="gap:.5rem;">
-    {% if po.is_editable %}<a href="{% url 'inv_po_edit' po.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>{% endif %}
+    {% if po.is_editable %}{% if request.user|can_open:"inv_po_edit" %}<a href="{% url 'inv_po_edit' po.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>{% endif %}{% endif %}
     {% if po.status == "DRAFT" and can_approve %}
       <form method="post" action="{% url 'inv_po_approve' po.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm">Approve</button></form>
     {% endif %}
-    {% if po.can_receive %}<a href="{% url 'inv_grn_create' %}?po={{ po.pk }}" class="btn btn-success btn-sm"><i class="fas fa-truck-loading mr-1"></i> Receive goods</a>{% endif %}
+    {% if po.can_receive %}{% if request.user|can_open:"inv_grn_create" %}<a href="{% url 'inv_grn_create' %}?po={{ po.pk }}" class="btn btn-success btn-sm"><i class="fas fa-truck-loading mr-1"></i> Receive goods</a>{% endif %}{% endif %}
     {% if po.status == "PARTIAL" %}
       <form method="post" action="{% url 'inv_po_close' po.pk %}" onsubmit="return confirm('Close this order? Outstanding items will no longer be expected.')">{% csrf_token %}
         <button class="btn btn-outline-secondary btn-sm">Close short</button></form>
@@ -46,7 +47,7 @@
   <h5>Deliveries</h5>
   <ul class="mb-0">
     {% for g in receipts %}
-      <li><a href="{% url 'inv_grn_detail' g.pk %}">{{ g.grn_number }}</a> · {{ g.received_date }} · {{ g.location }} · {{ g.get_status_display }}</li>
+      <li>{% if request.user|can_open:"inv_grn_detail" %}<a href="{% url 'inv_grn_detail' g.pk %}">{{ g.grn_number }}</a>{% else %}{{ g.grn_number }}{% endif %} · {{ g.received_date }} · {{ g.location }} · {{ g.get_status_display }}</li>
     {% empty %}
       <li class="text-muted">Nothing received yet.</li>
     {% endfor %}

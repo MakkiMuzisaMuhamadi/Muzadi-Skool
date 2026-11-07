@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-lightbulb"></i> {{ title }}</h3>
+    <small class="text-muted">1 = Basic, 2 = Moderate, 3 = Outstanding. Leave blank if not assessed.</small>
+  </div>
+  <a href="{% url 'generic_skill_list' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-list mr-1"></i> Skills list</a>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+{% include "dashboard/competency/_picker.html" %}
+
+{% if rows is not None %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <strong>{{ class_ref }}</strong>{% if stream %} &bull; {{ stream.name }}{% endif %} &bull; {{ term.academic_year }} {{ term }}
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered w-100">
+          <thead>
+            <tr>
+              <th>Learner</th>
+              {% for sk in skills %}<th class="text-center" style="min-width:90px;font-size:12px">{{ sk.name }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              <td><strong>{{ row.student }}</strong></td>
+              {% for c in row.cells %}
+              <td>
+                <select name="r_{{ row.student.id }}_{{ c.skill.id }}" class="form-control form-control-sm">
+                  <option value="">-</option>
+                  <option value="1" {% if c.rating == 1 %}selected{% endif %}>1</option>
+                  <option value="2" {% if c.rating == 2 %}selected{% endif %}>2</option>
+                  <option value="3" {% if c.rating == 3 %}selected{% endif %}>3</option>
+                </select>
+              </td>
+              {% endfor %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="20" class="text-center text-muted">No learners found in this class for the term.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-success"><i class="fas fa-save mr-1"></i> Save</button>
+    </div>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

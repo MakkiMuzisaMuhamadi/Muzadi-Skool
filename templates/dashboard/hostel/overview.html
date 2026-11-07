@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% with tab="overview" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-home"></i> Boarding overview</h3>
+  <small class="text-muted">Today, {% now "l d M Y" %}{% if term %}, {{ term.name }}{% endif %}</small>
+</div>
+
+{% if overdue %}
+<div class="alert alert-danger">
+  <strong><i class="fas fa-exclamation-circle mr-1"></i> {{ overdue|length }} student(s) are late back from exeat.</strong>
+  <ul class="mb-0 mt-1">{% for e in overdue|slice:":8" %}<li>{{ e.student.name }}, expected {{ e.expected_return|date:"d M H:i" }} (<a href="{% url 'boarding_exeat_return' e.id %}">sign in</a>)</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-6 col-md-3 mb-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Beds used</div><div class="h3 mb-0">{{ total_occupied }} / {{ total_beds }}</div><div class="small text-success">{{ total_free }} free</div>
+  </div></div></div>
+  <div class="col-6 col-md-3 mb-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Out on exeat</div><div class="h3 mb-0">{{ out_now }}</div><div class="small text-muted">{{ due_back_today }} due back today</div>
+  </div></div></div>
+  <div class="col-6 col-md-3 mb-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Exeats to approve</div><div class="h3 mb-0">{{ pending_exeats }}</div><a class="small" href="{% url 'boarding_exeat_list' %}?show=pending">Review</a>
+  </div></div></div>
+  <div class="col-6 col-md-3 mb-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Admitted in sick bay</div><div class="h3 mb-0">{{ in_sick_bay }}</div><div class="small text-muted">{{ visitors_in }} visitor(s) inside now</div>
+  </div></div></div>
+</div>
+
+{% if is_admin and unallocated %}
+<div class="alert alert-warning py-2"><i class="fas fa-bed mr-1"></i> {{ unallocated }} boarder(s) have no bed. <a href="{% url 'hostel_auto_allocate' %}">Auto-allocate</a></div>
+{% endif %}
+
+<div class="row">
+  <div class="col-lg-6 mb-3"><div class="card h-100"><div class="card-body">
+    <h5 class="mb-3">Dormitories</h5>
+    <table class="table table-sm mb-0"><thead><tr><th>Name</th><th>Beds</th><th>Used</th><th>Free</th><th></th></tr></thead><tbody>
+      {% for r in rows %}<tr><td>{{ r.hostel.name }}</td><td>{{ r.beds }}</td><td>{{ r.occupied }}</td><td>{{ r.free }}</td>
+        <td class="text-right"><a href="{% url 'hostel_dorm_list' r.hostel.id %}" target="_blank" title="Print dorm list"><i class="fas fa-print"></i></a></td></tr>
+      {% empty %}<tr><td colspan="5" class="text-muted">No dormitories.</td></tr>{% endfor %}
+    </tbody></table>
+  </div></div></div>
+
+  <div class="col-lg-6 mb-3"><div class="card h-100"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Today's roll calls</h5>
+      <a href="{% url 'boarding_rollcall_list' %}" class="btn btn-sm btn-primary">Take roll call</a>
+    </div>
+    <table class="table table-sm mb-2"><tbody>
+      {% for s in roll_calls_today %}<tr><td><a href="{% url 'boarding_rollcall_take' s.id %}">{{ s.hostel.name }}: {{ s.get_session_display }}</a></td>
+        <td>{% if s.is_submitted %}<span class="badge bg-success text-white">Saved</span>{% else %}<span class="badge bg-warning text-dark">Not saved</span>{% endif %}</td></tr>
+      {% empty %}<tr><td class="text-muted">No roll call taken yet today.</td></tr>{% endfor %}
+    </tbody></table>
+    {% if absent_today %}
+      <div class="text-danger font-weight-bold small">Absent today</div>
+      <ul class="small mb-0">{% for e in absent_today %}<li>{{ e.student.name }} ({{ e.session.hostel.name }}, {{ e.session.get_session_display }}){% if e.remark %}: {{ e.remark }}{% endif %}</li>{% endfor %}</ul>
+    {% endif %}
+  </div></div></div>
+</div>
+{% endblock %}

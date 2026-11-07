@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils import timezone
 
 from mainApp.models.student import Student
 from mainApp.models.academic_history_models import StudentAcademicRecord
@@ -15,16 +16,44 @@ def build_student_display_name(student):
     ).strip() or getattr(student, "name", "") or ""
 
 
+def _applied_promotion_since(student, academic_year):
+    """
+    The applied promotion decision that moved this learner out of the class
+    they were in during `academic_year` (that year's decision or a later one).
+    Once a learner has moved, their old term records must keep the old class.
+    """
+    from mainApp.models.models import StudentPromotionDecision
+
+    qs = StudentPromotionDecision.objects.filter(student=student, is_applied=True)
+    same_year = qs.filter(academic_year=academic_year).select_related("from_level", "from_class", "from_stream").first()
+    if same_year:
+        return same_year
+
+    start = getattr(academic_year, "start_date", None)
+    if start:
+        return qs.filter(academic_year__start_date__gt=start).order_by("academic_year__start_date").first()
+    return None
+
+
 def get_or_create_student_academic_record(*, student, academic_year, term, user=None, source_type="CURRENT_CAPTURE"):
+    moved = _applied_promotion_since(student, academic_year)
+
+    # Where the learner was during this term. After promotion the learner's
+    # current class is the NEW class, so use the class saved on the decision.
+    if moved and moved.academic_year_id == getattr(academic_year, "id", None):
+        level, class_ref, stream = moved.from_level, moved.from_class, moved.from_stream
+    else:
+        level, class_ref, stream = student.level, student.current_class, student.stream
+
     record, created = StudentAcademicRecord.objects.get_or_create(
         student=student,
         academic_year=academic_year,
         term=term,
         defaults={
             "school": student.school,
-            "level": student.level,
-            "class_ref": student.current_class,
-            "stream": student.stream,
+            "level": level,
+            "class_ref": class_ref,
+            "stream": stream,
             "academic_status": student.academic_status or "",
             "source_type": source_type,
             "student_name": build_student_display_name(student),
@@ -38,18 +67,21 @@ def get_or_create_student_academic_record(*, student, academic_year, term, user=
         if record.school_id != student.school_id:
             record.school = student.school
             changed = True
-        if record.level_id != getattr(student.level, "id", None):
-            record.level = student.level
-            changed = True
-        if record.class_ref_id != getattr(student.current_class, "id", None):
-            record.class_ref = student.current_class
-            changed = True
-        if record.stream_id != getattr(student.stream, "id", None):
-            record.stream = student.stream
-            changed = True
-        if record.academic_status != (student.academic_status or ""):
-            record.academic_status = student.academic_status or ""
-            changed = True
+
+        # Never pull a record into the learner's NEW class after promotion.
+        if not moved:
+            if record.level_id != getattr(student.level, "id", None):
+                record.level = student.level
+                changed = True
+            if record.class_ref_id != getattr(student.current_class, "id", None):
+                record.class_ref = student.current_class
+                changed = True
+            if record.stream_id != getattr(student.stream, "id", None):
+                record.stream = student.stream
+                changed = True
+            if record.academic_status != (student.academic_status or ""):
+                record.academic_status = student.academic_status or ""
+                changed = True
 
         name = build_student_display_name(student)
         if record.student_name != name:
@@ -133,16 +165,30 @@ def reopen_term_academic_records(*, school, academic_year, term, class_ref=None,
     return updated
 
 
+PROMOTION_RESULT_STATUS = {
+    "PROMOTED": "PROMOTED_AFTER_TERM",
+    "RETAINED": "RETAINED_AFTER_TERM",
+    "DEMOTED": "DEMOTED_AFTER_TERM",
+    "COMPLETED_CYCLE": "COMPLETED_CYCLE_AFTER_TERM",
+    "GRADUATED": "GRADUATED_AFTER_TERM",
+}
+
+
 @transaction.atomic
 def attach_promotion_outcome_to_term_record(*, decision, user=None):
-    record = StudentAcademicRecord.objects.filter(
+    """
+    Called just before a learner is moved. Makes sure the promotion term's
+    record exists, sits in the OLD class, carries the outcome, and is locked
+    so later report runs keep it in the old class.
+    """
+    record = StudentAcademicRecord.objects.select_for_update().filter(
         student=decision.student,
         academic_year=decision.academic_year,
         term=decision.term,
     ).first()
 
     if not record:
-        record = StudentAcademicRecord.objects.create(
+        record = StudentAcademicRecord(
             student=decision.student,
             school=decision.school,
             academic_year=decision.academic_year,
@@ -151,29 +197,43 @@ def attach_promotion_outcome_to_term_record(*, decision, user=None):
             class_ref=decision.from_class,
             stream=decision.from_stream,
             academic_status=decision.student.academic_status or "",
-            source_type="PROMOTION_FINALIZATION",
             student_name=build_student_display_name(decision.student),
             admission_number=decision.student.admission_number or "",
-            promotion_decision=decision,
         )
     elif not record.is_locked:
         record.level = decision.from_level
         record.class_ref = decision.from_class
         record.stream = decision.from_stream
-        record.promotion_decision = decision
-        record.source_type = "PROMOTION_FINALIZATION"
 
-    if decision.status == "PROMOTED":
-        record.result_status = "PROMOTED_AFTER_TERM"
-    elif decision.status == "RETAINED":
-        record.result_status = "RETAINED_AFTER_TERM"
-    elif decision.status == "COMPLETED_CYCLE":
-        record.result_status = "COMPLETED_CYCLE_AFTER_TERM"
-    elif decision.status == "GRADUATED":
-        record.result_status = "GRADUATED_AFTER_TERM"
+    record.promotion_decision = decision
+    record.source_type = "PROMOTION_FINALIZATION"
+    record.result_status = PROMOTION_RESULT_STATUS.get(decision.status, record.result_status)
+
+    if not record.is_locked:
+        record.is_locked = True
+        record.locked_at = timezone.now()
+        record.locked_by = user if getattr(user, "pk", None) else None
 
     if record.pk:
         record.version_no += 1
 
     record.save()
+    return record
+
+
+@transaction.atomic
+def revert_promotion_outcome_on_term_record(*, decision):
+    """Undo the outcome written by attach_promotion_outcome_to_term_record (record stays locked)."""
+    record = StudentAcademicRecord.objects.filter(
+        student=decision.student,
+        academic_year=decision.academic_year,
+        term=decision.term,
+    ).first()
+    if not record:
+        return None
+
+    record.result_status = "FINALIZED" if record.is_locked else "IN_PROGRESS"
+    record.source_type = "TERM_FINALIZATION" if record.is_locked else "CURRENT_CAPTURE"
+    record.version_no += 1
+    record.save(update_fields=["result_status", "source_type", "version_no"])
     return record

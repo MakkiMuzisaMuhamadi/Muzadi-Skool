@@ -15,6 +15,14 @@ class Subject(AuditMixin,RecycleBinMixin, models.Model):
     is_optional = models.BooleanField(default=False)
     is_language = models.BooleanField(default=False)
     is_Religion = models.BooleanField(default=False)
+    include_in_aggregate = models.BooleanField(
+        default=True,
+        help_text=(
+            "PLE: tick only the examinable subjects (English, Mathematics, Science, SST). "
+            "Untick subjects like RE, Computer or Local Language so they show on the "
+            "report but do not add to aggregates/division."
+        ),
+    )
     objects = RecycleBinManager()
     
     def __str__(self):

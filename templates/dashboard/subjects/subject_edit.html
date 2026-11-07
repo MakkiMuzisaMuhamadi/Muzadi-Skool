@@ -61,6 +61,18 @@
           <div class="form-check">{{ form.is_Religion }} <label class="form-check-label">Religion</label></div>
         </div>
       </div>
+      <small class="text-muted d-block mb-2">
+        <strong>Optional</strong> unticked means the subject is <strong>compulsory</strong>
+        (used for the UCE "Result 2" rule: a learner missing a compulsory subject gets Result 2).
+      </small>
+
+      <div class="form-group">
+        <div class="form-check">
+          {{ form.include_in_aggregate }}
+          <label class="form-check-label">Counts towards PLE aggregates / division</label>
+        </div>
+        <small class="text-muted">{{ form.include_in_aggregate.help_text }}</small>
+      </div>
 
       <button type="submit" class="btn btn-outline-success">
         Save Changes

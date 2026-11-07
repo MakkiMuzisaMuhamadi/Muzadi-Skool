@@ -1,12 +1,15 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
-
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h4 class="mb-0">UCE Grade Descriptors</h4>
     <small class="text-muted">Stores long descriptors per grade (A, B, C...) for the “GRADE RANGE / GRADE DESCRIPTOR” section.</small>
   </div>
-  <a class="btn btn-primary" href="{% url 'report_grade_desc_add' %}">Add Grade Descriptor</a>
+  <div class="d-flex flex-wrap" style="gap:.5rem;">
+    {% include "dashboard/report_terms/_load_defaults.html" %}
+    <a class="btn btn-primary" href="{% url 'report_grade_desc_add' %}">Add Grade Descriptor</a>
+  </div>
 </div>
 
 <div class="card">

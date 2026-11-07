@@ -60,30 +60,18 @@
       <div class="card-body">
         <h4 class="card-title">Profile Information</h4>
         
-        <!-- Messages -->
-        {% if messages %}
-        <div class="alert-container mb-4">
-          {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
         <div class="row">
           <div class="col-md-6">
             <div class="form-group">
               <label class="font-weight-bold">Username</label>
               <div class="d-flex align-items-center">
                 <input type="text" class="form-control bg-light" value="{{ request.user.username }}" readonly>
+                {% if can_change_username %}
                 <button type="button" class="btn btn-outline-success btn-sm ml-2" 
-                        data-toggle="modal" data-target="#usernameModal">
+                        data-toggle="modal" data-target="#usernameModal" aria-label="Change username">
                   <i class="fas fa-edit"></i>
                 </button>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -111,7 +99,12 @@
                      value="{{ request.user.profile.get_role_display }}" readonly>
             </div>
           </div>
-          
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="font-weight-bold">Phone for password-reset codes</label>
+              <input type="text" class="form-control bg-light" value="{{ phone_on_file|default:'None on file - ask the school office' }}" readonly>
+            </div>
+          </div>
         </div>
 
         <div class="row mt-4">
@@ -121,7 +114,7 @@
                 <i class="fas fa-key mr-2"></i>Change Password
               </button>
               
-              {% if request.user.profile.role in 'SUPER_ADMIN,ADMIN' %}
+              {% if request.user.profile.role == 'SUPER_ADMIN' or request.user.profile.role == 'ADMIN' %}
               <a href="{% url 'user_management' %}" class="btn btn-outline-success">
                 <i class="fas fa-users-cog mr-2"></i>User Management
               </a>

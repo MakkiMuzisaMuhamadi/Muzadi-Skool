@@ -1,3 +1,4 @@
+from mainApp.academic_period import apply_year_term_defaults
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Max, Sum
@@ -52,6 +53,12 @@ class ExamSchemeForm(forms.ModelForm):
                 academic_year_id=year_id
             ).order_by("order", "name")
 
+        if "academic_year" in self.fields:
+            # the school's own current year may be ahead of the shared "active" year
+            from mainApp.academic_period import year_queryset
+            self.fields["academic_year"].queryset = year_queryset(school)
+        apply_year_term_defaults(self, school)
+
 
 class ExamTypeForm(forms.ModelForm):
     class Meta:
@@ -63,10 +70,12 @@ class ExamTypeForm(forms.ModelForm):
             "applies_to",
             "weight_percent",
             "max_mark",
+            "source",
             "is_active",
         ]
 
         widgets = {
+            "source": forms.Select(attrs={"class": BOOTSTRAP_SELECT}),
             "scheme": forms.Select(attrs={"class": BOOTSTRAP_SELECT}),
             "name": forms.TextInput(attrs={
                 "class": BOOTSTRAP_INPUT,
@@ -143,267 +152,61 @@ class ExamTypeForm(forms.ModelForm):
     
 
 class MarksFilterForm(forms.Form):
-    academic_year = forms.ChoiceField(
-        required=True,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_academic_year"})
-    )
+    """
+    Year / Term / Class / Stream / Exam type / Subject / Paper picker used by
+    Enter Marks, the Excel import/export, Offline Marks and the marks audit.
 
-    term = forms.ChoiceField(
-        required=True,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_term"})
-    )
+    The choices come from mainApp.marks_filters.MarksFilterOptions, the same code
+    that fills the dropdowns in the browser, so teachers only see (and can only
+    submit) what is allocated to them, and the year/term open on the school's
+    current year/term from the school settings.
+    """
+    INVALID = "This option is not available for the year/term/class you selected. Please choose again."
 
-    class_ref = forms.ChoiceField(
-        required=True,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_class_ref"})
-    )
-
-    stream = forms.ChoiceField(
-        required=False,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_stream"})
-    )
-
-    exam_type = forms.ChoiceField(
-        required=True,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_exam_type"})
-    )
-
-    subject = forms.ChoiceField(
-        required=False,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_subject"})
-    )
-
-    paper = forms.ChoiceField(
-        required=False,
-        widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_paper"})
-    )
+    academic_year = forms.ChoiceField(required=True)
+    term = forms.ChoiceField(required=True)
+    class_ref = forms.ChoiceField(required=True)
+    stream = forms.ChoiceField(required=False)
+    exam_type = forms.ChoiceField(required=True)
+    subject = forms.ChoiceField(required=False)
+    paper = forms.ChoiceField(required=False)
 
     def __init__(self, *args, school=None, user=None, initial=None, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, initial=initial, **kwargs)
+        from mainApp.marks_filters import FIELDS, MarksFilterOptions
 
         self.school = school
         self.user = user
 
-        self.fields["academic_year"].choices = [("", "-- Select Academic Year --")]
-        self.fields["term"].choices = [("", "-- Select Term --")]
-        self.fields["class_ref"].choices = [("", "-- Select Class --")]
-        self.fields["stream"].choices = [("", "-- All Streams --")]
-        self.fields["exam_type"].choices = [("", "-- Select Exam Type --")]
-        self.fields["subject"].choices = [("", "-- Select Subject --")]
-        self.fields["paper"].choices = [("", "-- Select Paper --")]
+        source = self.data if self.is_bound else (initial or {})
+        self.options = MarksFilterOptions(user, school, source, defaults=not self.is_bound,
+                                          autoselect=not self.is_bound)
 
-        if not school:
-            return
+        for name in FIELDS:
+            field = self.fields[name]
+            field.choices = self.options.choices(name)
+            field.error_messages["invalid_choice"] = self.INVALID
+            field.widget.attrs.update({"class": BOOTSTRAP_SELECT, "id": f"id_{name}", "data-field": name})
 
-        data = self.data or {}
-        if not data and initial:
-            data = initial
+        if self.options.stream_required:
+            self.fields["stream"].required = True
+            self.fields["stream"].error_messages["required"] = "Choose your stream (you are not allocated the whole class)."
 
-        year_id = data.get("academic_year")
-        term_id = data.get("term")
-        class_id = data.get("class_ref")
-        stream_id = data.get("stream") or ""
-        subject_id = data.get("subject")
+        if self.is_bound and self.options.exam_applies_to != "PAPER" and self.data.get("paper"):
+            # a paper left over from an earlier choice; this exam type is entered per subject
+            self.data = self.data.copy()
+            self.data["paper"] = ""
 
-        # Academic Years
-        years = AcademicYear.objects.filter(is_active=True).order_by("-year")
-        self.fields["academic_year"].choices = [
-            ("", "-- Select Academic Year --")
-        ] + [(str(y.id), y.year) for y in years]
-
-        # Terms
-        if year_id:
-            term_qs = Term.objects.filter(
-                academic_year_id=year_id
-            ).order_by("order", "name")
-
-            self.fields["term"].choices = [
-                ("", "-- Select Term --")
-            ] + [(str(t.id), t.name) for t in term_qs]
-
-        # Teacher / admin logic
-        if user and hasattr(user, "teacher"):
-            allocs = teacher_alloc_qs(user, school)
-
-            class_qs = (
-                Class.objects.filter(id__in=allocs.values("class_ref_id"))
-                .select_related("level")
-                .distinct()
-                .order_by("name")
-            )
-
-            self.fields["class_ref"].choices = [
-                ("", "-- Select Class --")
-            ] + [(str(c.id), c.name) for c in class_qs]
-
-            if class_id:
-                allocs2 = allocs.filter(class_ref_id=class_id)
-
-                # -------------------------------------------------
-                # IMPORTANT FIX:
-                # If teacher has allocation with stream=NULL,
-                # it means ALL streams in that class are allowed.
-                # -------------------------------------------------
-                has_all_stream_allocation = allocs2.filter(stream__isnull=True).exists()
-
-                if has_all_stream_allocation:
-                    stream_qs = Stream.objects.filter(
-                        class_ref_id=class_id
-                    ).order_by("name")
-                else:
-                    stream_qs = (
-                        Stream.objects.filter(
-                            id__in=allocs2.exclude(stream__isnull=True).values("stream_id")
-                        )
-                        .distinct()
-                        .order_by("name")
-                    )
-
-                self.fields["stream"].choices = [
-                    ("", "-- All Streams --")
-                ] + [(str(s.id), s.name) for s in stream_qs]
-
-                # Subjects:
-                # If a stream is selected, allow both:
-                # - stream-specific allocations
-                # - ALL-stream allocations
-                subject_allocs = allocs2
-
-                if stream_id:
-                    subject_allocs = subject_allocs.filter(
-                        Q(stream_id=stream_id) | Q(stream__isnull=True)
-                    )
-
-                subj_qs = (
-                    Subject.objects.filter(id__in=subject_allocs.values("subject_id"))
-                    .distinct()
-                    .order_by("name")
-                )
-
-                self.fields["subject"].choices = [
-                    ("", "-- Select Subject --")
-                ] + [(str(s.id), s.name) for s in subj_qs]
-
-                # Papers
-                if subject_id:
-                    paper_allocs = subject_allocs.filter(subject_id=subject_id)
-
-                    paper_ids = paper_allocs.values_list("papers__id", flat=True)
-
-                    paper_qs = (
-                        Paper.objects.filter(id__in=paper_ids)
-                        .distinct()
-                        .order_by("order", "paper_name")
-                    )
-
-                    self.fields["paper"].choices = [
-                        ("", "-- Select Paper --")
-                    ] + [(str(p.id), p.paper_name) for p in paper_qs]
-
-        else:
-            class_qs = (
-                Class.objects.filter(school=school)
-                .select_related("level")
-                .order_by("name")
-            )
-
-            self.fields["class_ref"].choices = [
-                ("", "-- Select Class --")
-            ] + [(str(c.id), c.name) for c in class_qs]
-
-            if class_id:
-                class_obj = (
-                    Class.objects
-                    .filter(id=class_id, school=school)
-                    .select_related("level")
-                    .first()
-                )
-
-                stream_qs = Stream.objects.filter(
-                    class_ref_id=class_id
-                ).order_by("name")
-
-                self.fields["stream"].choices = [
-                    ("", "-- All Streams --")
-                ] + [(str(s.id), s.name) for s in stream_qs]
-
-                subject_qs = (
-                    Subject.objects.filter(level=class_obj.level).order_by("name")
-                    if class_obj and class_obj.level_id
-                    else Subject.objects.none()
-                )
-
-                self.fields["subject"].choices = [
-                    ("", "-- Select Subject --")
-                ] + [(str(s.id), s.name) for s in subject_qs]
-
-                if subject_id:
-                    paper_qs = Paper.objects.filter(
-                        subject_id=subject_id
-                    ).order_by("order", "paper_name")
-
-                    self.fields["paper"].choices = [
-                        ("", "-- Select Paper --")
-                    ] + [(str(p.id), p.paper_name) for p in paper_qs]
-
-        # Exam Types
-        if class_id:
-            class_obj = (
-                Class.objects
-                .filter(id=class_id, school=school)
-                .select_related("level")
-                .first()
-            )
-
-            if class_obj and class_obj.level_id:
-                types = ExamType.objects.filter(
-                    scheme__school=school,
-                    scheme__level=class_obj.level,
-                    scheme__is_active=True,
-                    is_active=True,
-                )
-
-                # Optional but safer: only exam types for selected year/term
-                if year_id:
-                    types = types.filter(scheme__academic_year_id=year_id)
-
-                if term_id:
-                    types = types.filter(scheme__term_id=term_id)
-
-                types = (
-                    types.select_related("scheme", "scheme__level")
-                    .order_by("order", "name")
-                    .distinct()
-                )
-
-                self.fields["exam_type"].choices = [
-                    ("", "-- Select Exam Type --")
-                ] + [(str(t.id), t.name) for t in types]
-            else:
-                self.fields["exam_type"].choices = [("", "-- Select Exam Type --")]
-        else:
-            self.fields["exam_type"].choices = [("", "-- Select Exam Type --")]
+        if not self.is_bound:
+            # open on the school's current year/term and anything with a single option
+            self.initial.update({k: v for k, v in self.options.selected.items() if v})
 
     def clean(self):
         cleaned = super().clean()
-
-        exam_type_id = cleaned.get("exam_type")
-        subject_id = cleaned.get("subject")
-        paper_id = cleaned.get("paper")
-
-        if exam_type_id:
-            exam_type = (
-                ExamType.objects
-                .filter(id=exam_type_id)
-                .select_related("scheme", "scheme__level")
-                .first()
-            )
-
-            if exam_type:
-                if exam_type.applies_to == "SUBJECT" and not subject_id:
-                    self.add_error("subject", "Subject is required for this exam type.")
-
-                if exam_type.applies_to == "PAPER" and not paper_id:
-                    self.add_error("paper", "Paper is required for this exam type.")
-
+        applies_to = self.options.exam_applies_to
+        if cleaned.get("exam_type"):
+            if applies_to == "SUBJECT" and not cleaned.get("subject"):
+                self.add_error("subject", "Subject is required for this exam type.")
+            if applies_to == "PAPER" and not cleaned.get("paper"):
+                self.add_error("paper", "Paper is required for this exam type.")
         return cleaned

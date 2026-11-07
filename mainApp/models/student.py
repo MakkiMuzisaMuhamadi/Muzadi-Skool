@@ -70,6 +70,11 @@ class Parent(AuditMixin, RecycleBinMixin, models.Model):
 
     parent_id = models.CharField(max_length=50, unique=True, editable=False)
     school = models.ForeignKey('mainApp.School', on_delete=models.CASCADE, related_name="parents")
+    # Login account for the parent portal. The username is the Parent ID; parents
+    # can also sign in with their phone number.
+    user = models.OneToOneField(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="parent_profile",
+    )
 
     # Personal information
     first_name = models.CharField(max_length=50)
@@ -309,7 +314,7 @@ class AdmissionSequence(models.Model):
         return f"{self.school_id} - {self.year} - {self.last_number}"
 
 
-class Student(AuditMixin, models.Model):
+class Student(AuditMixin, RecycleBinMixin, models.Model):
     from mainApp.models.transport_models import TransportRoute
 
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="student_profile")
@@ -484,17 +489,71 @@ class StudentGuardian(models.Model):
         return f"{self.parent.full_name} -> {self.student} ({self.get_relationship_display()})"
 
 
+
+HOSTEL_GENDER_CHOICES = [
+    ("M", "Boys"),
+    ("F", "Girls"),
+    ("X", "Mixed (e.g. nursery / lower primary)"),
+]
+
+
 class Hostel(AuditMixin, models.Model):
+    """
+    A dormitory / hostel building.
+    Capacity and occupancy are CALCULATED from beds and allocations,
+    so they can never go out of date.
+    """
     name = models.CharField(max_length=100)
-    school = models.ForeignKey('mainApp.School', on_delete=models.CASCADE, related_name='hostels')
-    warden = models.ForeignKey('mainApp.Staff', on_delete=models.SET_NULL, null=True, related_name='managed_hostels')
-    capacity = models.IntegerField()
-    current_occupancy = models.IntegerField(default=0)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    amenities = models.TextField()
-    
+    school = models.ForeignKey("mainApp.School", on_delete=models.CASCADE, related_name="hostels")
+
+    # Old field, kept so existing data is not lost. New screens use patron / matron.
+    warden = models.ForeignKey(
+        "mainApp.Staff", on_delete=models.SET_NULL, null=True, blank=True, related_name="managed_hostels"
+    )
+    patron = models.ForeignKey(
+        "mainApp.Teacher", on_delete=models.SET_NULL, null=True, blank=True, related_name="patron_hostels",
+        help_text="Teacher in charge. They can take roll call, handle exeats and record visitors for this dormitory.",
+    )
+    matron = models.ForeignKey(
+        "mainApp.NonTeachingStaff", on_delete=models.SET_NULL, null=True, blank=True, related_name="matron_hostels",
+        help_text="Matron / custodian shown on dorm lists and exeat slips.",
+    )
+
+    gender = models.CharField(max_length=1, choices=HOSTEL_GENDER_CHOICES)
+    has_rooms = models.BooleanField(
+        "Has separate rooms", default=True,
+        help_text="Untick if the dormitory is one open hall of beds. The system then creates one 'Hall' for you.",
+    )
+    amenities = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Dormitory"
+        verbose_name_plural = "Dormitories"
+
     def __str__(self):
         return self.name
+
+    # ---- calculated numbers (same names as the old fields, so old code keeps working)
+    @property
+    def capacity(self):
+        from django.apps import apps
+        HostelBed = apps.get_model("mainApp", "HostelBed")
+        return HostelBed.objects.filter(room__hostel=self, is_active=True, room__is_active=True).count()
+
+    @property
+    def current_occupancy(self):
+        return self.assignments.filter(is_active=True).count()
+
+    @property
+    def free_beds(self):
+        return max(self.capacity - self.current_occupancy, 0)
+
+    def accepts(self, student_gender):
+        """True if a student of this gender may sleep here."""
+        return self.gender == "X" or (student_gender and self.gender == student_gender)
+
 
 
 

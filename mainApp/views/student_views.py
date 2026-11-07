@@ -1,8 +1,10 @@
 from django.contrib import messages
+from mainApp.tenancy import for_school
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
+from django.db.models import ProtectedError
 from django.urls import reverse
 from django.views.decorators.http import require_POST,require_GET
 from mainApp.decorators import role_required
@@ -138,9 +140,11 @@ def enroll_student_finalize(request, draft_id):
     password = DEFAULT_STUDENT_PASSWORD
 
     # 3) Create or reuse user only
+    new_account = False
     if student.user_id:
         user = student.user
     else:
+        new_account = True
         username = generate_unique_student_username(student.first_name, student.last_name)
         while User.objects.filter(username=username).exists():
             username = generate_unique_student_username(student.first_name, student.last_name)
@@ -187,6 +191,7 @@ def enroll_student_finalize(request, draft_id):
             email_verified=True,
             verification_code=None,
             verification_expiry=None,
+            must_change_password=new_account,
         )
     else:
         updates = []
@@ -234,7 +239,7 @@ def enroll_student_finalize(request, draft_id):
 @transaction.atomic
 def student_update(request, pk):
     profile = request.user.profile
-    student = get_object_or_404(Student, pk=pk)
+    student = get_object_or_404(for_school(Student, request), pk=pk)
 
     if not profile.school or student.school != profile.school:
         messages.error(request, "You don't have permission to edit this student.")
@@ -522,7 +527,7 @@ from mainApp.views.student_import_views import (  # noqa: E402,F401
 @transaction.atomic
 def student_delete(request, pk):
     profile = request.user.profile
-    student = get_object_or_404(Student, pk=pk)
+    student = get_object_or_404(for_school(Student, request), pk=pk)
 
     if not profile.school or student.school != profile.school:
         messages.error(request, "You do not have permission to delete this student.")
@@ -532,19 +537,25 @@ def student_delete(request, pk):
     linked_user = student.user if getattr(student, "user_id", None) else None
 
     try:
-        # Break M2M links first if needed
-        if hasattr(student, "parents"):
-            student.parents.clear()
+        # The student, their login account and everything linked to them (parent
+        # links, marks, ...) go into ONE recycle bin entry, so a restore brings
+        # them all back together with the same IDs.
+        from mainApp.recycle_bin import move_to_recycle_bin
 
-        # Delete student first
-        student.delete()
+        move_to_recycle_bin([student, linked_user], user=request.user)
 
-        # Delete linked user after student is removed
-        # Profile will cascade because Profile.user is OneToOne with CASCADE
-        if linked_user:
-            linked_user.delete()
-
-        messages.success(request, f"Student '{student_name}' was deleted successfully.")
+        messages.success(
+            request,
+            f"Student '{student_name}' was moved to the recycle bin. "
+            f"A Super Admin can restore them from there.",
+        )
+    except ProtectedError as e:
+        blockers = sorted({obj._meta.verbose_name_plural for obj in e.protected_objects})
+        messages.error(
+            request,
+            f"'{student_name}' cannot be deleted because they still have "
+            f"{', '.join(str(b) for b in blockers)}. Mark the student as left instead.",
+        )
     except Exception as e:
         messages.error(request, f"Failed to delete student '{student_name}': {e}")
 

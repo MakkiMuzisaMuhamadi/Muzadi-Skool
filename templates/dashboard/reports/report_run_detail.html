@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load humanize %}
 {% block content %}
 
 <style>
@@ -103,9 +104,17 @@
       <i class="fas fa-arrow-left mr-1"></i> Command Center
     </a>
 
-    <a href="{% url 'report_run_download_zip' run.id %}" class="btn btn-success btn-sm">
-      <i class="fas fa-file-archive mr-1"></i> Download ZIP
-    </a>
+    <div class="btn-group">
+      <a href="{% url 'report_run_download_zip' run.id %}" class="btn btn-success btn-sm">
+        <i class="fas fa-file-archive mr-1"></i> Download ZIP
+      </a>
+      {% if release.hold_enabled %}
+      <a href="{% url 'report_run_download_zip' run.id %}?cleared=1" class="btn btn-outline-success btn-sm"
+         title="Leave out learners whose report cards are on fees hold">
+        Cleared only
+      </a>
+      {% endif %}
+    </div>
 
     {% if run.failed_students %}
       <form method="post" action="{% url 'report_run_retry_failed' run.id %}" class="d-inline">
@@ -136,6 +145,82 @@
     </form>
   </div>
 </div>
+
+{% if release.latest %}
+<div class="card rr-card mb-3">
+  <div class="card-body">
+    <div class="rr-section-title">
+      <i class="fas fa-paper-plane text-success"></i>
+      <span>Release to learners &amp; parents</span>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-6 col-md-3 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Report cards</div>
+          <div class="rr-stat-value">{{ release.latest }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Released</div>
+          <div class="rr-stat-value text-success">{{ release.released }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">Drafts (staff only)</div>
+          <div class="rr-stat-value">{{ release.drafts }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-2">
+        <div class="rr-stat-box">
+          <div class="rr-stat-label">On fees hold</div>
+          <div class="rr-stat-value text-danger">{% if release.hold_enabled %}{{ release.on_hold }}{% else %}off{% endif %}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+      {% if release.drafts %}
+      <form method="post" action="{% url 'report_run_publish' run.id %}" class="d-inline">
+        {% csrf_token %}
+        <button name="action" value="publish" class="btn btn-success btn-sm"
+                onclick="return confirm('Release {{ release.drafts }} report card(s)? Learners will be able to see them{% if release.hold_enabled %} (except those on fees hold){% endif %}.');">
+          <i class="fas fa-check-circle mr-1"></i> Release all
+        </button>
+      </form>
+      {% endif %}
+      {% if release.released %}
+      <form method="post" action="{% url 'report_run_publish' run.id %}" class="d-inline">
+        {% csrf_token %}
+        <button name="action" value="unpublish" class="btn btn-outline-secondary btn-sm"
+                onclick="return confirm('Take all these report cards back to draft? Learners will stop seeing them.');">
+          <i class="fas fa-undo mr-1"></i> Back to draft
+        </button>
+      </form>
+
+      <form method="post" action="{% url 'report_run_send_to_parents' run.id %}" class="d-inline-flex align-items-center flex-wrap" style="gap:.5rem;">
+        {% csrf_token %}
+        <button class="btn btn-primary btn-sm"
+                onclick="return confirm('Send an SMS with the report-card link to the parents of every released learner?');">
+          <i class="fas fa-sms mr-1"></i> SMS links to parents
+        </button>
+        {% if release.hold_enabled %}
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="remindHeld" name="remind_held" value="1" checked>
+          <label class="custom-control-label small" for="remindHeld">Send a fees reminder (no link) to parents of learners on hold</label>
+        </div>
+        {% endif %}
+      </form>
+      {% endif %}
+
+      <a href="{% url 'report_release_settings' %}" class="btn btn-link btn-sm">Fees hold settings</a>
+      {% if release.hold_enabled %}<a href="{% url 'report_release_overrides' %}?term_id={{ run.term_id }}{% if run.class_ref_id %}&class_ref_id={{ run.class_ref_id }}{% endif %}" class="btn btn-link btn-sm">Allow a learner</a>{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="card rr-card mb-3">
   <div class="card-body">
@@ -291,6 +376,8 @@
             <th>Student</th>
             <th>Class</th>
             <th>Stream</th>
+            <th>Released</th>
+            <th>Fees</th>
             <th>PDF</th>
             <th>Created</th>
           </tr>
@@ -303,6 +390,32 @@
               <td>{{ s.student }}</td>
               <td>{{ s.class_ref.name|default:"-" }}</td>
               <td>{{ s.stream.name|default:"-" }}</td>
+              <td>
+                {% if not s.is_latest %}
+                  <span class="badge-soft-secondary" title="A newer report card was generated for this learner">Replaced</span>
+                {% else %}
+                <form method="post" action="{% url 'report_snapshot_publish_toggle' s.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  {% if s.is_published %}
+                    <button class="btn btn-sm btn-link p-0" title="Click to take back to draft"><span class="badge-soft-success">Released</span></button>
+                  {% else %}
+                    <button class="btn btn-sm btn-link p-0" title="Click to release this one"><span class="badge-soft-secondary">Draft</span></button>
+                  {% endif %}
+                </form>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.fee_hold.held %}
+                  <span class="badge-soft-danger" title="{{ s.fee_hold.reason }}">Hold &middot; UGX {{ s.fee_hold.balance|floatformat:0|intcomma }}</span>
+                {% elif s.fee_hold.overridden %}
+                  <span class="badge-soft-warning" title="{{ s.fee_hold.reason }}">Allowed</span>
+                {% elif release.hold_enabled %}
+                  <span class="badge-soft-success">Cleared</span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
               <td>
                 {% if s.pdf %}
                   <div class="d-flex flex-wrap" style="gap:.35rem;">
@@ -325,7 +438,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted">No PDFs generated yet.</td>
+              <td colspan="8" class="text-center text-muted">No PDFs generated yet.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -498,7 +611,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    initDataTable("#snapshotsTable", 5, "desc", 25);
+    initDataTable("#snapshotsTable", 7, "desc", 25);
   });
 })();
 </script>

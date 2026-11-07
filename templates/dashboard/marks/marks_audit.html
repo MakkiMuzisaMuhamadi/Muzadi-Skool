@@ -10,49 +10,8 @@
 
 <div class="card mb-3">
   <div class="card-body">
-    <form method="get" id="marksFilter"
-          data-terms-url="{% url 'ajax_terms' %}"
-          data-classes-url="{% url 'ajax_teacher_classes' %}"
-          data-streams-url="{% url 'ajax_teacher_streams' %}"
-          data-examtypes-url="{% url 'ajax_exam_types_for_class' %}"
-          data-subjects-url="{% url 'ajax_teacher_subjects' %}"
-          data-papers-url="{% url 'ajax_teacher_papers' %}">
-      <div class="form-row">
-        <div class="form-group col-md-3">
-          <label>Academic Year</label>{{ filter_form.academic_year }}
-        </div>
-        <div class="form-group col-md-3">
-          <label>Term</label>{{ filter_form.term }}
-        </div>
-        <div class="form-group col-md-3">
-          <label>Class</label>{{ filter_form.class_ref }}
-        </div>
-        <div class="form-group col-md-3">
-          <label>Stream</label>{{ filter_form.stream }}
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group col-md-4">
-          <label>Exam Type</label>{{ filter_form.exam_type }}
-        </div>
-        <div class="form-group col-md-4">
-          <label>Subject</label>{{ filter_form.subject }}
-        </div>
-        <div class="form-group col-md-4">
-          <label>Paper</label>{{ filter_form.paper }}
-        </div>
-      </div>
-
-      <div class="d-flex flex-wrap" style="gap:.5rem;">
-        <button class="btn btn-primary">
-          <i class="fas fa-filter mr-1"></i> Filter
-        </button>
-        <a href="{% url 'marks_audit' %}" class="btn btn-light">
-          <i class="fas fa-sync-alt mr-1"></i> Reset
-        </a>
-      </div>
-    </form>
+        {% url 'marks_audit' as reset_url %}
+        {% include "dashboard/marks/_marks_filter.html" with submit_label="Filter" submit_icon="fa-filter" reset_url=reset_url %}
   </div>
 </div>
 
@@ -197,102 +156,6 @@
 {% endblock %}
 
 {% block extrajs %}
-<script>
-(function () {
-  const form = document.getElementById("marksFilter");
-  if (!form) return;
-
-  const urls = {
-    terms: form.dataset.termsUrl,
-    classes: form.dataset.classesUrl,
-    streams: form.dataset.streamsUrl,
-    examtypes: form.dataset.examtypesUrl,
-    subjects: form.dataset.subjectsUrl,
-    papers: form.dataset.papersUrl,
-  };
-
-  const yearEl = document.getElementById("id_academic_year");
-  const termEl = document.getElementById("id_term");
-  const classEl = document.getElementById("id_class_ref");
-  const streamEl = document.getElementById("id_stream");
-  const examTypeEl = document.getElementById("id_exam_type");
-  const subjectEl = document.getElementById("id_subject");
-  const paperEl = document.getElementById("id_paper");
-
-  function reset(el, label, disabled=true) {
-    if (!el) return;
-    el.innerHTML = `<option value="">${label}</option>`;
-    el.disabled = disabled;
-  }
-
-  async function load(url, el, label, textKey) {
-    reset(el, label, true);
-    const res = await fetch(url, {headers: {"X-Requested-With":"XMLHttpRequest"}});
-    const data = await res.json();
-    reset(el, label, false);
-    (data.results || []).forEach(x => {
-      const opt = document.createElement("option");
-      opt.value = String(x.id);
-      opt.textContent = String(x[textKey]);
-      el.appendChild(opt);
-    });
-  }
-
-  reset(termEl, "-- Select Term --", true);
-  reset(classEl, "-- Select Class --", true);
-  reset(streamEl, "-- All Streams --", true);
-  reset(examTypeEl, "-- Select Exam Type --", true);
-  reset(subjectEl, "-- Select Subject --", true);
-  reset(paperEl, "-- Select Paper --", true);
-
-  yearEl.addEventListener("change", async () => {
-    reset(termEl, "-- Select Term --", true);
-    reset(classEl, "-- Select Class --", true);
-    reset(streamEl, "-- All Streams --", true);
-    reset(examTypeEl, "-- Select Exam Type --", true);
-    reset(subjectEl, "-- Select Subject --", true);
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!yearEl.value) return;
-    await load(`${urls.terms}?year_id=${encodeURIComponent(yearEl.value)}`, termEl, "-- Select Term --", "text");
-    await load(`${urls.classes}`, classEl, "-- Select Class --", "name");
-  });
-
-  classEl.addEventListener("change", async () => {
-    reset(streamEl, "-- All Streams --", true);
-    reset(examTypeEl, "-- Select Exam Type --", true);
-    reset(subjectEl, "-- Select Subject --", true);
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!classEl.value) return;
-
-    await load(`${urls.streams}?class_id=${encodeURIComponent(classEl.value)}`, streamEl, "-- All Streams --", "name");
-    await load(`${urls.examtypes}?class_id=${encodeURIComponent(classEl.value)}`, examTypeEl, "-- Select Exam Type --", "name");
-    await load(`${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`, subjectEl, "-- Select Subject --", "name");
-  });
-
-  streamEl.addEventListener("change", async () => {
-    reset(subjectEl, "-- Select Subject --", true);
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!classEl.value) return;
-    let u = `${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`;
-    if (streamEl.value) u += `&stream_id=${encodeURIComponent(streamEl.value)}`;
-    await load(u, subjectEl, "-- Select Subject --", "name");
-  });
-
-  subjectEl.addEventListener("change", async () => {
-    reset(paperEl, "-- Select Paper --", true);
-    if (!classEl.value || !subjectEl.value) return;
-
-    let u = `${urls.papers}?class_id=${encodeURIComponent(classEl.value)}&subject_id=${encodeURIComponent(subjectEl.value)}`;
-    if (streamEl.value) u += `&stream_id=${encodeURIComponent(streamEl.value)}`;
-    await load(u, paperEl, "-- Select Paper --", "paper_name");
-  });
-
-})();
-</script>
-
 <script>
 (function () {
   if (!window.jQuery || !$.fn.DataTable) return;

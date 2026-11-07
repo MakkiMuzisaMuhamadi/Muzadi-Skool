@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% with tab="req" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-list"></i> Requirements checklist</h3>
+    <small class="text-muted">{% if term %}{{ term.name }}. {% endif %}Type how many of each item the student brought.{% if hostel %} {{ complete_count }} of {{ total }} boarders have everything.{% endif %}</small>
+  </div>
+  {% if request.user.profile.role == "SUPER_ADMIN" or request.user.profile.role == "ADMIN" %}
+    <a href="{% url 'boarding_requirement_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-cog mr-1"></i> Edit the list</a>
+  {% endif %}
+</div>
+
+<form method="get" class="form-inline mb-3">
+  <select name="hostel_id" class="form-control mr-2" onchange="this.form.submit()">
+    <option value="">Choose a dormitory</option>
+    {% for h in hostels %}<option value="{{ h.id }}" {% if hostel and hostel.id == h.id %}selected{% endif %}>{{ h.name }}</option>{% endfor %}
+  </select>
+  {% if hostel %}
+  <div class="form-check mr-2"><input type="checkbox" class="form-check-input" id="missing" name="missing" value="1" {% if missing %}checked{% endif %} onchange="this.form.submit()"><label class="form-check-label" for="missing">Only students with missing items</label></div>
+  <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="fas fa-print"></i></button>
+  {% endif %}
+</form>
+
+{% if hostel %}
+  {% if not reqs %}
+    <div class="alert alert-info">No requirements set up yet. An administrator can add them under "Edit the list".</div>
+  {% else %}
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="hostel_id" value="{{ hostel.id }}">
+    {% if missing %}<input type="hidden" name="missing" value="1">{% endif %}
+    <div class="card"><div class="card-body">
+      <div class="table-responsive">
+      <table class="table table-sm table-bordered align-middle">
+        <thead class="table-light"><tr><th>Bed</th><th>Student</th>{% for r in reqs %}<th class="text-center small">{{ r.name }}<br><span class="text-muted">need {{ r.quantity }}</span></th>{% endfor %}<th>Done</th></tr></thead>
+        <tbody>
+        {% for row in rows %}
+          <tr>
+            <td>{{ row.allocation.room.room_number }}/{{ row.allocation.bed.bed_number }}</td>
+            <td class="font-weight-bold text-nowrap">{{ row.student.name }}</td>
+            {% for c in row.cells %}
+              {% if c.applies %}
+                <td class="text-center {% if c.done %}table-success{% endif %}"><input type="number" min="0" max="99" name="q_{{ row.student.id }}_{{ c.req.id }}" value="{{ c.qty }}" class="form-control form-control-sm text-center" style="width:64px;margin:auto;" aria-label="{{ c.req.name }} for {{ row.student.name }}"></td>
+              {% else %}
+                <td class="text-center text-muted">n/a</td>
+              {% endif %}
+            {% endfor %}
+            <td>{% if row.complete %}<span class="badge bg-success text-white">Yes</span>{% else %}<span class="badge bg-danger text-white">No</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="{{ reqs|length|add:3 }}" class="text-center text-muted py-4">{% if missing %}Everyone has brought everything.{% else %}No boarders in this dormitory.{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if rows %}<button class="btn btn-primary mt-2"><i class="fas fa-save mr-1"></i> Save checklist</button>{% endif %}
+    </div></div>
+  </form>
+  {% endif %}
+{% endif %}
+{% endblock %}

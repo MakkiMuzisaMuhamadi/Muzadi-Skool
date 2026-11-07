@@ -1,11 +1,12 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
     <h3 class="page-title mb-0">{{ st.reference }} · {{ st.location }} {% include "dashboard/inventory/_status_badge.html" with s=st.status %}</h3>
     <small class="text-muted">Started {{ st.created_at|date:"Y-m-d H:i" }}{% if st.notes %} · {{ st.notes }}{% endif %}</small>
   </div>
-  <a href="{% url 'inv_stocktakes' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> All stock takes</a>
+  {% if request.user|can_open:"inv_stocktakes" %}<a href="{% url 'inv_stocktakes' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> All stock takes</a>{% endif %}
 </div>
 
 {% if summary %}

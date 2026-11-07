@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+from mainApp.tenancy import scope
+from mainApp.tenancy import for_school
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -204,7 +206,7 @@ def teacher_list(request):
     status = request.GET.get("status", "working")
     year = current_academic_year()
 
-    qs = Teacher.objects.select_related("user")
+    qs = scope(Teacher.objects.select_related("user"), "user__profile__school")
     if status == "working":
         qs = qs.active()
     elif status in StaffStatus.values:
@@ -215,7 +217,7 @@ def teacher_list(request):
         workload_count=Count("allocations", filter=Q(allocations__academic_year=year), distinct=True)
     ).order_by("user__first_name", "user__last_name")
 
-    counts = dict(Teacher.objects.values_list("status").annotate(n=Count("id")))
+    counts = dict(scope(Teacher.objects.all(), "user__profile__school").values_list("status").annotate(n=Count("id")))
     return render(request, "dashboard/teachers/teacher_list.html", {
         "title": "Teachers",
         "teachers": qs,
@@ -231,7 +233,7 @@ def teacher_list(request):
 @login_required
 @role_required(ADMIN_ROLES)
 def teacher_detail(request, pk):
-    teacher = get_object_or_404(Teacher.objects.select_related("user", "user__profile"), pk=pk)
+    teacher = get_object_or_404(for_school(Teacher.objects.select_related("user", "user__profile"), request, "user__profile__school"), pk=pk)
 
     current_year = current_academic_year()
     year_id = request.GET.get("year")
@@ -272,7 +274,7 @@ def teacher_detail(request, pk):
 @login_required
 @role_required(ADMIN_ROLES)
 def teacher_edit(request, pk):
-    teacher = get_object_or_404(Teacher.objects.select_related("user"), pk=pk)
+    teacher = get_object_or_404(for_school(Teacher.objects.select_related("user"), request, "user__profile__school"), pk=pk)
 
     if request.method == "POST":
         form = TeacherEditForm(request.POST, request.FILES, instance=teacher)
@@ -297,7 +299,7 @@ def teacher_edit(request, pk):
 @role_required(ADMIN_ROLES)
 @require_POST
 def teacher_change_status(request, pk):
-    teacher = get_object_or_404(Teacher.objects.select_related("user"), pk=pk)
+    teacher = get_object_or_404(for_school(Teacher.objects.select_related("user"), request, "user__profile__school"), pk=pk)
     if teacher.user_id == request.user.id:
         messages.error(request, "You cannot change your own status.")
         return redirect("teacher_detail", pk=pk)
@@ -324,7 +326,7 @@ def teacher_delete(request, pk):
     Hard delete is only allowed for teachers with no history (e.g. enrolled by mistake).
     Everyone else is marked as 'Left' so marks, exams and reports keep their records.
     """
-    teacher = get_object_or_404(Teacher.objects.select_related("user"), pk=pk)
+    teacher = get_object_or_404(for_school(Teacher.objects.select_related("user"), request, "user__profile__school"), pk=pk)
     history = teacher_history(teacher)
 
     if request.method == "POST":
@@ -349,7 +351,7 @@ def teacher_delete(request, pk):
 @role_required(ADMIN_ROLES)
 @require_POST
 def teacher_reset_password(request, pk):
-    teacher = get_object_or_404(Teacher.objects.select_related("user"), pk=pk)
+    teacher = get_object_or_404(for_school(Teacher.objects.select_related("user"), request, "user__profile__school"), pk=pk)
     password = reset_teacher_password(teacher)
     sent = send_teacher_credentials(
         teacher, teacher.user.username, password,
@@ -506,7 +508,7 @@ def teacher_import_review(request):
         sms_sent = 0
         if request.POST.get("send_sms") or request.POST.get("send_email"):
             for c in creds:
-                t = Teacher.objects.select_related("user").get(pk=c["teacher_id"])
+                t = scope(Teacher.objects.select_related("user"), "user__profile__school").get(pk=c["teacher_id"])
                 r = send_teacher_credentials(
                     t, c["username"], c["password"], login_url=_login_url(request),
                     school_name=getattr(_school(request), "name", ""),

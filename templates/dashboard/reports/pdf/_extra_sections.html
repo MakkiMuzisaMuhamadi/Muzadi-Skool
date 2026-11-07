@@ -1,0 +1,76 @@
+{% load humanize %}
+{% comment %}
+  Attendance, Conduct & Co-curricular, and Fees sections (PLE / UCE / UACE).
+  Included inside the `{% for sec in sections %}` loop of every report card.
+  A section prints only when the report has data for it (report.extras.*).
+{% endcomment %}
+{% if sec.section_key == "attendance" and report.extras.attendance %}
+  {% with a=report.extras.attendance %}
+  <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">
+    <div class="section-title">{{ sec.title|default:"Attendance" }}</div>
+    <table class="xs-table">
+      <tr>
+        <th>Days recorded</th>
+        <th>Days present</th>
+        <th>Days absent</th>
+        <th>Days late</th>
+        <th>Attendance</th>
+      </tr>
+      <tr>
+        <td>{{ a.days_recorded }}</td>
+        <td>{{ a.days_present }}</td>
+        <td>{{ a.days_absent }}</td>
+        <td>{{ a.days_late }}</td>
+        <td><strong>{{ a.percent }}%</strong></td>
+      </tr>
+    </table>
+  </div>
+  {% endwith %}
+{% endif %}
+
+{% if sec.section_key == "conduct" and report.extras.conduct %}
+  {% with c=report.extras.conduct %}
+  <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">
+    <div class="section-title">{{ sec.title|default:"Conduct & Co-curricular Activities" }}</div>
+    <table class="xs-table xs-left">
+      {% if c.conduct %}
+      <tr><th style="width: 28%;">Conduct</th><td>{{ c.conduct }}</td></tr>
+      {% endif %}
+      {% if c.co_curricular %}
+      <tr><th style="width: 28%;">Clubs, sports &amp; responsibilities</th><td>{{ c.co_curricular }}</td></tr>
+      {% endif %}
+    </table>
+  </div>
+  {% endwith %}
+{% endif %}
+
+{% if sec.section_key == "fees" and report.extras.fees %}
+  {% with f=report.extras.fees %}
+  <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">
+    <div class="section-title">{{ sec.title|default:"Fees" }}</div>
+    <table class="xs-table">
+      <tr>
+        <th>This term's fees</th>
+        <th>Paid this term</th>
+        <th>Total balance</th>
+        {% if f.next_term_fees is not None %}<th>{{ f.next_term_name|default:"Next term" }} fees</th>{% endif %}
+      </tr>
+      <tr>
+        <td>UGX {{ f.term_billed|floatformat:0|intcomma }}</td>
+        <td>UGX {{ f.term_paid|floatformat:0|intcomma }}</td>
+        <td>
+          {% if f.credit_amount %}
+            In credit: UGX {{ f.credit_amount|floatformat:0|intcomma }}
+          {% else %}
+            <strong>UGX {{ f.total_balance|floatformat:0|intcomma }}</strong>
+          {% endif %}
+        </td>
+        {% if f.next_term_fees is not None %}<td>UGX {{ f.next_term_fees|floatformat:0|intcomma }}</td>{% endif %}
+      </tr>
+    </table>
+    <div class="xs-note">
+      Balances as at {{ f.as_at }}.{% if f.schoolpay_code %} Pay through SchoolPay using code <strong>{{ f.schoolpay_code }}</strong>.{% endif %}
+    </div>
+  </div>
+  {% endwith %}
+{% endif %}

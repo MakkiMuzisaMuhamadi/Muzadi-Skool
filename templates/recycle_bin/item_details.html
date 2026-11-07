@@ -1,0 +1,141 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0">
+        <span class="badge badge-dark mr-1">{{ item.object_type }}</span> {{ item.display_name }}
+      </h3>
+      <small class="text-muted">
+        #{{ item.object_id }}{% if item.school_name %} &middot; {{ item.school_name }}{% endif %}
+      </small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{% url 'recycle_bin_dashboard' %}" class="btn btn-light btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i> Back to recycle bin
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="card-title">Deletion</h5>
+      <dl class="mb-0">
+        <dt class="small text-muted">Deleted by</dt><dd>{{ item.deleted_by_display }}</dd>
+        <dt class="small text-muted">Deleted on</dt><dd>{{ item.deleted_at|date:"d M Y, H:i" }}</dd>
+        <dt class="small text-muted">Expires</dt>
+        <dd>
+          {{ item.expires_at|date:"d M Y, H:i" }}
+          {% if item.is_expired %}<span class="badge badge-danger ml-1">Expired</span>
+          {% else %}<span class="text-muted">({{ item.days_left }} day{{ item.days_left|pluralize }} left)</span>{% endif %}
+        </dd>
+        <dt class="small text-muted">Type of deletion</dt><dd>{{ item.get_deletion_type_display }}</dd>
+        {% if item.deletion_reason %}<dt class="small text-muted">Reason</dt><dd>{{ item.deletion_reason }}</dd>{% endif %}
+      </dl>
+    </div></div>
+  </div>
+
+  <div class="col-lg-8 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="card-title">Restore</h5>
+      {% if check.ok %}
+        <div class="alert alert-success py-2">
+          <i class="fas fa-check-circle mr-1"></i>
+          This item can be restored. It will come back with the same ID{% if item.related_count %},
+          together with <strong>{{ item.related_count }}</strong> related record{{ item.related_count|pluralize }}{% endif %}.
+          {% if item.relink_count %}<br><i class="fas fa-link mr-1"></i>{{ item.relink_count }} record{{ item.relink_count|pluralize }} that pointed to it (e.g. students in a class) will be linked back.{% endif %}
+        </div>
+      {% else %}
+        <div class="alert alert-danger py-2 mb-2">
+          <i class="fas fa-ban mr-1"></i> This item cannot be restored yet:
+          <ul class="mb-0 mt-1">{% for p in check.problems %}<li>{{ p }}</li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+      {% if check.warnings %}
+        <div class="alert alert-warning py-2">
+          <ul class="mb-0">{% for w in check.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+      {% if item.is_legacy %}
+        <div class="alert alert-info py-2">
+          This item was deleted by the old recycle bin, which only saved the main record
+          {% if item.object_type == 'Subject' %}and its papers{% endif %}. Related records (marks, fees, etc.) cannot be brought back.
+        </div>
+      {% endif %}
+
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success" formaction="{% url 'restore_item' item.id %}"
+                {% if not check.ok %}disabled{% endif %}
+                onclick="return confirm('Restore this item?');">
+          <i class="fas fa-undo mr-1"></i> Restore
+        </button>
+        <button type="submit" class="btn btn-outline-danger ml-1" formaction="{% url 'permanent_delete' item.id %}"
+                onclick="return confirm('Permanently delete this item? This cannot be undone!');">
+          <i class="fas fa-trash mr-1"></i> Delete permanently
+        </button>
+      </form>
+    </div></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="card-title">Record details</h5>
+      {% if root_fields %}
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <tbody>
+          {% for label, value in root_fields %}
+            <tr><th class="text-muted font-weight-normal" style="width:40%;">{{ label }}</th><td>{{ value }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted mb-0">No details saved.</p>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="col-lg-6 mb-3">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="card-title">What was deleted with it</h5>
+      {% if summary %}
+        <ul class="list-group list-group-flush mb-3">
+          {% for name, count in summary %}
+          <li class="list-group-item d-flex justify-content-between px-0 py-2">
+            {{ name }} <span class="badge badge-primary badge-pill">{{ count }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      {% elif related_objects %}
+        <ul class="mb-0">
+          {% for name, rows in related_objects.items %}<li>{{ rows|length }} {{ name }}</li>{% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted mb-0">Nothing else.</p>
+      {% endif %}
+
+      {% if preview %}
+      <a data-toggle="collapse" href="#rowsList" class="small">Show all saved records</a>
+      <div class="collapse mt-2" id="rowsList">
+        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+          <table class="table table-sm table-striped mb-0">
+            <thead><tr><th>Type</th><th>ID</th><th>Name</th></tr></thead>
+            <tbody>
+              {% for r in preview %}<tr><td>{{ r.model }}</td><td>{{ r.pk }}</td><td>{{ r.name }}</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if preview_truncated %}<small class="text-muted">Only the first 200 are listed.</small>{% endif %}
+      </div>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}

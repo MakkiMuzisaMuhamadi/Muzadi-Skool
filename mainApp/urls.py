@@ -52,9 +52,20 @@ from mainApp.views.online_exam_teacher_views import *
 from mainApp.views.parent_views import *
 from mainApp.views.ple_grading_views import *
 from mainApp.views.promotion_views import *
+from mainApp import session_timeout
 from mainApp.views.report_preview_views import *
 from mainApp.views.report_template_views import *
+from mainApp.views.report_template_views import report_template_preview
 from mainApp.views.reports_views import *
+from mainApp.views.report_release_views import (
+    report_run_publish,
+    report_snapshot_publish_toggle,
+    report_release_settings,
+    report_release_overrides,
+    report_run_send_to_parents,
+    report_parent_link,
+)
+from mainApp.views.uce_terms_views import report_load_standard_terms
 from mainApp.views.student_views import *
 from mainApp.views.subject_views import *
 from mainApp.views.todo_views import *
@@ -66,6 +77,12 @@ from mainApp.views.uce_terms_views import *
 from mainApp.views.exams_views import *
 from .views.dashboard_views import *
 from .views.auth_views import *
+from .views.password_reset_views import (
+    password_reset_cancel, password_reset_choose, password_reset_start, password_reset_verify,
+)
+from .views.parent_portal_views import (
+    parent_child_reports, parent_portal, parent_report_download, parent_report_view,
+)
 from .decorators import admin_only
 from mainApp.views import auth_views, recycle_bin_views
 from mainApp.views import allocation_views, staff_views, teacher_views
@@ -75,7 +92,7 @@ from mainApp.views import student_import_views as v
 # functions cannot clash with view names from other modules.
 from mainApp.views import timetable_views as tt
 # Marks upgrade: progress/approval, Excel round-trip, change history
-from mainApp.views import mark_entry_views, marks_excel_views, marks_control_views
+from mainApp.views import mark_entry_views, marks_excel_views, marks_control_views, offline_marks_views
 from mainApp.views import parent_views
 from mainApp.views.transport_views import *
 
@@ -87,8 +104,27 @@ urlpatterns = [
     path('', login, name='login'),
     path('login/', login, name='login'),
     path('logout/', custom_logout, name='logout'),
+    # automatic sign-out after inactivity (mainApp/session_timeout.py)
+    path('session/keepalive/', session_timeout.session_keepalive, name='session_keepalive'),
+    path('session/idle-logout/', session_timeout.session_idle_logout, name='session_idle_logout'),
     path('verify-email/', verify_email, name='verify_email'),
+    path('verify-email/cancel/', auth_views.cancel_verification, name='cancel_verification'),
     path('dashboard', index, name='dashboard'),
+
+    # First sign-in / after a reset to the default password
+    path('account/set-password/', auth_views.set_new_password, name='set_new_password'),
+
+    # Forgot password (SMS / email code)
+    path('forgot-password/', password_reset_start, name='password_reset_start'),
+    path('forgot-password/send-code/', password_reset_choose, name='password_reset_choose'),
+    path('forgot-password/enter-code/', password_reset_verify, name='password_reset_verify'),
+    path('forgot-password/cancel/', password_reset_cancel, name='password_reset_cancel'),
+
+    # Parent portal
+    path('parent/', parent_portal, name='parent_portal'),
+    path('parent/children/<int:student_id>/reports/', parent_child_reports, name='parent_child_reports'),
+    path('parent/reports/<uuid:snapshot_id>/view/', parent_report_view, name='parent_report_view'),
+    path('parent/reports/<uuid:snapshot_id>/download/', parent_report_download, name='parent_report_download'),
 
     # =========================================================================
     ## 02  USERS & ACCOUNTS
@@ -98,6 +134,10 @@ urlpatterns = [
     path('users/add/', add_user, name='add_user'),
     path('users/edit/<int:user_id>/', edit_user, name='edit_user'),
     path('users/delete/<int:user_id>/', delete_user, name='delete_user'),
+    path('users/<int:user_id>/reset-password/', auth_views.reset_user_password, name='reset_user_password'),
+    path('users/<int:user_id>/toggle-active/', auth_views.toggle_user_active, name='toggle_user_active'),
+    path('users/<int:user_id>/verify-email/', auth_views.mark_user_email_verified, name='mark_user_email_verified'),
+    path('users/bulk/', auth_views.bulk_user_action, name='bulk_user_action'),
     path('users/profile/', user_profile, name='user_profile'),
     path('users/change-username/', change_username, name='change_username'),
     path('users/change-email/', change_email, name='change_email'),
@@ -108,6 +148,8 @@ urlpatterns = [
     path('users/account-candidates/data/', account_candidates_data, name='account_candidates_data'),
     path('users/generate-selected-student-accounts/', generate_selected_student_accounts, name='generate_selected_student_accounts'),
     path('users/generate-selected-student-accounts/status/<uuid:job_id>/', student_account_job_status, name='student_account_job_status'),
+    path('users/accounts-job/<uuid:job_id>/slips/', auth_views.account_login_slips, name='account_login_slips'),
+    path('parents/<int:parent_pk>/create-login/', auth_views.create_parent_account, name='create_parent_account'),
 
     # =========================================================================
     ## 03  RECYCLE BIN
@@ -120,6 +162,7 @@ urlpatterns = [
     path('recycle-bin/bulk-restore-simple/', recycle_bin_views.bulk_restore_simple, name='bulk_restore_simple'),
     path('recycle-bin/bulk-delete/', recycle_bin_views.bulk_permanent_delete, name='bulk_permanent_delete'),
     path('recycle-bin/cleanup/', recycle_bin_views.cleanup_expired, name='cleanup_expired'),
+    path('recycle-bin/empty/', recycle_bin_views.empty_bin, name='recycle_bin_empty'),
     path('recycle-bin/settings/', recycle_bin_views.update_settings, name='update_recycle_bin_settings'),
     path('recycle-bin/details/<int:item_id>/', recycle_bin_views.view_item_details, name='view_item_details'),
     path('recycle-bin/stats/', recycle_bin_views.get_recycle_bin_stats, name='recycle_bin_stats'),
@@ -351,11 +394,20 @@ urlpatterns = [
 
     # Mark entry
     path('marks/entry/', marks_entry, name='marks_entry'),
+    path('marks/filter-options/', mark_entry_views.marks_filter_options, name='marks_filter_options'),
+    path('ajax/year-terms/', ajax_year_terms, name='ajax_year_terms'),
     path('marks/audit/', marks_audit, name='marks_audit'),
     path('marks/autosave/', marks_autosave, name='marks_autosave'),
 
     # Teacher: submit for approval
     path('marks/submit/', mark_entry_views.marks_submit, name='marks_submit'),
+
+    # Offline mark entry (phone app): works without internet, syncs later
+    path('marks/offline/', offline_marks_views.offline_marks_app, name='offline_marks_app'),
+    path('marks/offline/api/me/', offline_marks_views.offline_me, name='offline_marks_me'),
+    path('marks/offline/api/lists/', offline_marks_views.offline_my_lists, name='offline_marks_lists'),
+    path('marks/offline/api/package/', offline_marks_views.offline_package, name='offline_marks_package'),
+    path('marks/offline/api/sync/', offline_marks_views.offline_sync, name='offline_marks_sync'),
 
     # Excel round-trip (download sheet, upload with preview)
     path('marks/excel/template/', marks_excel_views.marks_excel_template, name='marks_excel_template'),
@@ -386,7 +438,8 @@ urlpatterns = [
 
     # AJAX - dropdowns filtered to the teacher's allocations
     path('ajax/alloc/classes/', ajax_teacher_classes, name='ajax_teacher_classes'),
-    path('ajax/alloc/streams/', ajax_teacher_streams, name='ajax_teacher_streams'),
+    path('ajax/alloc/streams/', ajax_cbc_teacher_streams, name='ajax_cbc_teacher_streams'),
+    path('ajax/alloc/streams/', ajax_cbc_teacher_streams, name='ajax_teacher_streams'),  # old name, kept for old pages
     path('ajax/alloc/subjects/', ajax_teacher_subjects, name='ajax_teacher_subjects'),
     path('ajax/alloc/papers/', ajax_teacher_papers, name='ajax_teacher_papers'),
     path('ajax/exam-types-for-class/', ajax_exam_types_for_class, name='ajax_exam_types_for_class'),
@@ -436,7 +489,7 @@ urlpatterns = [
     # path('grading/uace/results-preview/', uace_results_preview, name='uace_results_preview'),
 
     # =========================================================================
-    ## 13  CBC TOPICS & COMPETENCIES (UCE)
+    ## 13  CBC TOPICS & COMPETENCIES (UCE + UACE)
     # =========================================================================
     path('uce/topics/', topic_list, name='topic_list'),
     path('uce/topics/add/', topic_create, name='topic_create'),
@@ -451,6 +504,16 @@ urlpatterns = [
     path('uce/ajax/teacher-subjects/', ajax_teacher_subjects, name='ajax_teacher_subjects'),
     path('ajax/topic-meta/', ajax_topic_meta, name='ajax_topic_meta'),
 
+    # Competency-based curriculum (UCE + UACE): projects and generic skills
+    path('competency/projects/', project_entry, name='project_entry'),
+    path('competency/generic-skills/', generic_skill_list, name='generic_skill_list'),
+    path('competency/generic-skills/add/', generic_skill_form, name='generic_skill_add'),
+    path('competency/generic-skills/<int:pk>/edit/', generic_skill_form, name='generic_skill_edit'),
+    path('competency/generic-skills/ratings/', generic_skill_rating_entry, name='generic_skill_rating_entry'),
+
+    # Manual per-learner report comments (all levels; blank = automatic comment)
+    path('report-setup/learner-comments/', report_comment_entry, name='report_comment_entry'),
+
     # =========================================================================
     ## 14  REPORT CARDS
     # =========================================================================
@@ -464,6 +527,14 @@ urlpatterns = [
     path('reports/runs/<uuid:run_id>/retry-failed/', report_run_retry_failed, name='report_run_retry_failed'),
     path('reports/runs/<uuid:run_id>/stop/', report_run_stop, name='report_run_stop'),
     path('reports/runs/<uuid:run_id>/rerun/', report_run_rerun, name='report_run_rerun'),
+    path('reports/runs/<uuid:run_id>/publish/', report_run_publish, name='report_run_publish'),
+    path('reports/runs/<uuid:run_id>/send-to-parents/', report_run_send_to_parents, name='report_run_send_to_parents'),
+    path('reports/snapshots/<uuid:snapshot_id>/publish-toggle/', report_snapshot_publish_toggle, name='report_snapshot_publish_toggle'),
+
+    # Release: fees hold settings, overrides, and the parent link from the SMS (no login)
+    path('report-setup/fees-hold/', report_release_settings, name='report_release_settings'),
+    path('report-setup/fees-hold/allowed/', report_release_overrides, name='report_release_overrides'),
+    path('r/<str:token>/', report_parent_link, name='report_parent_link'),
 
     # Single report (admin)
     path('reports/snapshots/<uuid:snapshot_id>/view/', view_report_pdf_admin, name='view_report_pdf_admin'),
@@ -483,6 +554,7 @@ urlpatterns = [
     path('reports/templates/<int:pk>/sections/', report_template_sections_edit, name='report_template_sections_edit'),
     path('reports/templates/<int:pk>/signatures/', report_template_signatures_edit, name='report_template_signatures_edit'),
     path('reports/templates/<int:pk>/activate/', report_template_activate, name='report_template_activate'),
+    path('reports/templates/<int:pk>/preview/', report_template_preview, name='report_template_preview'),
 
     # Report setup - automatic comments
     path('report-setup/comments/', AutoCommentRuleList.as_view(), name='report_auto_comment_list'),
@@ -511,6 +583,7 @@ urlpatterns = [
     path('report-setup/grade-descriptors/add/', GradeDescCreate.as_view(), name='report_grade_desc_add'),
     path('report-setup/grade-descriptors/<int:pk>/edit/', GradeDescUpdate.as_view(), name='report_grade_desc_edit'),
     path('report-setup/grade-descriptors/<int:pk>/delete/', GradeDescDelete.as_view(), name='report_grade_desc_delete'),
+    path('report-setup/load-standard-values/', report_load_standard_terms, name='report_load_standard_terms'),
 
     # AJAX for report pages
     path('ajax/report-terms/', ajax_terms_for_year, name='ajax_report_terms'),
@@ -527,7 +600,12 @@ urlpatterns = [
     path('promotion/setup/stream/<int:pk>/', promotion_setup_stream_update, name='promotion_setup_stream_update'),
 
     path('promotion/dashboard/', promotion_dashboard, name='promotion_dashboard'),
-    path('promotion/dashboard/students-data/', promotion_students_data, name='promotion_students_data'),
+    path('promotion/dashboard/save/', promotion_save_decisions, name='promotion_save_decisions'),
+    path('promotion/dashboard/prepare/', promotion_generate_defaults, name='promotion_generate_defaults'),
+    path('promotion/dashboard/apply/', promotion_apply, name='promotion_apply'),
+    path('promotion/decision/<int:pk>/reverse/', promotion_reverse, name='promotion_reverse'),
+    path('promotion/decision/<int:pk>/clear/', promotion_clear, name='promotion_clear'),
+    # old names, kept so existing links still work
     path('promotion/dashboard/bulk-save/', promotion_bulk_save, name='promotion_bulk_save'),
     path('promotion/dashboard/promote-all/', promotion_promote_all_students, name='promotion_promote_all_students'),
     path('promotion/dashboard/readmit/<int:pk>/', readmit_student_view, name='readmit_student_view'),
@@ -712,33 +790,7 @@ urlpatterns = [
     # =========================================================================
     ## 21  BOARDING / HOSTELS
     # =========================================================================
-    # Hostels (buildings)
-    path('hostels/', HostelListView.as_view(), name='hostel_list'),
-    path('hostels/add/', HostelCreateView.as_view(), name='hostel_create'),
-    path('hostels/<int:pk>/edit/', HostelUpdateView.as_view(), name='hostel_update'),
-    path('hostels/<int:pk>/delete/', HostelDeleteView.as_view(), name='hostel_delete'),
-
-    # Hostel rooms
-    path('rooms/', HostelRoomListView.as_view(), name='hostel_room_list'),
-    path('rooms/add/', HostelRoomCreateView.as_view(), name='hostel_room_create'),
-    path('rooms/<int:pk>/edit/', HostelRoomUpdateView.as_view(), name='hostel_room_update'),
-    path('rooms/<int:pk>/delete/', HostelRoomDeleteView.as_view(), name='hostel_room_delete'),
-
-    # Beds
-    path('beds/', HostelBedListView.as_view(), name='hostel_bed_list'),
-    path('beds/add/', HostelBedCreateView.as_view(), name='hostel_bed_create'),
-    path('beds/<int:pk>/edit/', HostelBedUpdateView.as_view(), name='hostel_bed_update'),
-    path('beds/<int:pk>/delete/', HostelBedDeleteView.as_view(), name='hostel_bed_delete'),
-
-    # Bed assignments & boarders
-    path('assignments/', HostelAssignmentListView.as_view(), name='hostel_assignment_list'),
-    path('assignments/add/', HostelAssignmentCreateView.as_view(), name='hostel_assignment_create'),
-    path('assignments/<int:pk>/edit/', HostelAssignmentUpdateView.as_view(), name='hostel_assignment_update'),
-    path('assignments/<int:pk>/delete/', HostelAssignmentDeleteView.as_view(), name='hostel_assignment_delete'),
-    path('boarders/', BoarderListView.as_view(), name='boarders_list'),
-
-    path('ajax/rooms/', ajax_rooms_for_hostel, name='ajax_rooms_for_hostel'),
-    path('ajax/beds/', ajax_beds_for_room, name='ajax_beds_for_room'),
+    path('', include('mainApp.urls_boarding')),
 
     # =========================================================================
     ## 22  TRANSPORT
@@ -798,6 +850,8 @@ urlpatterns = [
     ## 25  INTEGRATIONS
     # =========================================================================
     path('integrations/schoolpay/', include('mainApp.schoolpay.urls')),
+    # Platform: schools, subscriptions, SMS credit, What's new (mainApp/urls_platform.py)
+    path('', include('mainApp.urls_platform')),
 
     # =========================================================================
     ## 26  SHARED AJAX HELPERS (used by many forms)

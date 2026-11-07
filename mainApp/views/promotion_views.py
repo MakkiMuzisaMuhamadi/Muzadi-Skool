@@ -1,39 +1,93 @@
 import json
 
+from mainApp.academic_period import school_current_year
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from mainApp.decorators import role_required
-from mainApp.forms.promotion_forms import PromotionGenerateForm, ReadmissionForm
-from mainApp.models.calendar import AcademicYear, Term
+from mainApp.forms.promotion_forms import ReadmissionForm
+from mainApp.models.calendar import AcademicYear
 from mainApp.models.models import Class, Stream, StudentPromotionDecision
 from mainApp.models.student import Student
+from mainApp.promotion_rules import promotion_term_checks
+from mainApp.term_status import reporting_finalized
 from mainApp.promotion_service import (
-    bulk_save_promotion_decisions,
+    STATUS_LABELS,
+    apply_promotion_decisions,
+    clear_draft_decision,
+    generate_default_decisions,
+    get_promotion_term,
+    is_primary_class,
+    promotion_class_rows,
+    promotion_class_summary,
     readmit_student_to_class,
-    resolve_target_for_status,
-    suggest_promotion_status,
+    reverse_promotion_decision,
+    save_promotion_decisions,
 )
-from django.core.exceptions import ValidationError
-from mainApp.promotion_rules import validate_term_allows_promotion
 
-def _get_promotion_term_for_year(academic_year):
-    return (
-        Term.objects.filter(academic_year=academic_year)
-        .order_by("-order", "-start_date", "-id")
-        .first()
-    )
+ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"]
+PROGRESSION_MODES = {"NORMAL", "CYCLE_EXIT", "TERMINAL"}
 
 
+def _school(request):
+    profile = getattr(request.user, "profile", None)
+    school = getattr(profile, "school", None)
+    if school:
+        return school
+    try:
+        from mainApp.views.teacher_alloc_utils import get_current_school
+
+        return get_current_school(request)
+    except Exception:
+        return None
+
+
+def _selected_year(request, source=None):
+    source = source if source is not None else request.GET
+    year_id = source.get("academic_year")
+    if year_id and str(year_id).isdigit():
+        year = AcademicYear.objects.filter(pk=year_id).first()
+        if year:
+            return year
+    # the school's own current year (school settings), then the shared calendar
+    school = getattr(getattr(request.user, "profile", None), "school", None)
+    return school_current_year(school) or AcademicYear.objects.order_by("-start_date", "-id").first()
+
+
+def _dashboard_url(academic_year=None, class_ref=None):
+    url = reverse("promotion_dashboard")
+    params = []
+    if academic_year:
+        params.append(f"academic_year={academic_year.pk}")
+    if class_ref:
+        params.append(f"class={class_ref.pk}")
+    return f"{url}?{'&'.join(params)}" if params else url
+
+
+def _post_context(request, school):
+    """academic_year (+ optional class) sent with every promotion POST."""
+    academic_year = _selected_year(request, request.POST)
+    class_ref = None
+    class_id = request.POST.get("class_ref")
+    if class_id and str(class_id).isdigit():
+        class_ref = get_object_or_404(Class, pk=class_id, school=school)
+    term = get_promotion_term(academic_year)
+    return academic_year, term, class_ref
+
+
+# ----------------------------------------------------------------------
+# Promotion setup (class -> next class, stream -> next stream)
+# ----------------------------------------------------------------------
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(ADMIN_ROLES)
 @require_GET
 def promotion_setup(request):
-    school = request.user.profile.school
+    school = _school(request)
     if not school:
         messages.error(request, "No school assigned.")
         return redirect("dashboard")
@@ -66,10 +120,7 @@ def promotion_setup(request):
     stream_rows = []
     for s in raw_stream_rows:
         next_class = s.class_ref.next_class
-        available_next_streams = Stream.objects.filter(
-            class_ref=next_class
-        ).order_by("name")
-
+        available_next_streams = Stream.objects.filter(class_ref=next_class).order_by("name")
         stream_rows.append({
             "stream": s,
             "available_next_streams": available_next_streams,
@@ -88,35 +139,52 @@ def promotion_setup(request):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(ADMIN_ROLES)
 @require_POST
 @transaction.atomic
 def promotion_setup_class_update(request, pk):
-    school = request.user.profile.school
+    school = _school(request)
     class_obj = get_object_or_404(Class, pk=pk, school=school)
 
     next_class_id = request.POST.get("next_class") or None
     progression_mode = request.POST.get("progression_mode") or "NORMAL"
+    if progression_mode not in PROGRESSION_MODES:
+        messages.error(request, "Invalid progression mode.")
+        return redirect("promotion_setup")
 
+    next_class = None
     if next_class_id:
-        next_class = Class.objects.filter(pk=next_class_id, school=school).first()
-        class_obj.next_class = next_class
-    else:
-        class_obj.next_class = None
+        next_class = Class.objects.filter(pk=next_class_id, school=school).exclude(pk=class_obj.pk).first()
+        if not next_class:
+            messages.error(request, "Invalid next class selected.")
+            return redirect("promotion_setup")
 
+    if progression_mode == "NORMAL" and not next_class:
+        messages.warning(
+            request,
+            f"{class_obj.name} has no next class. Its learners cannot be promoted until you choose one "
+            "(or set the mode to Cycle Exit / Terminal).",
+        )
+
+    class_obj.next_class = next_class
     class_obj.progression_mode = progression_mode
     class_obj.save()
+
+    # A stream mapping into a class that is no longer the next class is wrong now.
+    Stream.objects.filter(class_ref=class_obj).exclude(
+        next_stream__class_ref=next_class
+    ).exclude(next_stream__isnull=True).update(next_stream=None)
 
     messages.success(request, f"{class_obj.name} updated successfully.")
     return redirect("promotion_setup")
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(ADMIN_ROLES)
 @require_POST
 @transaction.atomic
 def promotion_setup_stream_update(request, pk):
-    school = request.user.profile.school
+    school = _school(request)
     stream_obj = get_object_or_404(Stream, pk=pk, class_ref__school=school)
 
     next_stream_id = request.POST.get("next_stream") or None
@@ -124,7 +192,7 @@ def promotion_setup_stream_update(request, pk):
     if next_stream_id:
         next_stream = Stream.objects.filter(
             pk=next_stream_id,
-            class_ref=stream_obj.class_ref.next_class
+            class_ref=stream_obj.class_ref.next_class,
         ).first()
 
         if not next_stream:
@@ -140,244 +208,218 @@ def promotion_setup_stream_update(request, pk):
     return redirect("promotion_setup")
 
 
+# ----------------------------------------------------------------------
+# Year-end promotion dashboard
+# ----------------------------------------------------------------------
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(ADMIN_ROLES)
+@require_GET
 def promotion_dashboard(request):
-    school = request.user.profile.school
+    school = _school(request)
     if not school:
         messages.error(request, "No school assigned.")
         return redirect("dashboard")
 
-    form = PromotionGenerateForm(request.GET or None, school=school)
+    academic_year = _selected_year(request)
+    term = get_promotion_term(academic_year)
+    checks = promotion_term_checks(term, school)
+    can_apply = bool(term) and all(ok for ok, _label, _help in checks)
+
+    summary_rows, totals = ([], {}) if not academic_year else promotion_class_summary(
+        school=school, academic_year=academic_year,
+    )
+
+    selected_class = None
+    class_rows = []
+    class_id = request.GET.get("class")
+    if class_id and class_id.isdigit():
+        selected_class = Class.objects.filter(pk=class_id, school=school).select_related("level", "next_class").first()
+    if selected_class and academic_year:
+        class_rows = promotion_class_rows(
+            school=school, academic_year=academic_year, term=term, class_ref=selected_class,
+        )
 
     awaiting_readmission = Student.objects.filter(
         school=school,
         academic_status="AWAITING_READMISSION",
-    ).select_related("level", "current_class", "stream").order_by("name")
+    ).select_related("level", "current_class", "stream", "last_completed_class").order_by("name")
 
     return render(request, "dashboard/promotion/dashboard.html", {
         "title": "Student Promotions",
-        "form": form,
+        "academic_years": AcademicYear.objects.order_by("-start_date", "-id"),
+        "academic_year": academic_year,
+        "term": term,
+        "checks": checks,
+        "term_finalized": reporting_finalized(school, term),
+        "can_apply": can_apply,
+        "summary_rows": summary_rows,
+        "totals": totals,
+        "classes": Class.objects.filter(school=school).select_related("level").order_by("level__order", "name"),
+        "selected_class": selected_class,
+        "selected_is_primary": bool(selected_class and is_primary_class(selected_class)),
+        "class_rows": class_rows,
+        "class_has_unapplied": any(r["state"] in ("draft", "new", "pending") for r in class_rows),
+        "status_labels": STATUS_LABELS,
         "awaiting_readmission": awaiting_readmission,
         "active_tab": "promotion_dashboard",
     })
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
-@require_GET
-def promotion_students_data(request):
-    school = request.user.profile.school
-    if not school:
-        return JsonResponse({"data": []}, status=403)
-
-    academic_year_id = request.GET.get("academic_year")
-    class_id = request.GET.get("class_ref")
-
-    if not (academic_year_id and class_id):
-        return JsonResponse({
-            "data": [],
-            "recordsTotal": 0,
-            "recordsFiltered": 0,
-            "draw": int(request.GET.get("draw", 1)),
-        })
-
-    # students already processed in this academic year should not appear again
-    processed_student_ids = StudentPromotionDecision.objects.filter(
-        school=school,
-        academic_year_id=academic_year_id,
-    ).values_list("student_id", flat=True)
-
-    qs = Student.objects.filter(
-        school=school,
-        current_class_id=class_id,
-        is_active=True,
-    ).exclude(
-        id__in=processed_student_ids
-    ).select_related(
-        "level", "current_class", "stream"
-    ).order_by("name")
-
-    records_total = qs.count()
-    search_value = (request.GET.get("search[value]") or "").strip()
-
-    if search_value:
-        qs = qs.filter(name__icontains=search_value) | qs.filter(
-            admission_number__icontains=search_value
-        )
-
-    records_filtered = qs.count()
-
-    start = int(request.GET.get("start", 0))
-    length = int(request.GET.get("length", 25))
-    page_qs = qs[start:start + length]
-
-    data = []
-    for index, s in enumerate(page_qs, start=start + 1):
-        status, _reason = suggest_promotion_status(s)
-        _to_level, to_class, to_stream = resolve_target_for_status(s, status)
-
-        if to_class:
-            target_display = to_class.name
-            if to_stream:
-                target_display += f" / {to_stream.name}"
-        elif status == "COMPLETED_CYCLE":
-            target_display = "Await Readmission"
-        elif status == "GRADUATED":
-            target_display = "Alumni"
-        else:
-            target_display = "-"
-
-        decision_select = f"""
-        <select class="form-control form-control-sm js-decision" data-student="{s.id}">
-            <option value="PROMOTED" {"selected" if status == "PROMOTED" else ""}>Promoted</option>
-            <option value="RETAINED" {"selected" if status == "RETAINED" else ""}>Retained</option>
-            <option value="COMPLETED_CYCLE" {"selected" if status == "COMPLETED_CYCLE" else ""}>Completed Cycle</option>
-            <option value="GRADUATED" {"selected" if status == "GRADUATED" else ""}>Graduated</option>
-        </select>
-        """
-
-        data.append({
-            "counter": index,
-            "admission": s.admission_number or "",
-            "name": s.name or "",
-            "level": s.level.name if s.level_id else "-",
-            "class_name": s.current_class.name if s.current_class_id else "-",
-            "stream": s.stream.name if s.stream_id else "-",
-            "decision": decision_select,
-            "target": target_display,
-        })
-
-    return JsonResponse({
-        "draw": int(request.GET.get("draw", 1)),
-        "recordsTotal": records_total,
-        "recordsFiltered": records_filtered,
-        "data": data,
-    })
-
-
-@login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(ADMIN_ROLES)
 @require_POST
-@transaction.atomic
-def promotion_bulk_save(request):
-    school = request.user.profile.school
-    academic_year_id = request.POST.get("academic_year")
-    class_id = request.POST.get("class_ref")
-    decisions_json = request.POST.get("decisions_json", "[]")
+def promotion_save_decisions(request):
+    school = _school(request)
+    academic_year, term, class_ref = _post_context(request, school)
 
-    if not (academic_year_id and class_id):
-        messages.error(request, "Academic year and class are required.")
-        return redirect("promotion_dashboard")
+    if not (academic_year and term and class_ref):
+        messages.error(request, "Choose the academic year and class first.")
+        return redirect(_dashboard_url(academic_year, class_ref))
 
-    try:
-        decisions = json.loads(decisions_json)
-    except Exception:
-        messages.error(request, "Invalid promotion data.")
-        return redirect("promotion_dashboard")
-
-    academic_year = get_object_or_404(AcademicYear, pk=academic_year_id)
-    class_ref = get_object_or_404(Class, pk=class_id, school=school)
-
-    term = _get_promotion_term_for_year(academic_year)
-    if not term:
-        messages.error(request, f"No term found for academic year {academic_year}.")
-        return redirect("promotion_dashboard")
-
-    try:
-        validate_term_allows_promotion(term)
-    except ValidationError as e:
-        messages.error(request, "; ".join(e.messages))
-        return redirect("promotion_dashboard")
-
-    saved = bulk_save_promotion_decisions(
-        school=school,
-        academic_year=academic_year,
-        term=term,
-        class_ref=class_ref,
-        decisions=decisions,
-        user=request.user,
-    )
-
-    messages.success(request, f"Saved and applied {saved} promotion decision(s).")
-    return redirect("promotion_dashboard")
-
-
-@login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
-@require_POST
-@transaction.atomic
-def promotion_promote_all_students(request):
-    school = request.user.profile.school
-    academic_year_id = request.POST.get("academic_year")
-
-    if not academic_year_id:
-        messages.error(request, "Academic year is required.")
-        return redirect("promotion_dashboard")
-
-    academic_year = get_object_or_404(AcademicYear, pk=academic_year_id)
-    term = _get_promotion_term_for_year(academic_year)
-
-    if not term:
-        messages.error(request, f"No term found for academic year {academic_year}.")
-        return redirect("promotion_dashboard")
-
-    try:
-        validate_term_allows_promotion(term)
-    except ValidationError as e:
-        messages.error(request, "; ".join(e.messages))
-        return redirect("promotion_dashboard")
-
-    processed_student_ids = StudentPromotionDecision.objects.filter(
-        school=school,
-        academic_year=academic_year,
-    ).values_list("student_id", flat=True)
-
-    students = Student.objects.filter(
-        school=school,
-        is_active=True,
-        current_class__isnull=False,
-    ).exclude(
-        id__in=processed_student_ids
-    ).select_related("level", "current_class", "stream")
-
-    saved = 0
-    grouped_by_class = {}
-
-    for student in students:
-        grouped_by_class.setdefault(student.current_class_id, []).append(student)
-
-    for class_id, class_students in grouped_by_class.items():
-        class_ref = Class.objects.filter(pk=class_id, school=school).first()
-        if not class_ref:
+    decisions = []
+    for key, value in request.POST.items():
+        if not key.startswith("status_"):
             continue
+        sid = key[len("status_"):]
+        if not sid.isdigit():
+            continue
+        decisions.append({
+            "student_id": int(sid),
+            "status": value,
+            "reason": request.POST.get(f"reason_{sid}", ""),
+        })
 
-        class_decisions = [
-            {"student_id": s.id, "status": "PROMOTED"}
-            for s in class_students
-        ]
-
-        saved += bulk_save_promotion_decisions(
-            school=school,
-            academic_year=academic_year,
-            term=term,
-            class_ref=class_ref,
-            decisions=class_decisions,
-            user=request.user,
-        )
-
-    messages.success(
-        request,
-        f"Promoted all eligible students. Total processed: {saved}."
+    result = save_promotion_decisions(
+        school=school, academic_year=academic_year, term=term, decisions=decisions, user=request.user,
     )
-    return redirect("promotion_dashboard")
+
+    if result["saved"]:
+        messages.success(
+            request,
+            f"Saved {result['saved']} decision(s) for {class_ref.name} as drafts. "
+            "Learners move only when you click 'Apply'.",
+        )
+    if result["skipped_applied"]:
+        messages.info(request, f"{result['skipped_applied']} learner(s) were already moved and were not changed.")
+    for error in result["errors"][:10]:
+        messages.error(request, error)
+
+    if request.POST.get("then") == "apply" and not result["errors"]:
+        return _apply(request, school, academic_year, term, class_ref)
+
+    return redirect(_dashboard_url(academic_year, class_ref))
+
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(ADMIN_ROLES)
+@require_POST
+def promotion_generate_defaults(request):
+    school = _school(request)
+    academic_year, term, class_ref = _post_context(request, school)
+
+    if not (academic_year and term):
+        messages.error(request, "This academic year has no terms yet.")
+        return redirect(_dashboard_url(academic_year, class_ref))
+
+    created = generate_default_decisions(
+        school=school, academic_year=academic_year, term=term, class_ref=class_ref, user=request.user,
+    )
+    where = class_ref.name if class_ref else "all classes"
+    if created:
+        messages.success(
+            request,
+            f"Prepared {created} draft decision(s) for {where} from Promotion Setup. "
+            "Change only the exceptions, then apply.",
+        )
+    else:
+        messages.info(request, f"Every learner in {where} already has a decision.")
+    return redirect(_dashboard_url(academic_year, class_ref))
+
+
+def _apply(request, school, academic_year, term, class_ref):
+    try:
+        result = apply_promotion_decisions(
+            school=school, academic_year=academic_year, term=term, class_ref=class_ref, user=request.user,
+        )
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+        return redirect(_dashboard_url(academic_year, class_ref))
+
+    if result["applied"]:
+        messages.success(request, f"Moved {result['applied']} learner(s) to their new class.")
+    else:
+        messages.info(request, "There were no draft decisions to apply.")
+    if result["not_decided"]:
+        messages.warning(request, f"{result['not_decided']} learner(s) have no decision yet and were not moved.")
+    for error in result["failed"][:10]:
+        messages.error(request, error)
+    return redirect(_dashboard_url(academic_year, class_ref))
+
+
+@login_required
+@role_required(ADMIN_ROLES)
+@require_POST
+def promotion_apply(request):
+    school = _school(request)
+    academic_year, term, class_ref = _post_context(request, school)
+    if not (academic_year and term):
+        messages.error(request, "This academic year has no terms yet.")
+        return redirect(_dashboard_url(academic_year, class_ref))
+    return _apply(request, school, academic_year, term, class_ref)
+
+
+@login_required
+@role_required(ADMIN_ROLES)
+@require_POST
+def promotion_reverse(request, pk):
+    school = _school(request)
+    decision = get_object_or_404(
+        StudentPromotionDecision.objects.select_related("student", "from_class", "academic_year"),
+        pk=pk, school=school,
+    )
+    try:
+        reverse_promotion_decision(decision=decision, user=request.user)
+        messages.success(
+            request,
+            f"{decision.student.name} is back in {getattr(decision.from_class, 'name', 'the original class')}. "
+            "The decision is a draft again.",
+        )
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect(_dashboard_url(decision.academic_year, decision.from_class))
+
+
+@login_required
+@role_required(ADMIN_ROLES)
+@require_POST
+def promotion_clear(request, pk):
+    school = _school(request)
+    decision = get_object_or_404(
+        StudentPromotionDecision.objects.select_related("student", "from_class", "academic_year"),
+        pk=pk, school=school,
+    )
+    try:
+        clear_draft_decision(decision)
+        messages.success(request, f"Cleared the draft for {decision.student.name}.")
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect(_dashboard_url(decision.academic_year, decision.from_class))
+
+
+# Old URL names kept so existing links/bookmarks still work.
+promotion_bulk_save = promotion_save_decisions
+promotion_promote_all_students = promotion_generate_defaults
+
+
+# ----------------------------------------------------------------------
+# Readmission (e.g. S.4 -> S.5)
+# ----------------------------------------------------------------------
+@login_required
+@role_required(ADMIN_ROLES)
 def readmit_student_view(request, pk):
-    school = request.user.profile.school
+    school = _school(request)
     student = get_object_or_404(
-        Student.objects.select_related("level", "current_class", "stream"),
+        Student.objects.select_related("level", "current_class", "stream", "last_completed_class"),
         pk=pk,
         school=school,
         academic_status="AWAITING_READMISSION",
@@ -388,20 +430,25 @@ def readmit_student_view(request, pk):
         if form.is_valid():
             to_class = form.cleaned_data["to_class"]
             to_stream = form.cleaned_data["to_stream"]
-
-            readmit_student_to_class(
-                student=student,
-                to_class=to_class,
-                to_stream=to_stream,
-            )
-            messages.success(request, f"{student.name} has been readmitted to {to_class.name}.")
-            return redirect("promotion_dashboard")
+            try:
+                readmit_student_to_class(student=student, to_class=to_class, to_stream=to_stream)
+            except ValidationError as e:
+                form.add_error("to_stream", "; ".join(e.messages))
+            else:
+                messages.success(request, f"{student.name} has been readmitted to {to_class.name}.")
+                return redirect("promotion_dashboard")
     else:
-        form = ReadmissionForm(school=school)
+        initial = {}
+        last = student.last_completed_class or student.current_class
+        if last and last.next_class_id:
+            initial["to_class"] = last.next_class_id
+        form = ReadmissionForm(school=school, initial=initial)
 
+    class_levels = dict(Class.objects.filter(school=school).values_list("id", "level_id"))
     return render(request, "dashboard/promotion/readmit.html", {
         "title": "Readmit Student",
         "student": student,
         "form": form,
+        "class_levels_json": json.dumps({str(k): v for k, v in class_levels.items()}),
         "active_tab": "promotion_dashboard",
     })

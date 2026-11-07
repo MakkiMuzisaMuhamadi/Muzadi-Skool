@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-globe-africa"></i> Muzadi platform</h3>
+    <small class="text-muted">All schools on {{ base_domain|default:"this server" }}</small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'platform_logs' %}" class="btn btn-outline-danger btn-sm"><i class="fas fa-bug mr-1"></i> System logs</a>
+    <a href="{% url 'platform_release_notes' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-bullhorn mr-1"></i> Release notes</a>
+    <a href="{% url 'platform_sms_usage_csv' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-file-csv mr-1"></i> SMS usage (CSV)</a>
+    <a href="{% url 'platform_school_new' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus-circle mr-1"></i> New school</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-6 col-md-3 grid-margin stretch-card"><div class="card"><div class="card-body">
+    <p class="text-muted mb-1">Schools</p><h3 class="mb-0">{{ totals.schools }}</h3><small>{{ totals.active }} active</small>
+  </div></div></div>
+  <div class="col-6 col-md-3 grid-margin stretch-card"><div class="card"><div class="card-body">
+    <p class="text-muted mb-1">Students</p><h3 class="mb-0">{{ totals.students|intcomma }}</h3>
+  </div></div></div>
+  <div class="col-6 col-md-3 grid-margin stretch-card"><div class="card"><div class="card-body">
+    <p class="text-muted mb-1">SMS this month</p><h3 class="mb-0">{{ totals.sms|intcomma }}</h3><small>units</small>
+  </div></div></div>
+  <div class="col-6 col-md-3 grid-margin stretch-card"><div class="card"><div class="card-body">
+    <p class="text-muted mb-1">Need attention</p>
+    <h3 class="mb-0">{{ alerts.expiring|length|add:alerts.grace|length|add:alerts.read_only|length }}</h3><small>subscriptions</small>
+  </div></div></div>
+</div>
+
+{% if alerts.expiring or alerts.grace or alerts.read_only or alerts.low_sms or alerts.over_limit or alerts.no_address %}
+<div class="card mb-3"><div class="card-body">
+  <h5 class="card-title">Needs attention</h5>
+  <ul class="mb-0">
+    {% for r in alerts.read_only %}<li><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: <strong>read-only</strong> - subscription expired.</li>{% endfor %}
+    {% for r in alerts.grace %}<li><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: in grace period (expired {{ r.days_left|stringformat:"d"|slice:"1:" }} day(s) ago).</li>{% endfor %}
+    {% for r in alerts.expiring %}<li><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: ends in {{ r.days_left }} day(s).</li>{% endfor %}
+    {% for r in alerts.low_sms %}<li><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: SMS credit low ({{ r.messaging.credit_units }} units).</li>{% endfor %}
+    {% for r in alerts.over_limit %}<li><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: {{ r.students }} students, plan limit {{ r.subscription.student_limit }}.</li>{% endfor %}
+    {% for r in alerts.no_address %}<li><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: has no web address (subdomain) yet.</li>{% endfor %}
+  </ul>
+</div></div>
+{% endif %}
+
+<div class="card"><div class="card-body">
+  <div class="table-responsive">
+  <table class="table table-hover table-sm mb-0">
+    <thead class="thead-light"><tr>
+      <th>School</th><th>Address</th><th class="text-right">Students</th><th class="text-right">Staff</th>
+      <th>Plan</th><th>Status</th><th>Ends</th><th class="text-right">SMS credit</th><th class="text-right">SMS this month</th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr{% if not r.school.is_active %} class="text-muted"{% endif %}>
+        <td><a href="{% url 'platform_school_detail' r.school.pk %}"><strong>{{ r.school.name }}</strong></a>{% if not r.school.is_active %} <span class="badge badge-secondary">closed</span>{% endif %}</td>
+        <td>{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.school.subdomain|default:r.school.custom_domain }}</a>{% else %}<span class="text-warning">not set</span>{% endif %}</td>
+        <td class="text-right">{{ r.students|intcomma }}{% if r.over_limit %} <i class="fas fa-exclamation-triangle text-warning" title="Over plan limit"></i>{% endif %}</td>
+        <td class="text-right">{{ r.staff }}</td>
+        <td>{{ r.subscription.get_plan_display|default:"-" }}</td>
+        <td>{% include "platform/_state_badge.html" with state=r.state %}</td>
+        <td>{% if r.subscription.end_date %}{{ r.subscription.end_date|date:"j M Y" }}{% else %}<span class="text-muted">no end date</span>{% endif %}</td>
+        <td class="text-right">{% if r.messaging %}{% if r.messaging.is_prepaid %}{{ r.messaging.credit_units|intcomma }}{% else %}<span class="text-muted">postpaid</span>{% endif %}{% if not r.messaging.sms_enabled %} <span class="badge badge-secondary">off</span>{% endif %}{% endif %}</td>
+        <td class="text-right">{{ r.sms_this_month|intcomma }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9" class="text-center text-muted py-4">No schools yet. <a href="{% url 'platform_school_new' %}">Create the first one</a>.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div></div>
+{% endblock %}

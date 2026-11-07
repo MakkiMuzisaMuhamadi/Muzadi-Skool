@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login slips</title>
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; color: #222; margin: 16px; }
+    .toolbar { margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .toolbar button, .toolbar a { padding: 8px 14px; border-radius: 6px; border: 1px solid #4f6cff; background: #4f6cff;
+                                  color: #fff; text-decoration: none; font-size: 14px; cursor: pointer; }
+    .toolbar a.secondary { background: #fff; color: #4f6cff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+    .slip { border: 1px dashed #888; border-radius: 6px; padding: 10px 12px; page-break-inside: avoid; font-size: 13px; }
+    .slip h4 { margin: 0 0 4px; font-size: 15px; }
+    .slip .muted { color: #666; font-size: 12px; }
+    .slip table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+    .slip td { padding: 2px 0; }
+    .slip td:first-child { color: #555; width: 42%; }
+    .slip code { font-size: 14px; font-weight: 700; }
+    .note { font-size: 11px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; }
+    @media print { .toolbar { display: none; } body { margin: 6mm; } .grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">Print</button>
+    <a class="secondary" href="?format=csv">Download CSV</a>
+    <span>{{ rows|length }} account{{ rows|length|pluralize }} · {{ job.get_account_type_display }} · {{ job.created_at|date:"d M Y H:i" }}</span>
+  </div>
+
+  {% if not rows %}<p>No accounts to show.</p>{% endif %}
+
+  <div class="grid">
+    {% for r in rows %}
+    <div class="slip">
+      <h4>{{ r.name }}</h4>
+      <div class="muted">{{ r.school }}{% if r.class_name %} · {{ r.class_name }}{% endif %}{% if r.admission_number %} · Adm. {{ r.admission_number }}{% endif %}</div>
+      <table>
+        <tr><td>Website</td><td>{{ login_url }}</td></tr>
+        {% if job.account_type == 'PARENT' %}
+        <tr><td>Parents tab: phone</td><td><code>{{ r.phone }}</code></td></tr>
+        <tr><td>or Parent ID</td><td><code>{{ r.username }}</code></td></tr>
+        {% else %}
+        <tr><td>Username</td><td><code>{{ r.username }}</code></td></tr>
+        {% endif %}
+        <tr><td>Starting password</td><td>{% if r.still_default %}<code>{{ default_password }}</code>{% else %}<em>already changed</em>{% endif %}</td></tr>
+      </table>
+      <div class="note">
+        At the first sign-in you will {% if job.account_type == 'PARENT' %}confirm your child's admission number{% else %}confirm your admission number{% endif %}
+        and choose your own password. Keep it secret.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-magic"></i> Auto-allocate beds</h3>
+    <small class="text-muted">{{ pending_count }} boarder(s) without a bed. {{ free_count }} free bed(s). Students are placed class by class, in dormitories that match their gender.</small>
+  </div>
+  <a href="{% url 'hostel_assignment_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Allocations</a>
+</div>
+
+<div class="card mb-3" style="max-width: 760px;"><div class="card-body">
+  <form method="post">{% csrf_token %}
+    {% for field in form %}{% include "dashboard/hostel/_field.html" %}{% endfor %}
+    <button class="btn btn-success" {% if not pending_count %}disabled{% endif %}><i class="fas fa-magic mr-1"></i> Allocate beds</button>
+  </form>
+</div></div>
+
+{% if result %}
+<div class="row">
+  <div class="col-lg-6"><div class="card mb-3"><div class="card-body">
+    <h5 class="text-success">Placed ({{ result.allocated|length }})</h5>
+    <table class="table table-sm"><tbody>
+      {% for s, bed in result.allocated %}<tr><td>{{ s.name }}</td><td>{{ bed }}</td></tr>{% empty %}<tr><td class="text-muted">None</td></tr>{% endfor %}
+    </tbody></table>
+  </div></div></div>
+  <div class="col-lg-6"><div class="card mb-3"><div class="card-body">
+    <h5 class="text-danger">Not placed ({{ result.skipped|length }})</h5>
+    <table class="table table-sm"><tbody>
+      {% for s, why in result.skipped %}<tr><td>{{ s.name }}</td><td class="text-muted">{{ why }}</td></tr>{% empty %}<tr><td class="text-muted">None</td></tr>{% endfor %}
+    </tbody></table>
+  </div></div></div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
@@ -10,9 +11,9 @@
     </small>
   </div>
   {% if is_locations %}
-    <a href="{% url 'inv_location_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add location</a>
+    {% if request.user|can_open:"inv_location_create" %}<a href="{% url 'inv_location_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add location</a>{% endif %}
   {% else %}
-    <a href="{% url 'inv_category_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add category</a>
+    {% if request.user|can_open:"inv_category_create" %}<a href="{% url 'inv_category_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add category</a>{% endif %}
   {% endif %}
 </div>
 <div class="card"><div class="card-body">
@@ -32,7 +33,7 @@
             <td>{{ r.name }}{% if r.description %}<small class="d-block text-muted">{{ r.description|truncatechars:60 }}</small>{% endif %}</td>
             <td>{{ r.get_kind_display }}</td>
             <td>{{ r.custodian.get_full_name|default:"—" }}</td>
-            <td><a href="{% url 'inv_units' %}?location={{ r.pk }}">{{ r.unit_count }}</a></td>
+            <td>{% if request.user|can_open:"inv_units" %}<a href="{% url 'inv_units' %}?location={{ r.pk }}">{{ r.unit_count }}</a>{% else %}{{ r.unit_count }}{% endif %}</td>
           {% else %}
             <td>{{ r.get_type_display }}</td>
             <td>{{ r.name }}{% if r.description %}<small class="d-block text-muted">{{ r.description|truncatechars:60 }}</small>{% endif %}</td>

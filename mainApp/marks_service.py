@@ -29,6 +29,7 @@ from mainApp.models.exams_models import (
     MarkSheet,
 )
 from mainApp.models.models import Stream
+from mainApp.term_status import marks_entry_open
 from mainApp.models.student import Student
 from mainApp.models.teacher_models import TeacherTeachingAllocation
 
@@ -66,11 +67,14 @@ def is_admin(user) -> bool:
     return user_role(user) in ADMIN_ROLES
 
 
-def assert_can_enter_marks(user, *, class_ref, stream=None, subject=None, paper=None):
+def assert_can_enter_marks(user, *, class_ref, stream=None, subject=None, paper=None, academic_year=None):
     """
     Admins may enter any mark.
     Teachers may only enter marks for subjects/papers allocated to them.
     Everyone else (students, parents, unknown roles) is refused.
+
+    academic_year: check the allocations of that year (the year of the mark sheet).
+    Without it the school's current year is used.
     """
     role = user_role(user)
 
@@ -84,13 +88,21 @@ def assert_can_enter_marks(user, *, class_ref, stream=None, subject=None, paper=
     if not target_subject:
         raise PermissionDenied("No subject selected.")
 
-    allocs = TeacherTeachingAllocation.objects.filter(
+    if academic_year is not None:
+        allocs = TeacherTeachingAllocation.all_years.filter(
+            Q(academic_year=academic_year) | Q(academic_year__isnull=True))
+    else:
+        allocs = TeacherTeachingAllocation.objects.all()
+    allocs = allocs.filter(
         teacher=user.teacher,
         class_ref=class_ref,
         subject=target_subject,
     )
     if stream:
         allocs = allocs.filter(Q(stream=stream) | Q(stream__isnull=True))
+    else:
+        # all streams at once: only for a teacher who has the whole class
+        allocs = allocs.filter(stream__isnull=True)
 
     if not allocs.exists():
         raise PermissionDenied("This subject is not allocated to you for this class/stream.")
@@ -182,7 +194,7 @@ def edit_block_reason(user, sheet, window) -> Optional[str]:
     Admins are only stopped by hard locks (term finalized, session/window closed).
     """
     term = sheet.term
-    if not getattr(term, "is_marks_entry_open", True):
+    if not marks_entry_open(sheet.school, term):
         return f"Marks entry for {term.name} is finalized."
 
     if sheet.is_locked:
@@ -266,7 +278,8 @@ def save_mark(*, user, sheet, student, subject=None, paper=None, raw_value,
         raise MarkError("Student does not belong to this stream.")
 
     if check_permission:
-        assert_can_enter_marks(user, class_ref=sheet.class_ref, stream=sheet.stream, subject=subject, paper=paper)
+        assert_can_enter_marks(user, class_ref=sheet.class_ref, stream=sheet.stream, subject=subject, paper=paper,
+                               academic_year=sheet.academic_year)
 
     if window is None:
         window = find_window(sheet, subject=subject, paper=paper)
@@ -475,7 +488,7 @@ def find_incomplete_students(*, school, academic_year, term, class_ref, stream=N
             scheme__term=term,
             scheme__is_active=True,
             is_active=True,
-        ).order_by("order", "id")
+        ).exclude(source="AOI").order_by("order", "id")
     )
     if len(exam_types) < 2:
         return []

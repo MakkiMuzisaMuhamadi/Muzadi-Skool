@@ -141,10 +141,11 @@ class EmailVerificationTests(TestCase):
         self.assertContains(resp, "n*********r@gmail.com")
         self.assertNotContains(resp, "new.teacher@gmail.com")
 
-    def test_account_without_email_gets_clear_message(self):
+    def test_account_without_email_signs_in_without_verification(self):
+        # Many school staff have no email address: there is nothing to verify, so they sign in.
         make_user("noemail", role="TEACHER", school=self.ctx["school"], email="", verified=False)
-        resp = self.client.post(reverse("login"), {"username": "noemail", "password": PASSWORD}, follow=True)
-        self.assertContains(resp, "has no email address")
+        resp = self.client.post(reverse("login"), {"username": "noemail", "password": PASSWORD})
+        self.assertRedirects(resp, reverse("dashboard"), fetch_redirect_response=False)
         self.assertEqual(len(mail.outbox), 0)
 
 

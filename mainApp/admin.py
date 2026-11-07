@@ -63,3 +63,15 @@ class AcademicCalendarAdmin(admin.ModelAdmin):
     search_fields = ['school__name', 'academic_year__year']
 
 
+
+
+@admin.register(PasswordResetCode)
+class PasswordResetCodeAdmin(admin.ModelAdmin):
+    """Read-only log of "forgot password" codes, including what each SMS cost."""
+    list_display = ("user", "channel", "sent_to", "created_at", "used_at", "cancelled", "cost", "provider_status")
+    list_filter = ("channel", "cancelled")
+    search_fields = ("user__username", "sent_to")
+    readonly_fields = [f.name for f in PasswordResetCode._meta.fields]
+
+    def has_add_permission(self, request):
+        return False

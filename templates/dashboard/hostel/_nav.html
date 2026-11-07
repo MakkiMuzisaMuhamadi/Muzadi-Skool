@@ -1,0 +1,9 @@
+{# Small tab bar so staff can jump between boarding screens #}
+<ul class="nav nav-pills mb-3 flex-wrap">
+  <li class="nav-item"><a class="nav-link {% if tab == 'overview' %}active{% endif %}" href="{% url 'boarding_overview' %}"><i class="fas fa-home mr-1"></i>Overview</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'rollcall' %}active{% endif %}" href="{% url 'boarding_rollcall_list' %}"><i class="fas fa-clipboard-check mr-1"></i>Roll call</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'exeat' %}active{% endif %}" href="{% url 'boarding_exeat_list' %}"><i class="fas fa-sign-out-alt mr-1"></i>Exeats</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'visit' %}active{% endif %}" href="{% url 'boarding_visit_list' %}"><i class="fas fa-user-friends mr-1"></i>Visitors</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'req' %}active{% endif %}" href="{% url 'boarding_requirement_checklist' %}"><i class="fas fa-clipboard-list mr-1"></i>Requirements</a></li>
+  <li class="nav-item"><a class="nav-link {% if tab == 'boarders' %}active{% endif %}" href="{% url 'boarders_list' %}"><i class="fas fa-users mr-1"></i>Boarders</a></li>
+</ul>

@@ -50,12 +50,14 @@ class SubjectEditForm(forms.ModelForm):
         fields = [
             "code", "short_name", "name", "level",
             "is_major", "is_optional", "is_language", "is_Religion",
+            "include_in_aggregate",
         ]
         widgets = {
             "code": forms.TextInput(attrs={"class": BOOTSTRAP_INPUT}),
             "short_name": forms.TextInput(attrs={"class": BOOTSTRAP_INPUT}),
             "name": forms.TextInput(attrs={"class": BOOTSTRAP_INPUT}),
             "level": forms.Select(attrs={"class": BOOTSTRAP_SELECT}),
+            "include_in_aggregate": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_major": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_optional": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_language": forms.CheckboxInput(attrs={"class": "form-check-input"}),

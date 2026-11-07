@@ -26,6 +26,7 @@ from mainApp.report_configs.ple_report_builder import build_ple_report_payload
 from mainApp.report_configs.uce_report_builder import build_uce_report_payload
 from mainApp.report_configs.uace_report_builder import build_uace_report_payload
 from mainApp.report_configs.report_html_renderer import render_report_card_pdf
+from mainApp.report_configs.report_extras import build_report_extras
 from mainApp.report_configs.report_template_service import (
     get_active_report_template,
     serialize_template_snapshot,
@@ -35,6 +36,7 @@ from mainApp.utils2.student_performance import (
     compute_student_term_performance,
     update_positions,
 )
+from mainApp.term_status import reporting_finalized
 
 REPORT_QUEUE_NAME = "reports"
 
@@ -107,6 +109,7 @@ def _normalize_payload(payload):
     payload.setdefault("summary_rows", [])
     payload.setdefault("competencies_rows", [])
     payload.setdefault("projects", [])
+    payload.setdefault("generic_skills", [])
     payload.setdefault("grade_ranges", [])
     payload.setdefault("division_ranges", [])
     payload.setdefault("report_terms", {})
@@ -119,6 +122,7 @@ def _normalize_payload(payload):
     payload.setdefault("division", "")
     payload.setdefault("remarks", "")
     payload.setdefault("next_term_begins", "")
+    payload.setdefault("extras", {})
     payload["meta"].setdefault("level_code", "")
 
     return make_json_safe(payload)
@@ -242,31 +246,23 @@ def _get_students_for_performance_compute(run: ReportRun):
     If stream is selected, PDFs are generated only for that stream,
     but class position must still be computed using the whole class.
     """
-    from mainApp.models.student import Student
-
-    qs = (
-        Student.objects
-        .filter(
-            school=run.school,
-            is_active=True,
-        )
-        .select_related(
-            "level",
-            "current_class",
-            "current_class__level",
-            "stream",
-            "school",
-        )
-        .order_by("id")
-    )
-
     if run.student_id:
-        return qs.filter(id=run.student_id)
+        scope, kwargs = ReportRun.Scope.STUDENT, {"student": run.student}
+    elif run.class_ref_id:
+        scope, kwargs = ReportRun.Scope.CLASS, {"class_ref": run.class_ref}
+    else:
+        scope, kwargs = "ALL", {}
 
-    if run.class_ref_id:
-        qs = qs.filter(current_class_id=run.class_ref_id)
-
-    return qs
+    # Same selection as the PDF step, so learners already promoted to a new
+    # class are still computed with the class they were in during this term.
+    return get_students_for_report_run(
+        school=run.school,
+        academic_year=run.academic_year,
+        term=run.term,
+        level_scope=ReportRun.LevelScope.ALL,
+        scope=scope,
+        **kwargs,
+    ).order_by("id")
 
 
 def sync_report_run_progress(run_id: str):
@@ -496,7 +492,7 @@ def start_report_run(self, run_id: str):
     ).get(id=run_id)
 
     try:
-        if run.term.is_marks_entry_open or not run.term.is_reporting_finalized:
+        if not reporting_finalized(run.school, run.term):
             run.mark_done(
                 ReportRun.Status.FAILED,
                 message=f"Finalize marks for {run.term.name} before generating report cards.",
@@ -625,6 +621,14 @@ def compute_report_performance_batch(self, run_id: str, offset: int = 0):
             return
 
         try:
+            # Make sure the term record exists first: for a learner who has
+            # already been promoted it carries the class of THIS term.
+            get_or_create_student_academic_record(
+                student=student,
+                academic_year=run.academic_year,
+                term=run.term,
+                source_type="CURRENT_CAPTURE",
+            )
             compute_student_term_performance(
                 student=student,
                 academic_year=run.academic_year,
@@ -1282,6 +1286,9 @@ def _process_one_student_inline(run_id: str, record_id: int):
         payload["meta"]["year_name"] = getattr(run.academic_year, "year", "") or str(run.academic_year_id)
         payload["meta"]["term_name"] = getattr(run.term, "name", "") or str(run.term_id)
 
+        # Attendance, fees and conduct (shared by all levels)
+        payload["extras"] = build_report_extras(student=student, term=run.term)
+
         payload = make_json_safe(payload)
 
         if not payload.get("summary_rows"):
@@ -1294,12 +1301,15 @@ def _process_one_student_inline(run_id: str, record_id: int):
         template_snapshot = make_json_safe(serialize_template_snapshot(template))
 
         with transaction.atomic():
-            ReportCardSnapshot.objects.filter(
+            previous_latest = ReportCardSnapshot.objects.filter(
                 student=student,
                 academic_year=run.academic_year,
                 term=run.term,
                 is_latest=True,
-            ).update(is_latest=False)
+            )
+            # A corrected re-print of an already released card stays released.
+            previous = previous_latest.filter(is_published=True).order_by("-created_at").first()
+            previous_latest.update(is_latest=False)
 
             snap = ReportCardSnapshot.objects.create(
                 run=run,
@@ -1312,6 +1322,9 @@ def _process_one_student_inline(run_id: str, record_id: int):
                 template=template,
                 template_snapshot=template_snapshot,
                 is_latest=True,
+                is_published=bool(previous),
+                published_at=previous.published_at if previous else None,
+                published_by=previous.published_by if previous else None,
             )
 
         context = _build_template_context(snap, template)

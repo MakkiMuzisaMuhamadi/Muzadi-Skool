@@ -25,38 +25,10 @@ from mainApp.grading.grading_ple import (
 )
 
 
-def get_report_promotion_text(*, school, student, academic_year_id):
-    decision = (
-        StudentPromotionDecision.objects.filter(
-            school=school,
-            student=student,
-            academic_year_id=academic_year_id,
-        )
-        .select_related("to_class", "from_class")
-        .order_by("-id")
-        .first()
-    )
+def get_report_promotion_text(*, school, student, academic_year_id, term_id=None):
+    from mainApp.report_configs.academic_helpers import get_report_promotion_text as _text
 
-    if not decision:
-        return ""
-
-    if decision.status == "PROMOTED":
-        if decision.to_class:
-            return f"Promoted to Next Class ({decision.to_class.name})"
-        return "Promoted to Next Class"
-
-    if decision.status == "RETAINED":
-        if decision.from_class:
-            return f"Retained in Current Class ({decision.from_class.name})"
-        return "Retained in Current Class"
-
-    if decision.status == "COMPLETED_CYCLE":
-        return "Completed Cycle, Awaiting Readmission"
-
-    if decision.status == "GRADUATED":
-        return "Graduated"
-
-    return decision.get_status_display() or ""
+    return _text(school=school, student=student, academic_year_id=academic_year_id, term_id=term_id)
 
 
 def _D(x: Any, default: Decimal = Decimal("0")) -> Decimal:
@@ -480,6 +452,7 @@ def build_ple_report_payload(
     )
 
     subject_details = overall.get("subject_details", []) or []
+    shows_division = bool(overall.get("shows_division", True))
 
     scheme, exam_types = _detect_ple_scheme_and_examtypes(
         student=student,
@@ -532,9 +505,12 @@ def build_ple_report_payload(
         if _is_blank_grade_value(grade_name) or str(grade_name).strip().lower() == "no boundary":
             grade_name = grade_data["grade_name"]
 
+        counts_for_aggregate = d.get("counts_for_aggregate", True) and shows_division
         aggregate_point = d.get("aggregate_point")
-        if _is_blank_grade_value(aggregate_point):
+        if counts_for_aggregate and _is_blank_grade_value(aggregate_point):
             aggregate_point = grade_data["aggregate_point"]
+        if not counts_for_aggregate:
+            aggregate_point = None
 
         subject_comment = _pick_subject_comment(
             school=school,
@@ -585,7 +561,7 @@ def build_ple_report_payload(
 
     total_aggregates = overall.get("total_aggregates")
 
-    if total_aggregates in [None, "", "-"]:
+    if shows_division and total_aggregates in [None, "", "-"]:
         aggregate_values = []
 
         for row in summary_rows:
@@ -604,8 +580,11 @@ def build_ple_report_payload(
 
     final_division = overall.get("final_division")
 
-    if _is_blank_grade_value(final_division) or final_division == "X":
+    if shows_division and (_is_blank_grade_value(final_division) or final_division == "X"):
         final_division = _lookup_ple_division_from_scale(scale, total_aggregates)
+    if not shows_division:
+        total_aggregates = None
+        final_division = ""
 
     remarks = overall.get("remarks") or ""
 
@@ -615,6 +594,7 @@ def build_ple_report_payload(
         school=school,
         student=student,
         academic_year_id=academic_year_id,
+        term_id=term_id,
     )
 
     rc = ReportComment.objects.filter(
@@ -637,7 +617,7 @@ def build_ple_report_payload(
             level=level,
             comment_for="CLASS_TEACHER",
             grade_letter=final_division,
-            avg_total=total_aggregates,
+            avg_total=total_aggregates if shows_division else overall.get("average_percentage"),
         )
 
     if not head_teacher_comment:
@@ -646,7 +626,7 @@ def build_ple_report_payload(
             level=level,
             comment_for="HEAD_TEACHER",
             grade_letter=final_division,
-            avg_total=total_aggregates,
+            avg_total=total_aggregates if shows_division else overall.get("average_percentage"),
         )
 
     grade_ranges = []
@@ -721,7 +701,10 @@ def build_ple_report_payload(
         "remarks": remarks,
         "next_term_begins": next_term_begins,
 
-        "average_total": total_aggregates,
+        # Classes without divisions (e.g. P.1 - P.3) show the average % instead.
+        "shows_division": shows_division,
+        "average_percentage": overall.get("average_percentage"),
+        "average_total": total_aggregates if shows_division else overall.get("average_percentage"),
         "average_grade": final_division,
 
         "class_teacher_comment": class_teacher_comment,

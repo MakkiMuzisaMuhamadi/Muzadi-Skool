@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% load humanize %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
@@ -7,27 +8,27 @@
     <small class="text-muted">Library, assets and stores in one place</small>
   </div>
   <div class="d-flex flex-wrap" style="gap:.5rem;">
-    <a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm"><i class="fas fa-qrcode mr-1"></i> Issue / Return</a>
-    <a href="{% url 'inv_stock_op' 'issue' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-dolly mr-1"></i> Issue stock</a>
-    <a href="{% url 'inv_grn_create' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-truck-loading mr-1"></i> Receive goods</a>
+    {% if request.user|can_open:"inv_scan" %}<a href="{% url 'inv_scan' %}" class="btn btn-success btn-sm"><i class="fas fa-qrcode mr-1"></i> Issue / Return</a>{% endif %}
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'issue' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-dolly mr-1"></i> Issue stock</a>{% endif %}
+    {% if request.user|can_open:"inv_grn_create" %}<a href="{% url 'inv_grn_create' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-truck-loading mr-1"></i> Receive goods</a>{% endif %}
   </div>
 </div>
 
 {% if settings_missing_fee_category and request.user.profile.role == "SUPER_ADMIN" or settings_missing_fee_category and request.user.profile.role == "ADMIN" %}
 <div class="alert alert-warning">
   Students cannot be billed for lost or damaged items until you choose a fee category.
-  <a href="{% url 'inv_settings' %}" class="alert-link">Open inventory settings</a>
+  {% if request.user|can_open:"inv_settings" %}<a href="{% url 'inv_settings' %}" class="alert-link">Open inventory settings</a>{% else %}Open inventory settings{% endif %}
 </div>
 {% endif %}
 
 <div class="row">
   <div class="col-6 col-lg-3 mb-3">
-    <a class="card h-100 text-reset" href="{% url 'inv_units' %}?status=ISSUED">
+    {% if request.user|can_open:"inv_units" %}<a class="card h-100 text-reset" href="{% url 'inv_units' %}?status=ISSUED">{% else %}<div class="card h-100">{% endif %}
       <div class="card-body">
         <div class="h2 mb-0">{{ on_loan|intcomma }}</div>
         <div class="text-muted">Items out on loan</div>
       </div>
-    </a>
+    {% if request.user|can_open:"inv_units" %}</a>{% else %}</div>{% endif %}
   </div>
   <div class="col-6 col-lg-3 mb-3">
     <a class="card h-100 text-reset {% if overdue %}border-danger{% endif %}" href="{% url 'inv_report' 'overdue' %}">
@@ -71,9 +72,9 @@
         <h5 class="mb-2">Stores &amp; purchasing</h5>
         <table class="table table-sm mb-0">
           <tr><td>Counted stock lines</td><td class="text-right">{{ counted_items|intcomma }}</td></tr>
-          <tr><td><a href="{% url 'inv_pos' %}?status=DRAFT">Orders waiting for approval</a></td><td class="text-right">{{ draft_pos }}</td></tr>
-          <tr><td><a href="{% url 'inv_pos' %}?status=APPROVED">Orders waiting for delivery</a></td><td class="text-right">{{ open_pos }}</td></tr>
-          <tr><td><a href="{% url 'inv_stocktakes' %}">Stock takes in progress</a></td><td class="text-right">{{ open_stock_takes }}</td></tr>
+          <tr><td>{% if request.user|can_open:"inv_pos" %}<a href="{% url 'inv_pos' %}?status=DRAFT">Orders waiting for approval</a>{% else %}Orders waiting for approval{% endif %}</td><td class="text-right">{{ draft_pos }}</td></tr>
+          <tr><td>{% if request.user|can_open:"inv_pos" %}<a href="{% url 'inv_pos' %}?status=APPROVED">Orders waiting for delivery</a>{% else %}Orders waiting for delivery{% endif %}</td><td class="text-right">{{ open_pos }}</td></tr>
+          <tr><td>{% if request.user|can_open:"inv_stocktakes" %}<a href="{% url 'inv_stocktakes' %}">Stock takes in progress</a>{% else %}Stock takes in progress{% endif %}</td><td class="text-right">{{ open_stock_takes }}</td></tr>
         </table>
       </div>
     </div>
@@ -94,7 +95,7 @@
               <tr>
                 <td class="text-nowrap">{{ r.created_at|naturaltime }}</td>
                 <td>{{ r.get_tx_type_display }}</td>
-                <td><a href="{% url 'inv_unit_detail' r.unit_id %}">{{ r.unit.tag_code }}</a> <small class="text-muted">{{ r.unit.item.name|truncatechars:30 }}</small></td>
+                <td>{% if request.user|can_open:"inv_unit_detail" %}<a href="{% url 'inv_unit_detail' r.unit_id %}">{{ r.unit.tag_code }}</a>{% else %}{{ r.unit.tag_code }}{% endif %} <small class="text-muted">{{ r.unit.item.name|truncatechars:30 }}</small></td>
                 <td>{{ r.holder_display|default:"—" }}</td>
                 <td>{{ r.performed_by.get_full_name|default:r.performed_by|default:"—" }}</td>
               </tr>

@@ -105,7 +105,7 @@
       <i class="fas fa-desktop text-primary"></i> Report Command Center
     </h3>
     <small class="text-muted">
-      Class-based report generation with batched performance computation, positions, PDF generation and ZIP downloads.
+      Pick the term and class, check readiness, generate, then release the report cards to learners and parents.
     </small>
   </div>
 
@@ -153,16 +153,7 @@
           </select>
         </div>
 
-        <div class="col-md-3 mb-3">
-          <label><b>Level</b></label>
-          <select name="level_scope" id="level_scope" class="form-control">
-            {% for value,label in level_choices %}
-              <option value="{{ value }}" {% if filters.level_scope == value %}selected{% endif %}>
-                {{ label }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
+        <input type="hidden" name="level_scope" value="ALL">
 
         <div class="col-md-3 mb-3">
           <label><b>Class</b></label>
@@ -188,16 +179,27 @@
           </select>
         </div>
 
-        <div class="col-md-6 mb-3" id="studentWrap" style="display:none;">
-          <label><b>Student</b></label>
+        <div class="col-md-3 mb-3 d-flex align-items-end">
+          <div class="custom-control custom-checkbox mb-2">
+            <input type="checkbox" class="custom-control-input" id="oneLearnerToggle"
+                   {% if filters.student_id %}checked{% endif %}>
+            <label class="custom-control-label" for="oneLearnerToggle">
+              <b>Only one learner</b><br><small class="text-muted">e.g. re-print after a correction</small>
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3" id="studentWrap" {% if not filters.student_id %}style="display:none;"{% endif %}>
+          <label><b>Learner</b></label>
           <select name="student_id" id="student_id" class="form-control">
-            <option value="">Select student</option>
+            <option value="">Select learner</option>
             {% for s in students %}
               <option value="{{ s.id }}" {% if filters.student_id|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>
                 {{ s }}{% if s.admission_number %} ({{ s.admission_number }}){% endif %}
               </option>
             {% endfor %}
           </select>
+          <small class="text-muted">Pick the class first. Type to search if your browser supports it.</small>
         </div>
 
         <div class="col-md-12 d-flex flex-wrap align-items-center" style="gap:.5rem;">
@@ -206,7 +208,7 @@
           </button>
 
           <button type="submit" name="action" value="start" class="btn btn-primary btn-sm"
-                  onclick="return confirm('Start report-card generation for this class/stream?');">
+                  onclick="return confirm('Generate report cards for this selection? They will be saved as drafts until you release them.');">
             <i class="fas fa-play mr-1"></i> Generate Report Cards
           </button>
 
@@ -215,7 +217,7 @@
           </a>
 
           <span class="text-muted small ml-2">
-            Scope is automatic: Class if no stream, Stream if stream is selected.
+            Whole class if no stream is picked; one stream if you pick a stream; one learner if you tick "Only one learner".
           </span>
         </div>
       </div>
@@ -286,6 +288,7 @@
               <th>Student</th>
               <th>Class</th>
               <th>Stream</th>
+              <th>Fix</th>
             </tr>
           </thead>
           <tbody>
@@ -304,6 +307,13 @@
                 <td>{{ item.student|default:"-" }}</td>
                 <td>{{ item.class_name|default:"-" }}</td>
                 <td>{{ item.stream_name|default:"-" }}</td>
+                <td>
+                  {% if item.fix_url %}
+                    <a href="{{ item.fix_url }}" class="btn btn-sm btn-outline-primary text-nowrap" target="_blank">
+                      <i class="fas fa-wrench mr-1"></i> {{ item.fix_label|default:"Fix" }}
+                    </a>
+                  {% else %}-{% endif %}
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -409,6 +419,7 @@
             <th>Stream</th>
             <th>Year</th>
             <th>Term</th>
+            <th>Released</th>
             <th>PDF</th>
           </tr>
         </thead>
@@ -420,6 +431,13 @@
               <td>{{ snap.stream|default:"-" }}</td>
               <td>{{ snap.academic_year }}</td>
               <td>{{ snap.term }}</td>
+              <td>
+                {% if snap.is_published %}
+                  <span class="badge-soft-success">Released</span>
+                {% else %}
+                  <span class="badge-soft-secondary">Draft</span>
+                {% endif %}
+              </td>
               <td>
                 {% if snap.pdf %}
                   <div class="d-flex flex-wrap" style="gap:.35rem;">
@@ -441,7 +459,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted">No generated report cards found.</td>
+              <td colspan="7" class="text-center text-muted">No generated report cards found.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -570,6 +588,53 @@
           streamEl.innerHTML = '<option value="">All streams in class</option>';
         });
     });
+  }
+
+  // ---- One learner: show the picker and load learners of the chosen class/stream ----
+  const oneToggle = document.getElementById("oneLearnerToggle");
+  const studentWrap = document.getElementById("studentWrap");
+  const studentEl = document.getElementById("student_id");
+
+  function loadStudents() {
+    if (!studentEl || !oneToggle || !oneToggle.checked) return;
+    const classId = classEl ? classEl.value : "";
+    const streamId = streamEl ? streamEl.value : "";
+    if (!classId) {
+      studentEl.innerHTML = '<option value="">Pick the class first</option>';
+      return;
+    }
+    const keep = studentEl.value;
+    studentEl.innerHTML = '<option value="">Loading learners...</option>';
+    let url = "{% url 'ajax_report_students' %}?class_ref_id=" + encodeURIComponent(classId);
+    if (streamId) url += "&stream_id=" + encodeURIComponent(streamId);
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        studentEl.innerHTML = '<option value="">Select learner</option>';
+        (data.results || []).forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.id;
+          opt.textContent = item.text;
+          if (String(item.id) === String(keep)) opt.selected = true;
+          studentEl.appendChild(opt);
+        });
+      })
+      .catch(() => {
+        studentEl.innerHTML = '<option value="">Could not load learners</option>';
+      });
+  }
+
+  if (oneToggle && studentWrap && studentEl) {
+    oneToggle.addEventListener("change", function () {
+      studentWrap.style.display = this.checked ? "" : "none";
+      if (this.checked) {
+        if (studentEl.options.length <= 1) loadStudents();
+      } else {
+        studentEl.value = "";
+      }
+    });
+    if (classEl) classEl.addEventListener("change", loadStudents);
+    if (streamEl) streamEl.addEventListener("change", loadStudents);
   }
 
   function badgeClass(status) {

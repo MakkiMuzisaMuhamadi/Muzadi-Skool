@@ -1,169 +1,83 @@
 {% extends "dashboard/base.html" %}
-
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-user-check"></i> Save Assignment</h3>
-    <small class="text-muted">Allocate a bed to a boarding student (Residence must be BOARDING).</small>
+    <h3 class="page-title mb-0"><i class="fas {% if move %}fa-exchange-alt{% else %}fa-user-check{% endif %}"></i> {{ title }}</h3>
+    <small class="text-muted">
+      {% if move %}Now in {{ current.bed }}. The old allocation is kept in history.
+      {% else %}Only dormitories that match the student's gender are shown. Only free beds are listed.{% endif %}
+    </small>
   </div>
-  <div>
-    <a href="{% url 'hostel_assignment_list' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-arrow-left mr-1"></i> Back
-    </a>
-  </div>
+  <a href="{% url 'hostel_assignment_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
 </div>
 
-<div class="card">
-  <div class="card-body">
-<form method="post" novalidate data-rooms-url="{% url 'ajax_rooms_for_hostel' %}" data-beds-url="{% url 'ajax_beds_for_room' %}">
+<div class="card" style="max-width: 860px;"><div class="card-body">
+  <form method="post" novalidate id="bedPicker"
+        data-rooms-url="{% url 'ajax_rooms_for_hostel' %}" data-beds-url="{% url 'ajax_beds_for_room' %}">
     {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-      {% endif %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+    <div class="row">
+      {% if form.student %}<div class="col-md-12">{% include "dashboard/hostel/_student_picker.html" %}</div>{% endif %}
+      <div class="col-md-4">{% with field=form.hostel %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>
+      <div class="col-md-4">{% with field=form.room %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>
+      <div class="col-md-4">{% with field=form.bed %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>
+      {% if form.start_date %}<div class="col-md-4">{% with field=form.start_date %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>{% endif %}
+      {% if form.notes %}<div class="col-md-8">{% with field=form.notes %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>{% endif %}
+      {% if form.note %}<div class="col-md-12">{% with field=form.note %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>{% endif %}
+    </div>
+    <div class="d-flex justify-content-end">
+      <a href="{% url 'hostel_assignment_list' %}" class="btn btn-light mr-2">Cancel</a>
+      <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> {% if move %}Move student{% else %}Give bed{% endif %}</button>
+    </div>
+  </form>
+</div></div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">{{ form.student.label }}</label>
-          {{ form.student }}
-          <div class="text-danger small">{{ form.student.errors }}</div>
-          <small class="text-muted">Only boarding students show here.</small>
-        </div>
+{{ hostel_genders|json_script:"hostelGenders" }}
+{% endblock %}
 
-        <div class="col-md-6 mb-3">
-          <label class="form-label">{{ form.hostel.label }}</label>
-          {{ form.hostel }}
-          <div class="text-danger small">{{ form.hostel.errors }}</div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label class="form-label">{{ form.room.label }}</label>
-          {{ form.room }}
-          <div class="text-danger small">{{ form.room.errors }}</div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <label class="form-label">{{ form.bed.label }}</label>
-          {{ form.bed }}
-          <div class="text-danger small">{{ form.bed.errors }}</div>
-        </div>
-
-        <div class="col-md-4 mb-3 d-flex align-items-center">
-          <div class="form-check mt-4">
-            {{ form.is_active }}
-            <label class="form-check-label">{{ form.is_active.label }}</label>
-          </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-          <label class="form-label">{{ form.start_date.label }}</label>
-          {{ form.start_date }}
-          <div class="text-danger small">{{ form.start_date.errors }}</div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-          <label class="form-label">{{ form.end_date.label }}</label>
-          {{ form.end_date }}
-          <div class="text-danger small">{{ form.end_date.errors }}</div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label">{{ form.notes.label }}</label>
-          {{ form.notes }}
-          <div class="text-danger small">{{ form.notes.errors }}</div>
-        </div>
-      </div>
-
-      <div class="d-flex" style="gap:.5rem;">
-        <button class="btn btn-primary" type="submit"><i class="fas fa-save mr-1"></i> Save</button>
-        <a href="{% url 'hostel_assignment_list' %}" class="btn btn-outline-danger">Cancel</a>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-  (function(){
-    try{
-      document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-        cb.classList.add('form-check-input');
-      });
-    }catch(e){}
-  })();
-</script>
+{% block extrajs %}
 <script>
 (function(){
-  const form = document.querySelector('form[data-rooms-url]');
-  if(!form) return;
+  var form = document.getElementById("bedPicker");
+  var stu = document.getElementById("id_student"), hos = document.getElementById("id_hostel"),
+      room = document.getElementById("id_room"), bed = document.getElementById("id_bed");
+  var hostelGender = JSON.parse(document.getElementById("hostelGenders").textContent);
+  var fixedGender = "{{ fixed_student_gender|default:'' }}";
 
-  const ROOMS_URL = form.getAttribute('data-rooms-url');
-  const BEDS_URL  = form.getAttribute('data-beds-url');
+  function reset(sel, text){ sel.innerHTML = ""; var o = document.createElement("option"); o.value = ""; o.textContent = text; sel.appendChild(o); }
 
-  const hostelSel = document.getElementById('id_hostel');
-  const roomSel   = document.getElementById('id_room');
-  const bedSel    = document.getElementById('id_bed');
-
-  function setOptions(selectEl, items, placeholder, valueKey, labelKey){
-    selectEl.innerHTML = '';
-    const opt0 = document.createElement('option');
-    opt0.value = '';
-    opt0.textContent = placeholder;
-    selectEl.appendChild(opt0);
-
-    (items || []).forEach(it=>{
-      const op = document.createElement('option');
-      op.value = it[valueKey];
-      op.textContent = it[labelKey];
-      selectEl.appendChild(op);
+  function filterHostels(){
+    var g = fixedGender || (stu && stu.value && stu.dataset.gender) || "";
+    Array.prototype.forEach.call(hos.options, function(o){
+      if(!o.value) return;
+      var ok = !g || hostelGender[o.value] === "X" || hostelGender[o.value] === g;
+      o.hidden = !ok; o.disabled = !ok;
     });
-  }
-
-  function disable(selectEl, yes){
-    selectEl.disabled = !!yes;
-    if(yes) selectEl.classList.add('bg-light');
-    else selectEl.classList.remove('bg-light');
+    if(hos.selectedOptions[0] && hos.selectedOptions[0].disabled){ hos.value = ""; loadRooms(); }
   }
 
   async function loadRooms(){
-    const hostelId = hostelSel.value;
-
-    // reset children first
-    setOptions(roomSel, [], 'Select room...', 'id', 'room_number');
-    setOptions(bedSel,  [], 'Select bed...', 'id', 'bed_number');
-    disable(roomSel, true);
-    disable(bedSel, true);
-
-    if(!hostelId) return;
-
-    const res = await fetch(`${ROOMS_URL}?hostel_id=${encodeURIComponent(hostelId)}`);
-    const data = await res.json();
-    setOptions(roomSel, data.rooms || [], 'Select room...', 'id', 'room_number');
-    disable(roomSel, false);
+    reset(room, hos.value ? "Loading..." : "Choose a dormitory first"); reset(bed, "Choose a room first");
+    if(!hos.value) return;
+    var j = await (await fetch(form.dataset.roomsUrl + "?hostel_id=" + hos.value)).json();
+    reset(room, j.rooms.length ? "Choose a room" : "No rooms in this dormitory");
+    j.rooms.forEach(function(r){ var o = document.createElement("option"); o.value = r.id; o.textContent = r.label || r.room_number; if(!r.free) o.disabled = true; room.appendChild(o); });
+    var usable = j.rooms.filter(function(r){ return r.free; });
+    if(usable.length === 1){ room.value = usable[0].id; loadBeds(); }   // open-hall dormitories pick themselves
   }
 
   async function loadBeds(){
-    const roomId = roomSel.value;
-
-    // reset bed first
-    setOptions(bedSel, [], 'Select bed...', 'id', 'bed_number');
-    disable(bedSel, true);
-
-    if(!roomId) return;
-
-    const res = await fetch(`${BEDS_URL}?room_id=${encodeURIComponent(roomId)}`);
-    const data = await res.json();
-    setOptions(bedSel, data.beds || [], 'Select bed...', 'id', 'bed_number');
-    disable(bedSel, false);
+    reset(bed, room.value ? "Loading..." : "Choose a room first");
+    if(!room.value) return;
+    var j = await (await fetch(form.dataset.bedsUrl + "?room_id=" + room.value)).json();
+    reset(bed, j.beds.length ? "Choose a bed" : "No free beds in this room");
+    j.beds.forEach(function(b){ var o = document.createElement("option"); o.value = b.id; o.textContent = b.label || b.bed_number; bed.appendChild(o); });
   }
 
-  // events (parent first)
-  hostelSel.addEventListener('change', loadRooms);
-  roomSel.addEventListener('change', loadBeds);
-
-  // initial state on page load
-  disable(roomSel, !hostelSel.value);
-  disable(bedSel, !roomSel.value);
-
-  // If editing existing record: keep as-is; but if hostel changes, reload rooms/beds
+  if(stu) stu.addEventListener("change", filterHostels);
+  hos.addEventListener("change", loadRooms);
+  room.addEventListener("change", loadBeds);
+  filterHostels();
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,7 @@
+{# Every field of `form` in a Bootstrap row. Usage: {% include "platform/_form_fields.html" with form=x col="col-md-6" %} #}
+{% for e in form.non_field_errors %}<div class="alert alert-danger py-2">{{ e }}</div>{% endfor %}
+<div class="form-row">
+  {% for field in form %}
+    {% include "dashboard/partials/_field.html" with field=field col=col|default:"col-md-6" %}
+  {% endfor %}
+</div>

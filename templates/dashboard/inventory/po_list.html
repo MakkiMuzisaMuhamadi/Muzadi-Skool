@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% load humanize %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
@@ -6,7 +7,7 @@
     <h3 class="page-title mb-0"><i class="fas fa-file-signature"></i> Purchase orders</h3>
     <small class="text-muted">Draft → approved → received. Goods are received against an order with a GRN.</small>
   </div>
-  <a href="{% url 'inv_po_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> New order</a>
+  {% if request.user|can_open:"inv_po_create" %}<a href="{% url 'inv_po_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> New order</a>{% endif %}
 </div>
 <div class="card"><div class="card-body">
   <form method="get" class="form-inline mb-3" style="gap:.5rem;">
@@ -20,7 +21,7 @@
     <tbody>
     {% for po in rows %}
       <tr>
-        <td><a href="{% url 'inv_po_detail' po.pk %}" class="font-weight-bold">{{ po.po_number }}</a></td>
+        <td>{% if request.user|can_open:"inv_po_detail" %}<a href="{% url 'inv_po_detail' po.pk %}" class="font-weight-bold">{{ po.po_number }}</a>{% else %}{{ po.po_number }}{% endif %}</td>
         <td>{{ po.order_date }}</td><td>{{ po.supplier }}</td>
         <td>{% include "dashboard/inventory/_status_badge.html" with s=po.status %}</td>
         <td class="text-right">{{ po.total|floatformat:2|intcomma }}</td>

@@ -1,0 +1,42 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-school"></i> New school</h3>
+  <small class="text-muted">Creates the school, its web address, a free trial, its SMS account and its first School Admin.</small>
+</div>
+<form method="post" class="card"><div class="card-body">
+  {% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="alert alert-danger py-2">{{ e }}</div>{% endfor %}
+  <h5 class="card-title">The school</h5>
+  <div class="form-row">
+    {% include "dashboard/partials/_field.html" with field=form.name col="col-md-6" %}
+    {% include "dashboard/partials/_field.html" with field=form.short_name col="col-md-3" %}
+    <div class="form-group col-md-3">
+      <label for="{{ form.subdomain.id_for_label }}">Web address <span class="text-danger">*</span></label>
+      <div class="input-group">{{ form.subdomain }}<div class="input-group-append"><span class="input-group-text">.{{ base_domain|default:"your-domain" }}</span></div></div>
+      {% for e in form.subdomain.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+    </div>
+    {% include "dashboard/partials/_field.html" with field=form.levels col="col-md-3" %}
+    {% include "dashboard/partials/_field.html" with field=form.contact_phone col="col-md-3" %}
+    {% include "dashboard/partials/_field.html" with field=form.contact_email col="col-md-3" %}
+    {% include "dashboard/partials/_field.html" with field=form.address col="col-md-3" %}
+  </div>
+  <h5 class="card-title mt-3">Plan</h5>
+  <div class="form-row">
+    {% include "dashboard/partials/_field.html" with field=form.plan col="col-md-4" %}
+    {% include "dashboard/partials/_field.html" with field=form.trial_days col="col-md-4" %}
+    {% include "dashboard/partials/_field.html" with field=form.free_sms_units col="col-md-4" %}
+  </div>
+  <h5 class="card-title mt-3">First School Admin</h5>
+  <p class="text-muted small">They get the default staff password and must choose their own at the first sign-in.</p>
+  <div class="form-row">
+    {% include "dashboard/partials/_field.html" with field=form.admin_username col="col-md-4" %}
+    {% include "dashboard/partials/_field.html" with field=form.admin_first_name col="col-md-4" %}
+    {% include "dashboard/partials/_field.html" with field=form.admin_last_name col="col-md-4" %}
+    {% include "dashboard/partials/_field.html" with field=form.admin_email col="col-md-6" %}
+    {% include "dashboard/partials/_field.html" with field=form.admin_phone col="col-md-6" %}
+  </div>
+  <a href="{% url 'platform_dashboard' %}" class="btn btn-light">Cancel</a>
+  <button class="btn btn-primary" type="submit"><i class="fas fa-check mr-1"></i> Create school</button>
+</div></form>
+{% endblock %}

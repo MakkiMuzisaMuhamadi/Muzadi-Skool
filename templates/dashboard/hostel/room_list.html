@@ -1,73 +1,47 @@
 {% extends "dashboard/base.html" %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
   <div>
     <h3 class="page-title mb-0"><i class="fas fa-door-open"></i> Rooms</h3>
-    <small class="text-muted">Manage rooms for each hostel.</small>
+    <small class="text-muted">A room's capacity is the number of beds in it. Use "Add beds" to create many beds at once.</small>
   </div>
   <div>
-    <a href="{% url 'hostel_room_create' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> Add Room
-    </a>
+    <a href="{% url 'hostel_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Dormitories</a>
+    <a href="{% url 'hostel_room_create' %}{% if selected_hostel_id %}?hostel={{ selected_hostel_id }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add room</a>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body table-responsive">
-    <table id="roomsTable" class="table table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Hostel</th>
-          <th>Room No</th>
-          <th>Floor</th>
-          <th>Capacity</th>
-          <th>Status</th>
-          <th class="text-right" style="width: 120px;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in rows %}
-          <tr>
-            <td class="fw-semibold">{{ r.hostel.name }}</td>
-            <td>{{ r.room_number }}</td>
-            <td>{{ r.floor|default:"-" }}</td>
-            <td>{{ r.capacity|default:"0" }}</td>
-            <td>
-              {% if r.is_active %}
-                <span class="badge bg-success text-white">Active</span>
-              {% else %}
-                <span class="badge bg-secondary text-white">Inactive</span>
-              {% endif %}
-            </td>
-            <td class="text-right">
-              <a href="{% url 'hostel_room_update' r.id %}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="{% url 'hostel_room_delete' r.id %}" class="btn btn-outline-danger btn-sm">
-                <i class="fas fa-trash"></i>
-              </a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6" class="text-center text-muted py-4">No rooms found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+<form method="get" class="form-inline mb-3">
+  <select name="hostel_id" class="form-control mr-2" onchange="this.form.submit()">
+    <option value="">All dormitories</option>
+    {% for h in hostels %}<option value="{{ h.id }}" {% if selected_hostel_id == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>{% endfor %}
+  </select>
+</form>
 
-<script>
-  (function(){
-    try {
-      if (window.$ && $.fn.DataTable) {
-        $('#roomsTable').DataTable({
-          pageLength: 25,
-          order: [[0,'asc'], [1,'asc']],
-          responsive: true
-        });
-      }
-    } catch(e) {}
-  })();
-</script>
+<div class="card"><div class="card-body">
+  <table id="roomsTable" class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>Dormitory</th><th>Room / hall</th><th>Floor</th><th>Beds</th><th>Occupied</th><th>Free</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.hostel.name }}</td>
+        <td class="font-weight-bold">{{ r.room_number }}</td>
+        <td>{{ r.floor|default:"-" }}</td>
+        <td>{{ r.bed_total }}</td>
+        <td>{{ r.occupied_total }}</td>
+        <td>{% if r.bed_total == 0 %}<a class="text-danger small" href="{% url 'hostel_room_generate_beds' r.id %}">No beds yet</a>{% else %}{{ r.free_total }}{% endif %}</td>
+        <td>{% if r.is_active %}<span class="badge bg-success text-white">In use</span>{% else %}<span class="badge bg-secondary text-white">Off</span>{% endif %}</td>
+        <td class="text-right text-nowrap">
+          <a class="btn btn-sm btn-success" href="{% url 'hostel_room_generate_beds' r.id %}"><i class="fas fa-plus mr-1"></i>Add beds</a>
+          <a class="btn btn-sm btn-outline-primary" title="See beds" href="{% url 'hostel_bed_list' %}?room_id={{ r.id }}"><i class="fas fa-bed"></i></a>
+          <a class="btn btn-sm btn-outline-primary" title="Edit" href="{% url 'hostel_room_update' r.id %}"><i class="fas fa-edit"></i></a>
+          <a class="btn btn-sm btn-outline-danger" title="Delete" href="{% url 'hostel_room_delete' r.id %}"><i class="fas fa-trash"></i></a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No rooms yet. Open-hall dormitories get a "Hall" automatically.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
 {% endblock %}

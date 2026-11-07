@@ -84,7 +84,16 @@ class BootstrapMixin:
 class ReportCardTemplateForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = ReportCardTemplate
-        exclude = ["school"]
+        # The comment / promotion / legend / signature switches are controlled on
+        # the Sections page (one place only), so they are not on this form.
+        exclude = [
+            "school",
+            "show_class_teacher_comment",
+            "show_head_teacher_comment",
+            "show_promotion_status",
+            "show_grade_legend",
+            "show_signatures",
+        ]
         widgets = {
             "primary_color": forms.TextInput(attrs={"type": "color"}),
             "secondary_color": forms.TextInput(attrs={"type": "color"}),
@@ -113,11 +122,6 @@ class ReportCardTemplateForm(BootstrapMixin, forms.ModelForm):
         self.fields["show_average_score"].label = "Show Average Score"
         self.fields["show_overall_grade"].label = "Show Overall Grade"
         self.fields["show_position"].label = "Show Position"
-        self.fields["show_grade_legend"].label = "Show Grade Legend"
-        self.fields["show_class_teacher_comment"].label = "Show Class Teacher Comment"
-        self.fields["show_head_teacher_comment"].label = "Show Head Teacher Comment"
-        self.fields["show_promotion_status"].label = "Show Promotion Status"
-        self.fields["show_signatures"].label = "Show Signatures"
 
         self.fields["student_info_title"].label = "Student Info Title"
         self.fields["academic_table_title"].label = "Academic Table Title"
@@ -125,6 +129,20 @@ class ReportCardTemplateForm(BootstrapMixin, forms.ModelForm):
         self.fields["projects_title"].label = "Projects Title"
         self.fields["comments_title"].label = "Comments Title"
         self.fields["legend_title"].label = "Legend Title"
+
+        # Only offer the levels this school actually teaches.
+        school = getattr(getattr(getattr(request, "user", None), "profile", None), "school", None)
+        if school is not None and "level" in self.fields:
+            try:
+                offered = set(school.level.values_list("code", flat=True))
+            except Exception:
+                offered = set()
+            if offered:
+                current = getattr(self.instance, "level", "") or ""
+                self.fields["level"].choices = [
+                    (v, l) for v, l in self.fields["level"].choices
+                    if v in offered or v == current or v == ""
+                ]
 
     def clean_name(self):
         value = (self.cleaned_data.get("name") or "").strip()

@@ -1,0 +1,98 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-school"></i> {{ school.name }}</h3>
+    <small class="text-muted">
+      {% if url %}<a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a> · {% endif %}
+      {{ students|intcomma }} students · {% include "platform/_state_badge.html" with state=subscription.state %}
+    </small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <form method="post" action="{% url 'platform_school_support' school.pk %}" class="d-inline"
+          onsubmit="return confirm('Attach your account to {{ school.name|escapejs }} to help them? You will sign in again on their address.');">
+      {% csrf_token %}<button class="btn btn-outline-primary btn-sm"><i class="fas fa-life-ring mr-1"></i> Open as support</button>
+    </form>
+    <a href="{% url 'platform_dashboard' %}" class="btn btn-light btn-sm">All schools</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 grid-margin">
+    <form method="post" enctype="multipart/form-data" class="card"><div class="card-body">
+      {% csrf_token %}<input type="hidden" name="action" value="address">
+      <h5 class="card-title">School &amp; web address</h5>
+      {% include "platform/_form_fields.html" with form=address_form col="col-md-6" %}
+      <button class="btn btn-primary btn-sm">Save</button>
+    </div></form>
+  </div>
+
+  <div class="col-lg-6 grid-margin">
+    <form method="post" class="card"><div class="card-body">
+      {% csrf_token %}<input type="hidden" name="action" value="subscription">
+      <h5 class="card-title">Subscription</h5>
+      <p class="small text-muted mb-2">
+        Ends: {{ subscription.end_date|date:"j M Y"|default:"no end date" }}{% if subscription.grace_ends_on %} · read-only after {{ subscription.grace_ends_on|date:"j M Y" }}{% endif %}.
+        Changing the plan (without touching the modules) switches on that plan's modules.
+      </p>
+      {% include "platform/_form_fields.html" with form=sub_form col="col-md-6" %}
+      <button class="btn btn-primary btn-sm">Save subscription</button>
+    </div></form>
+  </div>
+
+  <div class="col-lg-6 grid-margin">
+    <form method="post" class="card"><div class="card-body">
+      {% csrf_token %}<input type="hidden" name="action" value="payment">
+      <h5 class="card-title">Record a subscription payment</h5>
+      {% include "platform/_form_fields.html" with form=pay_form col="col-md-6" %}
+      <button class="btn btn-success btn-sm">Record payment</button>
+      {% if payments %}
+      <table class="table table-sm mt-3 mb-0"><thead><tr><th>Paid on</th><th class="text-right">UGX</th><th>Up to</th><th>Ref</th></tr></thead><tbody>
+        {% for p in payments %}<tr><td>{{ p.paid_on|date:"j M Y" }}</td><td class="text-right">{{ p.amount_ugx|intcomma }}</td><td>{{ p.covers_until|date:"j M Y" }}</td><td>{{ p.reference }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% endif %}
+    </div></form>
+  </div>
+
+  <div class="col-lg-6 grid-margin">
+    <div class="card"><div class="card-body">
+      <h5 class="card-title">SMS credit: {% if account.is_prepaid %}{{ account.credit_units|intcomma }} units{% else %}postpaid{% endif %}</h5>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="topup">
+        {% include "platform/_form_fields.html" with form=topup_form col="col-md-4" %}
+        <button class="btn btn-success btn-sm">Add credit</button>
+      </form>
+      {% if usage %}
+      <h6 class="mt-3">Usage by month</h6>
+      <table class="table table-sm mb-0"><thead><tr><th>Month</th><th class="text-right">Units</th><th class="text-right">UGX</th></tr></thead><tbody>
+        {% for u in usage %}<tr><td>{{ u.month|date:"M Y" }}</td><td class="text-right">{{ u.units|intcomma }}</td><td class="text-right">{{ u.amount_ugx|intcomma }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="col-lg-6 grid-margin">
+    <form method="post" class="card"><div class="card-body">
+      {% csrf_token %}<input type="hidden" name="action" value="messaging">
+      <h5 class="card-title">SMS &amp; WhatsApp settings</h5>
+      {% include "platform/_form_fields.html" with form=msg_form col="col-md-6" %}
+      <button class="btn btn-primary btn-sm">Save</button>
+    </div></form>
+  </div>
+
+  <div class="col-lg-6 grid-margin">
+    <div class="card"><div class="card-body">
+      <h5 class="card-title">Setup progress</h5>
+      <ul class="list-unstyled mb-0">
+        {% for i in checklist %}<li>{% if i.done %}<i class="fas fa-check-circle text-success"></i>{% else %}<i class="far fa-circle text-muted"></i>{% endif %} {{ i.label }}</li>{% endfor %}
+      </ul>
+      {% if ledger %}
+      <h6 class="mt-3">Latest SMS credit movements</h6>
+      <table class="table table-sm mb-0"><tbody>
+        {% for e in ledger %}<tr><td>{{ e.created_at|date:"j M H:i" }}</td><td>{{ e.get_kind_display }}</td><td class="text-right">{{ e.units|stringformat:"+d" }}</td><td class="text-right">{{ e.balance_after }}</td><td class="small text-muted">{{ e.note }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}

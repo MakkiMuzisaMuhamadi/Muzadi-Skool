@@ -1,3 +1,4 @@
+from mainApp.academic_period import apply_year_term_defaults
 from django import forms
 from django.forms import inlineformset_factory
 from django.utils import timezone
@@ -125,6 +126,9 @@ class FeeStructureForm(forms.ModelForm):
             self.fields["stream"].queryset = Stream.objects.filter(
                 class_ref_id=selected_class
             ).order_by("name")
+
+        # open on the school's current year/term (school settings)
+        apply_year_term_defaults(self, school)
 
     def clean(self):
         cleaned = super().clean()

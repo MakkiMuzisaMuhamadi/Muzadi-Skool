@@ -451,7 +451,13 @@
       font-size: 10.5px;
       color: var(--muted);
     }
-  </style>
+      /* Attendance / Conduct / Fees sections (_extra_sections.html) */
+    .xs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .xs-table th, .xs-table td { border: 1px solid {{ template_data.border_color|default:"#C9D9E8" }}; padding: 4px 6px; text-align: center; vertical-align: top; }
+    .xs-table th { background: {{ template_data.secondary_color|default:"#EAF3FB" }}; font-weight: 700; }
+    .xs-table.xs-left th, .xs-table.xs-left td { text-align: left; }
+    .xs-note { font-size: 10.5px; color: #555; margin-top: 4px; }
+</style>
 </head>
 
 <body>
@@ -566,6 +572,7 @@
                       </td>
                     {% endif %}
 
+                    {% if template_data.show_position %}
                     <td class="info-cell-small">
                       <div class="info-label">Class Position</div>
                       <div class="info-value">
@@ -587,6 +594,7 @@
                         {% endif %}
                       </div>
                     </td>
+                    {% endif %}
                   </tr>
                 </table>
               </div>
@@ -650,6 +658,15 @@
               <div class="summary-card">
                 <table class="summary-grid">
                   <tr>
+                    {% if report.shows_division is False %}
+                    {# Classes without divisions (e.g. P.1 - P.3 thematic) #}
+                    <td>
+                      <div class="summary-box">
+                        <div class="summary-label">Average Mark</div>
+                        <div class="summary-value">{% if report.average_percentage is not None %}{{ report.average_percentage|floatformat:0 }}%{% else %}-{% endif %}</div>
+                      </div>
+                    </td>
+                    {% else %}
                     <td>
                       <div class="summary-box">
                         <div class="summary-label">Total Aggregates</div>
@@ -663,6 +680,7 @@
                         <div class="summary-value">{{ report.division|default:report.average_grade|default:"-" }}</div>
                       </div>
                     </td>
+                    {% endif %}
                   </tr>
                 </table>
               </div>
@@ -677,6 +695,8 @@
               </div>
             </div>
           {% endif %}
+
+          {% include "dashboard/reports/pdf/_extra_sections.html" %}
 
           {% if sec.section_key == "teacher_comment" and template_data.show_class_teacher_comment %}
             <div class="plain-section">
@@ -709,10 +729,12 @@
               <div class="section-title">{{ sec.title|default:"Promotion" }}</div>
 
               <div class="promotion-card">
+                {% if report.shows_division is not False %}
                 <div class="promotion-row">
                   <span class="promotion-label">Final Division:</span>
                   <span class="promotion-value">{{ report.division|default:"-" }}</span>
                 </div>
+                {% endif %}
 
                 <div class="promotion-row">
                   <span class="promotion-label">Status / Recommendation:</span>
@@ -757,6 +779,7 @@
                 </tbody>
               </table>
 
+              {% if report.shows_division is not False %}
               <table class="legend-table">
                 <thead>
                   <tr>
@@ -778,6 +801,7 @@
                   {% endfor %}
                 </tbody>
               </table>
+              {% endif %}
             </div>
           {% endif %}
 

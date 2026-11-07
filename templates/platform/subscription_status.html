@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="page-header mb-3"><h3 class="page-title mb-0"><i class="fas fa-file-contract"></i> Subscription</h3></div>
+<div class="row">
+  <div class="col-md-6 grid-margin"><div class="card"><div class="card-body">
+    <h5 class="card-title">{{ school.name }}</h5>
+    <p class="mb-1">Status: {% include "platform/_state_badge.html" with state=state %}</p>
+    {% if subscription %}
+      <p class="mb-1">Plan: <strong>{{ subscription.get_plan_display }}</strong></p>
+      <p class="mb-1">{% if subscription.status == "TRIAL" %}Free trial until{% else %}Paid until{% endif %}:
+        <strong>{{ subscription.end_date|date:"j M Y"|default:"no end date" }}</strong></p>
+      {% if state == "GRACE" %}<div class="alert alert-warning mt-2 mb-0">Your subscription has ended. Everything keeps working until {{ subscription.grace_ends_on|date:"j M Y" }}; after that the system becomes read-only until it is renewed.</div>{% endif %}
+      {% if state == "READ_ONLY" %}<div class="alert alert-danger mt-2 mb-0">The system is read-only: you can view and download, but not save changes. Please renew with Muzadi Technologies.</div>{% endif %}
+    {% endif %}
+  </div></div></div>
+  <div class="col-md-6 grid-margin"><div class="card"><div class="card-body">
+    <h5 class="card-title">Modules</h5>
+    <ul class="list-unstyled mb-0">
+      <li><i class="fas fa-check text-success"></i> Students, teachers, marks, report cards, fees, attendance, calendar (always included)</li>
+      {% for label, on in modules %}<li>{% if on %}<i class="fas fa-check text-success"></i>{% else %}<i class="fas fa-times text-muted"></i>{% endif %} {{ label }}</li>{% endfor %}
+    </ul>
+  </div></div></div>
+</div>
+{% if payments %}
+<div class="card"><div class="card-body">
+  <h5 class="card-title">Payments</h5>
+  <table class="table table-sm mb-0"><thead><tr><th>Date</th><th class="text-right">UGX</th><th>Paid up to</th><th>Reference</th></tr></thead><tbody>
+    {% for p in payments %}<tr><td>{{ p.paid_on|date:"j M Y" }}</td><td class="text-right">{{ p.amount_ugx|intcomma }}</td><td>{{ p.covers_until|date:"j M Y" }}</td><td>{{ p.reference }}</td></tr>{% endfor %}
+  </tbody></table>
+</div></div>
+{% endif %}
+{% endblock %}

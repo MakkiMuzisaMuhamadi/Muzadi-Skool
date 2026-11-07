@@ -1,0 +1,18 @@
+{% load role_tags %}
+{# One-click standard values. Include inside the page header actions. #}
+<form method="post" action="{% url 'report_load_standard_terms' %}" class="d-inline-flex align-items-center" style="gap:.35rem;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  {% if request.user.profile.school|school_has_level:"UACE" %}
+  <select name="level" class="form-control form-control-sm" style="width:auto;">
+    <option value="UCE">UCE</option>
+    <option value="UACE">UACE</option>
+  </select>
+  {% else %}
+  <input type="hidden" name="level" value="UCE">
+  {% endif %}
+  <button type="submit" class="btn btn-outline-success"
+          onclick="return confirm('Add the standard A-E descriptors, 1-3 score identifiers and key words? Entries you already have are not changed.');">
+    <i class="fas fa-magic mr-1"></i> Load standard values
+  </button>
+</form>

@@ -279,7 +279,18 @@
       font-size: 12px;
       color: var(--muted);
     }
-  </style>
+  
+    .cbc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cbc-table th, .cbc-table td { border: 1px solid {{ template_data.border_color|default:"#C9D9E8" }}; padding: 4px 6px; vertical-align: top; }
+    .cbc-table th { background: {{ template_data.secondary_color|default:"#EAF3FB" }}; text-align: left; }
+    .cbc-center { text-align: center; }
+    /* Attendance / Conduct / Fees sections (_extra_sections.html) */
+    .xs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .xs-table th, .xs-table td { border: 1px solid {{ template_data.border_color|default:"#C9D9E8" }}; padding: 4px 6px; text-align: center; vertical-align: top; }
+    .xs-table th { background: {{ template_data.secondary_color|default:"#EAF3FB" }}; font-weight: 700; }
+    .xs-table.xs-left th, .xs-table.xs-left td { text-align: left; }
+    .xs-note { font-size: 10.5px; color: #555; margin-top: 4px; }
+</style>
 </head>
 <body>
   <div class="page">
@@ -374,6 +385,7 @@
                     <td></td>
                   {% endif %}
                 </tr>
+                {% if template_data.show_position %}
                 <tr>
                   <td class="meta-label">Class Position:</td>
                   <td class="meta-value">
@@ -393,6 +405,7 @@
                     {% endif %}
                   </td>
                 </tr>
+                {% endif %}
               </table>
             </div>
           {% endif %}
@@ -438,7 +451,7 @@
                   {% endif %}
                   {% if template_data.show_overall_grade %}
                     &nbsp;&nbsp;&nbsp;
-                    <span class="label">Overall Grade:</span>
+                    <span class="label">{% if report.result_mode == "UNEB" %}Overall Result:{% else %}Overall Grade:{% endif %}</span>
                     <span>{{ report.average_grade|default:"-" }}</span>
                   {% endif %}
                 </div>
@@ -535,8 +548,10 @@
                 <thead>
                   <tr>
                     <th>Project Title</th>
+                    <th style="width: 20%;">Subject</th>
                     <th style="width: 90px;">Mark</th>
-                    <th style="width: 90px;">Grade</th>
+                    <th style="width: 70px;">Grade</th>
+                    <th style="width: 22%;">Remark</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -544,12 +559,16 @@
                     {% for p in report.projects %}
                       <tr>
                         <td>{{ p.title }}</td>
-                        <td class="text-center">{{ p.mark }}</td>
+                        <td>{{ p.subject|default:"Integrated" }}</td>
+                        <td class="text-center">{{ p.mark }}{% if p.mark != "" and p.max_mark %} / {{ p.max_mark|floatformat:"-1" }}{% endif %}</td>
                         <td class="text-center">{{ p.grade }}</td>
+                        <td>{{ p.remark }}</td>
                       </tr>
                     {% endfor %}
                   {% else %}
                     <tr>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
                       <td>&nbsp;</td>
                       <td>&nbsp;</td>
                       <td>&nbsp;</td>
@@ -559,6 +578,10 @@
               </table>
             </div>
           {% endif %}
+
+          {% include "dashboard/reports/pdf/_cbc_sections.html" %}
+
+          {% include "dashboard/reports/pdf/_extra_sections.html" %}
 
           {% if sec.section_key == "teacher_comment" and template_data.show_class_teacher_comment %}
             <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">

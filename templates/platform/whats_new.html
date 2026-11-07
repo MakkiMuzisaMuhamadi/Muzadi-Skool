@@ -1,0 +1,14 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3"><h3 class="page-title mb-0"><i class="fas fa-gift"></i> What's new</h3>
+<small class="text-muted">Improvements to the system, newest first.</small></div>
+{% for n in notes %}
+<div class="card mb-3"><div class="card-body">
+  <h5 class="card-title mb-1">{{ n.title }} {% if n.is_new %}<span class="badge badge-danger">New</span>{% endif %}</h5>
+  <small class="text-muted">{% if n.version %}Version {{ n.version }} · {% endif %}{{ n.published_at|date:"j M Y" }}</small>
+  <div class="mt-2">{% for p in n.paragraphs %}<p class="mb-2">{{ p|linebreaksbr }}</p>{% endfor %}</div>
+</div></div>
+{% empty %}
+<div class="card"><div class="card-body text-muted">Nothing new yet.</div></div>
+{% endfor %}
+{% endblock %}

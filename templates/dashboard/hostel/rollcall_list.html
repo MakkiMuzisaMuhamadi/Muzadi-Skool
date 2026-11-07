@@ -1,0 +1,42 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% with tab="rollcall" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-check"></i> Roll call</h3>
+    <small class="text-muted">Students on exeat or admitted in sick bay are marked for you.</small>
+  </div>
+  <a href="{% url 'boarding_rollcall_report' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-chart-bar mr-1"></i> Absence report</a>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="post" action="{% url 'boarding_rollcall_start' %}" class="row align-items-end">
+    {% csrf_token %}
+    <div class="col-md-4">{% with field=start_form.hostel %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>
+    <div class="col-md-3">{% with field=start_form.date %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>
+    <div class="col-md-3">{% with field=start_form.session %}{% include "dashboard/hostel/_field.html" %}{% endwith %}</div>
+    <div class="col-md-2 mb-3"><button class="btn btn-primary w-100"><i class="fas fa-play mr-1"></i> Start</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body">
+  <h5 class="mb-3">Recent roll calls</h5>
+  <table class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>Date</th><th>Dormitory</th><th>Session</th><th>Boarders</th><th>Absent</th><th>Taken by</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for s in sessions %}
+      <tr>
+        <td>{{ s.date|date:"D d M Y" }}</td><td>{{ s.hostel.name }}</td><td>{{ s.get_session_display }}</td>
+        <td>{{ s.total }}</td>
+        <td>{% if s.absent %}<span class="badge bg-danger text-white">{{ s.absent }}</span>{% else %}0{% endif %}</td>
+        <td>{{ s.taken_by.get_full_name|default:s.taken_by.username|default:"-" }}</td>
+        <td>{% if s.is_submitted %}<span class="badge bg-success text-white">Saved</span>{% else %}<span class="badge bg-warning text-dark">Not saved</span>{% endif %}</td>
+        <td class="text-right"><a class="btn btn-sm btn-outline-primary" href="{% url 'boarding_rollcall_take' s.id %}">Open</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No roll calls yet. Start one above.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

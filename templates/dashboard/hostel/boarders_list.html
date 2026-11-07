@@ -1,160 +1,88 @@
 {% extends "dashboard/base.html" %}
-{% load role_tags %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+{% with tab="boarders" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-users"></i> {{ title|default:"Boarders" }}</h3>
-    <small class="text-muted">Only students with Residence in <b>BOARDING</b> appear here.</small>
+    <h3 class="page-title mb-0"><i class="fas fa-users"></i> Boarders</h3>
+    <small class="text-muted">Active students whose residence is Boarding.</small>
   </div>
-  <div class="text-right">
-    <div class="badge bg-primary text-white p-2">Total Boarders: {{ total_boarders|default:"0" }}</div>
-  </div>
-</div>
-
-<!-- Filters (same style as hostel list) -->
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" id="boarderFilter" data-streams-url="{% url 'ajax_streams_for_class' %}">
-      <div class="row g-2 align-items-end">
-
-        <div class="col-md-3">
-          <label class="form-label">Search</label>
-          <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Name / Admission No...">
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Hostel</label>
-          <select name="hostel_id" class="form-select">
-            <option value="">All Hostels</option>
-            {% for h in hostels %}
-              <option value="{{ h.id }}" {% if selected_hostel_id == h.id|stringformat:"s" %}selected{% endif %}>
-                {{ h.name }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Class</label>
-          <select name="class_id" id="classSelect" class="form-select">
-            <option value="">All Classes</option>
-            {% for c in classes %}
-              <option value="{{ c.id }}" {% if selected_class_id == c.id|stringformat:"s" %}selected{% endif %}>
-                {{ c.name }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Stream</label>
-          <select name="stream_id" id="streamSelect" class="form-select" {% if not selected_class_id %}disabled{% endif %}>
-            <option value="">All Streams</option>
-            {% for s in streams %}
-              <option value="{{ s.id }}" {% if selected_stream_id == s.id|stringformat:"s" %}selected{% endif %}>
-                {{ s.name }}
-              </option>
-            {% endfor %}
-          </select>
-          <small class="text-muted">Select Class first to load streams.</small>
-        </div>
-
-        <div class="col-md-2">
-          <button class="btn btn-primary w-100" type="submit">
-            <i class="fas fa-filter"></i> Apply
-          </button>
-        </div>
-
-        <div class="col-md-2">
-          <a class="btn btn-outline-danger w-100" href="{% url 'boarders_list' %}">
-            <i class="fas fa-undo"></i> Reset
-          </a>
-        </div>
-
-      </div>
-    </form>
+  <div>
+    <span class="badge bg-primary text-white p-2">Total: {{ total_boarders }}</span>
+    {% if unallocated_count %}<a href="?allocation=none" class="badge bg-warning text-dark p-2">No bed: {{ unallocated_count }}</a>{% endif %}
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body table-responsive">
-    <table id="boardersTable" class="table table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Adm No</th>
-          <th>Name</th>
-          <th>Class</th>
-          <th>Stream</th>
-          <th>Hostel</th>
-          <th>Room</th>
-          <th>Bed</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in students %}
-          <tr>
-            <td>{{ s.admission_number }}</td>
-            <td class="fw-semibold">{{ s.name }}</td>
-            <td>{{ s.current_class.name|default:"-" }}</td>
-            <td>{{ s.stream.name|default:"-" }}</td>
-            <td>{{ s.hostel.name|default:"-" }}</td>
-            <td>{{ s.room_number|default:"-" }}</td>
-            <td>{{ s.bed_number|default:"-" }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="7" class="text-muted text-center py-4">No boarders found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+<div class="card mb-3"><div class="card-body">
+  <form method="get" id="boarderFilter" class="row align-items-end" data-streams-url="{% url 'ajax_streams_for_class' %}">
+    <div class="col-md-3 mb-2"><label class="small text-muted mb-1">Search</label><input type="text" name="q" value="{{ g.q|default:'' }}" class="form-control" placeholder="Name or admission no."></div>
+    <div class="col-md-2 mb-2"><label class="small text-muted mb-1">Dormitory</label><select name="hostel_id" class="form-control">
+      <option value="">All</option>{% for h in hostels %}<option value="{{ h.id }}" {% if g.hostel_id == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-2 mb-2"><label class="small text-muted mb-1">Class</label><select name="class_id" id="classSelect" class="form-control">
+      <option value="">All</option>{% for c in classes %}<option value="{{ c.id }}" {% if g.class_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-2 mb-2"><label class="small text-muted mb-1">Stream</label><select name="stream_id" id="streamSelect" class="form-control" {% if not g.class_id %}disabled{% endif %}>
+      <option value="">All</option>{% for s in streams %}<option value="{{ s.id }}" {% if g.stream_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-2 mb-2"><label class="small text-muted mb-1">Bed</label><select name="allocation" class="form-control">
+      <option value="">All</option>
+      <option value="yes" {% if g.allocation == "yes" %}selected{% endif %}>Has a bed</option>
+      <option value="none" {% if g.allocation == "none" %}selected{% endif %}>No bed</option>
+    </select></div>
+    <div class="col-md-1 mb-2"><button class="btn btn-primary w-100"><i class="fas fa-filter"></i></button></div>
+  </form>
+</div></div>
 
+<div class="card"><div class="card-body">
+  <table id="boardersTable" class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>Adm No</th><th>Name</th><th>Gender</th><th>Class</th><th>Stream</th><th>Dormitory</th><th>Room</th><th>Bed</th><th class="text-right">Actions</th></tr></thead>
+    <tbody>
+    {% for s in students %}
+      <tr>
+        <td>{{ s.admission_number }}</td>
+        <td class="font-weight-bold">{{ s.name }}</td>
+        <td>{{ s.get_gender_display|default:"<span class='text-danger'>Not set</span>" }}</td>
+        <td>{{ s.current_class.name|default:"-" }}</td>
+        <td>{{ s.stream.name|default:"-" }}</td>
+        <td>{% if s.hostel %}{{ s.hostel.name }}{% else %}<span class="badge bg-warning text-dark">No bed</span>{% endif %}</td>
+        <td>{{ s.room_number|default:"-" }}</td>
+        <td>{{ s.bed_number|default:"-" }}</td>
+        <td class="text-right text-nowrap">
+          {% if not s.hostel and is_admin %}<a class="btn btn-sm btn-primary" href="{% url 'hostel_assignment_create' %}?student={{ s.id }}">Give bed</a>{% endif %}
+          {% if s.hostel %}
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'boarding_exeat_create' %}?student={{ s.id }}" title="New exeat"><i class="fas fa-sign-out-alt"></i></a>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'boarding_visit_create' %}?student={{ s.id }}" title="Record a visitor"><i class="fas fa-user-friends"></i></a>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9" class="text-center text-muted py-4">No boarders match these filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap mt-3">
+    <small class="text-muted">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}</small>
+    <ul class="pagination pagination-sm mb-0">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Next</a></li>{% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div></div>
+{% endblock %}
+{% block extrajs %}
 <script>
 (function(){
-  // DataTables
-  try {
-    if (window.$ && $.fn.DataTable) {
-      $('#boardersTable').DataTable({
-        pageLength: 25,
-        order: [[1,'asc']],
-        responsive: true
-      });
-    }
-  } catch(e) {}
-
-  // Class -> Stream AJAX (same as hostel list)
-  const filterForm = document.getElementById('boarderFilter');
-  if(!filterForm) return;
-
-  const streamsUrl = filterForm.getAttribute('data-streams-url');
-  const classSelect = document.getElementById('classSelect');
-  const streamSelect = document.getElementById('streamSelect');
-
-  function resetStreams(disable=true){
-    streamSelect.innerHTML = '<option value="">All Streams</option>';
-    streamSelect.disabled = disable;
-  }
-
-  async function loadStreams(){
-    const classId = classSelect.value;
-    resetStreams(true);
-    if(!classId) return;
-
-    const res = await fetch(`${streamsUrl}?class_id=${encodeURIComponent(classId)}`);
-    const data = await res.json();
-
-    (data.streams || []).forEach(s=>{
-      const op = document.createElement('option');
-      op.value = s.id;
-      op.textContent = s.name;
-      streamSelect.appendChild(op);
-    });
-
-    streamSelect.disabled = false;
-  }
-
-  classSelect.addEventListener('change', loadStreams);
+  var form = document.getElementById("boarderFilter"), cls = document.getElementById("classSelect"), st = document.getElementById("streamSelect");
+  if(!cls) return;
+  cls.addEventListener("change", async function(){
+    st.innerHTML = '<option value="">All</option>'; st.disabled = !cls.value;
+    if(!cls.value) return;
+    var j = await (await fetch(form.dataset.streamsUrl + "?class_id=" + encodeURIComponent(cls.value))).json();
+    (j.streams || j.results || []).forEach(function(s){ var o = document.createElement("option"); o.value = s.id; o.textContent = s.name || s.text; st.appendChild(o); });
+  });
 })();
 </script>
 {% endblock %}

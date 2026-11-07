@@ -9,6 +9,7 @@ Who can do what:
   BILLING_ROLES    bill transport fees
 "TRANSPORT_OFFICER" works as soon as you add it to Profile.ROLE_CHOICES.
 """
+from mainApp.tenancy import for_school
 from functools import wraps
 
 from django.contrib import messages
@@ -621,7 +622,7 @@ def transport_compliance(request):
 def transport_licence_edit(request, staff_pk):
     from mainApp.models.teacher_models import NonTeachingStaff
 
-    staff = get_object_or_404(NonTeachingStaff, pk=staff_pk)
+    staff = get_object_or_404(for_school(NonTeachingStaff, request, "user__profile__school"), pk=staff_pk)
     licence = DriverLicence.objects.filter(staff=staff).first() or DriverLicence(staff=staff, school=request.school)
     form = DriverLicenceForm(request.POST or None, instance=licence)
     if request.method == "POST" and form.is_valid():

@@ -18,9 +18,15 @@ class GradingScaleForm(forms.ModelForm):
             "name",
             "required_subjects",
             "average_divisor",
+            "result_mode",
+            "min_pass_grade",
+            "require_project",
             "is_active",
         ]
         widgets = {
+            "result_mode": forms.Select(attrs={"class": BOOTSTRAP_INPUT}),
+            "min_pass_grade": forms.TextInput(attrs={"class": BOOTSTRAP_INPUT, "maxlength": 5}),
+            "require_project": forms.CheckboxInput(),
             "name": forms.TextInput(attrs={"class": BOOTSTRAP_INPUT}),
             "required_subjects": forms.NumberInput(attrs={"class": BOOTSTRAP_INPUT, "min": 1}),
             "average_divisor": forms.NumberInput(attrs={"class": BOOTSTRAP_INPUT, "min": 1}),

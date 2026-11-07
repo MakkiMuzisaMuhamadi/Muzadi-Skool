@@ -1,6 +1,8 @@
 """
 School leadership roles (Head Teacher, DOS, HODs ...) and non-teaching staff.
 """
+from mainApp.tenancy import scope
+from mainApp.tenancy import for_school
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
@@ -28,7 +30,7 @@ ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"]
 @role_required(ADMIN_ROLES)
 def responsibility_list(request):
     show = request.GET.get("show", "current")
-    qs = StaffResponsibility.objects.select_related("teacher__user", "level")
+    qs = scope(StaffResponsibility.objects.select_related("teacher__user", "level"), "teacher__user__profile__school")
     if show == "current":
         qs = qs.filter(is_active=True)
     return render(request, "dashboard/staff/responsibility_list.html", {
@@ -41,7 +43,7 @@ def responsibility_list(request):
 @login_required
 @role_required(ADMIN_ROLES)
 def responsibility_form(request, pk=None):
-    instance = get_object_or_404(StaffResponsibility, pk=pk) if pk else None
+    instance = get_object_or_404(for_school(StaffResponsibility, request, "teacher__user__profile__school"), pk=pk) if pk else None
     if request.method == "POST":
         form = StaffResponsibilityForm(request.POST, instance=instance)
         if form.is_valid():
@@ -68,7 +70,7 @@ def responsibility_form(request, pk=None):
 @role_required(ADMIN_ROLES)
 @require_POST
 def responsibility_end(request, pk):
-    obj = get_object_or_404(StaffResponsibility, pk=pk)
+    obj = get_object_or_404(for_school(StaffResponsibility, request, "teacher__user__profile__school"), pk=pk)
     obj.is_active = False
     obj.end_date = obj.end_date or timezone.localdate()
     obj.save(update_fields=["is_active", "end_date", "updated_at", "updated_by"])
@@ -84,12 +86,12 @@ def responsibility_end(request, pk):
 @role_required(ADMIN_ROLES)
 def staff_list(request):
     status = request.GET.get("status", "working")
-    qs = NonTeachingStaff.objects.all()
+    qs = scope(NonTeachingStaff.objects.all(), "user__profile__school")
     if status == "working":
         qs = qs.filter(status__in=[StaffStatus.ACTIVE, StaffStatus.ON_LEAVE])
     elif status in StaffStatus.values:
         qs = qs.filter(status=status)
-    counts = dict(NonTeachingStaff.objects.values_list("status").annotate(n=Count("id")))
+    counts = dict(scope(NonTeachingStaff.objects.all(), "user__profile__school").values_list("status").annotate(n=Count("id")))
     return render(request, "dashboard/staff/staff_list.html", {
         "title": "Non-teaching Staff",
         "staff": qs,
@@ -103,7 +105,7 @@ def staff_list(request):
 @login_required
 @role_required(ADMIN_ROLES)
 def staff_form(request, pk=None):
-    instance = get_object_or_404(NonTeachingStaff, pk=pk) if pk else None
+    instance = get_object_or_404(for_school(NonTeachingStaff, request, "user__profile__school"), pk=pk) if pk else None
     if request.method == "POST":
         form = NonTeachingStaffForm(request.POST, request.FILES, instance=instance)
         if form.is_valid():
@@ -130,7 +132,7 @@ def staff_form(request, pk=None):
 @login_required
 @role_required(ADMIN_ROLES)
 def staff_detail(request, pk):
-    member = get_object_or_404(NonTeachingStaff.objects.select_related("user"), pk=pk)
+    member = get_object_or_404(for_school(NonTeachingStaff.objects.select_related("user"), request, "user__profile__school"), pk=pk)
     return render(request, "dashboard/staff/staff_detail.html", {
         "title": str(member),
         "member": member,
@@ -142,7 +144,7 @@ def staff_detail(request, pk):
 @role_required(ADMIN_ROLES)
 @require_POST
 def staff_change_status(request, pk):
-    member = get_object_or_404(NonTeachingStaff.objects.select_related("user"), pk=pk)
+    member = get_object_or_404(for_school(NonTeachingStaff.objects.select_related("user"), request, "user__profile__school"), pk=pk)
     form = StaffStatusForm(request.POST)
     if not form.is_valid():
         for errors in form.errors.values():

@@ -18,7 +18,7 @@ from mainApp.models.competency_models import (
     ReportComment,
 )
 from mainApp.models.exams_models import ExamScheme, ExamType, MarkEntryExam, MarkSheet
-from mainApp.models.models import EducationLevel, StudentPromotionDecision
+from mainApp.models.models import Class, EducationLevel, StudentPromotionDecision
 from mainApp.models.report_terms_models import (
     ReportAutoCommentRule,
     ReportGradeDescriptor,
@@ -28,39 +28,17 @@ from mainApp.models.report_terms_models import (
 from mainApp.models.student import Student
 from mainApp.report_configs.academic_helpers import get_next_term_begin_display
 from mainApp.report_configs.report_ranking_helpers import get_student_report_positions
+from mainApp.report_configs.competency_report_helpers import (
+    build_competency_rows,
+    build_generic_skill_rows,
+    build_project_rows,
+    user_initials,
+)
 
-def get_report_promotion_text(*, school, student, academic_year_id):
-    decision = (
-        StudentPromotionDecision.objects.filter(
-            school=school,
-            student=student,
-            academic_year_id=academic_year_id,
-        )
-        .select_related("to_class", "from_class")
-        .order_by("-id")
-        .first()
-    )
+def get_report_promotion_text(*, school, student, academic_year_id, term_id=None):
+    from mainApp.report_configs.academic_helpers import get_report_promotion_text as _text
 
-    if not decision:
-        return ""
-
-    if decision.status == "PROMOTED":
-        if decision.to_class:
-            return f"Promoted to Next Class ({decision.to_class.name})"
-        return "Promoted to Next Class"
-
-    if decision.status == "RETAINED":
-        if decision.from_class:
-            return f"Retained in Current Class ({decision.from_class.name})"
-        return "Retained in Current Class"
-
-    if decision.status == "COMPLETED_CYCLE":
-        return "Completed Cycle, Awaiting Readmission"
-
-    if decision.status == "GRADUATED":
-        return "Graduated"
-
-    return decision.get_status_display() or ""
+    return _text(school=school, student=student, academic_year_id=academic_year_id, term_id=term_id)
 
 
 def _D(x: Any, default: Decimal = Decimal("0")) -> Decimal:
@@ -252,7 +230,13 @@ def build_uce_report_payload(
     exam_type_id: Optional[int] = None,
     academic_record=None,
 ) -> Dict[str, Any]:
-    class_ref = getattr(student, "current_class", None)
+    # The class the learner was in for THIS term (after promotion the
+    # learner's current class is already the new one).
+    class_ref = getattr(academic_record, "class_ref", None) if academic_record else None
+    if class_ref is None and class_ref_id:
+        class_ref = Class.objects.filter(id=class_ref_id).select_related("level").first()
+    if class_ref is None:
+        class_ref = getattr(student, "current_class", None)
     level = _get_level(student, class_ref=class_ref, level_id=level_id)
     scale = get_active_scale(school, level_code="UCE")
 
@@ -410,59 +394,31 @@ def build_uce_report_payload(
         term_id=term_id,
     )
 
-    defs_qs = CompetencyDefinition.objects.filter(
+    competencies_rows = build_competency_rows(
         school=school,
         level_id=level_id,
         academic_year_id=academic_year_id,
         term_id=term_id,
         class_ref_id=class_ref_id,
-    ).select_related("subject", "topic").order_by("subject__name", "topic__order", "id")
-
-    if stream_id:
-        defs_qs = defs_qs.filter(Q(stream_id=stream_id) | Q(stream__isnull=True))
-    else:
-        defs_qs = defs_qs.filter(stream__isnull=True)
-
-    rows_map = {
-        r.competency_id: r
-        for r in CompetencyRow.objects.filter(
-            competency__in=defs_qs,
-            student=student
-        )
-    }
-
-    competencies_rows: List[Dict[str, Any]] = []
-    for d in defs_qs:
-        r = rows_map.get(d.id)
-        competencies_rows.append({
-            "subject": d.subject.name if d.subject_id else "",
-            "topic": d.topic.name if d.topic_id else "",
-            "competency_text": d.competency_text,
-            "score": float(r.score) if (r and r.score is not None) else "",
-            "remark": (r.remark_text if r else ""),
-            "teacher_initials": d.teacher_initials or "",
-        })
-
-    projects_qs = ProjectAssessment.objects.filter(
-        school=school,
-        level_id=level_id,
-        academic_year_id=academic_year_id,
-        term_id=term_id,
-        class_ref_id=class_ref_id,
+        stream_id=stream_id,
         student=student,
     )
-    if stream_id:
-        projects_qs = projects_qs.filter(Q(stream_id=stream_id) | Q(stream__isnull=True))
-    else:
-        projects_qs = projects_qs.filter(stream__isnull=True)
-
-    projects = []
-    for p in projects_qs.order_by("id"):
-        projects.append({
-            "title": p.title,
-            "mark": float(p.mark) if p.mark is not None else "",
-            "grade": p.grade or "",
-        })
+    projects = build_project_rows(
+        school=school,
+        level_id=level_id,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        class_ref_id=class_ref_id,
+        stream_id=stream_id,
+        student=student,
+    )
+    generic_skills = build_generic_skill_rows(
+        school=school,
+        level_id=level_id,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        student=student,
+    )
 
     rc = ReportComment.objects.filter(
         school=school,
@@ -478,6 +434,7 @@ def build_uce_report_payload(
         school=school,
         student=student,
         academic_year_id=academic_year_id,
+        term_id=term_id,
     )
 
     if rc:
@@ -565,6 +522,9 @@ def build_uce_report_payload(
         "average_divisor": overall.get("average_divisor", 0),
 
         "projects": projects,
+        "generic_skills": generic_skills,
+        "result_mode": overall.get("result_mode", "AVERAGE"),
+        "result_code": overall.get("result_code", ""),
 
         "class_teacher_comment": class_teacher_comment,
         "head_teacher_comment": head_teacher_comment,

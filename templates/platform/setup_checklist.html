@@ -1,0 +1,18 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3"><h3 class="page-title mb-0"><i class="fas fa-tasks"></i> Setting up {{ school.name }}</h3>
+<small class="text-muted">Work down the list. Each step opens the right page.</small></div>
+<div class="card"><div class="card-body">
+  <div class="progress mb-3" style="height:10px;"><div class="progress-bar bg-success" style="width: {{ percent }}%"></div></div>
+  <p class="mb-3"><strong>{{ done }} of {{ items|length }}</strong> steps done.</p>
+  <ol class="pl-3 mb-0">
+  {% for i in items %}
+    <li class="mb-2">
+      {% if i.done %}<i class="fas fa-check-circle text-success"></i>{% else %}<i class="far fa-circle text-muted"></i>{% endif %}
+      {% if i.url %}<a href="{{ i.url }}">{{ i.label }}</a>{% else %}{{ i.label }}{% endif %}
+      {% if i.hint and not i.done %}<br><small class="text-muted">{{ i.hint }}</small>{% endif %}
+    </li>
+  {% endfor %}
+  </ol>
+</div></div>
+{% endblock %}

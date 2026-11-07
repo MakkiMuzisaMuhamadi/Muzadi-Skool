@@ -22,6 +22,7 @@
   <!-- endinject -->
 
   <link rel="shortcut icon" href="{% static 'images/favicon1.png' %}" />
+  {% include "pwa/_head.html" %}
 
   <!-- Sidebar: remembered state, active page highlight, menu search -->
   <style>
@@ -108,6 +109,9 @@
           {% if role == 'TEACHER' %}
               <a class="dropdown-item" href="{% url 'marks_entry' %}">
                 <i class="fas fa-edit text-primary"></i> Enter Marks
+              </a>
+              <a class="dropdown-item" href="{% url 'offline_marks_app' %}">
+                <i class="fas fa-mobile-alt text-info"></i> Offline Marks
               </a>
                {% endif %}
           {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
@@ -251,7 +255,7 @@
               </a>
               {% endif %}
 
-               {% if role == 'SUPER_ADMIN' %}
+               {% if role == 'SUPER_ADMIN' or role == 'ADMIN' %}
               <a class="dropdown-item" href="{% url 'user_management' %}">
                 <i class="fas fa-users-cog text-primary"></i>
                 User Management
@@ -335,11 +339,29 @@
           </li>
           <li class="nav-item nav-search-empty" id="sidebarSearchEmpty">No menu matches that.</li>
 
-          <!-- Dashboard -->
+          <!-- Dashboard (each role has its own home page) -->
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'dashboard' %}">
+            <a class="nav-link" href="{% home_url %}">
               <i class="fas fa-tachometer-alt menu-icon"></i>
-              <span class="menu-title">Dashboard</span>
+              <span class="menu-title">{% if role == 'PARENT' %}My Children{% else %}Dashboard{% endif %}</span>
+            </a>
+          </li>
+
+          <!-- Muzadi platform (SUPER_ADMIN only) -->
+          {% if is_platform_user %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'platform_dashboard' %}">
+              <i class="fas fa-globe-africa menu-icon"></i>
+              <span class="menu-title">All Schools (Platform)</span>
+            </a>
+          </li>
+          {% endif %}
+
+          <!-- What's new after an upgrade -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'whats_new' %}">
+              <i class="fas fa-gift menu-icon"></i>
+              <span class="menu-title">What's New{% if whats_new_count %} <span class="badge badge-danger ml-1">{{ whats_new_count }}</span>{% endif %}</span>
             </a>
           </li>
 
@@ -390,6 +412,7 @@
                     Academic Years
                   </a>
                 </li>
+{% if is_platform_user %}{# years and terms are shared by all schools #}
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'academic_year_add' %}">
                     <i class="fas fa-plus-circle menu-icon"></i>
@@ -402,6 +425,7 @@
                     Add Term
                   </a>
                 </li>
+                {% endif %}
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'holiday_add' %}">
                     <i class="fas fa-umbrella-beach menu-icon"></i>
@@ -617,7 +641,7 @@
           </li>
           {% endif %}
 
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" and "timetable" in school_modules %}
           <!-- ======================= -->
           <!-- TIMETABLE SECTION -->
           <!-- ======================= -->
@@ -729,7 +753,7 @@
           </li>
           {% endif %}
 
-          {% if request.user|has_role:"STUDENT" %}
+          {% if request.user|has_role:"STUDENT" and "timetable" in school_modules %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'student_timetable_view' %}">
               <i class="fas fa-calendar-alt menu-icon"></i>
@@ -795,6 +819,11 @@
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'marks_entry' %}">
                     <i class="fas fa-pen-square menu-icon"></i> Enter Marks
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'offline_marks_app' %}">
+                    <i class="fas fa-mobile-alt menu-icon"></i> Offline Marks
                   </a>
                 </li>
                 {% endif %}
@@ -878,7 +907,8 @@
           {% endif %}
 
 
-        {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+        {# Bursar: collects money, adds charges, runs reports. Admin: also sets up fees. #}
+        {% if request.user|has_role:"SUPER_ADMIN,ADMIN,BURSAR" %}
         <li class="nav-item">
           <a class="nav-link" data-toggle="collapse" href="#fee-management" aria-expanded="false"
             aria-controls="fee-management">
@@ -927,7 +957,15 @@
                   Bulk Class/Stream Charge
                 </a>
               </li>
+              {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
               <li class="nav-item nav-category">Setup</li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_adjustment_approvals' %}">
+                  <i class="fas fa-check-double menu-icon"></i>
+                  Discount Approvals
+                </a>
+              </li>
 
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'fee_category_list' %}">
@@ -949,8 +987,16 @@
                   Add Fee Structure
                 </a>
               </li>
+              {% endif %}
 
               <li class="nav-item nav-category">Reports</li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_collection_report' %}">
+                  <i class="fas fa-receipt menu-icon"></i>
+                  Collection Report
+                </a>
+              </li>
 
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'fee_financial_report' %}">
@@ -963,6 +1009,13 @@
                 <a class="nav-link" href="{% url 'fee_defaulters_report' %}">
                   <i class="fas fa-exclamation-circle menu-icon"></i>
                   Defaulters Report
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'fee_clearance_report' %}">
+                  <i class="fas fa-user-check menu-icon"></i>
+                  Clearance Report
                 </a>
               </li>
 
@@ -1004,7 +1057,7 @@
           <!-- ======================= -->
           <!-- HEALTH SECTION -->
           <!-- ======================= -->
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,NURSE" %}
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,NURSE" and "health" in school_modules %}
           <li class="nav-item">
             <a class="nav-link" data-toggle="collapse" href="#health" aria-expanded="false"
               aria-controls="health">
@@ -1046,13 +1099,13 @@
             {# ======================= #}
             {# INVENTORY SECTION #}
             {# ======================= #}
-            {% include "dashboard/inventory/_nav.html" %}
+            {% if "inventory" in school_modules %}{% include "dashboard/inventory/_nav.html" %}{% endif %}
 
-            
+
           <!-- =======================================================
                TRANSPORT SECTION
                ======================================================= -->
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TRANSPORT_OFFICER,BURSAR,TEACHER" %}
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TRANSPORT_OFFICER,BURSAR,TEACHER" and "transport" in school_modules %}
           <li class="nav-item">
             <a class="nav-link" data-toggle="collapse" href="#transport" aria-expanded="false" aria-controls="transport">
               <i class="fas fa-bus menu-icon"></i>
@@ -1098,63 +1151,47 @@
           </li>
           {% endif %}
 
-          <!-- ======================= -->
-          <!-- HOSTEL SECTION -->
-          <!-- ======================= -->
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
-          <li class="nav-item">
-            <a class="nav-link" data-toggle="collapse" href="#hostel" aria-expanded="false"
-              aria-controls="hostel">
-              <i class="fas fa-bed menu-icon"></i>
-              <span class="menu-title">Hostel</span>
-              <i class="menu-arrow"></i>
-            </a>
-            <div class="collapse" id="hostel">
-              <ul class="nav flex-column sub-menu">
-                
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'hostel_list' %}">
-                <i class="fas fa-bed menu-icon"></i>
-                Hostels
-              </a>
-            </li>
+        <!-- ======================= -->
+        <!-- BOARDING SECTION -->
+        <!-- ======================= -->
+        {% load boarding_tags %}
+        {% if request.user|can_use_boarding and "boarding" in school_modules %}
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="collapse" href="#hostel" aria-expanded="false" aria-controls="hostel">
+            <i class="fas fa-bed menu-icon"></i>
+            <span class="menu-title">Boarding</span>
+            <i class="menu-arrow"></i>
+          </a>
+          <div class="collapse" id="hostel">
+            <ul class="nav flex-column sub-menu">
+              <li class="nav-item nav-category">Daily</li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_overview' %}"><i class="fas fa-home menu-icon"></i> Overview</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_rollcall_list' %}"><i class="fas fa-clipboard-check menu-icon"></i> Roll call</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_exeat_list' %}"><i class="fas fa-sign-out-alt menu-icon"></i> Exeats</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_visit_list' %}"><i class="fas fa-user-friends menu-icon"></i> Visitors</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_requirement_checklist' %}"><i class="fas fa-clipboard-list menu-icon"></i> Requirements</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarders_list' %}"><i class="fas fa-users menu-icon"></i> Boarders</a></li>
 
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'hostel_room_list' %}">
-                <i class="fas fa-home menu-icon"></i>
-                Rooms
-              </a>
-            </li>
+              {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+              <li class="nav-item nav-category">Setup</li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'hostel_list' %}"><i class="fas fa-building menu-icon"></i> Dormitories</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'hostel_room_list' %}"><i class="fas fa-door-open menu-icon"></i> Rooms</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'hostel_bed_list' %}"><i class="fas fa-bed menu-icon"></i> Beds</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'hostel_assignment_list' %}"><i class="fas fa-user-check menu-icon"></i> Allocations</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_rollcall_report' %}"><i class="fas fa-chart-bar menu-icon"></i> Roll call report</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'boarding_requirement_list' %}"><i class="fas fa-cog menu-icon"></i> Requirements list</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'fee_structure_list' %}?residence=BOARDING"><i class="fas fa-file-invoice-dollar menu-icon"></i> Boarding fees</a></li>
+              {% endif %}
+            </ul>
+          </div>
+        </li>
+        {% endif %}
 
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'boarders_list' %}">
-                <i class="fas fa-users menu-icon"></i>
-                Boarders
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'hostel_assignment_list' %}">
-                <i class="fas fa-user-check menu-icon"></i>
-                Allocations
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'fee_structure_list' %}?residence=BOARDING">
-                <i class="fas fa-file-invoice-dollar menu-icon"></i>
-                Hostel Fees
-              </a>
-            </li>
-              </ul>
-            </div>
-          </li>
-          {% endif %}
 
           <!-- ======================= -->
           <!-- COMMUNICATION SECTION -->
           <!-- ======================= -->
-          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+          {% if request.user|has_role:"SUPER_ADMIN,ADMIN" and "messaging" in school_modules %}
           <li class="nav-item">
             <a class="nav-link" data-toggle="collapse" href="#communication" aria-expanded="false"
               aria-controls="communication">
@@ -1186,7 +1223,7 @@
           <!-- ======================= -->
           <!-- DATA ENTRY SECTION -->
           <!-- ======================= -->
-          {% if request.user|has_role:"TEACHER" %}
+          {% if request.user|has_role:"TEACHER" and "online_exams" in school_modules %}
 
         <li class="nav-item">
           <a class="nav-link" href="{% url 'teacher_exam_list' %}">
@@ -1204,7 +1241,7 @@
           {% endif %}
 
 
-          {% if request.user|has_role:"STUDENT" %}
+          {% if request.user|has_role:"STUDENT" and "online_exams" in school_modules %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'student_exam_list' %}">
               <i class="fas fa-laptop-code menu-icon"></i>
@@ -1215,10 +1252,10 @@
 
 
           <!-- ======================= -->
-          <!-- UCE CBC COMPETENCY SECTION -->
+          <!-- UCE / UACE CBC COMPETENCY SECTION -->
           <!-- ======================= -->
           {% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
-          {% if request.user.profile.school|school_has_level:"UCE" %}
+          {% if request.user.profile.school|school_has_level:"UCE,UACE" %}
 
         <li class="nav-item">
           <a class="nav-link" data-toggle="collapse" href="#uce-cbc"
@@ -1231,7 +1268,7 @@
           <div class="collapse" id="uce-cbc">
             <ul class="nav flex-column sub-menu">
 
-              {% if request.user|has_role:"TEACHER" %}
+              {% if request.user|has_role:"TEACHER,ADMIN,SUPER_ADMIN" %}
                     <li class="nav-item">
                 <a class="nav-link" href="{% url 'topic_list' %}">
                   <i class="fas fa-list menu-icon"></i>
@@ -1259,6 +1296,26 @@
           Add Competencies
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'project_entry' %}">
+          <i class="fas fa-project-diagram menu-icon"></i>
+          Project Work
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'generic_skill_rating_entry' %}">
+          <i class="fas fa-lightbulb menu-icon"></i>
+          Generic Skills Ratings
+        </a>
+      </li>
+      {% endif %}
+      {% if request.user|has_role:"ADMIN,SUPER_ADMIN" %}
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'generic_skill_list' %}">
+          <i class="fas fa-cog menu-icon"></i>
+          Generic Skills Setup
+        </a>
+      </li>
       {% endif %}
 
     </ul>
@@ -1267,7 +1324,8 @@
 {% endif %}
 {% endif %}
 
-{% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
+{# ======================= REPORT CARDS ======================= #}
+{% if request.user|has_role:"SUPER_ADMIN,ADMIN,TEACHER" %}
 <li class="nav-item">
   <a class="nav-link" data-toggle="collapse" href="#ui-reports" aria-expanded="false" aria-controls="ui-reports">
     <i class="fas fa-file-invoice menu-icon"></i>
@@ -1277,22 +1335,26 @@
 
   <div class="collapse" id="ui-reports">
     <ul class="nav flex-column sub-menu">
-
-      <li class="nav-item nav-category">Processing</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_comment_entry' %}">
+          <i class="fas fa-user-edit text-primary mr-2"></i>
+          Learner Comments
+        </a>
+      </li>
+      {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
       <li class="nav-item">
         <a class="nav-link" href="{% url 'report_command_center' %}">
-          <i class="fas fa-desktop text-primary mr-2"></i>
-          Report Command Center
+          <i class="fas fa-print text-success mr-2"></i>
+          Generate Report Cards
         </a>
       </li>
-
       <li class="nav-item">
         <a class="nav-link" href="{% url 'report_run_list' %}">
-          <i class="fas fa-history text-success mr-2"></i>
-          Runs History
+          <i class="fas fa-folder-open text-info mr-2"></i>
+          Generated Reports
         </a>
       </li>
-
+      {% endif %}
     </ul>
   </div>
 </li>
@@ -1318,55 +1380,65 @@
   <div class="collapse" id="report-setup">
     <ul class="nav flex-column sub-menu">
 
-      <li class="nav-item nav-category">Template Settings</li>
+      <li class="nav-item nav-category">Design</li>
       <li class="nav-item">
         <a class="nav-link" href="{% url 'report_template_list' %}">
-          <i class="fas fa-palette menu-icon text-info"></i>
-          Manage Templates
+          <i class="fas fa-palette text-info mr-2"></i>
+          Report Card Designs
         </a>
       </li>
 
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'report_template_create' %}">
-          <i class="fas fa-plus-square menu-icon text-primary"></i>
-          Add Report Template
-        </a>
-      </li>
-
-      <li class="nav-item nav-category">Report Card Terms / Comments</li>
+      <li class="nav-item nav-category">Automatic Comments</li>
       <li class="nav-item">
         <a class="nav-link" href="{% url 'report_auto_comment_list' %}">
-          <i class="fas fa-comment-dots menu-icon text-primary"></i>
-          Auto Comments
+          <i class="fas fa-comment-dots text-primary mr-2"></i>
+          Teacher &amp; Head Comments
         </a>
       </li>
-
+      {% if request.user.profile.school|school_has_level:"PLE" %}
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'report_keyword_band_list' %}">
-          <i class="fas fa-layer-group menu-icon text-success"></i>
-          UCE Keyword Score Bands
+        <a class="nav-link" href="{% url 'report_subject_comment_list' %}">
+          <i class="fas fa-comment text-primary mr-2"></i>
+          PLE Subject Comments
         </a>
       </li>
+      {% endif %}
 
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'report_keyword_def_list' %}">
-          <i class="fas fa-book-open menu-icon text-warning"></i>
-         UCE Keyword Definitions
-        </a>
-      </li>
-
+      {% if request.user.profile.school|school_has_level:"UCE,UACE" %}
+      <li class="nav-item nav-category">New Curriculum (UCE / UACE)</li>
       <li class="nav-item">
         <a class="nav-link" href="{% url 'report_grade_desc_list' %}">
-          <i class="fas fa-award menu-icon text-danger"></i>
-         UCE Grade Descriptors
+          <i class="fas fa-award text-danger mr-2"></i>
+          Grade Descriptors (A&ndash;E)
         </a>
       </li>
-    <li class="nav-item">
-      <a class="nav-link" href="{% url 'report_subject_comment_list' %}">
-        <i class="fas fa-comment-dots menu-icon"></i>
-        <span class="menu-title">PLE Subject Comments</span>
-      </a>
-    </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_keyword_band_list' %}">
+          <i class="fas fa-layer-group text-success mr-2"></i>
+          Score Identifiers (1&ndash;3)
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_keyword_def_list' %}">
+          <i class="fas fa-book-open text-warning mr-2"></i>
+          Keyword Definitions
+        </a>
+      </li>
+      {% endif %}
+
+      <li class="nav-item nav-category">Release</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_release_settings' %}">
+          <i class="fas fa-lock text-danger mr-2"></i>
+          Fees Hold Settings
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'report_release_overrides' %}">
+          <i class="fas fa-user-check text-success mr-2"></i>
+          Allowed Despite Balance
+        </a>
+      </li>
     </ul>
   </div>
 </li>
@@ -1413,18 +1485,35 @@
             </li>
 
           <li class="nav-item">
+            <a class="nav-link" data-toggle="collapse" href="#my-school-menu" aria-expanded="false" aria-controls="my-school-menu">
+              <i class="fas fa-school menu-icon"></i>
+              <span class="menu-title">My School Account</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse" id="my-school-menu">
+              <ul class="nav flex-column sub-menu">
+                <li class="nav-item"><a class="nav-link" href="{% url 'school_setup_checklist' %}"><i class="fas fa-tasks mr-2"></i> Setup checklist</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'school_sms_credit' %}"><i class="fas fa-sms mr-2"></i> SMS credit</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'subscription_status' %}"><i class="fas fa-file-contract mr-2"></i> Subscription</a></li>
+              </ul>
+            </div>
+          </li>
+
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'user_management' %}">
               <i class="fas fa-users-cog menu-icon"></i>
               <span class="menu-title">Users</span>
             </a>
           </li>
 
+          {% if role == 'SUPER_ADMIN' %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'recycle_bin_dashboard' %}">
               <i class="fas fa-trash-alt menu-icon"></i>
               <span class="menu-title">Recycle Bin</span>
             </a>
           </li>
+          {% endif %}
           {% endif %}
 
         </ul>
@@ -1435,6 +1524,8 @@
       <!-- Main Panel -->
       <div class="main-panel">
         <div class="content-wrapper">
+
+          {% include "platform/_banners.html" %}
 
           <!-- Global Messages -->
           {% if messages %}
@@ -1721,6 +1812,8 @@
   })();
   </script>
 
+  {% include "pwa/_install.html" %}
+  {% include "dashboard/partials/_idle_timeout.html" %}
   {% block extrajs %}{% endblock %}
 {% endwith %}
 </body>

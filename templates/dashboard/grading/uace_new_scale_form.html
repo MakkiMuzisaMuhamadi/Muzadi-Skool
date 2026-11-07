@@ -144,6 +144,13 @@
           {{ form.max_total_points }}
         </div>
 
+        <div class="form-group col-md-2">
+          <label title="{{ form.ca_weight_percent.help_text }}">AOI / CA weight %</label>
+          {{ form.ca_weight_percent }}
+          {% for e in form.ca_weight_percent.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+          <small class="text-muted">0 = exam only. 20 = 80% exam + 20% competency (AOI) average.</small>
+        </div>
+
         <div class="form-group col-md-2 d-flex align-items-end">
           <div>
             <div class="form-check mb-2">

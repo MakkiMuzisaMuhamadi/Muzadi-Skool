@@ -1,0 +1,5 @@
+# /etc/cron.d/school360
+# Nightly backup at 02:15 (Kampala time on a server set to Africa/Kampala)
+15 2 * * * school360 /srv/school360/app/deploy/scripts/backup.sh daily >> /srv/school360/logs/backup.log 2>&1
+# Remove recycle-bin items past their retention every Sunday
+30 3 * * 0 school360 cd /srv/school360/app && /srv/school360/venv/bin/python manage.py purge_recycle_bin >> /srv/school360/logs/purge.log 2>&1

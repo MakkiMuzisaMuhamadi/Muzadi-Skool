@@ -69,25 +69,78 @@ def sms_units(text: str) -> int:
 
 
 class AfricaTalkingSMS:
+    """
+    Sends SMS for ONE school.
+
+        AfricaTalkingSMS(school=some_school).send_one(text, "+2567...")
+
+    * Charges the school's SMS credit first (mainApp.messaging_wallet) and refunds
+      it if the network rejects the message. Raises messaging_wallet.SmsNotAllowed
+      when SMS is off / credit finished / monthly limit reached.
+    * Uses the school's own sender ID, or its own Africa's Talking account if set.
+    * school=None: the school of the current request is used; with no request
+      (e.g. a platform message) nothing is charged.
+    """
     _initialized = False
 
-    def __init__(self):
-        username = settings.AFRICASTALKING_USERNAME
-        if getattr(settings, "AFRICASTALKING_ENV", "prod").lower() == "sandbox":
-            username = "sandbox"
+    def __init__(self, school=None):
+        if school is None:
+            from mainApp.tenancy import get_current_school
+            school = get_current_school()
+        self.school = school
+        self.account = None
+        if school is not None and getattr(settings, "SMS_WALLET_ENABLED", True):
+            from mainApp.messaging_wallet import account_for
+            self.account = account_for(school)
 
-        if not AfricaTalkingSMS._initialized:
-            africastalking.initialize(username=username, api_key=settings.AFRICASTALKING_API_KEY)
-            AfricaTalkingSMS._initialized = True
+        if self.account is not None and self.account.own_provider and self.account.at_username \
+                and self.account.get_api_key():
+            from africastalking.SMS import SMSService
+            self.sms = SMSService(self.account.at_username, self.account.get_api_key())
+        else:
+            username = settings.AFRICASTALKING_USERNAME
+            if getattr(settings, "AFRICASTALKING_ENV", "prod").lower() == "sandbox":
+                username = "sandbox"
+            if not AfricaTalkingSMS._initialized:
+                africastalking.initialize(username=username, api_key=settings.AFRICASTALKING_API_KEY)
+                AfricaTalkingSMS._initialized = True
+            self.sms = africastalking.SMS
 
-        self.sms = africastalking.SMS
-        self.sender_id = getattr(settings, "AFRICASTALKING_SENDER_ID", "") or None
+        own_sender = self.account.sender_id if self.account is not None else ""
+        self.sender_id = own_sender or getattr(settings, "AFRICASTALKING_SENDER_ID", "") or None
 
-    def send_one(self, message: str, to_number: str, enqueue: bool = True) -> dict:
-        recipients = [to_number]
+    def _provider_send(self, message, recipients, enqueue):
         if self.sender_id:
             return self.sms.send(message, recipients, sender_id=self.sender_id, enqueue=enqueue)
         return self.sms.send(message, recipients, enqueue=enqueue)
+
+    def send_one(self, message: str, to_number: str, enqueue: bool = True) -> dict:
+        entry = None
+        if self.account is not None:
+            from mainApp import messaging_wallet
+            entry = messaging_wallet.charge(self.school, sms_units(message), note=f"SMS to {to_number}")
+        try:
+            resp = self._provider_send(message, [to_number], enqueue)
+        except Exception:
+            if entry is not None:
+                from mainApp import messaging_wallet
+                messaging_wallet.refund(entry, "Provider error - not sent")
+            raise
+        if entry is not None and self.is_rejected(resp):
+            from mainApp import messaging_wallet
+            messaging_wallet.refund(entry, "Rejected by the network")
+        return resp
+
+    @staticmethod
+    def is_rejected(resp) -> bool:
+        """True only when Africa's Talking clearly says the number was NOT accepted."""
+        recs = ((resp or {}).get("SMSMessageData", {}) or {}).get("Recipients", []) or []
+        if not recs:
+            return False
+        try:
+            return int(recs[0].get("statusCode", 0)) not in AT_ACCEPTED_CODES
+        except (TypeError, ValueError):
+            return False
 
     @staticmethod
     def parse_response(resp: dict) -> dict:

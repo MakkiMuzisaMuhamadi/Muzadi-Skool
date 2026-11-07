@@ -1,0 +1,11 @@
+<script>
+(function(){
+  function init(){
+    var el = document.getElementById("{{ table_id }}");
+    if(!el || el.querySelector("tbody td[colspan]") || !(window.jQuery && jQuery.fn.DataTable) || jQuery.fn.DataTable.isDataTable(el)) return;
+    jQuery(el).DataTable({ pageLength: 25, lengthMenu: [25, 50, 100, 500], autoWidth: false,
+      order: [], language: { search: "Search:" } });
+  }
+  if(document.readyState === "loading"){ document.addEventListener("DOMContentLoaded", init); } else { init(); }
+})();
+</script>

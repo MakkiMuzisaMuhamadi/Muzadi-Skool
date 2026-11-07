@@ -63,6 +63,34 @@
 
     <div class="card mb-3">
       <div class="card-body">
+        <h6 class="font-weight-bold mb-2"><i class="fas fa-key mr-1"></i> Parent portal login</h6>
+        {% if parent.user %}
+          <p class="small mb-2">
+            Signs in on the <strong>Parents</strong> tab with phone <strong>{{ parent.phone }}</strong>
+            or Parent ID <strong>{{ parent.user.username }}</strong>.
+            {% if not parent.user.is_active %}<span class="badge badge-secondary">Login deactivated</span>{% endif %}
+            {% if parent.user.profile.must_change_password %}<br><span class="text-warning">Still on the starting password.</span>{% endif %}
+          </p>
+          <form method="post" action="{% url 'reset_user_password' parent.user.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'parent_detail' parent.id %}">
+            <button class="btn btn-outline-warning btn-sm" type="submit"
+                    onclick="return confirm('Reset the portal password to the default? The parent will choose a new one at the next sign-in.');">
+              <i class="fas fa-redo mr-1"></i> Reset password to default
+            </button>
+          </form>
+        {% else %}
+          <p class="small text-muted mb-2">No login yet. The username will be the Parent ID; the parent can also sign in with their phone number.</p>
+          <form method="post" action="{% url 'create_parent_account' parent.id %}" class="d-inline">
+            {% csrf_token %}
+            <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-user-plus mr-1"></i> Create login</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
         <form method="post" action="{% url 'parent_toggle_active' parent.id %}" class="d-inline">
           {% csrf_token %}
           {% if parent.is_active %}

@@ -1,422 +1,297 @@
-# models.py
-from datetime import timedelta
-from decimal import Decimal, ROUND_HALF_UP
-from django.apps import apps
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
+"""
+Recycle Bin
+===========
 
+How it works
+------------
+When a record that uses ``RecycleBinMixin`` (or ``RecycleBinManager``) is
+deleted, Django first works out *everything* that the delete will remove or
+change (the cascade: a School's students, a Student's fee records, links in
+many-to-many tables, fields that get set to NULL, ...).
+
+A full snapshot of all of those rows is written to one ``RecycleBin`` entry,
+and only then is the delete carried out - all inside one database
+transaction. Restoring puts every row back **with its original ID**, so
+everything that pointed at it (marks, fees, attendance, report cards...) is
+connected again.
+
+The heavy lifting lives in ``mainApp/recycle_bin.py``; this module only holds
+the models, the mixin and the manager. ``RecycleBinMixin`` and
+``RecycleBinManager`` must stay in this module because old migrations import
+them from here.
+
+Usage
+-----
+    student.delete()                          # goes to the bin
+    student.delete(deletion_reason="Duplicate")
+    student.hard_delete()                     # skip the bin
+    Paper.objects.filter(...).delete()        # one bin entry for the batch
+    Paper.objects.filter(...).hard_delete()   # skip the bin
+"""
+from datetime import timedelta
+
+from django.conf import settings as django_settings
+from django.db import models
+from django.utils import timezone
+
+
+# ---------------------------------------------------------------------------
+# Settings (a single row)
+# ---------------------------------------------------------------------------
 class RecycleBinSettings(models.Model):
-    """Settings for recycle bin behavior"""
+    """Settings for recycle bin behaviour (always a single row - use ``get_solo()``)."""
+
     retention_days = models.PositiveIntegerField(
         default=30,
-        help_text="Number of days to keep items in recycle bin before auto-deletion"
+        help_text="Number of days to keep items in recycle bin before auto-deletion",
     )
     enabled = models.BooleanField(default=True)
     auto_cleanup = models.BooleanField(
         default=True,
-        help_text="Automatically delete expired items"
+        help_text="Automatically delete expired items",
     )
     max_items_per_type = models.PositiveIntegerField(
         default=1000,
-        help_text="Maximum number of items to keep per model type"
+        help_text="Maximum number of items to keep per model type",
     )
     last_cleanup = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         verbose_name = "Recycle Bin Settings"
         verbose_name_plural = "Recycle Bin Settings"
-    
+
     def __str__(self):
-        return f"Recycle Bin Settings"
+        return "Recycle Bin Settings"
 
-class RecycleBinManager(models.Manager):
-    """Custom manager for models that support recycle bin"""
-    
-    def delete(self, *args, **kwargs):
-        """Override delete to move to recycle bin instead of actual deletion"""
-        items = self.all()
-        
-        # Move each item to recycle bin
-        for item in items:
-            RecycleBin.objects.create(
-                object_type=item.__class__.__name__,
-                object_id=item.id,
-                original_data=self._serialize_object(item),
-                deleted_by=kwargs.get('deleted_by'),
-                deletion_reason=kwargs.get('deletion_reason'),
-                deletion_type=kwargs.get('deletion_type', 'USER'),
-                expires_at=timezone.now() + timezone.timedelta(
-                    days=RecycleBinSettings.objects.first().retention_days
-                )
-            )
-        
-        # Actually delete from database
-        return super().delete(*args, **kwargs)
-    
-    def _serialize_object(self, obj):
-        """Serialize object to JSON for storage in recycle bin"""
-        data = {}
-        for field in obj._meta.fields:
-            field_name = field.name
-            field_value = getattr(obj, field_name)
-            
-            if isinstance(field, models.DateTimeField) and field_value:
-                data[field_name] = field_value.isoformat()
-            elif isinstance(field, models.ForeignKey):
-                data[field_name] = field_value.id if field_value else None
-            else:
-                data[field_name] = field_value
-        
-        return data
+    @classmethod
+    def get_solo(cls):
+        """Return the settings row, creating it with defaults if it is missing.
 
-class RecycleBinMixin:
-    """Enhanced mixin that captures relationships and safely serializes model data."""
-
-    def delete(self, *args, **kwargs):
-        """Override delete to capture relationships before deletion."""
-        settings = RecycleBinSettings.objects.first()
-        if not settings or not settings.enabled:
-            return super().delete(*args, **kwargs)
-
-        # Create recycle bin entry first
-        recycle_item = RecycleBin.objects.create(
-            object_type=self.__class__.__name__,
-            object_id=self.id,
-            original_data=self._serialize_for_recycle(),
-            deleted_by=kwargs.get('deleted_by'),
-            deletion_reason=kwargs.get('deletion_reason'),
-            deletion_type=kwargs.get('deletion_type', 'USER'),
-            expires_at=timezone.now() + timezone.timedelta(days=settings.retention_days)
-        )
-
-        # Capture related objects for models that have important relationships
-        if self.__class__.__name__ in ['Student', 'Subject', 'School']:
-            recycle_item.capture_related_objects(self)
-
-        # Actually delete the object
-        return super().delete(*args, **kwargs)
-
-    def _serialize_for_recycle(self):
+        Before, a missing row silently switched the bin OFF (every delete was
+        permanent) until someone clicked "Save Settings".
         """
-        Enhanced serialization that safely handles:
-        - FileField / ImageField (stores file path)
-        - DateTimeField (ISO format)
-        - ForeignKey (stores related object ID)
-        - JSONField (validates JSON safety)
-        - All other non-serializable fields are stringified
-        """
-        import json
-        data = {}
+        obj = cls.objects.order_by("pk").first()
+        if obj is None:
+            obj = cls.objects.create()
+        return obj
 
-        for field in self._meta.fields:
-            field_name = field.name
-            field_value = getattr(self, field_name)
 
-            # Skip internal identifiers
-            if field_name in ['id', 'pk']:
-                continue
-
-            # Handle DateTimeField
-            if isinstance(field, models.DateTimeField) and field_value:
-                data[field_name] = field_value.isoformat()
-
-            # Handle ForeignKey
-            elif isinstance(field, models.ForeignKey):
-                data[f"{field_name}_id"] = field_value.id if field_value else None
-
-            # Handle File or ImageField
-            elif isinstance(field, (models.FileField, models.ImageField)):
-                data[field_name] = field_value.name if field_value else None
-
-            # Handle JSONField safely
-            elif isinstance(field, models.JSONField):
-                try:
-                    json.dumps(field_value)
-                    data[field_name] = field_value
-                except Exception:
-                    data[field_name] = str(field_value)
-
-            # Default fallback (ensure JSON safe)
-            else:
-                try:
-                    json.dumps(field_value)
-                    data[field_name] = field_value
-                except TypeError:
-                    data[field_name] = str(field_value) if field_value else None
-
-        return data
-
+# ---------------------------------------------------------------------------
+# Bin entries
+# ---------------------------------------------------------------------------
 class RecycleBin(models.Model):
     DELETED_BY_CHOICES = [
         ('USER', 'User Action'),
         ('SYSTEM', 'System Action'),
         ('AUTO', 'Automatic Cleanup'),
     ]
-    
-    object_type = models.CharField(max_length=100)
+
+    # What was deleted (the "root" record the user clicked delete on)
+    object_type = models.CharField(max_length=100)            # e.g. "Student"
+    model_label = models.CharField(max_length=150, blank=True, default="")  # e.g. "mainApp.student"
     object_id = models.IntegerField()
+    object_repr = models.CharField(max_length=255, blank=True, default="")
+
+    # Root record fields (shown in the list / details page)
     original_data = models.JSONField()
-    related_objects = models.JSONField(default=dict)
-    deleted_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    # Legacy field from the old version - kept so old entries still display.
+    related_objects = models.JSONField(default=dict, blank=True)
+
+    # Full snapshot of every row removed by the delete (Django serializer format)
+    snapshot = models.JSONField(default=list, blank=True)
+    # Rows that were not deleted but had a link set to NULL / default by the delete:
+    # [{"model": "mainApp.x", "field": "school_id", "rows": [[pk, old_value], ...]}]
+    field_updates = models.JSONField(default=list, blank=True)
+    # {"Student": 1, "Mark entry": 12, ...} - for the UI
+    summary = models.JSONField(default=dict, blank=True)
+    total_rows = models.PositiveIntegerField(default=0)
+
+    school_name = models.CharField(max_length=200, blank=True, default="")
+
+    deleted_by = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,  # was CASCADE: deleting a user wiped their bin entries
+        null=True, blank=True,
+        related_name="recycle_bin_items",
+    )
+    deleted_by_name = models.CharField(max_length=150, blank=True, default="")
     deletion_reason = models.TextField(blank=True, null=True)
     deletion_type = models.CharField(max_length=10, choices=DELETED_BY_CHOICES, default='USER')
     deleted_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
-    
+
     class Meta:
+        ordering = ["-deleted_at"]
         indexes = [
             models.Index(fields=['object_type', 'object_id']),
             models.Index(fields=['deleted_at']),
             models.Index(fields=['expires_at']),
         ]
-    
+
     def __str__(self):
         return f"{self.object_type} #{self.object_id}"
-    
+
+    # -- helpers used by templates / views -------------------------------
     def is_expired(self):
         return timezone.now() > self.expires_at
-    
-    def capture_related_objects(self, obj):
-        """Capture all related objects before deletion - Enhanced for key models"""
-        related_data = {}
-        
-        # Special handling for Student model
-        if obj.__class__.__name__ == 'Student':
-            # Capture all marks for this candidate
-            marks_data = []
-            for mark in obj.marks.all():
-                marks_data.append({
-                    'id': mark.id,
-                    'paper_id': mark.paper_id,
-                    'subject_id': mark.subject_id,
-                    'marks': mark.marks,
-                    'is_bulk_upload': mark.is_bulk_upload,
-                    'batch_id': mark.batch_id,
-                    'created_at': mark.created_at.isoformat() if mark.created_at else None,
-                    'updated_at': mark.updated_at.isoformat() if mark.updated_at else None,
-                })
-            if marks_data:
-                related_data['marks'] = marks_data
-        
-        # Special handling for Subject model
-        elif obj.__class__.__name__ == 'Subject':
-            # Capture all papers for this subject
-            papers_data = []
-            for paper in obj.papers.all():
-                papers_data.append({
-                    'id': paper.id,
-                    'paper_code': paper.paper_code,
-                    'paper_name': paper.paper_name,
-                    'max_marks': paper.max_marks,
-                    'order': paper.order,
-                    'compulsory': paper.compulsory,
-                })
-            if papers_data:
-                related_data['papers'] = papers_data
-            
-            # Capture marks referencing this subject
-            from .models import Marks
-            subject_marks_data = []
-            for mark in Marks.objects.filter(subject=obj):
-                subject_marks_data.append({
-                    'id': mark.id,
-                    'candidate_id': mark.candidate_id,
-                    'paper_id': mark.paper_id,
-                    'marks': mark.marks,
-                })
-            if subject_marks_data:
-                related_data['subject_marks'] = subject_marks_data
-        
-        # Special handling for School model
-        elif obj.__class__.__name__ == 'School':
-            # Capture all candidates for this school
-            candidates_data = []
-            for candidate in obj.candidates.all():
-                candidates_data.append({
-                    'id': candidate.id,
-                    'candidate_id': candidate.candidate_id,
-                    'level_id': candidate.level_id,
-                    'name': candidate.name,
-                })
-            if candidates_data:
-                related_data['candidates'] = candidates_data
-            
-            # Capture profiles that have this school assigned
-            profiles_data = []
-            for profile in obj.users.all():
-                profiles_data.append({
-                    'id': profile.id,
-                    'user_id': profile.user_id,
-                    'role': profile.role,
-                })
-            if profiles_data:
-                related_data['profiles'] = profiles_data
-        
-        self.related_objects = related_data
-        self.save()
-    
-    def restore_with_relationships(self):
-        """Enhanced restoration that handles relationships for key models"""
-        try:
-            model = apps.get_model('mainApp', self.object_type)  
-            
-            # Specialized restoration for complex models
-            if self.object_type == 'Student':
-                return self._restore_candidate_complete()
-            elif self.object_type == 'Subject':
-                return self._restore_subject_complete()
-            elif self.object_type == 'School':
-                return self._restore_school_complete()
-            else:
-                # Basic restoration for simple models
-                return self._restore_basic_object(model)
-                
-        except Exception as e:
-            raise Exception(f"Failed to restore {self.object_type}: {str(e)}")    
-        
-    def _restore_basic_object(self, model):
-        """Restore basic object without complex relationships - FIXED VERSION"""
-        obj_data = self.original_data.copy()
-        
-        # Remove problematic fields that shouldn't be passed to model creation
-        for key in list(obj_data.keys()):
-            if key.endswith('_info') or key in ['id', 'pk']:
-                obj_data.pop(key)
-        
-        # Handle special fields that should be regenerated
-        if 'candidate_id' in obj_data and model.__name__ == 'Student':
-            obj_data.pop('candidate_id')  # Let it generate new ID
-        if 'school_id' in obj_data and model.__name__ == 'School':
-            obj_data.pop('school_id')  # Let it generate new ID
-        
-        obj = model.objects.create(**obj_data)
-        self.delete()
-        return obj
-    
-    def _restore_candidate_complete(self):
-        """Complete restoration of Student with marks - FIXED VERSION"""
-        from .models import Student, Marks, Paper, Subject
-        
-        candidate_data = self.original_data.copy()
-        
-        # Clean candidate data - remove problematic fields
-        for key in list(candidate_data.keys()):
-            if key.endswith('_info') or key in ['id', 'pk']:
-                candidate_data.pop(key)
-        
-        candidate_data.pop('candidate_id', None)  # Generate new ID
-        
-        # Create candidate
-        restored_candidate = Student.objects.create(**candidate_data)
-        
-        # Restore marks if they exist
-        if 'marks' in self.related_objects:
-            restored_marks_count = 0
-            for mark_data in self.related_objects['marks']:
-                try:
-                    # Check if referenced objects still exist
-                    paper_exists = Paper.objects.filter(id=mark_data.get('paper_id')).exists()
-                    subject_exists = Subject.objects.filter(id=mark_data.get('subject_id')).exists()
-                    
-                    if paper_exists and subject_exists:
-                        Marks.objects.create(
-                            candidate=restored_candidate,
-                            paper_id=mark_data.get('paper_id'),
-                            subject_id=mark_data.get('subject_id'),
-                            marks=mark_data.get('marks', 0),
-                            is_bulk_upload=mark_data.get('is_bulk_upload', False),
-                            batch_id=mark_data.get('batch_id'),
-                            created_at=timezone.now(),
-                            updated_at=timezone.now()
-                        )
-                        restored_marks_count += 1
-                except Exception as e:
-                    print(f"Failed to restore mark: {e}")
-        
-        self.delete()
-        return restored_candidate
-    
-    def _restore_subject_complete(self):
-        """Complete restoration of Subject with papers - FIXED VERSION"""
-        from .models import Subject, Paper
-        
-        subject_data = self.original_data.copy()
-        
-        # Clean subject data - remove problematic fields
-        for key in list(subject_data.keys()):
-            if key.endswith('_info') or key in ['id', 'pk']:
-                subject_data.pop(key)
-        
-        # Create subject
-        restored_subject = Subject.objects.create(**subject_data)
-        
-        # Restore papers if they exist
-        if 'papers' in self.related_objects:
-            for paper_data in self.related_objects['papers']:
-                try:
-                    Paper.objects.create(
-                        subject=restored_subject,
-                        paper_code=paper_data.get('paper_code'),
-                        paper_name=paper_data.get('paper_name'),
-                        max_marks=paper_data.get('max_marks', 100),
-                        order=paper_data.get('order', 1),
-                        compulsory=paper_data.get('compulsory', True),
-                    )
-                except Exception as e:
-                    print(f"Failed to restore paper: {e}")
-        
-        self.delete()
-        return restored_subject
-    
-    def _restore_school_complete(self):
-        """Complete restoration of School with basic info - FIXED VERSION"""
-        from .models import School
-        
-        school_data = self.original_data.copy()
-        
-        # Clean school data - remove problematic fields
-        for key in list(school_data.keys()):
-            if key.endswith('_info') or key in ['id', 'pk']:
-                school_data.pop(key)
-        
-        school_data.pop('school_id', None)  # Generate new ID
-        
-        # Create school
-        restored_school = School.objects.create(**school_data)
-        
-        self.delete()
-        return restored_school
 
-from django.utils import timezone
+    @property
+    def is_legacy(self):
+        """Entries created by the old recycle bin have no full snapshot."""
+        return not self.snapshot
 
+    @property
+    def display_name(self):
+        if self.object_repr:
+            return self.object_repr
+        data = self.original_data or {}
+        for key in ("name", "full_name", "subject_name", "paper_name", "title", "username"):
+            if data.get(key):
+                return str(data[key])
+        first = " ".join(str(data.get(k) or "") for k in ("first_name", "last_name")).strip()
+        return first or f"{self.object_type} #{self.object_id}"
+
+    @property
+    def days_left(self):
+        delta = self.expires_at - timezone.now()
+        return max(delta.days, 0)
+
+    @property
+    def deleted_by_display(self):
+        if self.deleted_by_id and self.deleted_by:
+            return self.deleted_by.get_full_name() or self.deleted_by.username
+        return self.deleted_by_name or "System"
+
+    @property
+    def related_count(self):
+        """Number of extra rows that come back with the main record."""
+        return max(self.total_rows - 1, 0)
+
+    @property
+    def relink_count(self):
+        """Rows that were not deleted but will be linked back on restore."""
+        return sum(len(u.get("rows", [])) for u in (self.field_updates or []))
+
+    # -- actions (thin wrappers around mainApp.recycle_bin) --------------
+    def check_restore(self):
+        from mainApp.recycle_bin import check_restore
+        return check_restore(self)
+
+    def restore(self, user=None):
+        from mainApp.recycle_bin import restore_entry
+        return restore_entry(self, user=user)
+
+    # Backwards compatible name used by the old views
+    def restore_with_relationships(self, user=None):
+        return self.restore(user=user).root
+
+    @staticmethod
+    def default_expiry(retention_days=None):
+        if retention_days is None:
+            retention_days = RecycleBinSettings.get_solo().retention_days
+        return timezone.now() + timedelta(days=retention_days)
+
+
+# ---------------------------------------------------------------------------
+# Mixin + manager for models whose deletes should go to the bin
+# ---------------------------------------------------------------------------
+class RecycleBinMixin:
+    """Send ``instance.delete()`` to the recycle bin instead of deleting for good.
+
+    Set ``recycle_bin_enabled = False`` on a model to opt out (e.g. drafts).
+    """
+
+    recycle_bin_enabled = True
+
+    def delete(self, using=None, keep_parents=False, *, deleted_by=None,
+               deletion_reason=None, deletion_type="USER", hard=False):
+        if hard or keep_parents or not getattr(self, "recycle_bin_enabled", True):
+            return super().delete(using=using, keep_parents=keep_parents)
+
+        from mainApp.recycle_bin import move_to_recycle_bin
+        return move_to_recycle_bin(
+            [self], user=deleted_by, reason=deletion_reason,
+            deletion_type=deletion_type, using=using,
+        )
+
+    delete.alters_data = True
+
+    def hard_delete(self, using=None, keep_parents=False):
+        """Delete permanently, without a recycle bin copy."""
+        return super().delete(using=using, keep_parents=keep_parents)
+
+    hard_delete.alters_data = True
+
+
+class RecycleBinQuerySet(models.QuerySet):
+    """``queryset.delete()`` puts all matched rows into ONE recycle bin entry."""
+
+    def delete(self, *, deleted_by=None, deletion_reason=None, deletion_type="USER"):
+        if self.query.is_sliced:
+            raise TypeError("Cannot use 'limit' or 'offset' with delete().")
+        if self.query.distinct_fields:
+            raise TypeError("Cannot call delete() after .distinct(*fields).")
+        if self._fields is not None:
+            raise TypeError("Cannot call delete() after .values() or .values_list()")
+        if not getattr(self.model, "recycle_bin_enabled", True):
+            return super().delete()
+
+        objs = list(self)
+        if not objs:
+            return 0, {}
+        from mainApp.recycle_bin import move_to_recycle_bin
+        result = move_to_recycle_bin(
+            objs, user=deleted_by, reason=deletion_reason,
+            deletion_type=deletion_type, using=self.db,
+        )
+        self._result_cache = None
+        return result
+
+    delete.alters_data = True
+    delete.queryset_only = True
+
+    def hard_delete(self):
+        """Delete permanently, without a recycle bin copy."""
+        return super().delete()
+
+    hard_delete.alters_data = True
+    hard_delete.queryset_only = True
+
+
+class RecycleBinManager(models.Manager.from_queryset(RecycleBinQuerySet)):
+    """Default manager for recycle-bin models (keeps the old class name)."""
+
+
+# ---------------------------------------------------------------------------
+# Generic helper kept for existing callers
+# ---------------------------------------------------------------------------
 def soft_delete_obj(obj, user=None):
+    """Delete ``obj`` the safest way available.
+
+    - models with the recycle bin mixin -> recycle bin (records ``user``)
+    - models with a ``soft_delete()`` method -> that method
+    - models with an ``is_deleted`` flag -> set the flag
+    - otherwise -> normal delete
     """
-    Works with different soft-delete styles:
-    - if model has soft_delete(user=...), call it
-    - if model overrides delete() to soft-delete, calling delete() is fine
-    - else fallback to common flags if present: is_deleted, deleted_at, deleted_by
-    """
-    if hasattr(obj, "soft_delete") and callable(getattr(obj, "soft_delete")):
-        # Your mixin might implement this
+    if isinstance(obj, RecycleBinMixin):
+        return obj.delete(deleted_by=user)
+
+    if callable(getattr(obj, "soft_delete", None)):
         try:
             return obj.soft_delete(user=user)
         except TypeError:
             return obj.soft_delete()
 
-    # If your mixin overrides delete() to soft delete, this will do the right thing.
-    # If not overridden, it will hard delete (so we try fallback first).
-    has_is_deleted = hasattr(obj, "is_deleted")
-    if has_is_deleted:
-        setattr(obj, "is_deleted", True)
+    if hasattr(obj, "is_deleted"):
+        obj.is_deleted = True
+        update_fields = ["is_deleted"]
         if hasattr(obj, "deleted_at"):
-            setattr(obj, "deleted_at", timezone.now())
+            obj.deleted_at = timezone.now()
+            update_fields.append("deleted_at")
         if hasattr(obj, "deleted_by_id") and user:
-            setattr(obj, "deleted_by", user)
-        obj.save()
-        return
+            obj.deleted_by = user
+            update_fields.append("deleted_by")
+        obj.save(update_fields=update_fields)
+        return None
 
-    # last resort (hard delete)
-    obj.delete()
+    return obj.delete()

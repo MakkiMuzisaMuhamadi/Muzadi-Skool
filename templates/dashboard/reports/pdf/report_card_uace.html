@@ -265,7 +265,18 @@
       font-size: 12px;
       color: var(--muted);
     }
-  </style>
+  
+    .cbc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cbc-table th, .cbc-table td { border: 1px solid {{ template_data.border_color|default:"#C9D9E8" }}; padding: 4px 6px; vertical-align: top; }
+    .cbc-table th { background: {{ template_data.secondary_color|default:"#EAF3FB" }}; text-align: left; }
+    .cbc-center { text-align: center; }
+    /* Attendance / Conduct / Fees sections (_extra_sections.html) */
+    .xs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .xs-table th, .xs-table td { border: 1px solid {{ template_data.border_color|default:"#C9D9E8" }}; padding: 4px 6px; text-align: center; vertical-align: top; }
+    .xs-table th { background: {{ template_data.secondary_color|default:"#EAF3FB" }}; font-weight: 700; }
+    .xs-table.xs-left th, .xs-table.xs-left td { text-align: left; }
+    .xs-note { font-size: 10.5px; color: #555; margin-top: 4px; }
+</style>
 </head>
 
 <body>
@@ -464,6 +475,10 @@
               </div>
             </div>
           {% endif %}
+
+          {% include "dashboard/reports/pdf/_cbc_sections.html" with include_cbc_core=True %}
+
+          {% include "dashboard/reports/pdf/_extra_sections.html" %}
 
           {% if sec.section_key == "teacher_comment" and template_data.show_class_teacher_comment %}
             <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">

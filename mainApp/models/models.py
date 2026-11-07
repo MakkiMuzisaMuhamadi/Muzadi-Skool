@@ -24,16 +24,25 @@ LEVEL_CHOICES = [
     ("UACE", "Uganda Advanced Certificate of Education"),
 ]
 
+# One list of login roles for the whole system (Profile.ROLE_CHOICES points here).
+# Leadership posts such as Head Teacher or DOS are *responsibilities* on a
+# teacher (see teacher_models.ResponsibilityRole), not separate login roles.
 ROLE_CHOICES = [
     ("SUPER_ADMIN", "Super Admin"),
-    ("ADMIN", "Admin"),
+    ("ADMIN", "School Admin"),
     ("TEACHER", "Teacher"),
-    ("STUDENT", "Student"),
     ("BURSAR", "Bursar"),
     ("NURSE", "School nurse"),
     ("LIBRARIAN", "Librarian"),
     ("STOREKEEPER", "Storekeeper"),
+    ("TRANSPORT_OFFICER", "Transport officer"),
+    ("STUDENT", "Student"),
+    ("PARENT", "Parent / Guardian"),
 ]
+
+# Roles whose accounts are created from a Student / Parent record, never by hand.
+PORTAL_ROLES = ("STUDENT", "PARENT")
+STAFF_ROLE_CODES = tuple(code for code, _ in ROLE_CHOICES if code not in PORTAL_ROLES)
 class EducationLevel(AuditMixin, RecycleBinMixin, models.Model):
     code = models.CharField(max_length=10, choices=LEVEL_CHOICES, unique=True)
     name = models.CharField(max_length=100)
@@ -60,8 +69,16 @@ class School(AuditMixin, RecycleBinMixin, models.Model):
     level = models.ManyToManyField(EducationLevel)
     is_active = models.BooleanField(default=True)
     is_default = models.BooleanField(default=False)
+    # Web address of this school: <subdomain>.<TENANT_BASE_DOMAIN>, e.g. stmarys.muzaditechnologies.com
+    subdomain = models.SlugField(
+        max_length=63, unique=True, null=True, blank=True,
+        help_text="Lower-case letters, numbers and dashes only, e.g. 'stmarys'. "
+                  "The school opens at stmarys.<your domain>.",
+    )
+    # Optional own domain (e.g. portal.stmarys.ac.ug) pointed at the server.
+    custom_domain = models.CharField(max_length=253, unique=True, null=True, blank=True)
     academic_year = models.ForeignKey(
-        'AcademicYear', 
+        'AcademicYear',
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
@@ -76,6 +93,13 @@ class School(AuditMixin, RecycleBinMixin, models.Model):
     )
     objects = RecycleBinManager()
     
+    def save(self, *args, **kwargs):
+        # school_id is unique: give every new school its own code (an empty code
+        # would make the second school fail to save).
+        if not self.school_id:
+            self.school_id = f"SCH-{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
+
     def get_levels_list(self):
         """Return list of level codes offered by this school"""
         return list(self.level.values_list('code', flat=True))
@@ -87,7 +111,7 @@ class School(AuditMixin, RecycleBinMixin, models.Model):
     def __str__(self):
         return self.name
     
-class Class(AuditMixin, models.Model):
+class Class(AuditMixin, RecycleBinMixin, models.Model):
     PROGRESSION_MODE_CHOICES = [
         ("NORMAL", "Normal Promotion"),
         ("CYCLE_EXIT", "Cycle Exit / Await Readmission"),
@@ -130,7 +154,7 @@ class Class(AuditMixin, models.Model):
         ordering = ["level__order", "name"]
 
 
-class Stream(AuditMixin, models.Model):
+class Stream(AuditMixin, RecycleBinMixin, models.Model):
     class_ref = models.ForeignKey(
         Class,
         on_delete=models.CASCADE,
@@ -171,6 +195,7 @@ class StudentPromotionDecision(AuditMixin, models.Model):
         ("PENDING", "Pending"),
         ("PROMOTED", "Promoted"),
         ("RETAINED", "Retained"),
+        ("DEMOTED", "Demoted"),
         ("COMPLETED_CYCLE", "Completed Cycle / Await Readmission"),
         ("GRADUATED", "Graduated / Alumni"),
         ("CANCELLED", "Cancelled"),
@@ -293,16 +318,7 @@ class Attendance(AuditMixin,RecycleBinMixin,models.Model):
 
 
 class Profile(AuditMixin, RecycleBinMixin, models.Model):
-    ROLE_CHOICES = [
-        ("SUPER_ADMIN", "Super Admin"),
-        ("ADMIN", "Admin"),
-        ("TEACHER", "Teacher"),
-        ("STUDENT", "Student"),
-        ("BURSAR", "Bursar"),
-        ("NURSE", "School nurse"),
-        ("STOREKEEPER", "Storekeeper"),
-        ("LIBRARIAN", "Librarian"),
-    ]
+    ROLE_CHOICES = ROLE_CHOICES
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     school = models.ForeignKey(
@@ -326,6 +342,15 @@ class Profile(AuditMixin, RecycleBinMixin, models.Model):
 
     # add a plain manager
     all_objects = models.Manager()
+
+    # Phone used for password-reset codes by SMS (staff). Parents use the phone
+    # on their Parent record; teachers fall back to the phone on their staff record.
+    phone = models.CharField(max_length=20, blank=True, default="")
+
+    # True for new accounts and after an admin resets the password to the default:
+    # the user must choose their own password before using the system.
+    must_change_password = models.BooleanField(default=False)
+    password_changed_at = models.DateTimeField(null=True, blank=True)
 
     email_verified = models.BooleanField(default=False)
     # Stores a SHA-256 hash of the code, never the code itself, so a leaked
@@ -430,8 +455,13 @@ class Profile(AuditMixin, RecycleBinMixin, models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        if self.role == "STUDENT":
+        if self.role in PORTAL_ROLES:
             self.allowed_levels.clear()
+
+    @property
+    def is_portal_user(self):
+        """Students and parents: they only see their own portal pages."""
+        return self.role in PORTAL_ROLES
 
     def __str__(self):
         school_name = self.school.name if self.school else "No School"
@@ -654,5 +684,40 @@ class DataEntryError(AuditMixin,models.Model):
         return f"{self.entrant.username}"
 
 
+class PasswordResetCode(models.Model):
+    """
+    One "forgot password" code sent to a user by SMS or email.
 
+    Only a hash of the 6-digit code is stored. A code works once, expires after
+    a few minutes and is destroyed after too many wrong guesses.
+    """
+    CHANNEL_CHOICES = [("SMS", "SMS"), ("EMAIL", "Email")]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_codes")
+    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES)
+    sent_to = models.CharField(max_length=255, help_text="Masked phone number or email the code went to.")
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used_at = models.DateTimeField(null=True, blank=True)
+    cancelled = models.BooleanField(default=False)
+
+    # Africa's Talking reply, kept so the school can see what each SMS cost.
+    provider_message_id = models.CharField(max_length=100, blank=True, default="")
+    provider_status = models.CharField(max_length=100, blank=True, default="")
+    cost = models.CharField(max_length=30, blank=True, default="")
+
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "channel", "created_at"])]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.channel} - {self.created_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def is_usable(self):
+        return not self.cancelled and self.used_at is None and self.expires_at >= timezone.now()
 

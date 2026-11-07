@@ -1,0 +1,8 @@
+{% extends "tenancy/_page.html" %}
+{% block title %}School not found{% endblock %}
+{% block body %}
+<div class="icon">🏫</div>
+<h1>We could not find this school</h1>
+<p>No school uses the address <strong>{{ host }}</strong>. Please check the spelling, or ask your school for the correct address.</p>
+{% if platform_url %}<a class="link" href="{{ platform_url }}">Muzadi Technologies</a>{% endif %}
+{% endblock %}

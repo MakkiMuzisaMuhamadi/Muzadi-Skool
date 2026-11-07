@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
   <div>
@@ -6,9 +7,9 @@
     <small class="text-muted">Each row is one physical item with its own QR tag.</small>
   </div>
   <div class="d-flex flex-wrap" style="gap:.5rem;">
-    <a href="{% url 'inv_unit_create' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add one</a>
-    <a href="{% url 'inv_unit_bulk_add' %}{% if item_id %}?item={{ item_id }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-layer-group mr-1"></i> Add in bulk</a>
-    <a href="{% url 'inv_labels_select' %}?q={{ q|urlencode }}&status={{ status|urlencode }}&type={{ type|urlencode }}" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Print labels</a>
+    {% if request.user|can_open:"inv_unit_create" %}<a href="{% url 'inv_unit_create' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add one</a>{% endif %}
+    {% if request.user|can_open:"inv_unit_bulk_add" %}<a href="{% url 'inv_unit_bulk_add' %}{% if item_id %}?item={{ item_id }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-layer-group mr-1"></i> Add in bulk</a>{% endif %}
+    {% if request.user|can_open:"inv_labels_select" %}<a href="{% url 'inv_labels_select' %}?q={{ q|urlencode }}&status={{ status|urlencode }}&type={{ type|urlencode }}" class="btn btn-outline-success btn-sm"><i class="fas fa-print mr-1"></i> Print labels</a>{% endif %}
   </div>
 </div>
 
@@ -39,7 +40,7 @@
     <div class="col-md-3 mb-2 d-flex align-items-center" style="gap:.5rem;">
       <div class="form-check mr-2"><input class="form-check-input" type="checkbox" name="overdue" value="1" id="od" {% if overdue %}checked{% endif %}><label class="form-check-label" for="od">Overdue</label></div>
       <button class="btn btn-outline-primary">Filter</button>
-      <a class="btn btn-light" href="{% url 'inv_units' %}">Reset</a>
+      {% if request.user|can_open:"inv_units" %}<a class="btn btn-light" href="{% url 'inv_units' %}">Reset</a>{% endif %}
     </div>
   </form>
 
@@ -49,7 +50,7 @@
       <tbody>
       {% for r in rows %}
         <tr>
-          <td><a class="font-weight-bold" href="{% url 'inv_unit_detail' r.pk %}">{{ r.tag_code }}</a></td>
+          <td>{% if request.user|can_open:"inv_unit_detail" %}<a class="font-weight-bold" href="{% url 'inv_unit_detail' r.pk %}">{{ r.tag_code }}</a>{% else %}{{ r.tag_code }}{% endif %}</td>
           <td>{{ r.item.name|truncatechars:45 }}<small class="d-block text-muted">{{ r.item.category.get_type_display }}</small></td>
           <td>{% include "dashboard/inventory/_status_badge.html" with s=r.status %}</td>
           <td>{{ r.get_condition_display }}</td>

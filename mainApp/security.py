@@ -125,3 +125,24 @@ def mask_email(email):
     else:
         masked = local[0] + "*" * (len(local) - 2) + local[-1]
     return f"{masked}@{domain}"
+
+
+# ------------------------------------------------------------ password reset ----
+
+def reset_resend_allowed(user_id):
+    """Cooldown between "forgot password" codes for one account. Returns (allowed, wait_seconds)."""
+    cooldown = _setting("PASSWORD_RESET_RESEND_COOLDOWN_SECONDS", 60)
+    key = _key("reset-cooldown", user_id)
+    if cache.get(key):
+        return False, cooldown
+    cache.set(key, 1, cooldown)
+    return True, 0
+
+
+def under_limit(name, ident, limit, window_seconds):
+    """
+    Count one hit for (name, ident) and say whether it is still within `limit`
+    hits per `window_seconds`. Used to cap lookups per IP and SMS per day.
+    """
+    count = _incr(_key("limit", name, ident), window_seconds)
+    return count <= limit

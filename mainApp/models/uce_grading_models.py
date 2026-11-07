@@ -22,6 +22,29 @@ class GradingScale(models.Model):
         help_text="Number used to compute the average. Missing subjects count as 0 (e.g. UCE commonly 9)."
     )
 
+    RESULT_MODE_AVERAGE = "AVERAGE"
+    RESULT_MODE_UNEB = "UNEB"
+    RESULT_MODE_CHOICES = [
+        (RESULT_MODE_AVERAGE, "Average and overall grade (school style)"),
+        (RESULT_MODE_UNEB, "UNEB new curriculum: Result 1 / Result 2 / Result 3"),
+    ]
+    result_mode = models.CharField(
+        max_length=10,
+        choices=RESULT_MODE_CHOICES,
+        default=RESULT_MODE_AVERAGE,
+        help_text="How the overall result is shown on the report card.",
+    )
+    min_pass_grade = models.CharField(
+        max_length=5,
+        default="D",
+        help_text="UNEB mode: a learner needs at least this grade in one subject for Result 1.",
+    )
+    require_project = models.BooleanField(
+        default=False,
+        help_text="UNEB mode: learners without any project work score get Result 2. "
+                  "Turn on for candidate classes (e.g. S.4).",
+    )
+
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

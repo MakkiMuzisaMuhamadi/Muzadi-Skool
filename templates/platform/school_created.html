@@ -1,0 +1,17 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="card"><div class="card-body">
+  <h3 class="text-success"><i class="fas fa-check-circle"></i> {{ school.name }} is ready</h3>
+  <p>Send these details to the school admin (they will be asked to choose their own password):</p>
+  <table class="table table-sm w-auto">
+    <tr><th>Web address</th><td>{% if url and url != "/" %}<a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>{% else %}(set TENANT_BASE_DOMAIN on the server){% endif %}</td></tr>
+    <tr><th>Username</th><td><code>{{ admin_user.username }}</code></td></tr>
+    <tr><th>Starting password</th><td><code>{{ password }}</code></td></tr>
+    <tr><th>Free trial until</th><td>{{ school.subscription.trial_ends_on|date:"j M Y" }}</td></tr>
+  </table>
+  <p class="text-muted small mb-1">After signing in, the admin sees a setup checklist: academic year &amp; term, classes, streams, teachers, students, subject allocation, fees and parent logins.</p>
+  <p class="text-muted small">Subjects and academic years are shared by all schools and are already there.</p>
+  <a href="{% url 'platform_school_detail' school.pk %}" class="btn btn-primary">Open school settings</a>
+  <a href="{% url 'platform_dashboard' %}" class="btn btn-light">Back to all schools</a>
+</div></div>
+{% endblock %}

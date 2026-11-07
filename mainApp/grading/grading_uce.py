@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation
-from typing import Optional, List, Tuple, Dict, Any
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from typing import Optional, List, Tuple, Dict, Any, Set
 
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Avg, Q
 
 from mainApp.models.uce_grading_models import GradingScale
 from mainApp.models.exams_models import ExamType, MarkEntryExam
 from mainApp.models.subject_models import Subject
 from mainApp.models.student import Student
+from mainApp.models.competency_models import (
+    CompetencyDefinition,
+    CompetencyRow,
+    ProjectAssessment,
+)
 
 
 SCALE3 = Decimal("3")
@@ -65,9 +70,11 @@ def grade_for_percentage(scale: Optional[GradingScale], pct: Decimal, final_grad
             "scaled_score": float(pct_to_scaled3(pct)),
         }
 
+    # Grade bands are whole numbers, so round (79.6 -> 80) instead of cutting off (79).
+    whole = int(_D(pct).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
     g = (
         scale.grades
-        .filter(min_percentage__lte=int(pct), max_percentage__gte=int(pct))
+        .filter(min_percentage__lte=whole, max_percentage__gte=whole)
         .order_by("-order", "grade_letter")
         .first()
     )
@@ -148,6 +155,182 @@ def _subject_marks_for_exam_type(
     return marks
 
 
+def aoi_average_for_student(
+    *,
+    school,
+    academic_year_id,
+    term_id,
+    class_ref_id,
+    stream_id,
+    student_id,
+    subject_id,
+) -> Optional[Decimal]:
+    """
+    Average competency (Activities of Integration) score, 0.0 - 3.0, for one
+    learner in one subject for the term. None when no score has been entered.
+    """
+    defs = CompetencyDefinition.objects.filter(
+        school=school,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        class_ref_id=class_ref_id,
+        subject_id=subject_id,
+    )
+    if stream_id:
+        defs = defs.filter(Q(stream_id=stream_id) | Q(stream__isnull=True))
+    else:
+        defs = defs.filter(stream__isnull=True)
+
+    avg = (
+        CompetencyRow.objects
+        .filter(competency__in=defs, student_id=student_id, score__isnull=False)
+        .aggregate(avg=Avg("score"))
+        .get("avg")
+    )
+    if avg is None:
+        return None
+    return _D(avg).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _aoi_component(
+    *,
+    school,
+    academic_year_id,
+    term_id,
+    class_ref_id,
+    stream_id,
+    exam_type: ExamType,
+    student_id,
+    subject: Subject,
+) -> Optional[Dict[str, Any]]:
+    avg = aoi_average_for_student(
+        school=school,
+        academic_year_id=academic_year_id,
+        term_id=term_id,
+        class_ref_id=class_ref_id,
+        stream_id=stream_id,
+        student_id=student_id,
+        subject_id=subject.id,
+    )
+    if avg is None:
+        return None
+
+    exam_max = _D(exam_type.max_mark, Decimal("100"))
+    if exam_max <= 0:
+        return None
+
+    pct = ((avg / SCALE3) * Decimal("100")).quantize(Decimal("0.1"))
+    raw_mark = ((avg / SCALE3) * exam_max).quantize(Decimal("0.1"))
+
+    return {
+        "exam_type_id": exam_type.id,
+        "label": (exam_type.code or exam_type.name or f"ET{exam_type.id}").strip(),
+        "name": exam_type.name,
+        "raw_mark": raw_mark,
+        "max_mark": exam_max,
+        "weight_percent": _D(exam_type.weight_percent, Decimal("0")),
+        "percentage": pct,
+        "is_aoi": True,
+        "aoi_average": avg,
+    }
+
+
+def subjects_offered_in_class(
+    *,
+    school,
+    academic_year_id,
+    term_id,
+    class_ref_id,
+    stream_id,
+    exam_type_ids,
+) -> Set[int]:
+    """
+    Subjects that actually have marks entered for this class/term (any learner).
+    Used to know which compulsory subjects a learner should have sat.
+    """
+    qs = MarkEntryExam.objects.filter(
+        marksheet__school=school,
+        marksheet__academic_year_id=academic_year_id,
+        marksheet__term_id=term_id,
+        marksheet__class_ref_id=class_ref_id,
+        marksheet__exam_type_id__in=list(exam_type_ids),
+    )
+    if stream_id:
+        qs = qs.filter(marksheet__stream_id=stream_id)
+    else:
+        qs = qs.filter(marksheet__stream__isnull=True)
+
+    ids: Set[int] = set()
+    for subj_id, paper_subj_id in qs.values_list("subject_id", "paper__subject_id").distinct():
+        if subj_id:
+            ids.add(subj_id)
+        if paper_subj_id:
+            ids.add(paper_subj_id)
+    return ids
+
+
+def student_has_project_score(*, school, student) -> bool:
+    return (
+        ProjectAssessment.objects
+        .filter(school=school, student=student)
+        .filter(Q(mark__isnull=False) | ~Q(grade=""))
+        .exists()
+    )
+
+
+def compute_uneb_result(
+    *,
+    scale: GradingScale,
+    subject_details: List[dict],
+    offered_subject_ids: Set[int],
+    compulsory_subject_ids: Set[int],
+    has_project: bool,
+) -> Dict[str, str]:
+    """
+    UNEB new lower secondary curriculum overall result:
+
+    Result 2: missed a compulsory subject, sat fewer than the required number
+              of subjects, or (when required) has no project work score.
+    Result 1: at least the minimum pass grade (default D) in one subject.
+    Result 3: everything else (e.g. only E grades).
+    """
+    attempted_ids = {d["subject"].id for d in subject_details}
+    required = int(scale.required_subjects or 0)
+
+    missing_compulsory = sorted(compulsory_subject_ids & offered_subject_ids - attempted_ids)
+    reasons = []
+    if missing_compulsory:
+        names = list(
+            Subject.objects.filter(id__in=missing_compulsory).values_list("name", flat=True)
+        )
+        reasons.append("did not sit compulsory subject(s): " + ", ".join(names))
+    if len(attempted_ids) < required:
+        reasons.append(f"sat {len(attempted_ids)} subject(s); at least {required} are required")
+    if scale.require_project and not has_project:
+        reasons.append("has no project work score")
+
+    if reasons:
+        return {"code": "Result 2", "remarks": "Result 2: learner " + "; ".join(reasons) + "."}
+
+    grade_order = {g.grade_letter.upper(): g.order for g in scale.grades.all()}
+    pass_letter = (scale.min_pass_grade or "D").strip().upper()
+    pass_order = grade_order.get(pass_letter)
+
+    passed = False
+    for d in subject_details:
+        letter = (d.get("grade") or "").strip().upper()
+        if letter in grade_order and pass_order is not None and grade_order[letter] >= pass_order:
+            passed = True
+            break
+
+    if passed:
+        return {"code": "Result 1", "remarks": ""}
+    return {
+        "code": "Result 3",
+        "remarks": f"Result 3: learner did not reach grade {pass_letter} in any subject.",
+    }
+
+
 def compute_uce_subject_exam_component(
     *,
     school,
@@ -159,6 +342,18 @@ def compute_uce_subject_exam_component(
     student_id,
     subject: Subject,
 ) -> Optional[Dict[str, Any]]:
+    if getattr(exam_type, "source", "MARKS") == "AOI":
+        return _aoi_component(
+            school=school,
+            academic_year_id=academic_year_id,
+            term_id=term_id,
+            class_ref_id=class_ref_id,
+            stream_id=stream_id,
+            exam_type=exam_type,
+            student_id=student_id,
+            subject=subject,
+        )
+
     marks = _subject_marks_for_exam_type(
         school=school,
         academic_year_id=academic_year_id,
@@ -258,6 +453,11 @@ def compute_uce_overall_for_student(
         if not exam_components:
             continue
 
+        # A subject with only an AOI score (no exam/test marks) is not "sat" yet.
+        has_marks_type = any(getattr(et, "source", "MARKS") != "AOI" for et in exam_types)
+        if has_marks_type and all(c.get("is_aoi") for c in exam_components):
+            continue
+
         if present_weights > 0:
             subject_total = weighted_total.quantize(Decimal("0.1"))
         else:
@@ -310,6 +510,54 @@ def compute_uce_overall_for_student(
                 }
                 for et in exam_types
             ],
+            "total_weight_max": float(total_weight if total_weight > 0 else Decimal("100")),
+        }
+
+    exam_types_payload = [
+        {
+            "id": et.id,
+            "label": (et.code or et.name or f"ET{et.id}").strip(),
+            "name": et.name,
+            "max_mark": float(_D(et.max_mark, Decimal("100"))),
+            "weight_percent": float(_D(et.weight_percent, Decimal("0"))),
+            "is_aoi": getattr(et, "source", "MARKS") == "AOI",
+        }
+        for et in exam_types
+    ]
+
+    if getattr(scale, "result_mode", "AVERAGE") == GradingScale.RESULT_MODE_UNEB:
+        offered = subjects_offered_in_class(
+            school=school,
+            academic_year_id=academic_year_id,
+            term_id=term_id,
+            class_ref_id=class_ref_id,
+            stream_id=stream_id,
+            exam_type_ids=[et.id for et in exam_types if getattr(et, "source", "MARKS") != "AOI"],
+        )
+        compulsory = set(
+            subjects.filter(is_optional=False).values_list("id", flat=True)
+        )
+        res = compute_uneb_result(
+            scale=scale,
+            subject_details=subject_details,
+            offered_subject_ids=offered,
+            compulsory_subject_ids=compulsory,
+            has_project=student_has_project_score(school=school, student=student) if scale.require_project else True,
+        )
+        return {
+            "student": student,
+            "attempted_subjects": attempted,
+            "required_subjects": required,
+            "average_divisor": divisor,
+            "total_percentage": float(total_marks),
+            "average_percentage": float(avg_total),
+            "scaled_score": float(pct_to_scaled3(avg_total)),
+            "final_grade": res["code"],
+            "result_code": res["code"],
+            "result_mode": GradingScale.RESULT_MODE_UNEB,
+            "remarks": res["remarks"],
+            "subject_details": subject_details,
+            "exam_types": exam_types_payload,
             "total_weight_max": float(total_weight if total_weight > 0 else Decimal("100")),
         }
 

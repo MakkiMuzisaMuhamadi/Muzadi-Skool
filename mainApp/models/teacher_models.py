@@ -23,13 +23,16 @@ from mainApp.models.student import GENDER_CHOICES
 def current_academic_year():
     """
     The school's current academic year.
-    One school per database, so we read the (default/active) School row.
+    Uses the school of the current request (many schools share one database);
+    outside a request (shell, Celery) the default/active School row.
     Falls back to the newest active AcademicYear.
     """
+    from mainApp.tenancy import get_current_school
+
     School = apps.get_model("mainApp", "School")
     AcademicYear = apps.get_model("mainApp", "AcademicYear")
 
-    school = (
+    school = get_current_school() or (
         School.objects.filter(is_active=True)
         .order_by("-is_default", "id")
         .select_related("academic_year")
@@ -466,6 +469,8 @@ class NonTeachingStaff(AuditMixin, RecycleBinMixin, StaffRecordFields, StaffEmpl
 # ---------------------------------------------------------------------------
 
 class TeacherDraft(AuditMixin, RecycleBinMixin, StaffRecordFields):
+    # Drafts are throw-away; deleting one should not fill the recycle bin.
+    recycle_bin_enabled = False
     username = models.CharField(max_length=150, blank=True, default="")
     first_name = models.CharField(max_length=150, blank=True, default="")
     last_name = models.CharField(max_length=150, blank=True, default="")

@@ -4,7 +4,7 @@
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
     <h3 class="page-title mb-0"><i class="fas fa-book"></i> {{ title }}</h3>
-    <small class="text-muted">UCE only. Teachers see only subjects they teach.</small>
+    <small class="text-muted">UCE and UACE. Teachers see only subjects they teach.</small>
   </div>
   <div>
     <a href="{% url 'topic_create' %}" class="btn btn-outline-success btn-sm">
@@ -35,7 +35,7 @@
             <td>{{ forloop.counter }}</td>
             <td>{{ t.subject }}</td>
             <td>{{ t.name }}</td>
-            <td>{{ t.class_ref }}</td>
+            <td>{{ t.class_ref.name }} <span class="badge badge-light">{{ t.level.code }}</span></td>
 
             <td class="text-right">
               <a class="btn btn-sm btn-outline-info" href="{% url 'topic_edit' t.id %}">

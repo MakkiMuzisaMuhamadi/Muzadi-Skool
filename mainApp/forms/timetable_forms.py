@@ -1,3 +1,4 @@
+from mainApp.academic_period import apply_year_term_defaults
 from django import forms
 from django.core.exceptions import ValidationError
 
@@ -77,6 +78,7 @@ class TimetableForm(SchoolFormMixin, forms.ModelForm):
         self._setup_school(school)
         self.fields["academic_year"].queryset = AcademicYear.objects.all()
         self.fields["terms"].queryset = Term.objects.all().order_by("order", "name")
+        apply_year_term_defaults(self, school, term_field="__none__")   # new timetables open on the school's year
         self.fields["level"].queryset = EducationLevel.objects.filter(is_active=True)
         self.fields["bell_schedule"].queryset = BellSchedule.objects.filter(school=school, is_active=True)
         self.fields["bell_schedule"].required = True
@@ -213,10 +215,7 @@ class TeachingGroupForm(SchoolFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self._setup_school(school)
         self.fields["academic_year"].queryset = AcademicYear.objects.all()
-        if not self.instance.pk:
-            active = AcademicYear.objects.filter(is_active=True).first()
-            if active:
-                self.initial.setdefault("academic_year", active.pk)
+        apply_year_term_defaults(self, school)   # new groups open on the school's current year
         self.fields["class_ref"].queryset = Class.objects.filter(school=school).order_by("name")
         self.fields["streams"].queryset = Stream.objects.filter(class_ref__school=school).select_related("class_ref")
         self.fields["streams"].label_from_instance = lambda s: f"{s.class_ref.name} - {s.name}"

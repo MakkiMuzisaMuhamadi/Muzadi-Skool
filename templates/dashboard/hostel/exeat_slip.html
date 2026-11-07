@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Exeat {{ exeat.number }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1b1b1b; margin: 24px; font-size: 14px; }
+  .slip { max-width: 640px; border: 2px solid #1b1b1b; padding: 18px 22px; }
+  h1 { font-size: 18px; margin: 0 0 2px; } h2 { font-size: 15px; margin: 0 0 14px; font-weight: normal; }
+  table { width: 100%; border-collapse: collapse; } td { padding: 5px 4px; vertical-align: top; border-bottom: 1px dotted #aaa; }
+  td:first-child { width: 38%; color: #444; } .sign { display: flex; justify-content: space-between; margin-top: 28px; gap: 16px; }
+  .sign div { flex: 1; border-top: 1px solid #1b1b1b; padding-top: 4px; font-size: 12px; } .bar { margin-bottom: 16px; }
+  @media print { .bar { display: none; } body { margin: 10mm; } }
+</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">Print</button> <button onclick="window.close()">Close</button></div>
+<div class="slip">
+  <h1>{{ school.name }}</h1>
+  <h2>Exeat / gate pass {{ exeat.number }}</h2>
+  <table>
+    <tr><td>Student</td><td><b>{{ exeat.student.name }}</b> ({{ exeat.student.admission_number }})</td></tr>
+    <tr><td>Class</td><td>{{ exeat.student.current_class.name|default:"" }} {{ exeat.student.stream.name|default:"" }}</td></tr>
+    <tr><td>Dormitory / bed</td><td>{% if allocation %}{{ allocation.hostel.name }}, {{ allocation.room.room_number }}, bed {{ allocation.bed.bed_number }}{% else %}-{% endif %}</td></tr>
+    <tr><td>Type and reason</td><td>{{ exeat.get_exeat_type_display }}: {{ exeat.reason }}</td></tr>
+    <tr><td>Leaving</td><td>{{ exeat.leave_at|date:"D d M Y, H:i" }}</td></tr>
+    <tr><td>Must be back by</td><td><b>{{ exeat.expected_return|date:"D d M Y, H:i" }}</b></td></tr>
+    <tr><td>Picked up by</td><td>{{ exeat.pickup_display }}{% if exeat.pickup_relationship %} ({{ exeat.pickup_relationship }}){% endif %}
+      {% if exeat.pickup_phone %}, {{ exeat.pickup_phone }}{% elif exeat.pickup_guardian %}, {{ exeat.pickup_guardian.phone }}{% endif %}
+      {% if exeat.pickup_id_number %}<br>ID: {{ exeat.pickup_id_number }}{% endif %}</td></tr>
+    <tr><td>Approved by</td><td>{{ exeat.approved_by.get_full_name|default:exeat.approved_by.username|default:"-" }}, {{ exeat.approved_at|date:"d M Y H:i" }}</td></tr>
+    {% if exeat.signed_out_at %}<tr><td>Signed out</td><td>{{ exeat.signed_out_at|date:"d M Y H:i" }}</td></tr>{% endif %}
+    {% if exeat.returned_at %}<tr><td>Returned</td><td>{{ exeat.returned_at|date:"d M Y H:i" }}</td></tr>{% endif %}
+  </table>
+  <div class="sign"><div>Patron / matron</div><div>Gate (out)</div><div>Gate (in)</div></div>
+</div>
+</body></html>

@@ -24,7 +24,7 @@ def send_transport_sms(message_id):
 
     msg = SmsMessage.objects.get(pk=message_id)
     try:
-        resp = AfricaTalkingSMS().send_one(message=msg.text, to_number=msg.to_number, enqueue=True) or {}
+        resp = AfricaTalkingSMS(school=msg.school).send_one(message=msg.text, to_number=msg.to_number, enqueue=True) or {}
         recipients = resp.get("SMSMessageData", {}).get("Recipients", []) or []
         rec = recipients[0] if recipients else {}
         try:

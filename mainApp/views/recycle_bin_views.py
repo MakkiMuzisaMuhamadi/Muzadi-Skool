@@ -1,289 +1,357 @@
-from datetime import timezone
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse
-from django.db.models import Count
-from mainApp.models.recycleBin import RecycleBin, RecycleBinSettings
-from mainApp.decorators import admin_only
+"""Recycle Bin screens (Super Admin only).
 
+Every action that changes data is POST-only (CSRF protected). The real work is
+done in ``mainApp/recycle_bin.py``.
+"""
+from datetime import timedelta
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Count, Q, Sum
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from mainApp.decorators import admin_only
+from mainApp.models.recycleBin import RecycleBin, RecycleBinSettings
+from mainApp.recycle_bin import (
+    RestoreError,
+    check_restore,
+    maybe_auto_cleanup,
+    purge_expired,
+    restore_entry,
+)
+
+PAGE_SIZE = 25
+SNAPSHOT_PREVIEW_ROWS = 200
+
+
+def _back(request):
+    """Return to the dashboard, keeping the filters the user had."""
+    nxt = request.POST.get("next") or request.GET.get("next") or ""
+    if nxt.startswith("/") and not nxt.startswith("//"):
+        return redirect(nxt)
+    return redirect("recycle_bin_dashboard")
+
+
+def _ids(request):
+    out = []
+    for raw in request.POST.getlist("item_ids"):
+        try:
+            out.append(int(raw))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _int(value, default, low, high):
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return default, False
+    return max(low, min(high, value)), True
+
+
+# ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
 @login_required
 @admin_only
 def recycle_bin_dashboard(request):
-    """Main recycle bin dashboard"""
-    recycle_items = RecycleBin.objects.all().order_by('-deleted_at')
-    
-    # Group by object type for statistics
-    stats = recycle_items.values('object_type').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
+    bin_settings = RecycleBinSettings.get_solo()
+    maybe_auto_cleanup(bin_settings)
+
+    now = timezone.now()
+    all_items = RecycleBin.objects.all()
+    items = all_items.select_related("deleted_by").defer("snapshot")
+
+    obj_type = request.GET.get("type", "").strip()
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
+    deleted_by = request.GET.get("by", "").strip()
+    sort = request.GET.get("sort", "newest")
+
+    if obj_type:
+        items = items.filter(object_type=obj_type)
+    if query:
+        items = items.filter(
+            Q(object_repr__icontains=query) | Q(school_name__icontains=query)
+            | Q(deletion_reason__icontains=query) | Q(deleted_by_name__icontains=query)
+            | Q(object_type__icontains=query)
+        )
+    if status == "expired":
+        items = items.filter(expires_at__lt=now)
+    elif status == "soon":
+        items = items.filter(expires_at__gte=now, expires_at__lt=now + timedelta(days=7))
+    if deleted_by:
+        items = items.filter(Q(deleted_by__username=deleted_by) | Q(deleted_by_name=deleted_by))
+
+    order = {"newest": "-deleted_at", "oldest": "deleted_at",
+             "expiring": "expires_at", "type": "object_type"}.get(sort, "-deleted_at")
+    items = items.order_by(order, "-pk")
+
+    page = Paginator(items, PAGE_SIZE).get_page(request.GET.get("page"))
+
+    stats = list(all_items.values("object_type").annotate(count=Count("id")).order_by("-count"))
+    totals = all_items.aggregate(rows=Sum("total_rows"))
+    deleters = (all_items.exclude(deleted_by_name="").values_list("deleted_by_name", flat=True)
+                .distinct().order_by("deleted_by_name"))
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
     context = {
-        'recycle_items': recycle_items,
-        'stats': stats,
-        'total_count': recycle_items.count(),
-        'settings': RecycleBinSettings.objects.first(),
+        "page_obj": page,
+        "recycle_items": page.object_list,
+        "stats": stats,
+        "total_count": all_items.count(),
+        "expired_count": all_items.filter(expires_at__lt=now).count(),
+        "expiring_soon_count": all_items.filter(
+            expires_at__gte=now, expires_at__lt=now + timedelta(days=7)).count(),
+        "total_rows": totals["rows"] or 0,
+        "settings": bin_settings,
+        "deleters": list(deleters),
+        "filters": {"type": obj_type, "q": query, "status": status, "by": deleted_by, "sort": sort},
+        "filter_querystring": params.urlencode(),
+        "current_url": request.get_full_path(),
     }
-    
-    return render(request, 'recycle_bin/dashboard.html', context)
+    return render(request, "recycle_bin/dashboard.html", context)
 
-@login_required
-@admin_only
-def restore_item(request, item_id):
-    """Enhanced restoration that handles relationships for key models"""
-    recycle_item = get_object_or_404(RecycleBin, id=item_id)
-    
-    try:
-        # Use the enhanced restoration method that handles relationships
-        restored_object = recycle_item.restore_with_relationships()
-        
-        # Get additional info for success message
-        object_info = ""
-        if hasattr(restored_object, 'name'):
-            object_info = f" - {restored_object.name}"
-        elif hasattr(restored_object, 'candidate_id'):
-            object_info = f" - {restored_object.candidate_id}"
-        
-        messages.success(
-            request, 
-            f"Successfully restored {recycle_item.object_type} #{recycle_item.object_id}{object_info}"
-        )
-        
-    except Exception as e:
-        # Provide more specific error message
-        error_msg = str(e)
-        if 'unexpected keyword argument' in error_msg:
-            field_name = error_msg.split("'")[1] if "'" in error_msg else "unknown field"
-            messages.error(
-                request, 
-                f"Failed to restore {recycle_item.object_type}: Invalid field '{field_name}'. This might be a data compatibility issue."
-            )
-        else:
-            messages.error(
-                request, 
-                f"Failed to restore {recycle_item.object_type}: {error_msg}"
-            )
-    
-    return redirect('recycle_bin_dashboard')
 
-@login_required
-@admin_only
-def restore_item_simple(request, item_id):
-    """Simple restoration without relationships (for testing)"""
-    recycle_item = get_object_or_404(RecycleBin, id=item_id)
-    
-    try:
-        from mainApp.models.models import Subject, School, EducationLevel, Paper, Marks
-        from mainApp.models.student import Student
-
-        model_map = {
-            'Student': Student,
-            'Subject': Subject, 
-            'School': School,
-            'EducationLevel': EducationLevel,
-            'Paper': Paper,
-            'Marks': Marks,
-            'Grade': None,  # Add your Grade model import
-            'Profile': None,  # Add your Profile model import
-        }
-        
-        model = model_map.get(recycle_item.object_type)
-        if not model:
-            messages.error(request, f"Unknown model type: {recycle_item.object_type}")
-            return redirect('recycle_bin_dashboard')
-        
-        # Basic restoration without relationships
-        obj_data = recycle_item.original_data.copy()
-        obj_data.pop('id', None)
-        
-        # Handle special fields that should be regenerated
-        if 'candidate_id' in obj_data and recycle_item.object_type == 'Student':
-            obj_data.pop('candidate_id')
-        if 'school_id' in obj_data and recycle_item.object_type == 'School':
-            obj_data.pop('school_id')
-        
-        restored_object = model.objects.create(**obj_data)
-        recycle_item.delete()
-        
-        messages.success(
-            request, 
-            f"Successfully restored {recycle_item.object_type} (simple restoration)"
-        )
-        
-    except Exception as e:
-        messages.error(
-            request, 
-            f"Failed to restore {recycle_item.object_type}: {str(e)}"
-        )
-    
-    return redirect('recycle_bin_dashboard')
-
-@login_required
-@admin_only
-def permanent_delete(request, item_id):
-    """Permanently delete an item from recycle bin"""
-    recycle_item = get_object_or_404(RecycleBin, id=item_id)
-    
-    object_type = recycle_item.object_type
-    object_id = recycle_item.object_id
-    
-    recycle_item.delete()
-    messages.success(
-        request, 
-        f"Permanently deleted {object_type} #{object_id}"
-    )
-    
-    return redirect('recycle_bin_dashboard')
-
-@login_required
-@admin_only
-def bulk_restore(request):
-    """Restore multiple items with enhanced relationship handling"""
-    if request.method == 'POST':
-        item_ids = request.POST.getlist('item_ids')
-        restored_count = 0
-        failed_count = 0
-        
-        for item_id in item_ids:
-            try:
-                recycle_item = RecycleBin.objects.get(id=item_id)
-                # Use enhanced restoration for complex models
-                recycle_item.restore_with_relationships()
-                restored_count += 1
-            except Exception as e:
-                messages.error(request, f"Failed to restore item {item_id}: {str(e)}")
-                failed_count += 1
-        
-        if restored_count > 0:
-            messages.success(request, f"Successfully restored {restored_count} items")
-        if failed_count > 0:
-            messages.warning(request, f"Failed to restore {failed_count} items")
-    
-    return redirect('recycle_bin_dashboard')
-
-@login_required
-@admin_only
-def bulk_restore_simple(request):
-    """Restore multiple items without relationships (for testing)"""
-    if request.method == 'POST':
-        item_ids = request.POST.getlist('item_ids')
-        restored_count = 0
-        
-        for item_id in item_ids:
-            try:
-                recycle_item = RecycleBin.objects.get(id=item_id)
-                
-                from mainApp.models.models import Student, Subject, School, EducationLevel, Paper, Marks
-                
-                model_map = {
-                    'Student': Student,
-                    'Subject': Subject, 
-                    'School': School,
-                    'EducationLevel': EducationLevel,
-                    'Paper': Paper,
-                    'Marks': Marks,
-                }
-                
-                model = model_map.get(recycle_item.object_type)
-                if model:
-                    obj_data = recycle_item.original_data.copy()
-                    obj_data.pop('id', None)
-                    
-                    # Handle special fields
-                    if 'candidate_id' in obj_data and recycle_item.object_type == 'Student':
-                        obj_data.pop('candidate_id')
-                    if 'school_id' in obj_data and recycle_item.object_type == 'School':
-                        obj_data.pop('school_id')
-                    
-                    model.objects.create(**obj_data)
-                    recycle_item.delete()
-                    restored_count += 1
-                    
-            except Exception as e:
-                messages.error(request, f"Failed to restore item {item_id}: {str(e)}")
-        
-        if restored_count > 0:
-            messages.success(request, f"Successfully restored {restored_count} items (simple restoration)")
-    
-    return redirect('recycle_bin_dashboard')
-
-@login_required
-@admin_only
-def bulk_permanent_delete(request):
-    """Permanently delete multiple items"""
-    if request.method == 'POST':
-        item_ids = request.POST.getlist('item_ids')
-        deleted_count = RecycleBin.objects.filter(id__in=item_ids).count()
-        
-        RecycleBin.objects.filter(id__in=item_ids).delete()
-        messages.success(request, f"Permanently deleted {deleted_count} items")
-    
-    return redirect('recycle_bin_dashboard')
-
-@login_required
-@admin_only
-def cleanup_expired(request):
-    """Clean up expired recycle bin items"""
-    from django.utils import timezone
-    
-    expired_count = RecycleBin.objects.filter(expires_at__lt=timezone.now()).count()
-    RecycleBin.objects.filter(expires_at__lt=timezone.now()).delete()
-    
-    # Update settings
-    settings = RecycleBinSettings.objects.first()
-    if settings:
-        settings.last_cleanup = timezone.now()
-        settings.save()
-    
-    messages.success(request, f"Cleaned up {expired_count} expired items")
-    return redirect('recycle_bin_dashboard')
-
-@login_required
-@admin_only
-def update_settings(request):
-    """Update recycle bin settings"""
-    if request.method == 'POST':
-        settings, created = RecycleBinSettings.objects.get_or_create(
-            defaults={'retention_days': 30, 'enabled': True, 'auto_cleanup': True}
-        )
-        
-        settings.retention_days = request.POST.get('retention_days', 30)
-        settings.enabled = 'enabled' in request.POST
-        settings.auto_cleanup = 'auto_cleanup' in request.POST
-        settings.max_items_per_type = request.POST.get('max_items_per_type', 1000)
-        settings.save()
-        
-        messages.success(request, "Recycle bin settings updated successfully")
-    
-    return redirect('recycle_bin_dashboard')
-
+# ---------------------------------------------------------------------------
+# Details
+# ---------------------------------------------------------------------------
 @login_required
 @admin_only
 def view_item_details(request, item_id):
-    """View detailed information about a recycle bin item"""
-    recycle_item = get_object_or_404(RecycleBin, id=item_id)
-    
+    item = get_object_or_404(RecycleBin.objects.select_related("deleted_by"), id=item_id)
+    check = check_restore(item)
+
+    rows = item.snapshot or []
+    preview = []
+    for r in rows[:SNAPSHOT_PREVIEW_ROWS]:
+        fields = r.get("fields", {})
+        label = r.get("model", "")
+        name = next((str(fields[k]) for k in ("name", "full_name", "paper_name", "username", "title",
+                                              "first_name", "code") if fields.get(k)), "")
+        preview.append({"model": label.split(".")[-1], "pk": r.get("pk"), "name": name})
+
+    root_fields = _readable_fields(item)
+
     context = {
-        'item': recycle_item,
-        'original_data': recycle_item.original_data,
-        'related_objects': recycle_item.related_objects,
+        "item": item,
+        "check": check,
+        "root_fields": root_fields,
+        "summary": sorted((item.summary or {}).items(), key=lambda kv: -kv[1]),
+        "preview": preview,
+        "preview_truncated": len(rows) > SNAPSHOT_PREVIEW_ROWS,
+        "related_objects": item.related_objects,
+        "original_data": item.original_data,
     }
-    
-    return render(request, 'recycle_bin/item_details.html', context)
+    return render(request, "recycle_bin/item_details.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Restore / delete
+# ---------------------------------------------------------------------------
+def _restore_one(request, item):
+    label = f"{item.object_type} '{item.display_name}'"
+    try:
+        result = restore_entry(item, user=request.user)
+    except RestoreError as exc:
+        for problem in exc.problems:
+            messages.error(request, f"Could not restore {label}: {problem}")
+        return False
+    extra = f" together with {result.restored_rows - 1} related record(s)" if result.restored_rows > 1 else ""
+    messages.success(request, f"Restored {label}{extra}.")
+    for warning in result.warnings:
+        messages.warning(request, warning)
+    return True
+
+
+@login_required
+@admin_only
+@require_POST
+def restore_item(request, item_id):
+    item = get_object_or_404(RecycleBin, id=item_id)
+    _restore_one(request, item)
+    return _back(request)
+
+
+@login_required
+@admin_only
+@require_POST
+def permanent_delete(request, item_id):
+    item = get_object_or_404(RecycleBin, id=item_id)
+    label = f"{item.object_type} '{item.display_name}'"
+    item.delete()
+    _log_purge([label])
+    messages.success(request, f"Permanently deleted {label}.")
+    return _back(request)
+
+
+@login_required
+@admin_only
+@require_POST
+def bulk_restore(request):
+    """Handles the bulk form. ``action`` = restore (default) or delete."""
+    if request.POST.get("action") == "delete":
+        return bulk_permanent_delete(request)
+
+    ids = _ids(request)
+    if not ids:
+        messages.warning(request, "Select at least one item first.")
+        return _back(request)
+
+    # Restore parents before children (e.g. a school before its students):
+    # oldest deletions first is the natural order.
+    ok = failed = 0
+    for item in RecycleBin.objects.filter(id__in=ids).order_by("deleted_at", "pk"):
+        if _restore_one(request, item):
+            ok += 1
+        else:
+            failed += 1
+    if ok and failed:
+        messages.warning(request, f"Restored {ok} item(s); {failed} could not be restored.")
+    return _back(request)
+
+
+@login_required
+@admin_only
+@require_POST
+def bulk_permanent_delete(request):
+    ids = _ids(request)
+    if not ids:
+        messages.warning(request, "Select at least one item first.")
+        return _back(request)
+    qs = RecycleBin.objects.filter(id__in=ids)
+    labels = [f"{t} #{i}" for t, i in qs.values_list("object_type", "object_id")]
+    count, _ = qs.delete()
+    _log_purge(labels)
+    messages.success(request, f"Permanently deleted {count} item(s).")
+    return _back(request)
+
+
+@login_required
+@admin_only
+@require_POST
+def empty_bin(request):
+    count, _ = RecycleBin.objects.all().delete()
+    _log_purge([f"{count} item(s) - bin emptied"])
+    messages.success(request, f"Recycle bin emptied ({count} item(s) permanently deleted).")
+    return redirect("recycle_bin_dashboard")
+
+
+@login_required
+@admin_only
+@require_POST
+def cleanup_expired(request):
+    count = purge_expired()
+    messages.success(request, f"Removed {count} expired item(s).")
+    return redirect("recycle_bin_dashboard")
+
+
+# Old URL names kept so existing links/bookmarks keep working.
+restore_item_simple = restore_item
+bulk_restore_simple = bulk_restore
+
+
+# ---------------------------------------------------------------------------
+# Settings + stats
+# ---------------------------------------------------------------------------
+@login_required
+@admin_only
+@require_POST
+def update_settings(request):
+    s = RecycleBinSettings.get_solo()
+    retention, ok1 = _int(request.POST.get("retention_days"), s.retention_days, 1, 365)
+    max_items, ok2 = _int(request.POST.get("max_items_per_type"), s.max_items_per_type, 10, 100000)
+    if not (ok1 and ok2):
+        messages.error(request, "Please enter whole numbers for the retention period and the item limit.")
+        return redirect("recycle_bin_dashboard")
+
+    s.retention_days = retention
+    s.max_items_per_type = max_items
+    s.enabled = "enabled" in request.POST
+    s.auto_cleanup = "auto_cleanup" in request.POST
+    s.save()
+
+    if request.POST.get("apply_to_existing"):
+        for item in RecycleBin.objects.only("pk", "deleted_at"):
+            RecycleBin.objects.filter(pk=item.pk).update(
+                expires_at=item.deleted_at + timedelta(days=retention))
+
+    if not s.enabled:
+        messages.warning(request, "Recycle bin is OFF: deleted records will now be removed permanently.")
+    messages.success(request, "Recycle bin settings saved.")
+    return redirect("recycle_bin_dashboard")
+
 
 @login_required
 @admin_only
 def get_recycle_bin_stats(request):
-    """API endpoint for recycle bin statistics"""
-    stats = RecycleBin.objects.values('object_type').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    total_count = RecycleBin.objects.count()
-    expired_count = RecycleBin.objects.filter(expires_at__lt=timezone.now()).count()
-    
+    now = timezone.now()
+    stats = list(RecycleBin.objects.values("object_type").annotate(count=Count("id")).order_by("-count"))
     return JsonResponse({
-        'stats': list(stats),
-        'total_count': total_count,
-        'expired_count': expired_count,
+        "stats": stats,
+        "total_count": RecycleBin.objects.count(),
+        "expired_count": RecycleBin.objects.filter(expires_at__lt=now).count(),
     })
+
+
+HIDDEN_FIELDS = {"password", "created_by", "updated_by"}
+
+
+def _readable_fields(item):
+    """Turn the stored root fields into (label, value) pairs a person can read:
+    linked records by name, dates formatted, choices by their label."""
+    from django.apps import apps
+    from django.utils.dateparse import parse_date, parse_datetime
+    from django.utils.formats import date_format
+
+    data = item.original_data or {}
+    try:
+        model = apps.get_model(item.model_label) if item.model_label else \
+            apps.get_model("mainApp", item.object_type)
+    except LookupError:
+        model = None
+    fields = {f.name: f for f in model._meta.concrete_fields} if model else {}
+
+    out = []
+    for key, value in data.items():
+        name = key[:-3] if key.endswith("_id") and key[:-3] in fields else key
+        if name in HIDDEN_FIELDS or value in (None, "", [], {}):
+            continue
+        f = fields.get(name)
+        label = str(f.verbose_name) if f is not None else name.replace("_", " ")
+        shown = value
+        try:
+            if f is not None and f.is_relation:
+                target = f.remote_field.model._base_manager.filter(
+                    **{f.target_field.attname: value}).first()
+                shown = str(target) if target else f"#{value} (deleted)"
+            elif f is not None and f.choices:
+                shown = dict(f.flatchoices).get(value, value)
+            elif f is not None and f.get_internal_type() == "DateTimeField":
+                dt = parse_datetime(str(value))
+                shown = date_format(timezone.localtime(dt), "d M Y, H:i") if dt else value
+            elif f is not None and f.get_internal_type() == "DateField":
+                d = parse_date(str(value))
+                shown = date_format(d, "d M Y") if d else value
+            elif isinstance(value, bool):
+                shown = "Yes" if value else "No"
+        except Exception:
+            shown = value
+        out.append((label[:1].upper() + label[1:], shown))
+    return out
+
+
+def _log_purge(labels):
+    try:
+        from mainApp.audit import log_action
+        log_action("DELETE", None, model_name="RecycleBin",
+                   object_repr=f"Permanently deleted from recycle bin: {', '.join(labels)}"[:255])
+    except Exception:
+        pass

@@ -327,8 +327,31 @@ def compute_uace_subject_result(
     raw_band_points = 0
     points = 0
 
+    exam_percentage = None
+    aoi_average = None
+
     if attempted_papers > 0 and total_max_marks > 0:
         final_percentage = _safe_percent(total_marks, total_max_marks)
+        exam_percentage = final_percentage
+
+        # Continuous assessment from Activities of Integration (competency scores).
+        ca_weight = _D(getattr(scale, "ca_weight_percent", 0) if scale else 0)
+        if ca_weight > 0:
+            from mainApp.grading.grading_uce import aoi_average_for_student
+
+            aoi_average = aoi_average_for_student(
+                school=school,
+                academic_year_id=academic_year_id,
+                term_id=term_id,
+                class_ref_id=class_ref_id,
+                stream_id=stream_id,
+                student_id=student_id,
+                subject_id=subject.id,
+            )
+            if aoi_average is not None:
+                aoi_pct = (aoi_average / Decimal("3")) * Decimal("100")
+                w = ca_weight / Decimal("100")
+                final_percentage = _q2(exam_percentage * (Decimal("1") - w) + aoi_pct * w)
 
         grade_data = new_uace_grade_for_percentage(
             scale=scale,
@@ -365,6 +388,8 @@ def compute_uace_subject_result(
         "total_marks": float(_q0(total_marks)),
         "total_max_marks": float(_q0(total_max_marks)),
         "final_percentage": float(final_percentage) if final_percentage is not None else None,
+        "exam_percentage": float(exam_percentage) if exam_percentage is not None else None,
+        "aoi_average": float(aoi_average) if aoi_average is not None else None,
 
         "final_grade": final_grade,
         "grade": final_grade,

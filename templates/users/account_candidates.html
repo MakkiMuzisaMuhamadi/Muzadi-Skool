@@ -3,138 +3,131 @@
 
 {% block content %}
 <div class="page-header mb-3">
-  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap" style="gap:.5rem;">
     <div>
-      <h3 class="page-title mb-0">
-        <i class="fas fa-user-cog"></i> Generate Student Accounts
-      </h3>
-      <small class="text-muted">Select only students who should receive login accounts</small>
+      <h3 class="page-title mb-0"><i class="fas fa-user-cog"></i> {{ title }}</h3>
+      <small class="text-muted">Create login accounts for {% if account_type == 'PARENT' %}parents and guardians{% else %}students{% endif %} who do not have one yet.</small>
     </div>
-    <div class="mt-2 mt-md-0">
-      <a href="{% url 'user_management' %}" class="btn btn-light btn-sm">
-        <i class="fas fa-arrow-left mr-1"></i> Back to Users
-      </a>
-    </div>
+    <a href="{% url 'user_management' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back to Users</a>
   </div>
 </div>
 
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <a class="nav-link {% if account_type == 'STUDENT' %}active{% endif %}" href="{% url 'account_candidates' %}">
+      <i class="fas fa-user-graduate mr-1"></i> Students
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if account_type == 'PARENT' %}active{% endif %}" href="{% url 'account_candidates' %}?type=parent">
+      <i class="fas fa-user-friends mr-1"></i> Parents
+    </a>
+  </li>
+</ul>
+
+{% if recent_jobs %}
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <strong class="d-block mb-2"><i class="fas fa-print mr-1"></i> Login slips for accounts you generated recently</strong>
+    {% for job in recent_jobs %}
+      <div class="small mb-1">
+        {{ job.created_at|date:"d M Y H:i" }} · {{ job.get_account_type_display }} · {{ job.created_count }} created —
+        <a href="{% url 'account_login_slips' job.id %}" target="_blank">Print slips</a> ·
+        <a href="{% url 'account_login_slips' job.id %}?format=csv">Download Excel/CSV</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <form method="post" action="{% url 'generate_selected_student_accounts' %}" id="generateAccountsForm">
   {% csrf_token %}
+  <input type="hidden" name="account_type" value="{{ account_type }}">
   <input type="hidden" name="selection_mode" id="selectionMode" value="selected">
   <input type="hidden" name="search_value" id="searchValueInput" value="">
+  <input type="hidden" name="class_id" id="classIdInput" value="">
   <div id="selectedInputsContainer"></div>
 
   <div class="card">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <div>
-          <h5 class="mb-1">Students Without Accounts</h5>
-          <small class="text-muted">
-            Default password: <strong>{{ default_password }}</strong>
-          </small><br>
-          <small class="text-muted">
-            Selected: <strong id="selectedCount">0</strong>
-          </small><br>
-          <small class="text-muted d-none" id="filteredModeNote">
-            Mode: <strong>All filtered results</strong>
-          </small>
+      <div class="row mb-3">
+        <div class="col-lg-7">
+          <div class="alert alert-info mb-2">
+            <strong>How sign-in works:</strong>
+            {% if account_type == 'PARENT' %}
+              parents sign in on the <em>Parents</em> tab with their <strong>phone number</strong> or <strong>Parent ID</strong>
+              and the starting password <code>{{ default_password }}</code>, then choose their own password.
+            {% else %}
+              students sign in with their username and the starting password <code>{{ default_password }}</code>.
+              On the first sign-in they confirm their admission number and choose their own password.
+            {% endif %}
+          </div>
         </div>
-
-        <div class="mt-2 mt-md-0 d-flex flex-wrap" style="gap:.5rem;">
-          <button type="button" class="btn btn-sm btn-outline-primary action-btn" id="selectPageBtn">
-            <i class="fas fa-check-square mr-1"></i> Select This Page
-          </button>
-
-          <button type="button" class="btn btn-sm btn-outline-warning action-btn" id="selectFilteredBtn">
-            <i class="fas fa-layer-group mr-1"></i> Select All Filtered
-          </button>
-
-          <button type="button" class="btn btn-sm btn-outline-danger action-btn" id="clearAllBtn">
-            <i class="fas fa-square mr-1"></i> Clear All Selections
-          </button>
-
-          <button type="submit" class="btn btn-success btn-sm action-btn" id="generateTopBtn">
-            <i class="fas fa-user-plus mr-1"></i> Generate Accounts
-          </button>
+        <div class="col-lg-5">
+          {% if account_type == 'STUDENT' %}
+          <label class="small text-muted mb-1" for="usernameFormat">Usernames</label>
+          <select name="username_format" id="usernameFormat" class="form-control form-control-sm mb-2">
+            {% for value, name in username_formats %}<option value="{{ value }}">{{ name }}</option>{% endfor %}
+          </select>
+          <label class="small text-muted mb-1" for="classFilter">Class</label>
+          <select id="classFilter" class="form-control form-control-sm">
+            <option value="">All classes</option>
+            {% for c in classes %}<option value="{{ c.id }}">{{ c.name }} ({{ c.level.code }})</option>{% endfor %}
+          </select>
+          {% else %}
+          <p class="small text-muted mb-0">Parent usernames are their Parent ID (for example PAR100001), so every parent is unique even when two share a phone.</p>
+          {% endif %}
         </div>
       </div>
 
-      <div class="alert alert-info py-2 mb-3">
-        <strong>Tip:</strong> “Select This Page” selects only visible rows. “Select All Filtered” generates accounts for every student matching the current search/filter in the database.
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:.5rem;">
+        <div class="small text-muted">
+          Selected: <strong id="selectedCount">0</strong>
+          <span class="d-none" id="filteredModeNote"> · Mode: <strong>everyone matching the search / class</strong></span>
+        </div>
+        <div class="d-flex flex-wrap" style="gap:.5rem;">
+          <button type="button" class="btn btn-sm btn-outline-primary action-btn" id="selectPageBtn"><i class="fas fa-check-square mr-1"></i> Select this page</button>
+          <button type="button" class="btn btn-sm btn-outline-warning action-btn" id="selectFilteredBtn"><i class="fas fa-layer-group mr-1"></i> Select all matching</button>
+          <button type="button" class="btn btn-sm btn-outline-danger action-btn" id="clearAllBtn"><i class="far fa-square mr-1"></i> Clear</button>
+          <button type="submit" class="btn btn-success btn-sm action-btn"><i class="fas fa-user-plus mr-1"></i> Generate accounts</button>
+        </div>
       </div>
+
+      <div id="resultBox" class="alert d-none" role="status" aria-live="polite"></div>
 
       <div class="table-responsive">
-        <table id="accountCandidatesTable" class="table table-striped table-bordered w-100">
+        <table id="candidatesTable" class="table table-striped table-bordered w-100">
           <thead>
             <tr>
-              <th style="width:60px;" class="text-center">
-                <input type="checkbox" id="selectPageHeader">
-              </th>
-              <th>Student</th>
-              <th>Admission No.</th>
-              <th>School</th>
-              <th>Level</th>
-              <th>Class</th>
-              <th>Stream</th>
-              <th>Suggested Username</th>
+              <th style="width:50px;" class="text-center"><input type="checkbox" id="selectPageHeader" aria-label="Select this page"></th>
+              {% if account_type == 'PARENT' %}
+              <th>Parent / guardian</th><th>Parent ID</th><th>Phone</th><th>School</th><th>Children</th><th>Username</th>
+              {% else %}
+              <th>Student</th><th>Admission no.</th><th>School</th><th>Level</th><th>Class</th><th>Stream</th>
+              <th>Username <small class="text-muted">(a number is added if taken)</small></th>
+              {% endif %}
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-
-      <div class="mt-3 text-right">
-        <button type="submit" class="btn btn-success action-btn" id="generateBottomBtn">
-          <i class="fas fa-user-plus mr-1"></i> Generate Accounts
-        </button>
-      </div>
     </div>
   </div>
 </form>
 
-<!-- Processing Overlay -->
-<div id="processingOverlay" style="
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  z-index:2000;
-  align-items:center;
-  justify-content:center;
-">
+<!-- Processing overlay -->
+<div id="processingOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2000; align-items:center; justify-content:center;">
   <div class="card shadow" style="max-width:520px; width:92%; border-radius:14px;">
     <div class="card-body text-center py-4">
-      <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status">
-        <span class="sr-only">Loading...</span>
-      </div>
-
-      <h5 class="mb-2">Processing account generation</h5>
-
-      <p class="text-muted mb-3" id="processingMessage">
-        Please wait while the system creates student accounts.
-      </p>
-
+      <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status"><span class="sr-only">Loading...</span></div>
+      <h5 class="mb-2">Creating accounts</h5>
+      <p class="text-muted mb-3" id="processingMessage">Please wait…</p>
       <div class="progress mb-3" style="height: 20px;">
-        <div
-          id="progressBar"
-          class="progress-bar progress-bar-striped progress-bar-animated"
-          role="progressbar"
-          style="width: 0%;"
-          aria-valuenow="0"
-          aria-valuemin="0"
-          aria-valuemax="100"
-        >
-          0%
-        </div>
+        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+             style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
       </div>
-
-      <div class="small text-muted mb-2" id="progressStats">
-        Processed: 0 / 0 | Created: 0 | Skipped: 0
-      </div>
-
-      <small class="text-danger">
-        Do not refresh, close the tab, or click the button again.
-      </small>
+      <div class="small text-muted mb-2" id="progressStats">Processed: 0 / 0 | Created: 0 | Skipped: 0</div>
+      <small class="text-danger">Please keep this page open.</small>
     </div>
   </div>
 </div>
@@ -143,320 +136,157 @@
 {% block extrajs %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const isParent = "{{ account_type }}" === "PARENT";
   const selectedIds = new Set();
-  const selectedCount = document.getElementById("selectedCount");
-  const selectedInputsContainer = document.getElementById("selectedInputsContainer");
-  const form = document.getElementById("generateAccountsForm");
-  const clearAllBtn = document.getElementById("clearAllBtn");
-  const selectPageBtn = document.getElementById("selectPageBtn");
-  const selectFilteredBtn = document.getElementById("selectFilteredBtn");
-  const selectPageHeader = document.getElementById("selectPageHeader");
-  const selectionMode = document.getElementById("selectionMode");
-  const searchValueInput = document.getElementById("searchValueInput");
-  const filteredModeNote = document.getElementById("filteredModeNote");
-  const processingOverlay = document.getElementById("processingOverlay");
-  const processingMessage = document.getElementById("processingMessage");
-  const progressBar = document.getElementById("progressBar");
-  const progressStats = document.getElementById("progressStats");
+  const $ = window.jQuery;
+  const el = id => document.getElementById(id);
+  const form = el("generateAccountsForm");
 
-  function getCsrfToken() {
-    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    return input ? input.value : "";
+  function showResult(kind, html) {
+    const box = el("resultBox");
+    box.className = "alert alert-" + kind;
+    box.innerHTML = html;
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  function setProcessingState(on, messageText = "") {
-    const buttons = document.querySelectorAll(".action-btn");
-    const inputs = document.querySelectorAll(".student-check, #selectPageHeader");
-
-    buttons.forEach(btn => {
-      btn.disabled = on;
-      if (on) {
-        btn.dataset.originalHtml = btn.innerHTML;
-      } else if (btn.dataset.originalHtml) {
-        btn.innerHTML = btn.dataset.originalHtml;
-      }
-    });
-
-    inputs.forEach(input => {
-      input.disabled = on;
-    });
-
-    if (on) {
-      if (processingMessage && messageText) {
-        processingMessage.textContent = messageText;
-      }
-      processingOverlay.style.display = "flex";
-
-      const topBtn = document.getElementById("generateTopBtn");
-      const bottomBtn = document.getElementById("generateBottomBtn");
-
-      if (topBtn) {
-        topBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
-      }
-      if (bottomBtn) {
-        bottomBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
-      }
-    } else {
-      processingOverlay.style.display = "none";
-    }
+  function setProcessing(on, text) {
+    document.querySelectorAll(".action-btn, .row-check, #selectPageHeader").forEach(b => b.disabled = on);
+    el("processingOverlay").style.display = on ? "flex" : "none";
+    if (text) el("processingMessage").textContent = text;
   }
 
-  function updateProgressDisplay(statusData) {
-    const msg = statusData.message || "Processing...";
-    const processed = statusData.processed_count || 0;
-    const total = statusData.total_target || 0;
-    const created = statusData.created_count || 0;
-    const skipped = statusData.skipped_count || 0;
-    const percent = statusData.percent || 0;
-
-    if (processingMessage) {
-      processingMessage.innerHTML = msg;
-    }
-
-    if (progressBar) {
-      progressBar.style.width = percent + "%";
-      progressBar.setAttribute("aria-valuenow", percent);
-      progressBar.textContent = percent + "%";
-    }
-
-    if (progressStats) {
-      progressStats.textContent = `Processed: ${processed} / ${total} | Created: ${created} | Skipped: ${skipped}`;
-    }
+  function updateProgress(d) {
+    const p = d.percent || 0;
+    el("processingMessage").textContent = d.message || "Processing...";
+    el("progressBar").style.width = p + "%";
+    el("progressBar").setAttribute("aria-valuenow", p);
+    el("progressBar").textContent = p + "%";
+    el("progressStats").textContent =
+      `Processed: ${d.processed_count || 0} / ${d.total_target || 0} | Created: ${d.created_count || 0} | Skipped: ${d.skipped_count || 0}`;
   }
 
-  function pollJobStatus(jobId) {
-    const interval = setInterval(function () {
-      fetch(`/users/generate-selected-student-accounts/status/${jobId}/`, {
-        method: "GET",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest"
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        updateProgressDisplay(data);
-
-        if (data.status === "SUCCESS") {
-          clearInterval(interval);
-          alert(`Completed.\nCreated: ${data.created_count}\nSkipped: ${data.skipped_count}`);
-          window.location.reload();
-        } else if (data.status === "FAILED") {
-          clearInterval(interval);
-          setProcessingState(false);
-          alert("Generation failed: " + (data.message || "Unknown error"));
-        }
-      })
-      .catch(err => {
-        console.error("Status polling failed:", err);
-      });
+  function poll(jobId) {
+    const timer = setInterval(function () {
+      fetch(`/users/generate-selected-student-accounts/status/${jobId}/`, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then(r => r.json())
+        .then(d => {
+          updateProgress(d);
+          if (d.status === "SUCCESS") {
+            clearInterval(timer);
+            setProcessing(false);
+            selectedIds.clear(); refreshHidden(); table.ajax.reload(null, false);
+            let html = `<strong>Done.</strong> Created ${d.created_count}, skipped ${d.skipped_count}.`;
+            if (d.slips_url) {
+              html += ` <a class="btn btn-sm btn-primary ml-2" target="_blank" href="${d.slips_url}"><i class="fas fa-print mr-1"></i>Print login slips</a>`
+                    + ` <a class="btn btn-sm btn-outline-primary ml-1" href="${d.slips_url}?format=csv"><i class="fas fa-file-csv mr-1"></i>Download CSV</a>`;
+            }
+            if (d.skipped_count) html += `<div class="small mt-1">Skipped rows usually already had an account.</div>`;
+            showResult("success", html);
+          } else if (d.status === "FAILED") {
+            clearInterval(timer);
+            setProcessing(false);
+            showResult("danger", "<strong>Generation failed.</strong> " + $("<div>").text(d.message || "Unknown error").html());
+          }
+        })
+        .catch(err => console.error("Status polling failed:", err));
     }, 2000);
   }
 
-  function refreshHiddenInputs() {
-    selectedInputsContainer.innerHTML = "";
-
-    if (selectionMode.value === "selected") {
-      selectedIds.forEach(function (id) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "student_ids";
-        input.value = id;
-        selectedInputsContainer.appendChild(input);
+  function refreshHidden() {
+    const box = el("selectedInputsContainer");
+    box.innerHTML = "";
+    if (el("selectionMode").value === "selected") {
+      selectedIds.forEach(id => {
+        const i = document.createElement("input");
+        i.type = "hidden"; i.name = "ids"; i.value = id; box.appendChild(i);
       });
-      selectedCount.textContent = selectedIds.size;
-      filteredModeNote.classList.add("d-none");
+      el("selectedCount").textContent = selectedIds.size;
+      el("filteredModeNote").classList.add("d-none");
     } else {
-      selectedCount.textContent = "ALL FILTERED";
-      filteredModeNote.classList.remove("d-none");
+      el("selectedCount").textContent = "everyone matching";
+      el("filteredModeNote").classList.remove("d-none");
     }
-
-    updateHeaderCheckbox();
+    const boxes = Array.from(document.querySelectorAll(".row-check"));
+    const n = boxes.filter(b => b.checked).length;
+    el("selectPageHeader").checked = boxes.length > 0 && n === boxes.length;
+    el("selectPageHeader").indeterminate = n > 0 && n < boxes.length;
   }
 
-  function getCurrentPageCheckboxes() {
-    return Array.from(document.querySelectorAll(".student-check"));
-  }
+  const columns = isParent
+    ? ['check', 'name', 'code', 'phone', 'school', 'extra', 'username']
+    : ['check', 'name', 'code', 'school', 'level', 'class', 'stream', 'username'];
 
-  function updateHeaderCheckbox() {
-    if (!selectPageHeader) return;
-
-    const checkboxes = getCurrentPageCheckboxes();
-    if (checkboxes.length === 0) {
-      selectPageHeader.checked = false;
-      selectPageHeader.indeterminate = false;
-      return;
-    }
-
-    const checkedCount = checkboxes.filter(cb => cb.checked).length;
-    selectPageHeader.checked = checkedCount === checkboxes.length;
-    selectPageHeader.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
-  }
-
-  if ($.fn.DataTable.isDataTable('#accountCandidatesTable')) {
-    $('#accountCandidatesTable').DataTable().destroy();
-  }
-
-  const table = $('#accountCandidatesTable').DataTable({
-    processing: true,
-    serverSide: true,
-    deferRender: true,
-    searchDelay: 500,
-    pageLength: 100,
+  const table = $('#candidatesTable').DataTable({
+    processing: true, serverSide: true, deferRender: true, searchDelay: 500, pageLength: 100,
     order: [[1, 'asc']],
     ajax: {
       url: "{% url 'account_candidates_data' %}",
-      type: "GET",
-      dataSrc: function (json) {
-        return json.data || [];
+      data: function (d) {
+        d.type = isParent ? "parent" : "student";
+        d.class_id = el("classFilter") ? el("classFilter").value : "";
+        d.username_format = el("usernameFormat") ? el("usernameFormat").value : "";
       },
-      error: function (xhr) {
-        console.error("Candidates AJAX error:", xhr.responseText);
-      }
+      dataSrc: json => json.data || [],
+      error: xhr => console.error("Candidates AJAX error:", xhr.status)
     },
-    columns: [
-      { data: 'check', orderable: false, searchable: false, defaultContent: '' },
-      { data: 'student', defaultContent: '-' },
-      { data: 'admission_number', defaultContent: '-' },
-      { data: 'school', defaultContent: '-' },
-      { data: 'level', defaultContent: '-' },
-      { data: 'current_class', defaultContent: '-' },
-      { data: 'stream', defaultContent: '-' },
-      { data: 'suggested_username', orderable: false, searchable: false, defaultContent: '-' }
-    ],
-    createdRow: function (row, data) {
-      $('td:eq(0)', row).html(data.check || '');
-      $('td:eq(7)', row).html(data.suggested_username || '-');
-    },
+    columns: columns.map((c, i) => ({ data: c, orderable: i > 0 && c !== 'username' && c !== 'extra', defaultContent: '-' })),
     drawCallback: function () {
-      document.querySelectorAll(".student-check").forEach(function (cb) {
-        if (selectedIds.has(cb.value)) {
-          cb.checked = true;
-        }
-      });
-      updateHeaderCheckbox();
+      document.querySelectorAll(".row-check").forEach(cb => { cb.checked = selectedIds.has(cb.value); });
+      refreshHidden();
     }
   });
+  ["classFilter", "usernameFormat"].forEach(id => el(id) && el(id).addEventListener("change", () => table.ajax.reload()));
 
-  document.addEventListener("change", function (e) {
-    if (e.target.classList.contains("student-check")) {
-      selectionMode.value = "selected";
-      const id = e.target.value;
-      if (e.target.checked) {
-        selectedIds.add(id);
-      } else {
-        selectedIds.delete(id);
-      }
-      refreshHiddenInputs();
-    }
+  document.addEventListener("change", e => {
+    if (!e.target.classList.contains("row-check")) return;
+    el("selectionMode").value = "selected";
+    e.target.checked ? selectedIds.add(e.target.value) : selectedIds.delete(e.target.value);
+    refreshHidden();
+  });
+  el("selectPageBtn").addEventListener("click", () => {
+    el("selectionMode").value = "selected";
+    document.querySelectorAll(".row-check").forEach(cb => { cb.checked = true; selectedIds.add(cb.value); });
+    refreshHidden();
+  });
+  el("selectPageHeader").addEventListener("change", function () {
+    el("selectionMode").value = "selected";
+    document.querySelectorAll(".row-check").forEach(cb => {
+      cb.checked = this.checked; this.checked ? selectedIds.add(cb.value) : selectedIds.delete(cb.value);
+    });
+    refreshHidden();
+  });
+  el("selectFilteredBtn").addEventListener("click", () => { el("selectionMode").value = "filtered"; refreshHidden(); });
+  el("clearAllBtn").addEventListener("click", () => {
+    el("selectionMode").value = "selected"; selectedIds.clear();
+    document.querySelectorAll(".row-check").forEach(cb => { cb.checked = false; });
+    refreshHidden();
   });
 
-  if (selectPageBtn) {
-    selectPageBtn.addEventListener("click", function () {
-      selectionMode.value = "selected";
-      getCurrentPageCheckboxes().forEach(function (cb) {
-        cb.checked = true;
-        selectedIds.add(cb.value);
-      });
-      refreshHiddenInputs();
-    });
-  }
-
-  if (selectPageHeader) {
-    selectPageHeader.addEventListener("change", function () {
-      selectionMode.value = "selected";
-      const shouldCheck = selectPageHeader.checked;
-      getCurrentPageCheckboxes().forEach(function (cb) {
-        cb.checked = shouldCheck;
-        if (shouldCheck) {
-          selectedIds.add(cb.value);
-        } else {
-          selectedIds.delete(cb.value);
-        }
-      });
-      refreshHiddenInputs();
-    });
-  }
-
-  if (selectFilteredBtn) {
-    selectFilteredBtn.addEventListener("click", function () {
-      selectionMode.value = "filtered";
-      searchValueInput.value = table.search();
-      refreshHiddenInputs();
-    });
-  }
-
-  if (clearAllBtn) {
-    clearAllBtn.addEventListener("click", function () {
-      selectionMode.value = "selected";
-      selectedIds.clear();
-      searchValueInput.value = "";
-      document.querySelectorAll(".student-check").forEach(function (cb) {
-        cb.checked = false;
-      });
-      refreshHiddenInputs();
-    });
-  }
-
-  if (form) {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      if (selectionMode.value !== "filtered" && selectedIds.size === 0) {
-        alert("Please select at least one student or use Select All Filtered.");
-        return;
-      }
-
-      searchValueInput.value = table.search();
-      refreshHiddenInputs();
-
-      const formData = new FormData(form);
-
-      setProcessingState(true, "Submitting generation job...");
-      updateProgressDisplay({
-        message: "Submitting generation job...",
-        processed_count: 0,
-        total_target: 0,
-        created_count: 0,
-        skipped_count: 0,
-        percent: 0
-      });
-
-      fetch(form.action, {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": getCsrfToken(),
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        body: formData
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (el("selectionMode").value !== "filtered" && selectedIds.size === 0) {
+      showResult("warning", "Select at least one row, or use <strong>Select all matching</strong>.");
+      return;
+    }
+    el("searchValueInput").value = table.search();
+    el("classIdInput").value = el("classFilter") ? el("classFilter").value : "";
+    refreshHidden();
+    setProcessing(true, "Starting…");
+    updateProgress({ message: "Starting…" });
+    fetch(form.action, {
+      method: "POST",
+      headers: { "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value, "X-Requested-With": "XMLHttpRequest" },
+      body: new FormData(form)
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { setProcessing(false); showResult("danger", $("<div>").text(d.message || "Could not start.").html()); return; }
+        poll(d.job_id);
       })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.ok) {
-          setProcessingState(false);
-          alert(data.message || "Failed to start job.");
-          return;
-        }
+      .catch(() => { setProcessing(false); showResult("danger", "Could not start the job. Check your connection and try again."); });
+  });
 
-        setProcessingState(true, "Background job started. Preparing progress updates...");
-        updateProgressDisplay({
-          message: "Background job started. Preparing progress updates...",
-          processed_count: 0,
-          total_target: 0,
-          created_count: 0,
-          skipped_count: 0,
-          percent: 0
-        });
-        pollJobStatus(data.job_id);
-      })
-      .catch(err => {
-        console.error(err);
-        setProcessingState(false);
-        alert("Failed to start generation job.");
-      });
-    });
-  }
-
-  refreshHiddenInputs();
+  refreshHidden();
 });
 </script>
 {% endblock %}

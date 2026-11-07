@@ -1,3 +1,4 @@
+from mainApp.academic_period import apply_year_term_defaults
 from django import forms
 
 from mainApp.models.calendar import AcademicYear
@@ -27,6 +28,7 @@ class PromotionGenerateForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.fields["academic_year"].queryset = AcademicYear.objects.all().order_by("-start_date")
+        apply_year_term_defaults(self, school)
 
         try:
             self.fields["level"].queryset = school.level.all().order_by("order", "name")
@@ -41,6 +43,7 @@ class PromotionGenerateForm(forms.Form):
 class ReadmissionForm(forms.Form):
     to_level = forms.ModelChoiceField(
         queryset=None,
+        required=False,
         widget=forms.Select(attrs={"class": BOOTSTRAP_SELECT, "id": "id_to_level"}),
     )
     to_class = forms.ModelChoiceField(
@@ -67,10 +70,9 @@ class ReadmissionForm(forms.Form):
         ).select_related("level").order_by("level__order", "name")
 
         to_class = None
-        if self.is_bound:
-            class_id = self.data.get("to_class")
-            if class_id and str(class_id).isdigit():
-                to_class = Class.objects.filter(pk=class_id, school=school).first()
+        class_id = self.data.get("to_class") if self.is_bound else self.initial.get("to_class")
+        if class_id and str(class_id).isdigit():
+            to_class = Class.objects.filter(pk=class_id, school=school).first()
 
         if to_class:
             self.fields["to_stream"].queryset = Stream.objects.filter(
@@ -78,3 +80,11 @@ class ReadmissionForm(forms.Form):
             ).order_by("name")
         else:
             self.fields["to_stream"].queryset = Stream.objects.none()
+
+    def clean(self):
+        cleaned = super().clean()
+        to_level = cleaned.get("to_level")
+        to_class = cleaned.get("to_class")
+        if to_level and to_class and to_class.level_id != to_level.id:
+            self.add_error("to_class", "This class is not in the selected level.")
+        return cleaned

@@ -4,6 +4,7 @@ level syncing, year roll-over and workload.
 
 Views stay thin and call these functions.
 """
+from mainApp.tenancy import scope
 from collections import OrderedDict, defaultdict
 
 from django.conf import settings
@@ -239,6 +240,10 @@ def reset_teacher_password(teacher):
     user = teacher.user
     user.set_password(password)
     user.save(update_fields=["password"])
+    profile = getattr(user, "profile", None)
+    if profile is not None:
+        profile.must_change_password = True
+        profile.save(update_fields=["must_change_password"])
     return password
 
 
@@ -260,12 +265,13 @@ def send_teacher_credentials(teacher, username, password, *, login_url="", schoo
 
     if via_sms and teacher.contact1:
         try:
-            from mainApp.services.sms_service import (
+            from mainApp.sms_service import (
                 AfricaTalkingSMS, is_valid_ug_number, normalize_ug_number,
             )
             number = normalize_ug_number(teacher.contact1)
             if is_valid_ug_number(number):
-                AfricaTalkingSMS().send_one(text, number)
+                profile = getattr(teacher.user, "profile", None)
+                AfricaTalkingSMS(school=getattr(profile, "school", None)).send_one(text, number)
                 result["sms"] = "sent"
             else:
                 result["sms"] = "failed: phone number is not a valid Ugandan mobile number"
@@ -304,7 +310,7 @@ def copy_year_allocations(from_year, to_year, *, include_class_teachers=True, sk
              "class_teachers_created": 0, "class_teachers_skipped": 0}
 
     source = (
-        TeacherTeachingAllocation.all_years.filter(academic_year=from_year)
+        scope(TeacherTeachingAllocation.all_years.filter(academic_year=from_year), "class_ref__school")
         .select_related("teacher").prefetch_related("papers")
     )
     if skip_inactive:
@@ -322,7 +328,7 @@ def copy_year_allocations(from_year, to_year, *, include_class_teachers=True, sk
             stats["allocations_skipped"] += 1
 
     if include_class_teachers:
-        ct_source = ClassTeacherAssignment.all_years.filter(academic_year=from_year)
+        ct_source = scope(ClassTeacherAssignment.all_years.filter(academic_year=from_year), "class_ref__school")
         if skip_inactive:
             ct_source = ct_source.filter(teacher__status=StaffStatus.ACTIVE)
         for c in ct_source:
@@ -332,7 +338,7 @@ def copy_year_allocations(from_year, to_year, *, include_class_teachers=True, sk
             )
             stats["class_teachers_created" if created else "class_teachers_skipped"] += 1
 
-    for t in Teacher.objects.filter(allocations__academic_year=to_year).distinct():
+    for t in scope(Teacher.objects.filter(allocations__academic_year=to_year), "user__profile__school").distinct():
         sync_teacher_levels(t)
 
     return stats
@@ -367,18 +373,18 @@ def workload_report(academic_year=None):
     """
     academic_year = academic_year or current_academic_year()
     allocs = (
-        TeacherTeachingAllocation.all_years.filter(academic_year=academic_year)
+        scope(TeacherTeachingAllocation.all_years.filter(academic_year=academic_year), "class_ref__school")
         .select_related("teacher__user", "class_ref__level", "stream", "subject")
     )
     periods = _periods_per_teacher(academic_year)
     has_timetable = bool(periods)
 
     class_teacher_of = defaultdict(list)
-    for c in ClassTeacherAssignment.all_years.filter(academic_year=academic_year).select_related("class_ref", "stream"):
+    for c in scope(ClassTeacherAssignment.all_years.filter(academic_year=academic_year), "class_ref__school").select_related("class_ref", "stream"):
         class_teacher_of[c.teacher_id].append(c.class_label)
 
     per_teacher = OrderedDict()
-    for t in Teacher.objects.active().select_related("user"):
+    for t in scope(Teacher.objects.active(), "user__profile__school").select_related("user"):
         per_teacher[t.id] = {
             "teacher": t, "allocations": 0, "classes": set(), "subjects": set(),
             "periods": periods.get(t.id, 0), "class_teacher_of": class_teacher_of.get(t.id, []),
@@ -416,7 +422,7 @@ def workload_report(academic_year=None):
         subjects_by_level[s.level_id].append(s)
 
     gaps = []
-    for cls in Class.objects.select_related("level").prefetch_related("streams").order_by("level__order", "name"):
+    for cls in scope(Class.objects.all()).select_related("level").prefetch_related("streams").order_by("level__order", "name"):
         streams = list(cls.streams.all()) or [None]
         whole_class = covered.get((cls.id, None), set())
         for stream in streams:

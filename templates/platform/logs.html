@@ -1,0 +1,69 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex flex-wrap justify-content-between align-items-center">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-bug"></i> System logs</h3>
+    <small class="text-muted">Newest first. From {{ summary.first_time|default:"-" }} to {{ summary.last_time|default:"-" }} · <code>{{ log_path }}</code></small>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="?download=1" class="btn btn-outline-secondary btn-sm"><i class="fas fa-download mr-1"></i> Download log</a>
+    <a href="{% url 'platform_dashboard' %}" class="btn btn-light btn-sm">All schools</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-4 grid-margin"><a class="card text-decoration-none" href="?level=ERROR"><div class="card-body py-3">
+    <p class="text-muted mb-1">Errors</p><h3 class="mb-0 {% if summary.errors %}text-danger{% endif %}">{{ summary.errors }}</h3></div></a></div>
+  <div class="col-4 grid-margin"><a class="card text-decoration-none" href="?level=WARNING"><div class="card-body py-3">
+    <p class="text-muted mb-1">Warnings</p><h3 class="mb-0">{{ summary.warnings }}</h3></div></a></div>
+  <div class="col-4 grid-margin"><a class="card text-decoration-none" href="?level=ERROR&cross=1"><div class="card-body py-3">
+    <p class="text-muted mb-1">Blocked cross-school</p><h3 class="mb-0 {% if summary.cross_school %}text-warning{% endif %}">{{ summary.cross_school }}</h3></div></a></div>
+</div>
+
+<form method="get" class="card mb-3"><div class="card-body py-3">
+  <div class="form-row align-items-end">
+    <div class="form-group col-md-3 mb-2">
+      <label class="small mb-1">Show</label>
+      <select name="level" class="form-control form-control-sm">
+        {% for code, label in levels %}<option value="{{ code }}" {% if code == level %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group col-md-5 mb-2">
+      <label class="small mb-1">Search</label>
+      <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="e.g. /fees/, KeyError, stmarys">
+    </div>
+    <div class="form-group col-md-2 mb-2">
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="cross" value="1" id="cross" {% if cross %}checked{% endif %}>
+      <label class="form-check-label small" for="cross">Cross-school only</label></div>
+    </div>
+    <div class="form-group col-md-2 mb-2"><button class="btn btn-primary btn-sm btn-block">Filter</button></div>
+  </div>
+</div></form>
+
+<div class="card"><div class="card-body">
+  {% for e in entries %}
+  <div class="border-bottom py-2">
+    <div class="d-flex flex-wrap align-items-center">
+      {% if e.level == "ERROR" or e.level == "CRITICAL" %}<span class="badge badge-danger mr-2">{{ e.level }}</span>
+      {% elif e.level == "WARNING" %}<span class="badge badge-warning mr-2">{{ e.level }}</span>
+      {% else %}<span class="badge badge-secondary mr-2">{{ e.level }}</span>{% endif %}
+      {% if e.is_cross_school %}<span class="badge badge-dark mr-2">cross-school</span>{% endif %}
+      <small class="text-muted mr-2">{{ e.time }}</small>
+      <small class="text-muted">{{ e.logger }}</small>
+    </div>
+    <div class="mt-1" style="word-break: break-word;">
+      {{ e.message }}
+      {% if e.error_line %}<br><strong class="text-danger">{{ e.error_line }}</strong>{% endif %}
+    </div>
+    {% if e.details %}
+    <details class="mt-1"><summary class="small text-primary" style="cursor:pointer">Full details ({{ e.details|length }} lines)</summary>
+      <pre class="small bg-light p-2 mt-1 mb-0" style="white-space: pre-wrap; max-height: 400px; overflow:auto;">{{ e.details|join:"
+" }}</pre>
+    </details>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="text-muted mb-0">Nothing to show{% if q or cross or level == "ERROR" %} for this filter{% endif %}.</p>
+  {% endfor %}
+</div></div>
+{% endblock %}

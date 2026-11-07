@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-lock"></i> Fees Hold Settings</h3>
+  <small class="text-muted">Decide whether learners and parents can see report cards while fees are unpaid.</small>
+</div>
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="custom-control custom-switch mb-3">
+            {{ form.withhold_reports_for_defaulters }}
+            <label class="custom-control-label font-weight-bold" for="{{ form.withhold_reports_for_defaulters.id_for_label }}">
+              Withhold report cards until fees are cleared
+            </label>
+            <small class="d-block text-muted">{{ form.withhold_reports_for_defaulters.help_text }}</small>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold d-block">What counts as "cleared"?</label>
+            {% for radio in form.report_hold_basis %}
+              <div class="custom-control custom-radio mb-1">
+                {{ radio.tag }}
+                <label class="custom-control-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+              </div>
+            {% endfor %}
+            <small class="text-muted d-block mt-1">
+              The clearance percentage is set in Fees &rarr; Fee Settings (currently {{ setting.clearance_percentage }}%).
+            </small>
+          </div>
+
+          <div class="form-group" style="max-width: 280px;">
+            <label class="font-weight-bold">Ignore small balances up to (UGX)</label>
+            {{ form.report_hold_allowance }}
+            <small class="text-muted">{{ form.report_hold_allowance.help_text }}</small>
+            {% for e in form.report_hold_allowance.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+
+          <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> Save</button>
+          <a href="{% url 'report_release_overrides' %}" class="btn btn-light ml-1">Allowed despite balance</a>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card bg-light">
+      <div class="card-body small">
+        <h6 class="font-weight-bold">How it works</h6>
+        <ul class="pl-3 mb-0">
+          <li>Report cards are generated as <b>drafts</b>. Learners see nothing until you <b>release</b> them (on the run page).</li>
+          <li>When the hold is on, a learner with unpaid fees sees "Withheld &ndash; balance UGX ..." instead of the report card. Parents who open the SMS link see the same.</li>
+          <li>The check is live: as soon as the fees are paid (including SchoolPay payments) the report card opens. Nothing needs to be re-generated.</li>
+          <li>To let one learner through (payment plan, bursary), use <b>Allowed despite balance</b>.</li>
+          <li>Staff can always view, download and print every report card.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

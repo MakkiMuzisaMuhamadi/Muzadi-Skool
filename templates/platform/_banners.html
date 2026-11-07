@@ -1,0 +1,29 @@
+{# Shown at the top of every page (dashboard/base.html). Context from mainApp.context_processors.platform_context #}
+{% if show_subscription_banner %}
+  {% if subscription_state == "READ_ONLY" %}
+  <div class="alert alert-danger mt-2" role="alert">
+    <i class="fas fa-lock mr-1"></i> <strong>Read-only:</strong> the subscription ended on {{ subscription.end_date|date:"j M Y" }}.
+    You can view and download, but changes are not saved until it is renewed.
+    {% if request.user.profile.role == "ADMIN" %}<a href="{% url 'subscription_status' %}" class="alert-link">Details</a>{% endif %}
+  </div>
+  {% elif subscription_state == "GRACE" %}
+  <div class="alert alert-warning mt-2" role="alert">
+    <i class="fas fa-exclamation-triangle mr-1"></i> The subscription ended on {{ subscription.end_date|date:"j M Y" }}.
+    Everything works until {{ subscription.grace_ends_on|date:"j M Y" }}, then the system becomes read-only.
+    {% if request.user.profile.role == "ADMIN" %}<a href="{% url 'subscription_status' %}" class="alert-link">Renew</a>{% endif %}
+  </div>
+  {% else %}
+  <div class="alert alert-info mt-2" role="alert">
+    <i class="fas fa-info-circle mr-1"></i>
+    {% if subscription.status == "TRIAL" %}Free trial{% else %}Subscription{% endif %} ends in
+    <strong>{{ subscription_days_left }} day{{ subscription_days_left|pluralize }}</strong> ({{ subscription.end_date|date:"j M Y" }}).
+    <a href="{% url 'subscription_status' %}" class="alert-link">Details</a>
+  </div>
+  {% endif %}
+{% endif %}
+{% if sms_low_balance is not None %}
+  <div class="alert alert-warning mt-2" role="alert">
+    <i class="fas fa-sms mr-1"></i> SMS credit is low: <strong>{{ sms_low_balance }}</strong> unit{{ sms_low_balance|pluralize }} left.
+    <a href="{% url 'school_sms_credit' %}" class="alert-link">See usage</a>
+  </div>
+{% endif %}

@@ -1,0 +1,108 @@
+{% load static %}
+<!-- Installable app (PWA): registers the service worker and shows an "Install app" bar on phones. -->
+<style>
+  .pwa-bar { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 1080; display: none;
+             align-items: center; gap: 12px; max-width: 520px; margin: 0 auto; padding: 12px 14px;
+             background: #fff; color: #1f2a44; border-radius: 14px; box-shadow: 0 8px 30px rgba(16,24,40,.22);
+             font-family: inherit; font-size: .92rem; line-height: 1.35; }
+  .pwa-bar.show { display: flex; animation: pwaUp .25s ease-out; }
+  .pwa-bar img { width: 40px; height: 40px; border-radius: 10px; flex: none; }
+  .pwa-bar .pwa-text { flex: 1; min-width: 0; }
+  .pwa-bar .pwa-text strong { display: block; font-size: .95rem; }
+  .pwa-bar .pwa-text span { color: #667085; font-size: .82rem; }
+  .pwa-bar .pwa-go { flex: none; border: 0; border-radius: 9px; background: #1e6fd9; color: #fff;
+                     font-weight: 600; padding: 9px 14px; min-height: 40px; cursor: pointer; }
+  .pwa-bar .pwa-x { flex: none; border: 0; background: none; color: #98a2b3; font-size: 1.4rem;
+                    line-height: 1; padding: 6px 4px; min-width: 32px; min-height: 40px; cursor: pointer; }
+  .pwa-bar button:focus-visible { outline: 3px solid #9cc3ff; outline-offset: 2px; }
+  @keyframes pwaUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-color-scheme: dark) {
+    .pwa-bar { background: #1a2030; color: #e6e9f2; }
+    .pwa-bar .pwa-text span { color: #a3acc2; }
+  }
+  @media print { .pwa-bar { display: none !important; } }
+</style>
+
+<div class="pwa-bar" id="pwaBar" role="dialog" aria-live="polite" aria-labelledby="pwaTitle">
+  <img src="{% static 'pwa/icons/icon-192.png' %}" alt="">
+  <div class="pwa-text">
+    <strong id="pwaTitle">Install {{ short_name|default:'the app' }}</strong>
+    <span id="pwaHint">Open it from your home screen like any other app.</span>
+  </div>
+  <button type="button" class="pwa-go" id="pwaGo">Install</button>
+  <button type="button" class="pwa-x" id="pwaClose" aria-label="Not now">&times;</button>
+</div>
+
+<script>
+(function () {
+  // 1. Service worker (needed for "Install"). Only on https or localhost.
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"
+      || location.hostname === "127.0.0.1")) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("{% url 'pwa_service_worker' %}", { scope: "/" })
+        .catch(function (e) { console.warn("[PWA] service worker not registered:", e); });
+    });
+  }
+
+  // 2. "Install app" bar
+  var bar = document.getElementById("pwaBar");
+  if (!bar) return;
+  var go = document.getElementById("pwaGo");
+  var hint = document.getElementById("pwaHint");
+  var KEY = "pwaDismissedAt", WAIT_DAYS = 7;
+  var deferred = null;
+
+  function installed() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+           || window.navigator.standalone === true;
+  }
+  function dismissedRecently() {
+    try {
+      var t = parseInt(localStorage.getItem(KEY) || "0", 10);
+      return t && (Date.now() - t) < WAIT_DAYS * 864e5;
+    } catch (e) { return false; }
+  }
+  function show() { if (!installed()) bar.classList.add("show"); }
+  function hide() { bar.classList.remove("show"); }
+
+  document.getElementById("pwaClose").addEventListener("click", function () {
+    hide();
+    try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+  });
+
+  // Android / Chrome / Edge: the browser tells us the app can be installed.
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferred = e;
+    document.querySelectorAll("[data-pwa-install]").forEach(function (el) { el.hidden = false; });
+    if (!dismissedRecently()) show();
+  });
+
+  function promptInstall() {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.finally(function () { deferred = null; hide(); });
+  }
+  go.addEventListener("click", promptInstall);
+  // Any button/link with data-pwa-install (e.g. in a menu) opens the install prompt too.
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("[data-pwa-install]");
+    if (el) { e.preventDefault(); if (deferred) promptInstall(); else show(); }
+  });
+
+  window.addEventListener("appinstalled", function () {
+    hide(); deferred = null;
+    document.querySelectorAll("[data-pwa-install]").forEach(function (el) { el.hidden = true; });
+  });
+
+  // iPhone / iPad (Safari has no install button): explain the two taps.
+  var ua = navigator.userAgent || "";
+  var isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS && !installed() && !dismissedRecently()) {
+    hint.innerHTML = 'Tap <strong>Share</strong> <i class="fas fa-share-square" aria-hidden="true"></i> '
+                   + 'then <strong>Add to Home Screen</strong>.';
+    go.style.display = "none";
+    setTimeout(show, 1500);
+  }
+})();
+</script>

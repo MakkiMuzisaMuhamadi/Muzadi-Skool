@@ -1,11 +1,12 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between">
   <div>
     <h3 class="page-title mb-0"><i class="fas fa-book-reader"></i> Term textbooks</h3>
     <small class="text-muted">Books handed out to whole classes. Open one to record end-of-term returns.</small>
   </div>
-  <a href="{% url 'inv_class_issue' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Issue to a class</a>
+  {% if request.user|can_open:"inv_class_issue" %}<a href="{% url 'inv_class_issue' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Issue to a class</a>{% endif %}
 </div>
 <div class="card"><div class="card-body">
   <div class="table-responsive"><table class="table table-striped mb-0">
@@ -13,7 +14,7 @@
     <tbody>
     {% for b in rows %}
       <tr>
-        <td><a href="{% url 'inv_batch_detail' b.pk %}">{{ b.created_at|date:"Y-m-d" }}</a></td>
+        <td>{% if request.user|can_open:"inv_batch_detail" %}<a href="{% url 'inv_batch_detail' b.pk %}">{{ b.created_at|date:"Y-m-d" }}</a>{% else %}{{ b.created_at|date:"Y-m-d" }}{% endif %}</td>
         <td>{{ b.item.name }}</td>
         <td>{{ b.class_ref }}{% if b.stream %} {{ b.stream }}{% endif %}</td>
         <td>{{ b.term|default:"—" }}</td>

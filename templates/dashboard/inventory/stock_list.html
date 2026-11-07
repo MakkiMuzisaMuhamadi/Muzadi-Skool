@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load role_tags %}
 {% load humanize %}
 {% block content %}
 <div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap" style="gap:.5rem;">
@@ -7,12 +8,12 @@
     <small class="text-muted">Counted items at each location. Total value: <strong>{{ total_value|floatformat:2|intcomma }}</strong></small>
   </div>
   <div class="d-flex flex-wrap" style="gap:.5rem;">
-    <a href="{% url 'inv_stock_op' 'receive' %}" class="btn btn-primary btn-sm">Receive</a>
-    <a href="{% url 'inv_stock_op' 'issue' %}" class="btn btn-outline-primary btn-sm">Issue</a>
-    <a href="{% url 'inv_stock_op' 'return' %}" class="btn btn-outline-primary btn-sm">Return</a>
-    <a href="{% url 'inv_stock_op' 'transfer' %}" class="btn btn-outline-secondary btn-sm">Move</a>
-    <a href="{% url 'inv_stock_op' 'adjust' %}" class="btn btn-outline-secondary btn-sm">Correct</a>
-    <a href="{% url 'inv_stock_op' 'write-off' %}" class="btn btn-outline-danger btn-sm">Write off</a>
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'receive' %}" class="btn btn-primary btn-sm">Receive</a>{% endif %}
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'issue' %}" class="btn btn-outline-primary btn-sm">Issue</a>{% endif %}
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'return' %}" class="btn btn-outline-primary btn-sm">Return</a>{% endif %}
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'transfer' %}" class="btn btn-outline-secondary btn-sm">Move</a>{% endif %}
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'adjust' %}" class="btn btn-outline-secondary btn-sm">Correct</a>{% endif %}
+    {% if request.user|can_open:"inv_stock_op" %}<a href="{% url 'inv_stock_op' 'write-off' %}" class="btn btn-outline-danger btn-sm">Write off</a>{% endif %}
   </div>
 </div>
 <div class="card"><div class="card-body">
@@ -38,7 +39,7 @@
         <td class="text-right">{{ b.avg_unit_cost|floatformat:2|intcomma }}</td>
         <td class="text-right">{{ b.value|floatformat:2|intcomma }}</td>
         <td class="text-right text-nowrap">
-          <a class="btn btn-outline-primary btn-sm" href="{% url 'inv_stock_op' 'issue' %}?item={{ b.item_id }}&location={{ b.location_id }}">Issue</a>
+          {% if request.user|can_open:"inv_stock_op" %}<a class="btn btn-outline-primary btn-sm" href="{% url 'inv_stock_op' 'issue' %}?item={{ b.item_id }}&location={{ b.location_id }}">Issue</a>{% endif %}
         </td>
       </tr>
     {% empty %}

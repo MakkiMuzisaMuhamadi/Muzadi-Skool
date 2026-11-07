@@ -1,4 +1,5 @@
 from django.contrib import messages
+from mainApp.academic_period import year_queryset
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
@@ -236,7 +237,7 @@ def uace_grading_scale_view(request, pk):
 def uace_results_preview(request):
     school = get_current_school(request)
 
-    years = AcademicYear.objects.filter(is_active=True).order_by("-year")
+    years = year_queryset(school)
     terms = Term.objects.all().order_by("order", "name")
     classes = Class.objects.filter(school=school, level__code="UACE").order_by("name")
     exam_types = ExamType.objects.filter(

@@ -1,60 +1,95 @@
 {% extends "dashboard/base.html" %}
 {% block content %}
 
-<div class="page-header mb-3 d-flex justify-content-between align-items-center">
+<style>
+  .sec-row.is-hidden td { opacity: .55; }
+  .sec-move .btn { padding: .15rem .45rem; }
+  .sec-name { font-weight: 700; }
+  .sec-help { font-size: .78rem; color: #6c757d; }
+</style>
+
+<div class="page-header mb-3 d-flex justify-content-between align-items-center flex-wrap">
   <div>
     <h3 class="page-title mb-0">
       <i class="fas fa-stream"></i> {{ title }}
     </h3>
-    <small class="text-muted">Manage section order, visibility, boxes, and page breaks</small>
+    <small class="text-muted">Tick what appears on the report card and use the arrows to set the order. Save, then preview.</small>
   </div>
-  <a href="{% url 'report_template_list' %}" class="btn btn-light btn-sm">
-    <i class="fas fa-arrow-left mr-1"></i> Back to Templates
-  </a>
+  <div class="d-flex flex-wrap mt-2 mt-md-0" style="gap:.5rem;">
+    <a href="{% url 'report_template_preview' template_obj.pk %}" target="_blank" class="btn btn-outline-success btn-sm">
+      <i class="fas fa-eye mr-1"></i> Preview PDF
+    </a>
+    <a href="{% url 'report_template_edit' template_obj.pk %}" class="btn btn-outline-info btn-sm">
+      <i class="fas fa-palette mr-1"></i> Design settings
+    </a>
+    <a href="{% url 'report_template_signatures_edit' template_obj.pk %}" class="btn btn-outline-danger btn-sm">
+      <i class="fas fa-signature mr-1"></i> Signatures
+    </a>
+    <a href="{% url 'report_template_list' %}" class="btn btn-light btn-sm">
+      <i class="fas fa-arrow-left mr-1"></i> All designs
+    </a>
+  </div>
 </div>
 
-<form method="post">
+{% if open_preview %}
+  <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap">
+    <span><i class="fas fa-check-circle mr-1"></i> Saved. Open the preview to check how the report card looks.</span>
+    <a href="{% url 'report_template_preview' template_obj.pk %}" target="_blank" class="btn btn-success btn-sm mt-2 mt-md-0">
+      <i class="fas fa-file-pdf mr-1"></i> Open preview
+    </a>
+  </div>
+{% endif %}
+
+<form method="post" id="sectionsForm">
   {% csrf_token %}
 
   <div class="card">
-    <div class="card-header">
-      <strong>Section Order and Visibility</strong>
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+      <strong>Sections on the report card ({{ template_obj.level }})</strong>
+      <button type="submit" name="action" value="reset_order" class="btn btn-light btn-sm"
+              onclick="return confirm('Put all sections back in the recommended order?');">
+        <i class="fas fa-undo mr-1"></i> Recommended order
+      </button>
     </div>
     <div class="card-body">
       <div class="table-responsive">
-        <table class="table table-bordered table-sm align-middle">
+        <table class="table table-bordered table-sm align-middle mb-0" id="sectionsTable">
           <thead class="thead-light">
             <tr>
-              <th style="min-width: 190px;">Section</th>
-              <th style="min-width: 220px;">Title Override</th>
-              <th style="width: 90px;">Visible</th>
-              <th style="width: 100px;">Order</th>
-              <th style="width: 90px;">Boxed</th>
-              <th style="width: 110px;">New Page</th>
-              <th style="min-width: 260px;">Custom Text</th>
+              <th style="width: 90px;">Order</th>
+              <th style="min-width: 200px;">Section</th>
+              <th style="width: 80px;" class="text-center">Show</th>
+              <th style="min-width: 200px;">Heading (optional)</th>
+              <th style="width: 80px;" class="text-center">Box</th>
+              <th style="width: 100px;" class="text-center">New page</th>
+              <th style="min-width: 240px;">Extra text (Custom Text section only)</th>
             </tr>
           </thead>
           <tbody>
             {% for section in sections %}
-            <tr>
-              <td>
-                <span class="badge badge-light border px-3 py-2">
-                  {{ section.get_section_key_display }}
-                </span>
+            <tr class="sec-row {% if not section.is_visible %}is-hidden{% endif %}">
+              <td class="sec-move text-nowrap">
+                <input type="hidden" name="section_order" value="{{ section.id }}">
+                <button type="button" class="btn btn-light btn-sm js-up" title="Move up"><i class="fas fa-arrow-up"></i></button>
+                <button type="button" class="btn btn-light btn-sm js-down" title="Move down"><i class="fas fa-arrow-down"></i></button>
               </td>
 
               <td>
-                <input type="text"
-                       name="section_{{ section.id }}_title"
-                       value="{{ section.title }}"
-                       class="form-control"
-                       placeholder="Optional custom title">
+                <div class="sec-name">{{ section.get_section_key_display }}</div>
+                <div class="sec-help">
+                  {% if section.section_key == "attendance" %}From the daily class register.
+                  {% elif section.section_key == "fees" %}Term fees, total balance and next term's fees.
+                  {% elif section.section_key == "conduct" %}Written by the class teacher on Learner Comments.
+                  {% elif section.section_key == "competencies" or section.section_key == "projects" or section.section_key == "generic_skills" %}New curriculum (UCE / UACE).
+                  {% elif section.section_key == "custom_text" %}Any note you type in the last column.
+                  {% endif %}
+                </div>
               </td>
 
               <td class="text-center">
                 <div class="custom-control custom-checkbox d-inline-block">
                   <input type="checkbox"
-                         class="custom-control-input"
+                         class="custom-control-input js-visible"
                          id="section_{{ section.id }}_is_visible"
                          name="section_{{ section.id }}_is_visible"
                          {% if section.is_visible %}checked{% endif %}>
@@ -63,11 +98,11 @@
               </td>
 
               <td>
-                <input type="number"
-                       min="1"
-                       name="section_{{ section.id }}_sort_order"
-                       value="{{ section.sort_order }}"
-                       class="form-control">
+                <input type="text"
+                       name="section_{{ section.id }}_title"
+                       value="{{ section.title }}"
+                       class="form-control form-control-sm"
+                       placeholder="{{ section.get_section_key_display }}">
               </td>
 
               <td class="text-center">
@@ -93,10 +128,15 @@
               </td>
 
               <td>
+                {% if section.section_key == "custom_text" %}
                 <textarea name="section_{{ section.id }}_custom_text"
                           rows="2"
-                          class="form-control"
-                          placeholder="Optional custom text">{{ section.custom_text }}</textarea>
+                          class="form-control form-control-sm"
+                          placeholder="e.g. School reopens with all requirements...">{{ section.custom_text }}</textarea>
+                {% else %}
+                <input type="hidden" name="section_{{ section.id }}_custom_text" value="{{ section.custom_text }}">
+                <span class="text-muted small">-</span>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -104,13 +144,42 @@
         </table>
       </div>
 
-      <div class="text-right mt-3">
-        <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save mr-1"></i> Save Sections
+      <div class="d-flex justify-content-end flex-wrap mt-3" style="gap:.5rem;">
+        <button type="submit" name="action" value="save" class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+        <button type="submit" name="action" value="save_preview" class="btn btn-success">
+          <i class="fas fa-eye mr-1"></i> Save &amp; preview
         </button>
       </div>
     </div>
   </div>
 </form>
+
+<script>
+(function () {
+  var tbody = document.querySelector("#sectionsTable tbody");
+  if (!tbody) return;
+
+  tbody.addEventListener("click", function (e) {
+    var up = e.target.closest(".js-up");
+    var down = e.target.closest(".js-down");
+    if (!up && !down) return;
+    var row = e.target.closest("tr");
+    if (up && row.previousElementSibling) {
+      tbody.insertBefore(row, row.previousElementSibling);
+    } else if (down && row.nextElementSibling) {
+      tbody.insertBefore(row.nextElementSibling, row);
+    }
+  });
+
+  tbody.addEventListener("change", function (e) {
+    if (e.target.classList.contains("js-visible")) {
+      e.target.closest("tr").classList.toggle("is-hidden", !e.target.checked);
+    }
+  });
+
+})();
+</script>
 
 {% endblock %}

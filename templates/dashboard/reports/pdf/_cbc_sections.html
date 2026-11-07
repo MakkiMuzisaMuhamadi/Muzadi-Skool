@@ -1,0 +1,90 @@
+{% comment %}
+  Competency-based curriculum report sections (UCE / UACE).
+  Included inside the `{% for sec in sections %}` loop of a report card.
+  with include_cbc_core=True it also renders Competencies and Projects
+  (the UCE template already has its own blocks for those).
+{% endcomment %}
+{% if include_cbc_core and sec.section_key == "competencies" and report.competencies_rows %}
+  <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">
+    <div class="section-title">{{ sec.title|default:template_data.competencies_title }}</div>
+    <table class="cbc-table">
+      <thead>
+        <tr>
+          <th style="width: 20%;">Subject</th>
+          <th style="width: 18%;">Topic</th>
+          <th style="width: 30%;">Competency</th>
+          <th style="width: 18%;">Remark</th>
+          <th style="width: 7%;">Score</th>
+          <th style="width: 7%;">Initials</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.competencies_rows %}
+          <tr>
+            <td><strong>{{ row.subject }}</strong></td>
+            <td>{{ row.topic }}</td>
+            <td>{{ row.competency_text }}</td>
+            <td>{{ row.remark }}</td>
+            <td class="cbc-center">{{ row.score }}</td>
+            <td class="cbc-center">{{ row.teacher_initials }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+{% if include_cbc_core and sec.section_key == "projects" and report.projects %}
+  <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">
+    <div class="section-title">{{ sec.title|default:template_data.projects_title }}</div>
+    <table class="cbc-table">
+      <thead>
+        <tr>
+          <th>Project Title</th>
+          <th style="width: 22%;">Subject</th>
+          <th style="width: 90px;">Mark</th>
+          <th style="width: 70px;">Grade</th>
+          <th style="width: 25%;">Remark</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in report.projects %}
+          <tr>
+            <td>{{ p.title }}</td>
+            <td>{{ p.subject|default:"Integrated" }}</td>
+            <td class="cbc-center">{{ p.mark }}{% if p.mark != "" and p.max_mark %} / {{ p.max_mark|floatformat:"-1" }}{% endif %}</td>
+            <td class="cbc-center">{{ p.grade }}</td>
+            <td>{{ p.remark }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+{% if sec.section_key == "generic_skills" and report.generic_skills %}
+  <div class="plain-section {% if sec.is_boxed %}boxed{% endif %}">
+    <div class="section-title">{{ sec.title|default:"Generic Skills & Values" }}</div>
+    <table class="cbc-table">
+      <thead>
+        <tr>
+          <th>Skill / Value</th>
+          <th style="width: 18%;">Type</th>
+          <th style="width: 10%;">Rating</th>
+          <th style="width: 20%;">Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in report.generic_skills %}
+          <tr>
+            <td>{{ g.name }}</td>
+            <td>{{ g.kind }}</td>
+            <td class="cbc-center">{{ g.rating|default:"-" }}</td>
+            <td>{{ g.rating_label|default:"-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="font-size: 11px; margin-top: 4px;">1 = Basic &nbsp; 2 = Moderate &nbsp; 3 = Outstanding</div>
+  </div>
+{% endif %}

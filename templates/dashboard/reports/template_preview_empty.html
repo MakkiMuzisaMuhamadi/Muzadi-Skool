@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-eye"></i> Preview - {{ template_obj.name }}</h3>
+</div>
+<div class="card" style="max-width: 720px;">
+  <div class="card-body">
+    <h5 class="mb-2">Nothing to preview with yet</h5>
+    <p class="text-muted mb-3">
+      The preview fills this design with a real {{ template_obj.level }} report card so you see real names,
+      subjects and marks. Generate report cards for at least one {{ template_obj.level }} class (or one learner)
+      first, then come back to preview any design.
+    </p>
+    <a href="{% url 'report_command_center' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-print mr-1"></i> Generate Report Cards
+    </a>
+    <a href="{% url 'report_template_sections_edit' template_obj.pk %}" class="btn btn-light btn-sm">Back to sections</a>
+  </div>
+</div>
+{% endblock %}

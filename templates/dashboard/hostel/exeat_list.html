@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+{% with tab="exeat" %}{% include "dashboard/hostel/_nav.html" %}{% endwith %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-sign-out-alt"></i> Exeats</h3>
+    <small class="text-muted">Request, approve, sign out at the gate, sign back in. Parents get an SMS when their child leaves and returns.</small>
+  </div>
+  <a href="{% url 'boarding_exeat_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> New exeat</a>
+</div>
+
+<form method="get" class="row mb-3">
+  <div class="col-md-4 mb-2"><select name="show" class="form-control" onchange="this.form.submit()">
+    <option value="open" {% if show == "open" %}selected{% endif %}>Open (waiting, approved, out)</option>
+    <option value="pending" {% if show == "pending" %}selected{% endif %}>Waiting for approval</option>
+    <option value="out" {% if show == "out" %}selected{% endif %}>Out of school now</option>
+    <option value="overdue" {% if show == "overdue" %}selected{% endif %}>Late back</option>
+    <option value="closed" {% if show == "closed" %}selected{% endif %}>Closed</option>
+    <option value="all" {% if show == "all" %}selected{% endif %}>All</option>
+  </select></div>
+  <div class="col-md-4 mb-2"><input type="text" name="q" value="{{ g.q|default:'' }}" class="form-control" placeholder="Name or admission no."></div>
+  <div class="col-md-2 mb-2"><button class="btn btn-success w-100"><i class="fas fa-search"></i></button></div>
+</form>
+
+<div class="card"><div class="card-body">
+  <table class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>No.</th><th>Student</th><th>Type</th><th>Leaving</th><th>Back by</th><th>Picked up by</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+    <tbody>
+    {% for e in rows %}
+      <tr {% if e.is_overdue %}class="table-danger"{% endif %}>
+        <td>{{ e.number }}</td>
+        <td class="font-weight-bold">{{ e.student.name }}<small class="text-muted d-block">{{ e.student.current_class.name|default:"" }}</small></td>
+        <td>{{ e.get_exeat_type_display }}<small class="text-muted d-block">{{ e.reason|truncatechars:40 }}</small></td>
+        <td>{{ e.leave_at|date:"d M H:i" }}</td>
+        <td>{{ e.expected_return|date:"d M H:i" }}{% if e.is_overdue %}<small class="d-block text-danger font-weight-bold">Late</small>{% endif %}</td>
+        <td>{{ e.pickup_display }}</td>
+        <td>
+          {% if e.status == "PENDING" %}<span class="badge bg-warning text-dark">Waiting</span>
+          {% elif e.status == "APPROVED" %}<span class="badge bg-info text-white">Approved</span>
+          {% elif e.status == "OUT" %}<span class="badge bg-primary text-white">Out</span>
+          {% elif e.status == "RETURNED" %}<span class="badge bg-success text-white">Back {{ e.returned_at|date:"d M H:i" }}</span>
+          {% else %}<span class="badge bg-secondary text-white">{{ e.get_status_display }}</span>{% endif %}
+        </td>
+        <td class="text-right text-nowrap">
+          {% if e.status == "PENDING" %}
+            <form method="post" action="{% url 'boarding_exeat_action' e.id 'approve' %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-success">Approve</button></form>
+            <form method="post" action="{% url 'boarding_exeat_action' e.id 'reject' %}" class="d-inline" onsubmit="return confirm('Reject this exeat?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Reject</button></form>
+          {% elif e.status == "APPROVED" %}
+            <form method="post" action="{% url 'boarding_exeat_action' e.id 'sign_out' %}" class="d-inline" onsubmit="return confirm('Sign {{ e.student.first_name|escapejs }} out now? Parents will get an SMS.')">{% csrf_token %}<button class="btn btn-sm btn-primary"><i class="fas fa-sign-out-alt mr-1"></i>Sign out</button></form>
+            <form method="post" action="{% url 'boarding_exeat_action' e.id 'cancel' %}" class="d-inline" onsubmit="return confirm('Cancel this exeat?')">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Cancel</button></form>
+          {% elif e.status == "OUT" %}
+            <a class="btn btn-sm btn-success" href="{% url 'boarding_exeat_return' e.id %}"><i class="fas fa-sign-in-alt mr-1"></i>Sign in</a>
+          {% endif %}
+          {% if e.status == "APPROVED" or e.status == "OUT" or e.status == "RETURNED" %}
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'boarding_exeat_slip' e.id %}" target="_blank" title="Print gate pass"><i class="fas fa-print"></i></a>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No exeats here.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

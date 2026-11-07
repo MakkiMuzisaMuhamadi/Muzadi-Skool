@@ -1,0 +1,6 @@
+{% if state == "ACTIVE" %}<span class="badge badge-success">Active</span>
+{% elif state == "TRIAL" %}<span class="badge badge-info">Trial</span>
+{% elif state == "GRACE" %}<span class="badge badge-warning">Grace period</span>
+{% elif state == "READ_ONLY" %}<span class="badge badge-danger">Read-only (expired)</span>
+{% elif state == "SUSPENDED" %}<span class="badge badge-dark">Suspended</span>
+{% else %}<span class="badge badge-secondary">{{ state }}</span>{% endif %}

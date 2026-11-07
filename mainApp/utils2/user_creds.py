@@ -2,6 +2,7 @@
 import re
 import secrets
 import string
+from django.conf import settings
 from django.contrib.auth.models import User
 from mainApp.models.models import Profile
 from django.utils.text import slugify
@@ -51,7 +52,8 @@ def create_user_with_profile(
     user.set_password(password)
     user.save()
 
-    profile = Profile.objects.create(user=user, school=school, role=role)
+    # The password is temporary (sent by SMS/email or shared): ask for a new one at first sign-in.
+    profile = Profile.objects.create(user=user, school=school, role=role, must_change_password=True)
 
     if allowed_levels:
         profile.allowed_levels.set(allowed_levels)
@@ -59,7 +61,9 @@ def create_user_with_profile(
     return user, profile
 
 
-DEFAULT_STUDENT_PASSWORD = "Student@123"  # ✅ same for all students (change to what you want)
+# Same starting password for every student; set DEFAULT_STUDENT_PASSWORD in .env.
+# Students must replace it at their first sign-in.
+DEFAULT_STUDENT_PASSWORD = settings.DEFAULT_STUDENT_PASSWORD
 def generate_unique_student_username(first_name: str, last_name: str) -> str:
     """
     Username: first letter of first name + last name

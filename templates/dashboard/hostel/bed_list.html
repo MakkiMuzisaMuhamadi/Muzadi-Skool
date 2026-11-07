@@ -1,71 +1,54 @@
 {% extends "dashboard/base.html" %}
-
 {% block content %}
-<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
   <div>
-    <h3 class="page-title mb-0"><i class="fas fa-layer-group"></i> Beds</h3>
-    <small class="text-muted">Manage beds under rooms.</small>
+    <h3 class="page-title mb-0"><i class="fas fa-bed"></i> Beds</h3>
+    <small class="text-muted">See who sleeps in each bed and which beds are free.</small>
   </div>
   <div>
-    <a href="{% url 'hostel_bed_create' %}" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus mr-1"></i> Add Bed
-    </a>
+    <a href="{% url 'hostel_room_list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-door-open mr-1"></i> Rooms</a>
+    <a href="{% url 'hostel_bed_create' %}{% if g.room_id %}?room={{ g.room_id }}{% endif %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add one bed</a>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body table-responsive">
-    <table id="bedsTable" class="table table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Hostel</th>
-          <th>Room</th>
-          <th>Bed No</th>
-          <th>Status</th>
-          <th class="text-right" style="width: 120px;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for b in rows %}
-          <tr>
-            <td class="fw-semibold">{{ b.room.hostel.name }}</td>
-            <td>{{ b.room.room_number }}</td>
-            <td>{{ b.bed_number }}</td>
-            <td>
-              {% if b.is_active %}
-                <span class="badge bg-success text-white">Active</span>
-              {% else %}
-                <span class="badge bg-danger text-white">Inactive</span>
-              {% endif %}
-            </td>
-            <td class="text-right">
-              <a href="{% url 'hostel_bed_update' b.id %}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="{% url 'hostel_bed_delete' b.id %}" class="btn btn-outline-danger btn-sm">
-                <i class="fas fa-trash"></i>
-              </a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="text-center text-muted py-4">No beds found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+<form method="get" class="row mb-3">
+  <div class="col-md-3 mb-2"><select name="hostel_id" class="form-control" onchange="this.form.submit()">
+    <option value="">All dormitories</option>
+    {% for h in hostels %}<option value="{{ h.id }}" {% if g.hostel_id == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>{% endfor %}
+  </select></div>
+  <div class="col-md-3 mb-2"><select name="room_id" class="form-control" onchange="this.form.submit()">
+    <option value="">All rooms</option>
+    {% for r in rooms %}<option value="{{ r.id }}" {% if g.room_id == r.id|stringformat:"s" %}selected{% endif %}>{{ r }}</option>{% endfor %}
+  </select></div>
+  <div class="col-md-3 mb-2"><select name="status" class="form-control" onchange="this.form.submit()">
+    <option value="">Free and occupied</option>
+    <option value="free" {% if g.status == "free" %}selected{% endif %}>Free only</option>
+    <option value="occupied" {% if g.status == "occupied" %}selected{% endif %}>Occupied only</option>
+  </select></div>
+</form>
 
-<script>
-  (function(){
-    try {
-      if (window.$ && $.fn.DataTable) {
-        $('#bedsTable').DataTable({
-          pageLength: 25,
-          order: [[0,'asc'], [1,'asc'], [2,'asc']],
-          responsive: true
-        });
-      }
-    } catch(e) {}
-  })();
-</script>
+<div class="card"><div class="card-body">
+  <table id="bedsTable" class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>Dormitory</th><th>Room</th><th>Bed</th><th>Type</th><th>Student</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+    <tbody>
+    {% for b in rows %}
+      <tr>
+        <td>{{ b.room.hostel.name }}</td>
+        <td>{{ b.room.room_number }}</td>
+        <td class="font-weight-bold">{{ b.bed_number }}</td>
+        <td>{{ b.get_position_display }}</td>
+        <td>{% if b.occupant %}{{ b.occupant.student.name }} <small class="text-muted">{{ b.occupant.student.current_class.name|default:"" }}</small>{% else %}<span class="text-success">Free</span>{% endif %}</td>
+        <td>{% if b.is_active %}<span class="badge bg-success text-white">In use</span>{% else %}<span class="badge bg-secondary text-white">Off</span>{% endif %}</td>
+        <td class="text-right text-nowrap">
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'hostel_bed_update' b.id %}"><i class="fas fa-edit"></i></a>
+          <a class="btn btn-sm btn-outline-danger" href="{% url 'hostel_bed_delete' b.id %}"><i class="fas fa-trash"></i></a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-center text-muted py-4">No beds match. Go to Rooms and click "Add beds".</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
 {% endblock %}
+{% block extrajs %}{% with table_id="bedsTable" %}{% include "dashboard/hostel/_datatable.html" %}{% endwith %}{% endblock %}

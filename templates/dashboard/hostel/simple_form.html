@@ -1,0 +1,25 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas {{ icon|default:'fa-bed' }}"></i> {{ title }}</h3>
+    {% if intro %}<small class="text-muted">{{ intro }}</small>{% endif %}
+  </div>
+  <a href="{% if cancel_url %}{{ cancel_url }}{% else %}javascript:history.back(){% endif %}" class="btn btn-outline-secondary btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> Back
+  </a>
+</div>
+<div class="card" style="max-width: 760px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+      {% for field in form %}{% include "dashboard/hostel/_field.html" %}{% endfor %}
+      <div class="d-flex justify-content-end">
+        <a href="{% if cancel_url %}{{ cancel_url }}{% else %}javascript:history.back(){% endif %}" class="btn btn-light mr-2">Cancel</a>
+        <button type="submit" class="btn {{ submit_class|default:'btn-primary' }}"><i class="fas fa-save mr-1"></i> {{ submit_label|default:"Save" }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

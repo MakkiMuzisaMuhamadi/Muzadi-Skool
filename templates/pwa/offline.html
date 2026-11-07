@@ -1,0 +1,51 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e6fd9">
+  <title>Offline - {{ app_name }}</title>
+  <link rel="icon" href="{% static 'pwa/icons/favicon-32.png' %}">
+  <style>
+    :root { --brand: #1e6fd9; --text: #1f2a44; --muted: #667085; --bg: #f4f7ff; --card: #fff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --text: #e6e9f2; --muted: #a3acc2; --bg: #10141f; --card: #1a2030; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+           padding: 16px; background: var(--bg); color: var(--text);
+           font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+    .card { width: 100%; max-width: 420px; background: var(--card); border-radius: 18px; padding: 32px 24px;
+            text-align: center; box-shadow: 0 10px 35px rgba(0,0,0,.08); }
+    img { width: 72px; height: 72px; }
+    h1 { font-size: 1.35rem; margin: 14px 0 6px; }
+    p { color: var(--muted); line-height: 1.5; margin: 0 0 20px; }
+    button { width: 100%; height: 48px; border: 0; border-radius: 10px; background: var(--brand); color: #fff;
+             font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #9cc3ff; outline-offset: 2px; }
+    .alt { display: block; margin-top: 10px; height: 48px; line-height: 46px; border-radius: 10px; border: 1px solid #c9d8f2;
+           color: var(--brand); font-weight: 600; text-decoration: none; }
+    .status { margin-top: 14px; font-size: .85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="{% static 'pwa/icons/icon-192.png' %}" alt="">
+    <h1>You are offline</h1>
+    <p>{{ app_name }} needs an internet connection to open this page.
+       Check your data or Wi-Fi, then try again.</p>
+    <button type="button" id="retry">Try again</button>
+    <a class="alt" href="{% url 'offline_marks_app' %}">Open Offline Marks</a>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </main>
+  <script>
+    (function () {
+      var status = document.getElementById("status");
+      function retry() { status.textContent = "Connecting..."; location.reload(); }
+      document.getElementById("retry").addEventListener("click", retry);
+      // Come back automatically as soon as the phone is online again.
+      window.addEventListener("online", retry);
+    })();
+  </script>
+</body>
+</html>

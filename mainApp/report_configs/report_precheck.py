@@ -19,6 +19,7 @@ from mainApp.marks_service import find_incomplete_students
 from mainApp.grading.grading_ple import get_active_ple_scale
 from mainApp.grading.grading_uce import get_active_scale as get_active_uce_scale
 from mainApp.grading.grading_uace import get_active_uace_scale
+from mainApp.term_status import reporting_finalized
 
 
 @dataclass
@@ -29,6 +30,39 @@ class ReadinessIssue:
     student: str = ""
     class_name: str = ""
     stream_name: str = ""
+    fix_url: str = ""
+    fix_label: str = ""
+
+
+# Where the admin goes to fix each problem: code -> (url name, button label)
+FIX_LINKS = {
+    "TERM_NOT_FINALIZED": ("marksheet_control_list", "Finalize marks"),
+    "MISSING_TEMPLATE": ("report_template_list", "Report card designs"),
+    "MISSING_PLE_SCALE": ("ple_grading_scale_list", "PLE grading"),
+    "MISSING_UCE_SCALE": ("uce_grading_scale_list", "UCE grading"),
+    "MISSING_UACE_SCALE": ("new_uace_grading_scale_list", "UACE grading"),
+    "NO_MARKSHEETS": ("marksheet_control_list", "Marksheets"),
+    "NO_UACE_PAPER_EXAM": ("exam_type_list", "Exam types"),
+    "EXAM_WEIGHTS_NOT_100": ("exam_type_list", "Exam types"),
+    "STUDENT_NO_MARKS": ("marks_progress", "Marks progress"),
+    "INCOMPLETE_MARKS": ("marks_progress", "Marks progress"),
+    "INCOMPLETE_MARKS_MORE": ("marks_progress", "Marks progress"),
+    "NO_NEXT_TERM": ("academic_year_list", "Academic calendar"),
+}
+
+
+def _attach_fix_links(issues):
+    from django.urls import NoReverseMatch, reverse
+
+    for issue in issues:
+        if issue.fix_url or issue.code not in FIX_LINKS:
+            continue
+        name, label = FIX_LINKS[issue.code]
+        try:
+            issue.fix_url = reverse(name)
+            issue.fix_label = label
+        except NoReverseMatch:
+            pass
 
 
 @dataclass
@@ -64,6 +98,21 @@ def _level_code_for_student(student):
     return ((getattr(level, "code", "") or "").upper().strip())
 
 
+# "Whole school" scope used internally (ReportRun.Scope has no ALL choice).
+SCOPE_ALL = "ALL"
+
+
+def _moved_student_ids(*, school, academic_year):
+    """Learners moved by an applied promotion in this year or a later one."""
+    from mainApp.models.models import StudentPromotionDecision
+
+    qs = StudentPromotionDecision.objects.filter(school=school, is_applied=True)
+    year_q = Q(academic_year=academic_year)
+    if getattr(academic_year, "start_date", None):
+        year_q |= Q(academic_year__start_date__gt=academic_year.start_date)
+    return qs.filter(year_q).values("student_id")
+
+
 def get_students_for_report_run(
     *,
     school,
@@ -75,9 +124,74 @@ def get_students_for_report_run(
     stream=None,
     student=None,
 ):
-    qs = Student.objects.filter(
+    """
+    Learners whose report belongs to the selected class/stream for this term.
+
+    Normally that is the learner's current class. After year-end promotion
+    has been applied, learners who moved are found through the class they
+    were in during that term (their term record, or the promotion decision),
+    so old reports can still be regenerated for the old class, including
+    graduates who are no longer active.
+    """
+    from mainApp.models.academic_history_models import StudentAcademicRecord
+    from mainApp.models.models import StudentPromotionDecision
+
+    if scope not in (ReportRun.Scope.STUDENT, ReportRun.Scope.CLASS, ReportRun.Scope.STREAM, SCOPE_ALL):
+        return Student.objects.none()
+    if scope == ReportRun.Scope.STUDENT and not student:
+        return Student.objects.none()
+    if scope == ReportRun.Scope.CLASS and not class_ref:
+        return Student.objects.none()
+    if scope == ReportRun.Scope.STREAM and not (class_ref and stream):
+        return Student.objects.none()
+
+    filter_level = bool(level_scope and level_scope != ReportRun.LevelScope.ALL)
+    moved_ids = _moved_student_ids(school=school, academic_year=academic_year)
+
+    # 1) learners who have NOT moved: their current class (unchanged behaviour)
+    live = Student.objects.filter(school=school, is_active=True).exclude(id__in=moved_ids)
+    if filter_level:
+        live = live.filter(Q(level__code__iexact=level_scope) | Q(current_class__level__code__iexact=level_scope))
+    if scope == ReportRun.Scope.STUDENT:
+        live = live.filter(id=student.id)
+    elif scope == ReportRun.Scope.CLASS:
+        live = live.filter(current_class=class_ref)
+    elif scope == ReportRun.Scope.STREAM:
+        live = live.filter(current_class=class_ref, stream=stream)
+
+    # 2) moved learners with a record for this term: the record's class
+    records = StudentAcademicRecord.objects.filter(
+        school=school, academic_year=academic_year, term=term, student_id__in=moved_ids,
+    )
+    recorded_ids = records.values("student_id")
+    if filter_level:
+        records = records.filter(Q(level__code__iexact=level_scope) | Q(class_ref__level__code__iexact=level_scope))
+    if scope == ReportRun.Scope.STUDENT:
+        records = records.filter(student_id=student.id)
+    elif scope == ReportRun.Scope.CLASS:
+        records = records.filter(class_ref=class_ref)
+    elif scope == ReportRun.Scope.STREAM:
+        records = records.filter(class_ref=class_ref, stream=stream)
+
+    # 3) moved learners without a record for this term: the class saved on
+    #    that year's promotion decision
+    decisions = StudentPromotionDecision.objects.filter(
+        school=school, academic_year=academic_year, is_applied=True,
+    ).exclude(student_id__in=recorded_ids)
+    if filter_level:
+        decisions = decisions.filter(Q(from_level__code__iexact=level_scope) | Q(from_class__level__code__iexact=level_scope))
+    if scope == ReportRun.Scope.STUDENT:
+        decisions = decisions.filter(student_id=student.id)
+    elif scope == ReportRun.Scope.CLASS:
+        decisions = decisions.filter(from_class=class_ref)
+    elif scope == ReportRun.Scope.STREAM:
+        decisions = decisions.filter(from_class=class_ref, from_stream=stream)
+
+    return Student.objects.filter(
+        Q(id__in=live.values("id"))
+        | Q(id__in=records.values("student_id"))
+        | Q(id__in=decisions.values("student_id")),
         school=school,
-        is_active=True,
     ).select_related(
         "school",
         "level",
@@ -85,29 +199,6 @@ def get_students_for_report_run(
         "current_class__level",
         "stream",
     ).order_by("current_class__name", "stream__name", "first_name", "last_name", "id")
-
-    if level_scope and level_scope != ReportRun.LevelScope.ALL:
-        qs = qs.filter(
-            Q(level__code__iexact=level_scope) |
-            Q(current_class__level__code__iexact=level_scope)
-        )
-
-    if scope == ReportRun.Scope.STUDENT and student:
-        qs = qs.filter(id=student.id)
-
-    elif scope == ReportRun.Scope.CLASS and class_ref:
-        qs = qs.filter(current_class=class_ref)
-
-    elif scope == ReportRun.Scope.STREAM and class_ref and stream:
-        qs = qs.filter(current_class=class_ref, stream=stream)
-
-    elif scope == ReportRun.Scope.ALL:
-        pass
-
-    else:
-        qs = qs.none()
-
-    return qs
 
 
 def _check_level_template_and_scale(*, school, level_code, issues):
@@ -351,7 +442,7 @@ def check_report_readiness(
             message="Selected term does not belong to selected academic year.",
         ))
 
-    if term and (term.is_marks_entry_open or not term.is_reporting_finalized):
+    if term and not reporting_finalized(school, term):
         issues.append(ReadinessIssue(
             level="ERROR",
             code="TERM_NOT_FINALIZED",
@@ -462,10 +553,30 @@ def check_report_readiness(
         issues=issues,
     )
 
+    _check_next_term_date(academic_year=academic_year, term=term, issues=issues)
+
     return _build_result(issues, students_count=len(students), levels=levels)
 
 
+def _check_next_term_date(*, academic_year, term, issues):
+    """'Next Term Begins' is printed on every card - warn if it would come out blank."""
+    from mainApp.report_configs.academic_helpers import get_next_term_obj
+
+    try:
+        nxt = get_next_term_obj(academic_year_id=academic_year.id, term_id=term.id)
+    except Exception:
+        nxt = None
+    if not nxt or not getattr(nxt, "start_date", None):
+        issues.append(ReadinessIssue(
+            level="WARNING",
+            code="NO_NEXT_TERM",
+            message=("The next term is not set up yet, so 'Next Term Begins' will be blank. "
+                     "Add the next term (or next year's Term 1) with its start date in the academic calendar."),
+        ))
+
+
 def _build_result(issues: List[ReadinessIssue], *, students_count: int, levels: List[str]):
+    _attach_fix_links(issues)
     errors = [i for i in issues if i.level == "ERROR"]
     warnings = [i for i in issues if i.level == "WARNING"]
 
@@ -505,6 +616,8 @@ def _build_result(issues: List[ReadinessIssue], *, students_count: int, levels: 
                 "student": i.student,
                 "class_name": i.class_name,
                 "stream_name": i.stream_name,
+                "fix_url": i.fix_url,
+                "fix_label": i.fix_label,
             }
             for i in issues[:1000]
         ],

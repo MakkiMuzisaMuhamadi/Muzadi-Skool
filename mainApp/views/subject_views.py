@@ -16,7 +16,7 @@ from django.utils.html import escape
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def subject_enroll_step1(request):
     draft_id = request.session.get("subject_draft_id")
     draft = SubjectDraft.objects.filter(id=draft_id, is_finalized=False).first() if draft_id else None
@@ -48,7 +48,7 @@ def subject_enroll_step1(request):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def subject_enroll_step2(request, draft_id):
     draft = get_object_or_404(SubjectDraft, id=draft_id, is_finalized=False)
     existing = draft.paper_drafts.all().order_by("order")
@@ -112,7 +112,7 @@ def subject_enroll_step2(request, draft_id):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def subject_enroll_step3(request, draft_id):
     draft = get_object_or_404(SubjectDraft, id=draft_id, is_finalized=False)
     papers = draft.paper_drafts.all()
@@ -258,7 +258,7 @@ def subject_detail(request, subject_id):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def subject_edit(request, subject_id):
     subject = get_object_or_404(Subject.objects.select_related("level"), id=subject_id)
 
@@ -279,7 +279,7 @@ def subject_edit(request, subject_id):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def subject_delete(request, subject_id):
     subject = get_object_or_404(Subject._base_manager.select_related("level"), id=subject_id)
 
@@ -298,7 +298,7 @@ def subject_delete(request, subject_id):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def paper_create(request, subject_id):
     subject = get_object_or_404(Subject.objects.select_related("level"), id=subject_id)
 
@@ -323,7 +323,7 @@ def paper_create(request, subject_id):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def paper_edit(request, paper_id):
     paper = get_object_or_404(Paper.objects.select_related("subject"), id=paper_id)
 
@@ -344,7 +344,7 @@ def paper_edit(request, paper_id):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN"])  # subjects are shared by all schools: Muzadi only
 def paper_delete(request, paper_id):
     paper = get_object_or_404(Paper._base_manager.select_related("subject"), id=paper_id)
 

@@ -20,7 +20,23 @@ def get_school(request):
     return getattr(getattr(request.user, "profile", None), "school", None)
 
 
+REPORT_SETUP_ROLES = ("SUPER_ADMIN", "ADMIN")
+
+
+def _is_setup_admin(user):
+    if user.is_superuser:
+        return True
+    return getattr(getattr(user, "profile", None), "role", "") in REPORT_SETUP_ROLES
+
+
 class SchoolScopedMixin:
+    def dispatch(self, request, *args, **kwargs):
+        # Report setup (comment rules, descriptors, bands) is for admins only.
+        if request.user.is_authenticated and not _is_setup_admin(request.user):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         qs = super().get_queryset()
         school = get_school(self.request)
@@ -207,3 +223,45 @@ class SubjectCommentRuleDelete(LoginRequiredMixin, SchoolScopedMixin, DeleteView
     model = ReportSubjectCommentRule
     template_name = "dashboard/report_terms/confirm_delete.html"
     success_url = reverse_lazy("report_subject_comment_list")
+
+
+# ------------------------------------------------------------------
+# One click: load the standard A-E descriptors, 1-3 identifiers and key words
+# ------------------------------------------------------------------
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
+
+
+@require_POST
+@login_required
+def report_load_standard_terms(request):
+    from django.core.exceptions import PermissionDenied
+    from mainApp.models.models import EducationLevel
+    from mainApp.report_configs.report_defaults import load_standard_report_terms
+
+    if not _is_setup_admin(request.user):
+        raise PermissionDenied
+    school = get_school(request)
+    code = (request.POST.get("level") or "UCE").upper()
+    level = EducationLevel.objects.filter(code=code).first()
+    nxt = request.POST.get("next") or ""
+    back = nxt if nxt.startswith("/") and not nxt.startswith("//") else reverse_lazy("report_grade_desc_list")
+
+    if not school or not level:
+        messages.error(request, f"Could not find the school or the {code} level.")
+        return redirect(back)
+
+    added = load_standard_report_terms(school=school, level=level, user=request.user)
+    total = sum(added.values())
+    if total:
+        messages.success(
+            request,
+            f"Added {added['grade_descriptors']} grade descriptor(s), {added['score_bands']} score identifier(s) "
+            f"and {added['key_words']} key word(s) for {code}. Existing entries were left as they were - "
+            f"please check the ranges match your school's policy.",
+        )
+    else:
+        messages.info(request, f"The standard {code} entries are already there. Nothing was changed.")
+    return redirect(back)
+

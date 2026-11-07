@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{{ hostel.name }} dorm list</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1b1b1b; margin: 24px; font-size: 13px; }
+  h1 { font-size: 20px; margin: 0; } .meta { color: #555; margin: 4px 0 16px; }
+  table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #999; padding: 5px 6px; text-align: left; }
+  th { background: #eee; } .tick { width: 60px; } .bar { margin-bottom: 16px; }
+  button { padding: 6px 14px; cursor: pointer; }
+  @media print { .bar { display: none; } body { margin: 10mm; } tr { page-break-inside: avoid; } }
+</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">Print</button> <button onclick="window.close()">Close</button></div>
+<h1>{{ school.name }}: {{ hostel.name }} ({{ hostel.get_gender_display }})</h1>
+<p class="meta">
+  Patron: {% if hostel.patron %}{{ hostel.patron.user.get_full_name }}{% else %}-{% endif %} |
+  Matron: {{ hostel.matron|default:"-" }} | Boarders: {{ rows|length }} | Printed {% now "d M Y H:i" %}
+</p>
+<table>
+  <thead><tr><th>#</th><th>Room</th><th>Bed</th><th>Adm No</th><th>Name</th><th>Class</th><th>Parent / contact</th><th>Phone</th><th class="tick">Check</th></tr></thead>
+  <tbody>
+  {% for a in rows %}
+    <tr><td>{{ forloop.counter }}</td><td>{{ a.room.room_number }}</td><td>{{ a.bed.bed_number }}</td><td>{{ a.student.admission_number }}</td>
+      <td>{{ a.student.name }}</td><td>{{ a.student.current_class.name|default:"" }} {{ a.student.stream.name|default:"" }}</td>
+      <td>{{ a.contact_name }}</td><td>{{ a.contact }}</td><td></td></tr>
+  {% empty %}<tr><td colspan="9">No boarders in this dormitory.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</body></html>

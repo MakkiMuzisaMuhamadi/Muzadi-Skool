@@ -83,7 +83,28 @@ class ExamType(models.Model):
     weight_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     max_mark = models.DecimalField(max_digits=7, decimal_places=2, default=100)
 
+    SOURCE_MARKS = "MARKS"
+    SOURCE_AOI = "AOI"
+    SOURCE_CHOICES = [
+        (SOURCE_MARKS, "Marks entered by teachers"),
+        (SOURCE_AOI, "Activities of Integration (average of competency scores)"),
+    ]
+    source = models.CharField(
+        max_length=10,
+        choices=SOURCE_CHOICES,
+        default=SOURCE_MARKS,
+        help_text=(
+            "AOI = the system fills this column automatically from the learner's "
+            "competency (Activities of Integration) scores for the subject. "
+            "E.g. weight 20% for the new curriculum continuous assessment."
+        ),
+    )
+
     is_active = models.BooleanField(default=True)
+
+    @property
+    def is_aoi(self) -> bool:
+        return self.source == self.SOURCE_AOI
 
     class Meta:
         verbose_name = "Exam Type"
@@ -105,6 +126,10 @@ class ExamType(models.Model):
 
         if self.max_mark is not None and self.max_mark <= 0:
             errors["max_mark"] = "Maximum mark must be greater than 0."
+
+        if self.source == self.SOURCE_AOI and self.scheme_id and self.scheme.level_id:
+            if self.scheme.level.code not in ("UCE", "UACE"):
+                errors["source"] = "Activities of Integration are only used for UCE and UACE."
 
         if self.weight_percent is not None:
             if self.weight_percent < 0:
@@ -454,6 +479,7 @@ class MarkChangeLog(models.Model):
     SOURCE_CHOICES = [
         ("ENTRY", "Enter Marks screen"),
         ("IMPORT", "Excel upload"),
+        ("OFFLINE", "Offline marks app (synced)"),
     ]
 
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="mark_change_logs")

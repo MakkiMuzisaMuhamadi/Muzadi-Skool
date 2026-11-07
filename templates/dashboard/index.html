@@ -2,981 +2,1514 @@
 {% load static %}
 {% load role_tags %}
 {% load humanize %}
+{% load l10n %}
+
+{% block extra_css %}
+<style>
+  /* ===== Dashboard (scoped to .mz so nothing leaks into other pages) ===== */
+  .mz {
+    --mz-surface: #ffffff;
+    --mz-soft: #f6f7fb;
+    --mz-line: #e8eaf1;
+    --mz-ink: #1d2433;
+    --mz-ink-2: #5b6475;
+    --mz-ink-3: #8a93a6;
+    --mz-s1: #2a78d6;   /* blue   - series 1 */
+    --mz-s2: #eb6834;   /* orange - series 2 */
+    --mz-s3: #1baf7a;   /* aqua   - series 3 */
+    --mz-s4: #eda100;   /* yellow - series 4 */
+    --mz-s7: #6250d6;   /* violet */
+    --mz-good: #12a150;
+    --mz-warn: #e8a200;
+    --mz-bad: #d93f3f;
+    --mz-radius: 14px;
+    color: var(--mz-ink);
+  }
+  .mz .mz-card { background: var(--mz-surface); border: 1px solid var(--mz-line); border-radius: var(--mz-radius);
+                 box-shadow: 0 1px 2px rgba(16,24,40,.04); height: 100%; }
+  .mz .mz-card-body { padding: 18px 20px; }
+  .mz .mz-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .mz .mz-card-title { font-size: 1rem; font-weight: 700; margin: 0; color: var(--mz-ink); }
+  .mz .mz-card-sub { font-size: .8rem; color: var(--mz-ink-3); margin: 2px 0 0; }
+  .mz .mz-link { font-size: .8rem; font-weight: 600; white-space: nowrap; }
+  .mz .mz-section-label { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+                          color: var(--mz-ink-3); margin: 8px 0 10px; }
+
+  /* Hero */
+  .mz .mz-hero { position: relative; overflow: hidden; border-radius: 18px; color: #fff; padding: 22px 24px;
+                 background: linear-gradient(120deg, #1f3c88 0%, #2a78d6 55%, #23a6c9 100%); margin-bottom: 20px; }
+  .mz .mz-hero.platform { background: linear-gradient(120deg, #1b1f3b 0%, #3a2f8f 50%, #6250d6 100%); }
+  .mz .mz-hero::after { content: ""; position: absolute; right: -80px; top: -80px; width: 280px; height: 280px;
+                        border-radius: 50%; background: rgba(255,255,255,.08); }
+  .mz .mz-hero::before { content: ""; position: absolute; right: 120px; bottom: -120px; width: 220px; height: 220px;
+                         border-radius: 50%; background: rgba(255,255,255,.06); }
+  .mz .mz-hero > * { position: relative; z-index: 1; }
+  .mz .mz-hero h2 { font-size: 1.45rem; font-weight: 700; margin: 0; color: #fff; }
+  .mz .mz-hero .mz-hero-sub { opacity: .85; font-size: .88rem; margin-top: 4px; }
+  .mz .mz-hero .mz-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.16);
+                          border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 4px 12px;
+                          font-size: .78rem; margin: 8px 6px 0 0; color: #fff; }
+  .mz .mz-hero .mz-chip:hover { text-decoration: none; background: rgba(255,255,255,.26); }
+  .mz .mz-hero-logo { width: 62px; height: 62px; border-radius: 14px; background: #fff; padding: 6px; flex: 0 0 auto;
+                      display: flex; align-items: center; justify-content: center; }
+  .mz .mz-hero-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .mz .mz-hero-logo i { font-size: 28px; color: #3a2f8f; }
+  .mz .mz-hero .btn-hero { background: #fff; color: #1f3c88; font-weight: 600; border-radius: 10px; border: 0; }
+  .mz .mz-hero .btn-hero-ghost { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 10px; }
+  .mz .mz-hero .btn-hero-ghost:hover { background: rgba(255,255,255,.24); color: #fff; }
+
+  /* Ring (term progress / collection rate) */
+  .mz .mz-ring { --p: 0; --c: #fff; --t: rgba(255,255,255,.22); --size: 92px; width: var(--size); height: var(--size);
+                 border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
+                 background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--t) 0); }
+  .mz .mz-ring::before { content: ""; grid-area: 1/1; width: calc(var(--size) - 16px); height: calc(var(--size) - 16px);
+                         border-radius: 50%; background: var(--hole, #2a5fb6); }
+  .mz .mz-ring > span { grid-area: 1/1; z-index: 1; text-align: center; line-height: 1.1; font-weight: 700; font-size: 1.05rem; }
+  .mz .mz-ring > span small { display: block; font-weight: 500; font-size: .66rem; opacity: .8; }
+  .mz .mz-ring.light { --c: var(--mz-s1); --t: #e9eef8; --hole: #fff; color: var(--mz-ink); }
+
+  /* KPI tiles */
+  .mz .mz-kpi { display: flex; flex-direction: column; justify-content: space-between; padding: 16px 18px; }
+  .mz .mz-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mz .mz-kpi-label { font-size: .78rem; font-weight: 600; color: var(--mz-ink-2); }
+  .mz .mz-kpi-icon { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; flex: 0 0 auto; }
+  .mz .mz-kpi-value { overflow-wrap: anywhere; font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; margin: 8px 0 2px; line-height: 1.15; color: var(--mz-ink); }
+  .mz .mz-kpi-value small { font-size: .8rem; font-weight: 600; color: var(--mz-ink-3); }
+  .mz .mz-kpi-foot { font-size: .76rem; color: var(--mz-ink-3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .mz .mz-up { color: var(--mz-good); font-weight: 600; }
+  .mz .mz-down { color: var(--mz-bad); font-weight: 600; }
+  .mz .ic-blue { background: #e8f1fc; color: #2a78d6; }
+  .mz .ic-green { background: #e6f6ee; color: #12a150; }
+  .mz .ic-aqua { background: #e3f6f0; color: #138a61; }
+  .mz .ic-amber { background: #fdf3dc; color: #b77f00; }
+  .mz .ic-violet { background: #eeebfb; color: #6250d6; }
+  .mz .ic-red { background: #fde9e9; color: #d93f3f; }
+  .mz .ic-orange { background: #fdeee7; color: #d4561f; }
+  .mz .mz-bar { height: 6px; border-radius: 6px; background: #edf0f6; overflow: hidden; margin-top: 8px; }
+  .mz .mz-bar > span { display: block; height: 100%; border-radius: 6px; background: var(--mz-s1); }
+
+  /* Quick actions */
+  .mz .mz-actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .mz .mz-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
+                   padding: 14px 8px; border-radius: 12px; border: 1px solid var(--mz-line); background: var(--mz-surface);
+                   color: var(--mz-ink); font-size: .8rem; font-weight: 600; transition: all .15s ease; min-height: 92px; }
+  .mz .mz-action:hover { text-decoration: none; color: var(--mz-ink); border-color: #c9d6ee; box-shadow: 0 6px 16px rgba(42,120,214,.12); transform: translateY(-2px); }
+  .mz .mz-action .mz-kpi-icon { width: 40px; height: 40px; }
+
+  /* Lists & tables */
+  .mz .mz-list { list-style: none; padding: 0; margin: 0; }
+  .mz .mz-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--mz-line); }
+  .mz .mz-list li:last-child { border-bottom: 0; }
+  .mz .mz-list .mz-li-main { min-width: 0; }
+  .mz .mz-list .mz-li-title { font-weight: 600; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mz .mz-list .mz-li-sub { font-size: .75rem; color: var(--mz-ink-3); }
+  .mz .mz-avatar { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: .78rem; flex: 0 0 auto; }
+  .mz .mz-table { width: 100%; font-size: .84rem; }
+  .mz .mz-table th { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--mz-ink-3); font-weight: 700;
+                     border-bottom: 1px solid var(--mz-line); padding: 8px 10px; white-space: nowrap; }
+  .mz .mz-table td { padding: 10px; border-bottom: 1px solid #f1f2f6; vertical-align: middle; }
+  .mz .mz-table tr:last-child td { border-bottom: 0; }
+  .mz .mz-table tbody tr:hover { background: #fafbfe; }
+  .mz .mz-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mz .mz-empty { text-align: center; color: var(--mz-ink-3); padding: 26px 10px; font-size: .86rem; }
+  .mz .mz-empty i { display: block; font-size: 26px; margin-bottom: 8px; opacity: .5; }
+  .mz .mz-pill { display: inline-block; font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .mz .pill-good { background: #e6f6ee; color: #0e7d3e; }
+  .mz .pill-warn { background: #fdf3dc; color: #8f6300; }
+  .mz .pill-bad { background: #fde9e9; color: #b02f2f; }
+  .mz .pill-info { background: #e8f1fc; color: #1f5fae; }
+  .mz .pill-muted { background: #eef0f4; color: #5b6475; }
+
+  /* Legend */
+  .mz .mz-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .78rem; color: var(--mz-ink-2); }
+  .mz .mz-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .mz .mz-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* Alerts */
+  .mz .mz-alert { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; font-size: .84rem; }
+  .mz .mz-alert i { margin-top: 2px; }
+  .mz .mz-alert a { font-weight: 700; }
+  .mz .al-bad { background: #fdf0f0; color: #8d2525; }
+  .mz .al-warn { background: #fdf7e7; color: #7a5600; }
+  .mz .al-info { background: #eef5fd; color: #1f4f8f; }
+
+  /* Setup banner */
+  .mz .mz-setup { border: 1px solid #f4dfa6; background: linear-gradient(90deg, #fffaf0, #fff); }
+  .mz .mz-step { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; padding: 5px 10px; border-radius: 999px;
+                 background: #fff; border: 1px solid var(--mz-line); margin: 4px 6px 0 0; color: var(--mz-ink); }
+  .mz .mz-step:hover { text-decoration: none; border-color: #e8a200; color: var(--mz-ink); }
+
+  /* Events */
+  .mz .mz-date { width: 46px; flex: 0 0 auto; text-align: center; border-radius: 10px; background: var(--mz-soft); padding: 5px 0; }
+  .mz .mz-date b { display: block; font-size: 1.05rem; line-height: 1.1; }
+  .mz .mz-date small { font-size: .65rem; text-transform: uppercase; color: var(--mz-ink-3); font-weight: 700; }
+
+  .mz .mz-chart { position: relative; }
+  .mz .mz-stat-mini { text-align: center; padding: 8px; border-radius: 10px; background: var(--mz-soft); }
+  .mz .mz-stat-mini b { display: block; font-size: 1.15rem; }
+  .mz .mz-stat-mini small { color: var(--mz-ink-3); font-size: .72rem; }
+  .mz .grid-gap > [class*="col-"] { margin-bottom: 20px; }
+
+  @media (max-width: 767px) {
+    .mz .mz-hero { padding: 18px 16px; }
+    .mz .mz-hero h2 { font-size: 1.2rem; }
+    .mz .mz-kpi-value { font-size: 1.15rem; }
+    .mz .mz-kpi { padding: 14px; }
+    .mz .mz-ring { --size: 78px; }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="content-wrapper dash">
+<div class="content-wrapper mz">
 
-  <!-- =========================
-       Header
-  ========================== -->
-  <div class="dash-header card mb-4">
-    <div class="card-body py-3">
-      <div class="row align-items-center">
-        <div class="col-md-8">
-          <div class="d-flex align-items-center">
-            {% if school.logo %}
-              <div class="dash-logo mr-3">
-                <img src="{{ school.logo.url }}" alt="{{ school.name }}">
-              </div>
-            {% endif %}
-
-            <div class="min-w-0">
-              <div class="d-flex align-items-center flex-wrap">
-                <h3 class="mb-0 dash-title text-truncate">{{ school.name }}</h3>
-                {% if school.is_active %}
-                  <span class="badge badge-success ml-2">Active</span>
-                {% endif %}
-              </div>
-
-              <div class="dash-sub mt-1 d-flex flex-wrap">
-                <span class="mr-3 text-muted">
-                  <i class="fas fa-map-marker-alt mr-1"></i>
-                  {{ school.address|default:"No address" }}
-                </span>
-                <span class="text-muted">
-                  <i class="fas fa-graduation-cap mr-1"></i>
-                  {{ school.get_levels_list|join:", "|default:"No levels" }}
-                </span>
-              </div>
-            </div>
+{% if show_platform %}
+{% with p=platform %}
+  <!-- =====================================================================
+       MUZADI PLATFORM (SUPER ADMIN) DASHBOARD
+  ====================================================================== -->
+  <div class="mz-hero platform">
+    <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:18px;">
+      <div class="d-flex align-items-center" style="gap:16px; min-width:0;">
+        <div class="mz-hero-logo"><i class="fas fa-globe-africa"></i></div>
+        <div style="min-width:0;">
+          <h2>Muzadi Platform Control Centre</h2>
+          <div class="mz-hero-sub">
+            Good {% now "A" as ampm %}{% if ampm == "AM" %}morning{% else %}afternoon{% endif %},
+            {{ request.user.first_name|default:request.user.username }} &middot; {% now "l, j F Y" %}
           </div>
-        </div>
-
-        <div class="col-md-4 mt-3 mt-md-0">
-          <div class="dash-meta text-md-right">
-            <div class="small text-muted">Current Academic Year</div>
-            <div class="h4 mb-1 font-weight-bold">
-              {% if current_academic_year %}
-                <span class="text-primary">{{ current_academic_year.year }}</span>
-              {% else %}
-                <span class="text-danger">Not set</span>
-              {% endif %}
-            </div>
-
-            <div class="d-flex justify-content-md-end justify-content-between align-items-center">
-              <div class="small text-muted">
-                {% if current_term %}
-                  <i class="fas fa-clock mr-1"></i> {{ current_term.name }}
-                {% else %}
-                  No active term
-                {% endif %}
-              </div>
-
-              {% if academic_year_status %}
-                <span class="badge ml-2 badge-{% if academic_year_status == 'In Session' %}success{% elif academic_year_status == 'Upcoming' %}info{% else %}secondary{% endif %}">
-                  {{ academic_year_status }}
-                </span>
-              {% endif %}
-            </div>
+          <div>
+            <span class="mz-chip"><i class="fas fa-server"></i> {{ p.base_domain|default:"single server" }}</span>
+            <span class="mz-chip"><i class="fas fa-school"></i> {{ p.totals.active }} of {{ p.totals.schools }} schools live</span>
+            {% if p.alert_count %}<a href="#mzAlerts" class="mz-chip"><i class="fas fa-bell"></i> {{ p.alert_count }} alert{{ p.alert_count|pluralize }}</a>{% endif %}
           </div>
         </div>
       </div>
-
-      <nav aria-label="breadcrumb" class="mt-3">
-        <ol class="breadcrumb mb-0 bg-transparent p-0">
-          <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i> Dashboard</a></li>
-          <li class="breadcrumb-item active" aria-current="page">{{ school.short_name }} Overview</li>
-        </ol>
-      </nav>
+      <div class="d-flex flex-wrap" style="gap:8px;">
+        <a href="{% url 'platform_school_new' %}" class="btn btn-hero btn-sm"><i class="fas fa-plus-circle mr-1"></i> New school</a>
+        <a href="{% url 'platform_dashboard' %}" class="btn btn-hero-ghost btn-sm"><i class="fas fa-th-list mr-1"></i> All schools</a>
+        <button type="button" class="btn btn-hero-ghost btn-sm js-refresh"><i class="fas fa-sync-alt"></i></button>
+      </div>
     </div>
   </div>
 
-  <!-- =========================
-       Term progress
-  ========================== -->
-  {% if term_progress %}
-  <div class="card soft-card mb-4">
-    <div class="card-body py-3">
-      <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div class="mb-2 mb-md-0">
-          <div class="d-flex align-items-center">
-            <div class="icon-pill mr-2"><i class="fas fa-calendar-check"></i></div>
-            <div>
-              <div class="font-weight-bold">{{ current_term_name }} Progress</div>
-              <small class="text-muted">({{ term_days_elapsed|default:"0" }}/{{ term_total_days|default:"0" }} days)</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex align-items-center">
-          <div class="mr-3 font-weight-bold">{{ term_progress }}%</div>
-          <div class="progress dash-progress" style="width:260px;">
-            <div class="progress-bar bg-{% if term_progress < 25 %}info{% elif term_progress < 75 %}warning{% else %}success{% endif %}"
-                 role="progressbar" style="width:{{ term_progress }}%"></div>
-          </div>
-
-          {% if term_status %}
-            <span class="badge ml-3 badge-{% if term_status == 'Early' %}info{% elif term_status == 'Mid-term' %}warning{% elif term_status == 'Late' %}primary{% else %}success{% endif %}">
-              {{ term_status }}
+  <!-- KPIs -->
+  <div class="row grid-gap">
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Schools</span><span class="mz-kpi-icon ic-violet"><i class="fas fa-school"></i></span></div>
+        <div class="mz-kpi-value">{{ p.totals.schools|intcomma }}</div>
+        <div class="mz-kpi-foot"><span class="mz-up">{{ p.totals.active }} live</span>{% if p.schools_new_month %}&middot; +{{ p.schools_new_month }} this month{% endif %}</div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Students</span><span class="mz-kpi-icon ic-blue"><i class="fas fa-user-graduate"></i></span></div>
+        <div class="mz-kpi-value">{{ p.totals.students|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if p.students_new_month %}<span class="mz-up"><i class="fas fa-arrow-up"></i> {{ p.students_new_month|intcomma }}</span> enrolled this month{% else %}across all schools{% endif %}</div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Staff &amp; users</span><span class="mz-kpi-icon ic-aqua"><i class="fas fa-users"></i></span></div>
+        <div class="mz-kpi-value">{{ p.totals.staff|intcomma }}</div>
+        <div class="mz-kpi-foot">{{ p.users_today|default:0|intcomma }} signed in today &middot; {{ p.users_total|default:0|intcomma }} accounts</div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Revenue {% now "Y" %}</span><span class="mz-kpi-icon ic-green"><i class="fas fa-coins"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ p.revenue_year|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">
+          This month {{ p.revenue_month|default:0|intcomma }}
+          {% if p.revenue_change is not None %}
+            <span class="{% if p.revenue_change >= 0 %}mz-up{% else %}mz-down{% endif %}">
+              <i class="fas fa-arrow-{% if p.revenue_change >= 0 %}up{% else %}down{% endif %}"></i> {{ p.revenue_change }}%
             </span>
           {% endif %}
         </div>
       </div>
     </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">SMS this month</span><span class="mz-kpi-icon ic-orange"><i class="fas fa-sms"></i></span></div>
+        <div class="mz-kpi-value">{{ p.totals.sms|intcomma }}</div>
+        <div class="mz-kpi-foot">{{ p.sms_credit_total|default:0|intcomma }} prepaid units left &middot; {{ p.sms_enabled_schools|default:0 }} schools</div>
+      </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Need attention</span><span class="mz-kpi-icon {% if p.totals.attention %}ic-red{% else %}ic-green{% endif %}"><i class="fas fa-{% if p.totals.attention %}exclamation-triangle{% else %}check{% endif %}"></i></span></div>
+        <div class="mz-kpi-value">{{ p.totals.attention }}</div>
+        <div class="mz-kpi-foot">subscriptions expiring, in grace or read-only</div>
+      </div>
+    </div>
   </div>
-  {% endif %}
 
-  <!-- =========================
-       Welcome + Filters
-  ========================== -->
-  <div class="card soft-card mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div class="min-w-0">
-          <h4 class="mb-1">
-            Welcome back, {{ request.user.get_full_name|default:request.user.username }}!
-          </h4>
-          <div class="text-muted small d-flex flex-wrap align-items-center">
-            <span class="mr-3">
-              <i class="fas fa-user-tag mr-1"></i> {{ request.user.profile.get_role_display }}
-            </span>
-            <span class="mr-3">
-              <i class="fas fa-calendar-alt mr-1"></i> {% now "F j, Y" %}
-            </span>
-            {% if current_academic_year %}
-              <span class="mr-3">
-                <i class="fas fa-calendar mr-1"></i> {{ current_academic_year.year }}
-              </span>
-            {% endif %}
-            {% if school.moto %}
-              <span class="text-truncate">
-                <i class="fas fa-quote-left mr-1"></i> "{{ school.moto }}"
-              </span>
-            {% endif %}
-          </div>
+  <!-- Quick actions -->
+  <div class="mz-card mb-4"><div class="mz-card-body">
+    <div class="mz-card-head"><div><h5 class="mz-card-title"><i class="fas fa-bolt text-warning mr-2"></i>Quick actions</h5></div></div>
+    <div class="mz-actions">
+      <a class="mz-action" href="{% url 'platform_school_new' %}"><span class="mz-kpi-icon ic-violet"><i class="fas fa-plus"></i></span>Add school</a>
+      <a class="mz-action" href="{% url 'platform_dashboard' %}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-th-list"></i></span>All schools</a>
+      <a class="mz-action" href="{% url 'platform_release_notes' %}"><span class="mz-kpi-icon ic-amber"><i class="fas fa-bullhorn"></i></span>Release notes</a>
+      <a class="mz-action" href="{% url 'platform_sms_usage_csv' %}"><span class="mz-kpi-icon ic-orange"><i class="fas fa-file-csv"></i></span>SMS usage CSV</a>
+      <a class="mz-action" href="{% url 'platform_logs' %}"><span class="mz-kpi-icon ic-red"><i class="fas fa-bug"></i></span>System logs</a>
+      {% url 'academic_year_list' as u_years %}{% if u_years %}<a class="mz-action" href="{{ u_years }}"><span class="mz-kpi-icon ic-green"><i class="fas fa-calendar-alt"></i></span>Years &amp; terms</a>{% endif %}
+      {% url 'subject_list' as u_subjects %}{% if u_subjects %}<a class="mz-action" href="{{ u_subjects }}"><span class="mz-kpi-icon ic-aqua"><i class="fas fa-book"></i></span>Subjects</a>{% endif %}
+      {% url 'recycle_bin_dashboard' as u_bin %}{% if u_bin %}<a class="mz-action" href="{{ u_bin }}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-trash-restore"></i></span>Recycle bin</a>{% endif %}
+    </div>
+  </div></div>
+
+  <!-- Revenue + subscription states -->
+  <div class="row grid-gap">
+    <div class="col-lg-8">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Revenue, last 12 months</h5><p class="mz-card-sub">Subscription payments and SMS top-ups (UGX)</p></div>
+          <div class="mz-legend"><span><i style="background:var(--mz-s1)"></i>Subscriptions</span><span><i style="background:var(--mz-s2)"></i>SMS top-ups</span></div>
         </div>
-
-        {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
-        <div class="mt-2 mt-md-0 d-flex">
-          <button class="btn btn-light btn-sm mr-2" id="btnRefreshDash">
-            <i class="fas fa-sync-alt mr-1"></i> Refresh
-          </button>
-          <button class="btn btn-primary btn-sm" data-toggle="collapse" data-target="#dashFilters">
-            <i class="fas fa-sliders-h mr-1"></i> Filters
-          </button>
+        <div class="mz-chart" style="height:300px;"><canvas id="pRevenueChart" aria-label="Revenue per month"></canvas></div>
+        <div class="d-flex flex-wrap mt-3" style="gap:10px;">
+          <div class="mz-stat-mini flex-fill"><b>UGX {{ p.revenue_year|default:0|intcomma }}</b><small>collected this year</small></div>
+          <div class="mz-stat-mini flex-fill"><b>UGX {{ p.expected_term_revenue|default:0|intcomma }}</b><small>expected per term (paid plans)</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ p.whatsapp_schools|default:0 }}</b><small>schools on WhatsApp</small></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Subscriptions</h5><p class="mz-card-sub">Current state of every school</p></div></div>
+        <div class="mz-chart" style="height:190px;"><canvas id="pStatesChart" aria-label="Schools by subscription state"></canvas></div>
+        <ul class="mz-list mt-2">
+          {% for s in p.state_rows %}
+          <li>
+            <span class="d-flex align-items-center" style="gap:8px;">
+              <i class="fas fa-circle" style="font-size:9px; color:{% if s.code == 'ACTIVE' %}var(--mz-good){% elif s.code == 'TRIAL' %}var(--mz-s1){% elif s.code == 'GRACE' %}var(--mz-warn){% elif s.code == 'READ_ONLY' %}var(--mz-bad){% else %}#8a93a6{% endif %};"></i>
+              <span style="font-size:.84rem;">{{ s.label }}</span>
+            </span>
+            <span class="mz-num" style="font-size:.84rem;"><b>{{ s.count }}</b> <small class="text-muted">{{ s.pct }}%</small></span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% if p.plan_rows %}
+        <div class="mt-2 d-flex flex-wrap" style="gap:6px;">
+          {% for pl in p.plan_rows %}<span class="mz-pill pill-muted">{{ pl.label }}: {{ pl.count }}</span>{% endfor %}
         </div>
         {% endif %}
-      </div>
-
-      {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
-      <div class="collapse mt-3" id="dashFilters">
-        <div class="dash-filter-box">
-          <div class="form-row align-items-end">
-            <div class="form-group col-md-4">
-              <label class="mb-1 text-muted small">Academic Year</label>
-              <select class="form-control" id="filterYear" {% if not academic_year_choices %}disabled{% endif %}>
-                {% if academic_year_choices %}
-                  {% for y in academic_year_choices %}
-                    <option value="{{ y.id }}" {% if current_academic_year and y.id == current_academic_year.id %}selected{% endif %}>
-                      {{ y.year }}
-                    </option>
-                  {% endfor %}
-                {% else %}
-                  <option value="">{{ current_academic_year.year|default:"Not set" }}</option>
-                {% endif %}
-              </select>
-            </div>
-
-            <div class="form-group col-md-4">
-              <label class="mb-1 text-muted small">Term</label>
-              <select class="form-control" id="filterTerm" {% if not term_choices %}disabled{% endif %}>
-                {% if term_choices %}
-                  {% for t in term_choices %}
-                    <option value="{{ t.id }}" {% if current_term and t.id == current_term.id %}selected{% endif %}>
-                      {{ t.name }}
-                    </option>
-                  {% endfor %}
-                {% else %}
-                  <option value="">{{ current_term.name|default:"No active term" }}</option>
-                {% endif %}
-              </select>
-            </div>
-
-            <div class="form-group col-md-4">
-              <button class="btn btn-dark btn-block" id="btnApplyFilters">
-                <i class="fas fa-check mr-1"></i> Apply
-              </button>
-            </div>
-          </div>
-
-          <small class="text-muted">
-            Tip: later you can compute charts per selected year/term.
-          </small>
-        </div>
-      </div>
-      {% endif %}
+      </div></div>
     </div>
   </div>
 
-  <!-- =========================
-       ADMIN DASHBOARD
-  ========================== -->
-  {% if request.user|has_role:"SUPER_ADMIN,ADMIN" %}
-
-  <!-- =========================
-       Stats Cards
-  ========================== -->
-  <div class="row">
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-blue">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">Total Students</div>
-            <div class="stat-value">{{ total_candidates|default:0|intcomma }}</div>
-          </div>
+  <!-- Alerts + top schools -->
+  <div class="row grid-gap">
+    <div class="col-lg-5" id="mzAlerts">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title"><i class="fas fa-bell text-danger mr-2"></i>Needs attention</h5><p class="mz-card-sub">Act on these before schools are affected</p></div>
+          {% if p.alert_count %}<span class="mz-pill pill-bad">{{ p.alert_count }}</span>{% endif %}
         </div>
-        <div class="stat-bottom">
-          {% if recent_candidates|default:0 > 0 %}
-            <span class="text-success small"><i class="fas fa-arrow-up mr-1"></i> {{ recent_candidates }} new this week</span>
-          {% else %}
-            <span class="text-muted small">—</span>
-          {% endif %}
-          <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-primary">View</a>
+        <div style="max-height:330px; overflow:auto;">
+          {% for r in p.alerts.read_only %}<div class="mz-alert al-bad"><i class="fas fa-lock"></i><div><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a> is <b>read-only</b> &mdash; subscription expired.</div></div>{% endfor %}
+          {% for r in p.alerts.grace %}<div class="mz-alert al-warn"><i class="fas fa-hourglass-half"></i><div><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a> is in its grace period.</div></div>{% endfor %}
+          {% for r in p.alerts.expiring %}<div class="mz-alert al-warn"><i class="fas fa-calendar-times"></i><div><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a> ends in {{ r.days_left }} day{{ r.days_left|pluralize }}.</div></div>{% endfor %}
+          {% for r in p.alerts.low_sms %}<div class="mz-alert al-info"><i class="fas fa-sms"></i><div><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: SMS credit low ({{ r.messaging.credit_units|intcomma }} units).</div></div>{% endfor %}
+          {% for r in p.alerts.over_limit %}<div class="mz-alert al-info"><i class="fas fa-users"></i><div><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a>: {{ r.students|intcomma }} students, plan limit {{ r.subscription.student_limit|intcomma }}.</div></div>{% endfor %}
+          {% for r in p.alerts.no_address %}<div class="mz-alert al-info"><i class="fas fa-link"></i><div><a href="{% url 'platform_school_detail' r.school.pk %}">{{ r.school.name }}</a> has no web address yet.</div></div>{% endfor %}
+          {% if not p.alert_count %}<div class="mz-empty"><i class="fas fa-check-circle text-success"></i>All schools are in good standing.</div>{% endif %}
         </div>
-      </div>
+      </div></div>
     </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-green">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">Teachers</div>
-            <div class="stat-value">{{ total_teachers|default:0|intcomma }}</div>
-          </div>
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Largest schools</h5><p class="mz-card-sub">Students per school (top 8)</p></div>
+          <a class="mz-link" href="{% url 'platform_dashboard' %}">See all &rarr;</a>
         </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">Active staff members</span>
-          <a href="{% url 'teacher_list' %}" class="btn btn-sm btn-outline-success">Manage</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-cyan">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-chalkboard"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">Classes</div>
-            <div class="stat-value">{{ total_classes|default:0|intcomma }}</div>
-          </div>
-        </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">Configured classes</span>
-          <a href="{% url 'class_list' %}" class="btn btn-sm btn-outline-info">View</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-amber">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-book"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">Subjects</div>
-            <div class="stat-value">{{ total_subjects|default:0|intcomma }}</div>
-          </div>
-        </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">Based on school levels</span>
-          <a href="{% url 'subject_list' %}" class="btn btn-sm btn-outline-warning">View</a>
-        </div>
-      </div>
+        {% if p.top_schools %}
+          <div class="mz-chart" style="height:330px;"><canvas id="pTopSchoolsChart" aria-label="Students per school"></canvas></div>
+        {% else %}
+          <div class="mz-empty"><i class="fas fa-school"></i>No schools yet. <a href="{% url 'platform_school_new' %}">Create the first one</a>.</div>
+        {% endif %}
+      </div></div>
     </div>
   </div>
 
-  <!-- =====================================================
-       Analytics Overview (Trend) + Snapshot
-  ====================================================== -->
-  <div class="row">
-    <div class="col-lg-8 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center flex-wrap">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-chart-area mr-2 text-primary"></i>Analytics Overview</h5>
-              <p class="text-muted small mb-0">Interactive trend lines (toggle)</p>
-            </div>
-
-            <div class="btn-group btn-group-sm mt-2 mt-md-0" role="group">
-              <button type="button" class="btn btn-outline-primary active" data-chart-mode="marks">Marks</button>
-              <button type="button" class="btn btn-outline-primary" data-chart-mode="students">Students</button>
-              <button type="button" class="btn btn-outline-primary" data-chart-mode="fees">Fees</button>
-            </div>
-          </div>
-
-          <div class="chart-wrap mt-3" style="height:320px;">
-            <canvas id="mainTrendChart"></canvas>
-          </div>
-
-          <div class="mt-2 small text-muted">
-            <i class="fas fa-info-circle mr-1"></i> Tip: click legend items to show/hide datasets.
-          </div>
-        </div>
+  <!-- Schools table -->
+  <div class="mz-card mb-4"><div class="mz-card-body">
+    <div class="mz-card-head">
+      <div><h5 class="mz-card-title">Schools at a glance</h5><p class="mz-card-sub">Subscription, size and SMS for each school</p></div>
+      <div class="d-flex" style="gap:8px;">
+        <input type="search" class="form-control form-control-sm" id="pSchoolSearch" placeholder="Search schools..." style="max-width:200px;">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'platform_dashboard' %}">Full list</a>
       </div>
     </div>
-
-    <div class="col-lg-4 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-venus-mars mr-2 text-success"></i>Gender Snapshot</h5>
-              <p class="text-muted small mb-0">Male vs Female</p>
-            </div>
-            <span class="badge badge-light">Live</span>
-          </div>
-
-          <div class="chart-wrap mt-3" style="height:240px;">
-            <canvas id="snapshotChart"></canvas>
-          </div>
-
-          <hr class="my-3">
-
-          <div class="d-flex justify-content-between">
-            <div>
-              <div class="text-muted small">Term Progress</div>
-              <div class="font-weight-bold">{{ term_progress|default:0 }}%</div>
-            </div>
-            <div class="text-right">
-              <div class="text-muted small">Remaining Days</div>
-              <div class="font-weight-bold">{{ term_days_remaining|default:0 }}</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================
-       Level + Class charts
-  ========================== -->
-  <div class="row">
-    <div class="col-lg-8 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start flex-wrap">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-layer-group mr-2 text-primary"></i>Students by Level</h5>
-              <p class="text-muted small mb-0">Distribution across levels</p>
-            </div>
-            <small class="text-muted mt-1"><i class="fas fa-info-circle mr-1"></i>From Student.level</small>
-          </div>
-
-          <div class="chart-wrap mt-3" style="height:300px;">
-            <canvas id="studentsByLevelChart"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-lg-4 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <h5 class="mb-2"><i class="fas fa-info-circle text-primary mr-2"></i>Academic Information</h5>
-
-          {% if current_academic_year %}
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-calendar-alt mr-1"></i> Current Academic Year</div>
-            <div class="font-weight-bold">{{ current_academic_year.year }}</div>
-            <div class="text-muted small">
-              {{ current_academic_year.start_date|date:"M d, Y" }} - {{ current_academic_year.end_date|date:"M d, Y" }}
-            </div>
-            {% if academic_year_progress %}
-              <div class="progress mt-2" style="height:6px;">
-                <div class="progress-bar bg-success" style="width: {{ academic_year_progress }}%"></div>
+    <div class="table-responsive">
+      <table class="mz-table" id="pSchoolTable">
+        <thead><tr><th>School</th><th>Plan</th><th>Status</th><th>Ends</th><th class="mz-num">Students</th><th class="mz-num">Staff</th><th class="mz-num">SMS (month)</th><th class="mz-num">SMS credit</th><th></th></tr></thead>
+        <tbody>
+        {% for r in p.rows %}
+          <tr data-name="{{ r.school.name|lower }} {{ r.school.short_name|lower }}">
+            <td>
+              <div class="d-flex align-items-center" style="gap:10px;">
+                <span class="mz-avatar ic-violet">{{ r.school.short_name|default:r.school.name|slice:":2"|upper }}</span>
+                <div style="min-width:0;">
+                  <a href="{% url 'platform_school_detail' r.school.pk %}"><b>{{ r.school.name }}</b></a>
+                  <div class="text-muted" style="font-size:.74rem;">{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener" class="text-muted">{{ r.school.subdomain|default:r.school.custom_domain }} <i class="fas fa-external-link-alt" style="font-size:9px;"></i></a>{% else %}<span class="text-warning">no address</span>{% endif %}</div>
+                </div>
               </div>
-              <div class="text-muted small mt-1">{{ academic_year_progress }}% complete</div>
-            {% endif %}
-          </div>
-          {% endif %}
+            </td>
+            <td>{{ r.subscription.get_plan_display|default:"-" }}</td>
+            <td>{% include "platform/_state_badge.html" with state=r.state %}{% if not r.school.is_active %} <span class="badge badge-secondary">closed</span>{% endif %}</td>
+            <td style="white-space:nowrap;">{% if r.subscription.end_date %}{{ r.subscription.end_date|date:"j M Y" }}{% if r.days_left is not None and r.days_left >= 0 and r.days_left <= 30 %} <small class="text-warning">({{ r.days_left }}d)</small>{% endif %}{% else %}<span class="text-muted">no end date</span>{% endif %}</td>
+            <td class="mz-num">{{ r.students|intcomma }}{% if r.over_limit %} <i class="fas fa-exclamation-triangle text-warning" title="Over plan limit"></i>{% endif %}</td>
+            <td class="mz-num">{{ r.staff|intcomma }}</td>
+            <td class="mz-num">{{ r.sms_this_month|intcomma }}</td>
+            <td class="mz-num">{% if r.messaging %}{% if r.messaging.is_prepaid %}{{ r.messaging.credit_units|intcomma }}{% else %}<span class="text-muted">postpaid</span>{% endif %}{% else %}-{% endif %}</td>
+            <td class="mz-num"><a href="{% url 'platform_school_detail' r.school.pk %}" class="btn btn-sm btn-light">Manage</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="9"><div class="mz-empty"><i class="fas fa-school"></i>No schools yet.</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div></div>
 
+  <!-- Growth row -->
+  <div class="row grid-gap">
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">SMS sent</h5><p class="mz-card-sub">Units used per month, all schools</p></div></div>
+        <div class="mz-chart" style="height:220px;"><canvas id="pSmsChart" aria-label="SMS units per month"></canvas></div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">New schools</h5><p class="mz-card-sub">Schools added per month</p></div></div>
+        <div class="mz-chart" style="height:220px;"><canvas id="pNewSchoolsChart" aria-label="New schools per month"></canvas></div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Students by level</h5><p class="mz-card-sub">Active learners on the platform</p></div></div>
+        {% for l in p.platform_level_rows %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between" style="font-size:.84rem;"><b>{{ l.label }}</b><span class="mz-num">{{ l.count|intcomma }} <small class="text-muted">({{ l.pct }}%)</small></span></div>
+            <div class="mz-bar"><span style="width:{{ l.pct|unlocalize }}%;"></span></div>
+          </div>
+        {% empty %}
+          <div class="mz-empty"><i class="fas fa-layer-group"></i>No students yet.</div>
+        {% endfor %}
+        <hr>
+        <div class="d-flex" style="gap:10px;">
+          <div class="mz-stat-mini flex-fill"><b>{{ p.users_week|default:0|intcomma }}</b><small>active users (7 days)</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ p.users_total|default:0|intcomma }}</b><small>accounts</small></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Recent money + activity -->
+  <div class="row grid-gap">
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Subscription payments</h5><p class="mz-card-sub">Latest recorded</p></div></div>
+        <ul class="mz-list">
+          {% for pay in p.recent_payments %}
+          <li>
+            <div class="d-flex align-items-center" style="gap:10px; min-width:0;">
+              <span class="mz-avatar ic-green"><i class="fas fa-receipt"></i></span>
+              <div class="mz-li-main"><div class="mz-li-title">{{ pay.school.name }}</div><div class="mz-li-sub">{{ pay.paid_on|date:"j M Y" }} &middot; covers to {{ pay.covers_until|date:"j M Y" }}</div></div>
+            </div>
+            <b class="mz-num" style="font-size:.84rem;">{{ pay.amount_ugx|intcomma }}</b>
+          </li>
+          {% empty %}<li class="justify-content-center"><div class="mz-empty"><i class="fas fa-receipt"></i>No payments recorded yet.</div></li>{% endfor %}
+        </ul>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">SMS top-ups</h5><p class="mz-card-sub">Latest credit added</p></div></div>
+        <ul class="mz-list">
+          {% for t in p.recent_topups %}
+          <li>
+            <div class="d-flex align-items-center" style="gap:10px; min-width:0;">
+              <span class="mz-avatar ic-orange"><i class="fas fa-sms"></i></span>
+              <div class="mz-li-main"><div class="mz-li-title">{{ t.school.name }}</div><div class="mz-li-sub">{{ t.created_at|date:"j M Y, H:i" }} &middot; {{ t.units|intcomma }} units</div></div>
+            </div>
+            <b class="mz-num" style="font-size:.84rem;">{{ t.amount_ugx|intcomma }}</b>
+          </li>
+          {% empty %}<li class="justify-content-center"><div class="mz-empty"><i class="fas fa-sms"></i>No top-ups yet.</div></li>{% endfor %}
+        </ul>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Recent activity</h5><p class="mz-card-sub">Latest changes across the system</p></div>
+          <a class="mz-link" href="{% url 'platform_logs' %}">Logs &rarr;</a>
+        </div>
+        <ul class="mz-list">
+          {% for a in p.recent_activity %}
+          <li>
+            <div class="d-flex align-items-center" style="gap:10px; min-width:0;">
+              <span class="mz-avatar {% if a.action == 'DELETE' %}ic-red{% elif a.action == 'CREATE' %}ic-green{% else %}ic-blue{% endif %}"><i class="fas fa-{% if a.action == 'DELETE' %}trash{% elif a.action == 'CREATE' %}plus{% else %}pen{% endif %}"></i></span>
+              <div class="mz-li-main">
+                <div class="mz-li-title">{{ a.get_action_display }} {{ a.model_name }}</div>
+                <div class="mz-li-sub">{{ a.user.username|default:"System" }} &middot; {{ a.timestamp|naturaltime }}</div>
+              </div>
+            </div>
+          </li>
+          {% empty %}<li class="justify-content-center"><div class="mz-empty"><i class="fas fa-history"></i>No activity logged yet.</div></li>{% endfor %}
+        </ul>
+        {% if p.release_notes %}
+          <div class="mz-section-label mt-3">Latest release notes</div>
+          {% for n in p.release_notes %}
+            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:.82rem;">
+              <a href="{% url 'platform_release_note_edit' n.pk %}" class="text-truncate">{% if n.version %}v{{ n.version }} &middot; {% endif %}{{ n.title }}</a>
+              {% if n.is_published %}<span class="mz-pill pill-good">Live</span>{% else %}<span class="mz-pill pill-muted">Draft</span>{% endif %}
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div></div>
+    </div>
+  </div>
+{% endwith %}
+
+{% else %}
+  <!-- =====================================================================
+       SCHOOL HERO (everyone signed in to a school)
+  ====================================================================== -->
+  <div class="mz-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:18px;">
+      <div class="d-flex align-items-center" style="gap:16px; min-width:0;">
+        <div class="mz-hero-logo">
+          {% if school.logo %}<img src="{{ school.logo.url }}" alt="{{ school.name }}">{% else %}<i class="fas fa-school" style="color:#1f3c88"></i>{% endif %}
+        </div>
+        <div style="min-width:0;">
+          <h2 class="text-truncate">{{ school.name|default:"Dashboard" }}</h2>
+          <div class="mz-hero-sub">
+            Good {% now "A" as ampm %}{% if ampm == "AM" %}morning{% else %}afternoon{% endif %},
+            {{ request.user.first_name|default:request.user.username }}
+            &middot; {{ request.user.profile.get_role_display }} &middot; {% now "l, j F Y" %}
+          </div>
+          <div>
+            {% if current_academic_year %}<span class="mz-chip"><i class="fas fa-calendar"></i> {{ current_academic_year.year }}{% if academic_year_status %} &middot; {{ academic_year_status }}{% endif %}</span>{% endif %}
+            <span class="mz-chip"><i class="fas fa-clock"></i> {{ current_term_name|default:"No active term" }}</span>
+            {% if school.moto %}<span class="mz-chip d-none d-md-inline-flex"><i class="fas fa-quote-left"></i> {{ school.moto|truncatechars:60 }}</span>{% endif %}
+            {% if is_platform %}<a href="{% url 'platform_dashboard' %}" class="mz-chip"><i class="fas fa-globe-africa"></i> Platform</a>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center" style="gap:16px;">
+        <div class="mz-ring" style="--p:{{ term_progress|default:0|unlocalize }};" title="Term progress">
+          <span>{{ term_progress|default:0|floatformat:0 }}%<small>of term</small></span>
+        </div>
+        <div class="d-none d-sm-block" style="font-size:.82rem; line-height:1.6;">
           {% if current_term %}
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-clock mr-1"></i> Current Term</div>
-            <div class="font-weight-bold">{{ current_term_name }}</div>
-            <div class="text-muted small">
-              {{ current_term.start_date|date:"M d" }} - {{ current_term.end_date|date:"M d, Y" }}
-            </div>
-            <div class="text-muted small">{{ current_term.total_days }} total days</div>
-          </div>
+            <div><b>{{ term_days_remaining|default:0 }}</b> days left</div>
+            <div class="mz-hero-sub" style="margin:0;">{{ current_term.start_date|date:"j M" }} &ndash; {{ current_term.end_date|date:"j M Y" }}</div>
           {% endif %}
-
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-graduation-cap mr-1"></i> Levels Offered</div>
-            <div class="d-flex flex-wrap mt-2">
-              {% for level in school_levels %}
-                <span class="badge badge-primary mr-2 mb-2">{{ level }}</span>
-              {% empty %}
-                <span class="text-muted">No levels set</span>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-envelope mr-1"></i> Contact</div>
-            <div class="small">{{ school.contact_email|default:"Not set" }}</div>
-            <div class="small">{{ school.contact_phone|default:"No phone" }}</div>
-          </div>
-
-          <a href="{% url 'academic_calendar' %}" class="btn btn-outline-success btn-sm btn-block">
-            <i class="fas fa-calendar mr-2"></i> Academic Calendar
-          </a>
+          {% if show_school_admin or show_bursar %}<button type="button" class="btn btn-hero-ghost btn-sm mt-1 js-refresh"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>{% endif %}
         </div>
       </div>
     </div>
   </div>
+{% endif %}
 
-  <!-- Students per Class -->
-  <div class="row">
-    <div class="col-12 mb-3">
-      <div class="card soft-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start flex-wrap">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-chart-bar mr-2 text-info"></i>Students per Class</h5>
-              <p class="text-muted small mb-0">Real-time distribution</p>
-            </div>
-            <small class="text-muted mt-1"><i class="fas fa-info-circle mr-1"></i>Includes “Unassigned” if any</small>
-          </div>
+{% if show_school_admin %}
+{% with s=stats f=stats.fees a=stats.attendance %}
+  <!-- =====================================================================
+       SCHOOL ADMIN DASHBOARD
+  ====================================================================== -->
 
-          <div class="chart-wrap mt-3" style="height:360px;">
-            <canvas id="studentsPerClassChart"></canvas>
-          </div>
-        </div>
+  {% if s.setup and not s.setup.complete %}
+  <div class="mz-card mz-setup mb-4"><div class="mz-card-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:14px;">
+      <div style="min-width:240px; flex:1;">
+        <h5 class="mz-card-title"><i class="fas fa-rocket text-warning mr-2"></i>Finish setting up your school</h5>
+        <p class="mz-card-sub mb-2">{{ s.setup.done }} of {{ s.setup.total }} steps done</p>
+        <div class="mz-bar" style="max-width:420px;"><span style="width:{{ s.setup.pct|unlocalize }}%; background:var(--mz-warn);"></span></div>
+      </div>
+      <div style="flex:2;">
+        {% for item in s.setup.items %}{% if not item.done %}
+          <a class="mz-step" href="{{ item.url|default:'#' }}" {% if item.hint %}title="{{ item.hint }}"{% endif %}><i class="far fa-circle text-warning"></i> {{ item.label }}</a>
+        {% endif %}{% endfor %}
+        <a class="mz-link ml-1" href="{% url 'school_setup_checklist' %}">Full checklist &rarr;</a>
       </div>
     </div>
-  </div>
-
+  </div></div>
   {% endif %}
 
-  <!-- =========================
-       TEACHER DASHBOARD ADDED
-  ========================== -->
+  <!-- KPIs -->
+  <div class="row grid-gap">
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <a href="{% url 'student_list' %}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Students</span><span class="mz-kpi-icon ic-blue"><i class="fas fa-user-graduate"></i></span></div>
+        <div class="mz-kpi-value">{{ s.students_active|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if s.students_new_week %}<span class="mz-up"><i class="fas fa-arrow-up"></i> {{ s.students_new_week }}</span> new this week{% else %}{{ s.students_inactive|default:0 }} inactive{% endif %}</div>
+      </div></a>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <a href="{% url 'teacher_list' %}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Teachers</span><span class="mz-kpi-icon ic-green"><i class="fas fa-chalkboard-teacher"></i></span></div>
+        <div class="mz-kpi-value">{{ s.teachers_total|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if s.teachers_total %}1 : {% widthratio s.students_active s.teachers_total 1 %} teacher-student ratio{% else %}No teachers yet{% endif %}</div>
+      </div></a>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <a href="{% url 'class_list' %}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Classes</span><span class="mz-kpi-icon ic-aqua"><i class="fas fa-chalkboard"></i></span></div>
+        <div class="mz-kpi-value">{{ s.classes_total|default:0 }}</div>
+        <div class="mz-kpi-foot">{{ s.streams_total|default:0 }} stream{{ s.streams_total|pluralize }} &middot; {{ total_subjects|default:0 }} subjects</div>
+      </div></a>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Fees this term</span><span class="mz-kpi-icon ic-violet"><i class="fas fa-wallet"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ f.collected_term|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if f.expected %}{{ f.collection_rate }}% of {{ f.expected|intcomma }} expected{% else %}No fee charges this term{% endif %}</div>
+        {% if f.expected %}<div class="mz-bar"><span style="width:{{ f.collection_rate|unlocalize }}%; background:var(--mz-s7);"></span></div>{% endif %}
+      </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      {% url 'fee_defaulters_report' as u_def %}
+      <a href="{{ u_def|default:'#' }}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Outstanding</span><span class="mz-kpi-icon ic-red"><i class="fas fa-file-invoice-dollar"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ f.outstanding|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{{ f.debtors|default:0|intcomma }} student{{ f.debtors|pluralize }} with a balance</div>
+      </div></a>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+      <a href="{% url 'attendance_history' %}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Attendance today</span><span class="mz-kpi-icon ic-amber"><i class="fas fa-user-check"></i></span></div>
+        <div class="mz-kpi-value">{% if a.marked %}{{ a.rate }}%{% else %}&mdash;{% endif %}</div>
+        <div class="mz-kpi-foot">{% if a.marked %}{{ a.present|add:a.late|intcomma }} of {{ a.marked|intcomma }} present &middot; {{ a.classes_marked }} class{{ a.classes_marked|pluralize:"es" }}{% else %}No register taken yet today{% endif %}</div>
+      </div></a>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="mz-card mb-4"><div class="mz-card-body">
+    <div class="mz-card-head"><div><h5 class="mz-card-title"><i class="fas fa-bolt text-warning mr-2"></i>Quick actions</h5></div></div>
+    <div class="mz-actions">
+      {% url 'student_bulk_upload' as u1 %}{% if u1 %}<a class="mz-action" href="{{ u1 }}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-user-plus"></i></span>Add students</a>{% endif %}
+      {% url 'fees_collect' as u2 %}{% if u2 %}<a class="mz-action" href="{{ u2 }}"><span class="mz-kpi-icon ic-violet"><i class="fas fa-hand-holding-usd"></i></span>Collect fees</a>{% endif %}
+      <a class="mz-action" href="{% url 'attendance_take' %}"><span class="mz-kpi-icon ic-amber"><i class="fas fa-clipboard-check"></i></span>Take attendance</a>
+      <a class="mz-action" href="{% url 'marks_entry' %}"><span class="mz-kpi-icon ic-green"><i class="fas fa-edit"></i></span>Enter marks</a>
+      {% url 'report_command_center' as u3 %}{% if u3 %}<a class="mz-action" href="{{ u3 }}"><span class="mz-kpi-icon ic-aqua"><i class="fas fa-file-alt"></i></span>Report cards</a>{% endif %}
+      {% if 'messaging' in school_modules %}{% url 'sms_campaign_list' as u4 %}{% if u4 %}<a class="mz-action" href="{{ u4 }}"><span class="mz-kpi-icon ic-orange"><i class="fas fa-paper-plane"></i></span>SMS parents</a>{% endif %}{% endif %}
+      {% if 'timetable' in school_modules %}{% url 'timetable_dashboard' as u5 %}{% if u5 %}<a class="mz-action" href="{{ u5 }}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-th"></i></span>Timetable</a>{% endif %}{% endif %}
+      {% url 'fee_collection_report' as u6 %}{% if u6 %}<a class="mz-action" href="{{ u6 }}"><span class="mz-kpi-icon ic-green"><i class="fas fa-chart-line"></i></span>Fee reports</a>{% endif %}
+      {% url 'user_management' as u7 %}{% if u7 %}<a class="mz-action" href="{{ u7 }}"><span class="mz-kpi-icon ic-red"><i class="fas fa-id-badge"></i></span>User accounts</a>{% endif %}
+      <a class="mz-action" href="{% url 'academic_calendar' %}"><span class="mz-kpi-icon ic-aqua"><i class="fas fa-calendar-alt"></i></span>Calendar</a>
+    </div>
+  </div></div>
+
+  <!-- Fees -->
+  <div class="row grid-gap">
+    <div class="col-lg-8">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Fee collections</h5><p class="mz-card-sub">Money received per week, last 8 weeks (UGX)</p></div>
+          {% url 'fee_collection_report' as u_col %}{% if u_col %}<a class="mz-link" href="{{ u_col }}">Collection report &rarr;</a>{% endif %}
+        </div>
+        <div class="mz-chart" style="height:280px;"><canvas id="sFeesChart" aria-label="Fees collected per week"></canvas></div>
+        <div class="d-flex flex-wrap mt-3" style="gap:10px;">
+          <div class="mz-stat-mini flex-fill"><b>{{ f.collected_today|default:0|intcomma }}</b><small>today</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ f.collected_week|default:0|intcomma }}</b><small>this week</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ f.payments_term|default:0|intcomma }}</b><small>receipts this term</small></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Term collection</h5><p class="mz-card-sub">{{ current_term_name|default:"Current term" }}</p></div></div>
+        <div class="d-flex align-items-center" style="gap:18px;">
+          <div class="mz-ring light" style="--p:{{ f.collection_rate|default:0|unlocalize }}; --c:var(--mz-s7); --size:110px;">
+            <span>{{ f.collection_rate|default:0 }}%<small>collected</small></span>
+          </div>
+          <div style="font-size:.84rem; line-height:1.9;">
+            <div><span class="text-muted">Expected</span><br><b>UGX {{ f.expected|default:0|intcomma }}</b></div>
+            <div><span class="text-muted">Paid</span><br><b class="text-success">UGX {{ f.paid|default:0|intcomma }}</b></div>
+          </div>
+        </div>
+        <div class="mz-section-label mt-3">By payment method</div>
+        {% for m in f.methods %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between" style="font-size:.82rem;"><span>{{ m.label }} <small class="text-muted">({{ m.count }})</small></span><b class="mz-num">{{ m.amount|intcomma }}</b></div>
+            <div class="mz-bar" style="margin-top:4px;"><span style="width:{{ m.pct|unlocalize }}%;"></span></div>
+          </div>
+        {% empty %}
+          <div class="text-muted" style="font-size:.84rem;">No payments recorded this term.</div>
+        {% endfor %}
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Enrolment -->
+  <div class="row grid-gap">
+    <div class="col-lg-8">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Enrolment by class</h5><p class="mz-card-sub">Active students, boys and girls</p></div>
+          <div class="mz-legend"><span><i style="background:var(--mz-s1)"></i>Boys</span><span><i style="background:var(--mz-s2)"></i>Girls</span></div>
+        </div>
+        {% if s.class_rows %}
+          <div class="mz-chart" style="height:300px;"><canvas id="sClassChart" aria-label="Students per class"></canvas></div>
+          <details class="mt-2" style="font-size:.82rem;">
+            <summary class="text-muted" style="cursor:pointer;">Show as table</summary>
+            <table class="mz-table mt-2"><thead><tr><th>Class</th><th class="mz-num">Boys</th><th class="mz-num">Girls</th><th class="mz-num">Total</th></tr></thead>
+              <tbody>{% for r in s.class_rows %}<tr><td>{{ r.label }}</td><td class="mz-num">{{ r.boys }}</td><td class="mz-num">{{ r.girls }}</td><td class="mz-num"><b>{{ r.total }}</b></td></tr>{% endfor %}</tbody>
+            </table>
+          </details>
+        {% else %}
+          <div class="mz-empty"><i class="fas fa-user-graduate"></i>No students yet. {% url 'student_bulk_upload' as u_up %}{% if u_up %}<a href="{{ u_up }}">Upload your student list</a>.{% endif %}</div>
+        {% endif %}
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Student mix</h5><p class="mz-card-sub">Gender and level</p></div></div>
+        <div class="mz-chart" style="height:170px;"><canvas id="sGenderChart" aria-label="Boys and girls"></canvas></div>
+        <div class="d-flex mt-2" style="gap:10px;">
+          <div class="mz-stat-mini flex-fill"><b style="color:var(--mz-s1)">{{ s.students_male|default:0|intcomma }}</b><small>Boys ({{ s.students_male_pct|default:0 }}%)</small></div>
+          <div class="mz-stat-mini flex-fill"><b style="color:#c4501f">{{ s.students_female|default:0|intcomma }}</b><small>Girls ({{ s.students_female_pct|default:0 }}%)</small></div>
+        </div>
+        <div class="mz-section-label mt-3">By level</div>
+        {% for l in s.level_rows %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between" style="font-size:.82rem;"><b>{{ l.label }}</b><span class="mz-num">{{ l.total|intcomma }} <small class="text-muted">({{ l.pct }}%)</small></span></div>
+            <div class="mz-bar" style="margin-top:4px;"><span style="width:{{ l.pct|unlocalize }}%; background:var(--mz-s3);"></span></div>
+          </div>
+        {% empty %}<div class="text-muted" style="font-size:.84rem;">No levels yet.</div>{% endfor %}
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Attendance + new admissions -->
+  <div class="row grid-gap">
+    <div class="col-lg-8">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Attendance rate</h5><p class="mz-card-sub">Share of students present or late, last 2 weeks</p></div>
+          <a class="mz-link" href="{% url 'attendance_history' %}">History &rarr;</a>
+        </div>
+        <div class="mz-chart" style="height:250px;"><canvas id="sAttendanceChart" aria-label="Attendance rate per day"></canvas></div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Today's register</h5><p class="mz-card-sub">{% now "l, j M" %}</p></div></div>
+        {% if a.marked %}
+          <div class="d-flex" style="gap:8px;">
+            <div class="mz-stat-mini flex-fill"><b class="text-success">{{ a.present|intcomma }}</b><small>Present</small></div>
+            <div class="mz-stat-mini flex-fill"><b style="color:#b77f00">{{ a.late|intcomma }}</b><small>Late</small></div>
+            <div class="mz-stat-mini flex-fill"><b class="text-danger">{{ a.absent|intcomma }}</b><small>Absent</small></div>
+          </div>
+          <div class="mz-bar mt-3" style="height:10px; display:flex;">
+            <span style="width:{% widthratio a.present a.marked 100 %}%; background:var(--mz-good); border-radius:0;"></span>
+            <span style="width:{% widthratio a.late a.marked 100 %}%; background:var(--mz-warn); border-radius:0;"></span>
+            <span style="width:{% widthratio a.absent a.marked 100 %}%; background:var(--mz-bad); border-radius:0;"></span>
+          </div>
+          <p class="mz-card-sub mt-2">{{ a.sessions_today }} register{{ a.sessions_today|pluralize }} taken in {{ a.classes_marked }} class{{ a.classes_marked|pluralize:"es" }}.</p>
+        {% else %}
+          <div class="mz-empty"><i class="fas fa-clipboard-list"></i>No register has been taken today.<br><a href="{% url 'attendance_take' %}" class="btn btn-sm btn-primary mt-2">Take attendance</a></div>
+        {% endif %}
+        <hr>
+        <div class="mz-section-label">New admissions</div>
+        <div class="d-flex" style="gap:8px;">
+          <div class="mz-stat-mini flex-fill"><b>{{ s.students_new_week|default:0 }}</b><small>this week</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ s.students_new_month|default:0 }}</b><small>this month</small></div>
+        </div>
+        <div class="mz-chart mt-2" style="height:90px;"><canvas id="sEnrolChart" aria-label="New students per month"></canvas></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Payments + balances -->
+  <div class="row grid-gap">
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Recent payments</h5><p class="mz-card-sub">Latest fee receipts</p></div>
+          {% url 'fees_collect' as u_fc %}{% if u_fc %}<a class="mz-link" href="{{ u_fc }}">Collect fees &rarr;</a>{% endif %}
+        </div>
+        <div class="table-responsive">
+          <table class="mz-table">
+            <thead><tr><th>Student</th><th>Receipt</th><th>Method</th><th>Date</th><th class="mz-num">Amount</th></tr></thead>
+            <tbody>
+            {% for pay in f.recent %}
+              <tr>
+                <td><b>{{ pay.student.first_name }} {{ pay.student.last_name }}</b><div class="text-muted" style="font-size:.74rem;">{{ pay.student.current_class.short_name|default:pay.student.current_class.name|default:"" }}</div></td>
+                <td><a href="{% url 'fee_payment_receipt' pay.pk %}">{{ pay.receipt_no }}</a></td>
+                <td><span class="mz-pill {% if pay.payment_method == 'SCHOOLPAY' %}pill-info{% elif pay.payment_method == 'MOBILE' %}pill-warn{% else %}pill-muted{% endif %}">{{ pay.get_payment_method_display }}</span></td>
+                <td style="white-space:nowrap;">{{ pay.payment_date|date:"j M" }}</td>
+                <td class="mz-num"><b>{{ pay.amount|floatformat:0|intcomma }}</b></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5"><div class="mz-empty"><i class="fas fa-receipt"></i>No payments yet.</div></td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Highest balances</h5><p class="mz-card-sub">Students owing the most this term</p></div>
+          {% if u_def %}<a class="mz-link" href="{{ u_def }}">Defaulters &rarr;</a>{% endif %}
+        </div>
+        <ul class="mz-list">
+          {% for d in f.defaulters %}
+          <li>
+            <div class="d-flex align-items-center" style="gap:10px; min-width:0;">
+              <span class="mz-avatar ic-red">{{ d.name|slice:":1"|upper }}</span>
+              <div class="mz-li-main"><div class="mz-li-title">{{ d.name }}</div><div class="mz-li-sub">{{ d.class_name }}</div></div>
+            </div>
+            <b class="mz-num text-danger" style="font-size:.84rem;">{{ d.balance|intcomma }}</b>
+          </li>
+          {% empty %}
+          <li class="justify-content-center"><div class="mz-empty"><i class="fas fa-check-circle text-success"></i>No outstanding balances this term.</div></li>
+          {% endfor %}
+        </ul>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Calendar / academics / account -->
+  <div class="row grid-gap">
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Coming up</h5><p class="mz-card-sub">Events and holidays</p></div>
+          <a class="mz-link" href="{% url 'academic_calendar' %}">Calendar &rarr;</a>
+        </div>
+        <ul class="mz-list">
+          {% for e in s.upcoming %}
+          <li style="justify-content:flex-start;">
+            <div class="mz-date"><b>{{ e.start|date:"j" }}</b><small>{{ e.start|date:"M" }}</small></div>
+            <div class="mz-li-main flex-fill">
+              <div class="mz-li-title">{{ e.title }}</div>
+              <div class="mz-li-sub">{{ e.kind }}{% if e.venue %} &middot; {{ e.venue }}{% endif %}{% if e.end and e.end != e.start %} &middot; to {{ e.end|date:"j M" }}{% endif %}</div>
+            </div>
+            {% if e.days <= 0 %}<span class="mz-pill pill-good">Now</span>{% elif e.days == 1 %}<span class="mz-pill pill-warn">Tomorrow</span>{% else %}<span class="mz-pill {% if e.is_holiday %}pill-bad{% else %}pill-info{% endif %}">in {{ e.days }}d</span>{% endif %}
+          </li>
+          {% empty %}
+          <li class="justify-content-center"><div class="mz-empty"><i class="far fa-calendar"></i>Nothing scheduled.</div></li>
+          {% endfor %}
+        </ul>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Academic year</h5><p class="mz-card-sub">Year, term and status</p></div></div>
+        {% if current_academic_year %}
+          <div class="d-flex justify-content-between" style="font-size:.84rem;"><span class="text-muted">Year</span><b>{{ current_academic_year.year }}</b></div>
+          {% if academic_year_progress %}<div class="mz-bar"><span style="width:{{ academic_year_progress|unlocalize }}%; background:var(--mz-good);"></span></div><div class="mz-card-sub mb-3">{{ academic_year_progress }}% of the year done</div>{% endif %}
+        {% endif %}
+        {% if current_term %}
+          <div class="d-flex justify-content-between mt-2" style="font-size:.84rem;"><span class="text-muted">Term</span><b>{{ current_term_name }}</b></div>
+          <div class="mz-bar"><span style="width:{{ term_progress|default:0|unlocalize }}%;"></span></div>
+          <div class="mz-card-sub mb-3">{{ term_days_elapsed|default:0 }} of {{ term_total_days|default:0 }} days &middot; {{ term_days_remaining|default:0 }} left</div>
+          <div class="d-flex flex-wrap" style="gap:6px;">
+            {% with st=current_term_status %}
+            <span class="mz-pill {% if not st or st.is_marks_entry_open %}pill-good{% else %}pill-muted{% endif %}"><i class="fas fa-{% if not st or st.is_marks_entry_open %}lock-open{% else %}lock{% endif %} mr-1"></i>Marks entry {% if not st or st.is_marks_entry_open %}open{% else %}closed{% endif %}</span>
+            {% if st.is_reporting_finalized %}<span class="mz-pill pill-info">Reports finalized</span>{% endif %}
+            {% endwith %}
+            {% if current_term.is_final_term %}<span class="mz-pill pill-warn">Final term</span>{% endif %}
+          </div>
+        {% else %}
+          <div class="mz-empty"><i class="fas fa-clock"></i>No active term set.</div>
+        {% endif %}
+        <div class="mz-section-label mt-3">Levels offered</div>
+        <div class="d-flex flex-wrap" style="gap:6px;">{% for level in school_levels %}<span class="mz-pill pill-info">{{ level }}</span>{% empty %}<span class="text-muted" style="font-size:.84rem;">No levels set</span>{% endfor %}</div>
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Your account</h5><p class="mz-card-sub">Subscription, SMS and portals</p></div>
+          <a class="mz-link" href="{% url 'subscription_status' %}">Details &rarr;</a>
+        </div>
+        <ul class="mz-list">
+          <li>
+            <span style="font-size:.84rem;"><i class="fas fa-crown text-warning mr-2"></i>Plan</span>
+            <span>{% if subscription %}<b style="font-size:.84rem;">{{ subscription.get_plan_display }}</b> {% include "platform/_state_badge.html" with state=subscription_state %}{% else %}<span class="text-muted">-</span>{% endif %}</span>
+          </li>
+          {% if subscription and subscription.end_date %}
+          <li>
+            <span style="font-size:.84rem;"><i class="far fa-calendar-check text-primary mr-2"></i>Paid until</span>
+            <b style="font-size:.84rem;">{{ subscription.end_date|date:"j M Y" }}{% if subscription_days_left is not None and subscription_days_left >= 0 %} <small class="text-muted">({{ subscription_days_left }}d)</small>{% endif %}</b>
+          </li>
+          {% endif %}
+          {% if s.sms_account %}
+          <li>
+            <span style="font-size:.84rem;"><i class="fas fa-sms text-info mr-2"></i>SMS credit</span>
+            <span style="font-size:.84rem;">
+              {% if not s.sms_account.sms_enabled %}<span class="mz-pill pill-muted">Off</span>
+              {% elif s.sms_account.is_prepaid %}<b class="{% if s.sms_account.is_low %}text-danger{% endif %}">{{ s.sms_account.credit_units|intcomma }} units</b> <a href="{% url 'school_sms_credit' %}" class="ml-1">Top up</a>
+              {% else %}<span class="mz-pill pill-info">Postpaid</span>{% endif %}
+            </span>
+          </li>
+          {% endif %}
+          <li><span style="font-size:.84rem;"><i class="fas fa-user-friends text-success mr-2"></i>Parent accounts</span><b style="font-size:.84rem;">{{ s.parents_total|default:0|intcomma }}</b></li>
+          <li><span style="font-size:.84rem;"><i class="fas fa-laptop text-primary mr-2"></i>Student logins</span><b style="font-size:.84rem;">{{ s.portal_students|default:0|intcomma }}</b></li>
+          <li><span style="font-size:.84rem;"><i class="fas fa-envelope text-muted mr-2"></i>Contact</span><span class="text-truncate" style="font-size:.8rem; max-width:60%;">{{ school.contact_email|default:school.contact_phone|default:"Not set" }}</span></li>
+        </ul>
+        {% if whats_new_count %}<a href="{% url 'whats_new' %}" class="btn btn-sm btn-outline-primary btn-block mt-2"><i class="fas fa-gift mr-1"></i> {{ whats_new_count }} new update{{ whats_new_count|pluralize }}</a>{% endif %}
+      </div></div>
+    </div>
+  </div>
+{% endwith %}
+{% endif %}
+
+{% if show_bursar %}
+{% with b=bursar f=bursar.fees pg=bursar.progress %}
+  <!-- =====================================================================
+       BURSAR DASHBOARD (fees)
+  ====================================================================== -->
+  {% url 'fee_defaulters_report' as u_def %}
+  {% url 'fee_collection_report' as u_col %}
+  {% url 'fees_collect' as u_fc %}
+
+  {% if not b.term %}
+  <div class="mz-card mz-setup mb-4"><div class="mz-card-body" style="font-size:.86rem;">
+    <i class="fas fa-info-circle text-warning mr-2"></i>No current term is set, so this term's fee figures cannot be shown. Ask the school admin to set the current term.
+  </div></div>
+  {% elif not f.expected %}
+  <div class="mz-card mz-setup mb-4"><div class="mz-card-body" style="font-size:.86rem;">
+    <i class="fas fa-info-circle text-warning mr-2"></i>No fees have been charged to students for {{ b.term.name }} yet. Once the admin generates charges from the fee structures, expected fees and balances will show here.
+  </div></div>
+  {% endif %}
+
+  <!-- KPIs -->
+  <div class="row grid-gap">
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Expected this term</span><span class="mz-kpi-icon ic-blue"><i class="fas fa-bullseye"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ f.expected|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">If all {{ b.students_billed|default:0|intcomma }} billed student{{ b.students_billed|pluralize }} pay in full</div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <a href="{{ u_col|default:'#' }}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Collected this term</span><span class="mz-kpi-icon ic-violet"><i class="fas fa-wallet"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ f.paid|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if f.expected %}{{ f.collection_rate }}% of expected{% else %}No fee charges this term{% endif %}</div>
+        {% if f.expected %}<div class="mz-bar"><span style="width:{{ f.collection_rate|unlocalize }}%; background:var(--mz-s7);"></span></div>{% endif %}
+      </div></a>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <a href="{{ u_def|default:'#' }}" class="d-block h-100 text-reset" style="text-decoration:none;">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Outstanding this term</span><span class="mz-kpi-icon ic-red"><i class="fas fa-file-invoice-dollar"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ f.outstanding|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{{ f.debtors|default:0|intcomma }} student{{ f.debtors|pluralize }} still owe{{ f.debtors|pluralize:"s," }}</div>
+      </div></a>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Projected by term end</span><span class="mz-kpi-icon ic-green"><i class="fas fa-chart-line"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ pg.projected|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if pg.days_total %}{{ pg.projected_rate|default:0 }}% of expected at the current pace{% else %}Term dates not set{% endif %}</div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Received today</span><span class="mz-kpi-icon ic-aqua"><i class="fas fa-cash-register"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ f.collected_today|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{{ f.collected_week|default:0|intcomma }} this week</div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Students fully paid</span><span class="mz-kpi-icon ic-green"><i class="fas fa-user-check"></i></span></div>
+        <div class="mz-kpi-value">{{ b.students_cleared|default:0|intcomma }} <small>of {{ b.students_billed|default:0|intcomma }}</small></div>
+        <div class="mz-kpi-foot">{{ b.students_partial|default:0|intcomma }} part paid &middot; {{ b.students_unpaid|default:0|intcomma }} not paid</div>
+        {% if b.students_billed %}<div class="mz-bar"><span style="width:{{ b.students_cleared_pct|unlocalize }}%; background:var(--mz-good);"></span></div>{% endif %}
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Arrears (earlier terms)</span><span class="mz-kpi-icon ic-orange"><i class="fas fa-history"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ b.arrears|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">Unpaid balances from past terms</div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Needed per day</span><span class="mz-kpi-icon ic-amber"><i class="fas fa-flag-checkered"></i></span></div>
+        <div class="mz-kpi-value"><small>UGX</small> {{ pg.daily_needed|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">{% if pg.days_total %}To collect everything in the {{ pg.days_left|default:0 }} day{{ pg.days_left|pluralize }} left{% else %}Term dates not set{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="mz-card mb-4"><div class="mz-card-body">
+    <div class="mz-card-head"><div><h5 class="mz-card-title"><i class="fas fa-bolt text-warning mr-2"></i>Quick actions</h5></div>
+      {% if b.pending_adjustments %}<span class="mz-pill pill-warn"><i class="fas fa-hourglass-half mr-1"></i>{{ b.pending_adjustments }} discount{{ b.pending_adjustments|pluralize }} waiting for admin approval</span>{% endif %}
+    </div>
+    <div class="mz-actions">
+      {% if u_fc %}<a class="mz-action" href="{{ u_fc }}"><span class="mz-kpi-icon ic-violet"><i class="fas fa-hand-holding-usd"></i></span>Collect fees</a>{% endif %}
+      {% url 'student_manual_charge_create' as ub1 %}{% if ub1 %}<a class="mz-action" href="{{ ub1 }}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-user-plus"></i></span>Student charge</a>{% endif %}
+      {% url 'bulk_manual_charge_create' as ub2 %}{% if ub2 %}<a class="mz-action" href="{{ ub2 }}"><span class="mz-kpi-icon ic-aqua"><i class="fas fa-users"></i></span>Class charge</a>{% endif %}
+      {% url 'fee_opening_balance_list' as ub3 %}{% if ub3 %}<a class="mz-action" href="{{ ub3 }}"><span class="mz-kpi-icon ic-orange"><i class="fas fa-hourglass-half"></i></span>Old balances</a>{% endif %}
+      {% if u_col %}<a class="mz-action" href="{{ u_col }}"><span class="mz-kpi-icon ic-green"><i class="fas fa-receipt"></i></span>Collection report</a>{% endif %}
+      {% if u_def %}<a class="mz-action" href="{{ u_def }}"><span class="mz-kpi-icon ic-red"><i class="fas fa-exclamation-circle"></i></span>Defaulters</a>{% endif %}
+      {% url 'fee_clearance_report' as ub4 %}{% if ub4 %}<a class="mz-action" href="{{ ub4 }}"><span class="mz-kpi-icon ic-green"><i class="fas fa-user-check"></i></span>Clearance</a>{% endif %}
+      {% url 'fee_financial_report' as ub5 %}{% if ub5 %}<a class="mz-action" href="{{ ub5 }}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-chart-pie"></i></span>Financial report</a>{% endif %}
+    </div>
+  </div></div>
+
+  <!-- Term progress: collected vs target -->
+  <div class="row grid-gap">
+    <div class="col-lg-8">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Term collection vs target</h5>
+            <p class="mz-card-sub">Money received so far this term (cumulative) against a steady path to 100% of expected by the last day of term (UGX)</p></div>
+          {% if pg.days_total %}
+            {% if pg.on_track %}<span class="mz-pill pill-good"><i class="fas fa-check mr-1"></i>On track</span>
+            {% else %}<span class="mz-pill pill-bad"><i class="fas fa-arrow-down mr-1"></i>Behind by UGX {{ pg.gap|intcomma }}</span>{% endif %}
+          {% endif %}
+        </div>
+        <div class="mz-legend mb-2">
+          <span><i style="background:var(--mz-s7);"></i>Collected</span>
+          <span><i style="background:#9aa3b5;"></i>Target path</span>
+        </div>
+        {% if pg.labels %}
+          <div class="mz-chart" style="height:290px;"><canvas id="bProgressChart" aria-label="Fees collected against the term target"></canvas></div>
+        {% else %}
+          <div class="mz-empty"><i class="fas fa-calendar-times"></i>Set the current term and its dates to see this chart.</div>
+        {% endif %}
+      </div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Who has paid</h5><p class="mz-card-sub">{{ current_term_name|default:"Current term" }}</p></div></div>
+        <div class="mz-chart" style="height:180px;"><canvas id="bStatusChart" aria-label="Students by payment status"></canvas></div>
+        <ul class="mz-list mt-3">
+          <li><span style="font-size:.84rem;"><i class="fas fa-circle mr-2" style="color:#12a150; font-size:9px;"></i>Fully paid</span><b class="mz-num">{{ b.students_cleared|default:0|intcomma }}</b></li>
+          <li><span style="font-size:.84rem;"><i class="fas fa-circle mr-2" style="color:#e8a200; font-size:9px;"></i>Part paid</span><b class="mz-num">{{ b.students_partial|default:0|intcomma }}</b></li>
+          <li><span style="font-size:.84rem;"><i class="fas fa-circle mr-2" style="color:#d93f3f; font-size:9px;"></i>Not paid</span><b class="mz-num">{{ b.students_unpaid|default:0|intcomma }}</b></li>
+        </ul>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Per class -->
+  <div class="row grid-gap">
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Expected vs collected by class</h5><p class="mz-card-sub">This term (UGX)</p></div>
+        </div>
+        <div class="mz-legend mb-2">
+          <span><i style="background:#c9d2e3;"></i>Expected</span>
+          <span><i style="background:var(--mz-s7);"></i>Collected</span>
+        </div>
+        {% if b.class_rows %}
+          <div class="mz-chart" style="height:300px;"><canvas id="bClassChart" aria-label="Expected and collected fees per class"></canvas></div>
+        {% else %}
+          <div class="mz-empty"><i class="fas fa-chalkboard"></i>No fee charges for any class this term.</div>
+        {% endif %}
+      </div></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Class balances</h5><p class="mz-card-sub">Collection rate per class</p></div></div>
+        <div class="table-responsive" style="max-height:330px; overflow-y:auto;">
+          <table class="mz-table">
+            <thead><tr><th>Class</th><th class="mz-num">Collected</th><th class="mz-num">Balance</th><th style="width:30%;">Rate</th></tr></thead>
+            <tbody>
+            {% for r in b.class_rows %}
+              <tr>
+                <td><b>{{ r.label }}</b><div class="text-muted" style="font-size:.72rem;">{{ r.students }} student{{ r.students|pluralize }}</div></td>
+                <td class="mz-num">{{ r.paid|intcomma }}</td>
+                <td class="mz-num {% if r.outstanding %}text-danger{% endif %}">{{ r.outstanding|intcomma }}</td>
+                <td><div style="font-size:.74rem; font-weight:600;">{{ r.rate }}%</div>
+                  <div class="mz-bar" style="margin-top:3px;"><span style="width:{{ r.rate|unlocalize }}%; background:{% if r.rate >= 75 %}var(--mz-good){% elif r.rate >= 40 %}var(--mz-warn){% else %}var(--mz-bad){% endif %};"></span></div></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4"><div class="mz-empty"><i class="fas fa-chalkboard"></i>No classes billed yet.</div></td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Daily + fee items -->
+  <div class="row grid-gap">
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Daily collections</h5><p class="mz-card-sub">Money received each day, last 30 days (UGX)</p></div>
+          {% if u_col %}<a class="mz-link" href="{{ u_col }}">Collection report &rarr;</a>{% endif %}
+        </div>
+        <div class="mz-chart" style="height:260px;"><canvas id="bDailyChart" aria-label="Fees collected per day"></canvas></div>
+        <div class="d-flex flex-wrap mt-3" style="gap:10px;">
+          <div class="mz-stat-mini flex-fill"><b>{{ f.collected_today|default:0|intcomma }}</b><small>today</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ f.collected_week|default:0|intcomma }}</b><small>this week</small></div>
+          <div class="mz-stat-mini flex-fill"><b>{{ f.payments_term|default:0|intcomma }}</b><small>receipts this term</small></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">By fee item</h5><p class="mz-card-sub">Collected of expected, this term</p></div></div>
+        {% for c in b.category_rows %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between" style="font-size:.82rem;"><span class="text-truncate">{{ c.label }}</span><span class="mz-num"><b>{{ c.paid|intcomma }}</b> <span class="text-muted">/ {{ c.expected|intcomma }}</span></span></div>
+            <div class="mz-bar" style="margin-top:4px;"><span style="width:{{ c.rate|unlocalize }}%; background:var(--mz-s7);"></span></div>
+          </div>
+        {% empty %}
+          <div class="text-muted" style="font-size:.84rem;">No fee items charged this term.</div>
+        {% endfor %}
+        <div class="mz-section-label mt-3">By payment method</div>
+        {% for m in f.methods %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between" style="font-size:.82rem;"><span>{{ m.label }} <small class="text-muted">({{ m.count }})</small></span><b class="mz-num">{{ m.amount|intcomma }}</b></div>
+            <div class="mz-bar" style="margin-top:4px;"><span style="width:{{ m.pct|unlocalize }}%;"></span></div>
+          </div>
+        {% empty %}
+          <div class="text-muted" style="font-size:.84rem;">No payments recorded this term.</div>
+        {% endfor %}
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Payments + balances -->
+  <div class="row grid-gap">
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Recent payments</h5><p class="mz-card-sub">Latest fee receipts</p></div>
+          {% if u_fc %}<a class="mz-link" href="{{ u_fc }}">Collect fees &rarr;</a>{% endif %}
+        </div>
+        <div class="table-responsive">
+          <table class="mz-table">
+            <thead><tr><th>Student</th><th>Receipt</th><th>Method</th><th>Date</th><th class="mz-num">Amount</th></tr></thead>
+            <tbody>
+            {% for pay in f.recent %}
+              <tr>
+                <td><b>{{ pay.student.first_name }} {{ pay.student.last_name }}</b><div class="text-muted" style="font-size:.74rem;">{{ pay.student.current_class.short_name|default:pay.student.current_class.name|default:"" }}</div></td>
+                <td><a href="{% url 'fee_payment_receipt' pay.pk %}">{{ pay.receipt_no }}</a></td>
+                <td><span class="mz-pill {% if pay.payment_method == 'SCHOOLPAY' %}pill-info{% elif pay.payment_method == 'MOBILE' %}pill-warn{% else %}pill-muted{% endif %}">{{ pay.get_payment_method_display }}</span></td>
+                <td style="white-space:nowrap;">{{ pay.payment_date|date:"j M" }}</td>
+                <td class="mz-num"><b>{{ pay.amount|floatformat:0|intcomma }}</b></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5"><div class="mz-empty"><i class="fas fa-receipt"></i>No payments yet.</div></td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Highest balances</h5><p class="mz-card-sub">Students owing the most this term</p></div>
+          {% if u_def %}<a class="mz-link" href="{{ u_def }}">Defaulters &rarr;</a>{% endif %}
+        </div>
+        <ul class="mz-list">
+          {% for d in f.defaulters %}
+          <li>
+            <div class="d-flex align-items-center" style="gap:10px; min-width:0;">
+              <span class="mz-avatar ic-red">{{ d.name|slice:":1"|upper }}</span>
+              <div class="mz-li-main"><div class="mz-li-title"><a class="text-reset" href="{% url 'student_fee_statement' d.id %}">{{ d.name }}</a></div><div class="mz-li-sub">{{ d.class_name }}</div></div>
+            </div>
+            <b class="mz-num text-danger" style="font-size:.84rem;">{{ d.balance|intcomma }}</b>
+          </li>
+          {% empty %}
+          <li class="justify-content-center"><div class="mz-empty"><i class="fas fa-check-circle text-success"></i>No outstanding balances this term.</div></li>
+          {% endfor %}
+        </ul>
+      </div></div>
+    </div>
+  </div>
+{% endwith %}
+{% endif %}
+
+  <!-- =====================================================================
+       TEACHER DASHBOARD
+  ====================================================================== -->
   {% if request.user|has_role:"TEACHER" %}
-
-  <!-- Teacher Stats -->
-  <div class="row">
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-blue">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">My Students</div>
-            <div class="stat-value">{{ teacher_total_students|default:0|intcomma }}</div>
-          </div>
-        </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">Across assigned classes</span>
-          <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-primary">View</a>
-        </div>
+  <div class="row grid-gap">
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">My students</span><span class="mz-kpi-icon ic-blue"><i class="fas fa-user-graduate"></i></span></div>
+        <div class="mz-kpi-value">{{ teacher_total_students|default:0|intcomma }}</div>
+        <div class="mz-kpi-foot">across my classes</div>
       </div>
     </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-green">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-book-open"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">My Subjects</div>
-            <div class="stat-value">{{ teacher_subjects_count|default:0|intcomma }}</div>
-          </div>
-        </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">Allocated subjects</span>
-          <a href="" class="btn btn-sm btn-outline-success">View</a>
-        </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">My subjects</span><span class="mz-kpi-icon ic-green"><i class="fas fa-book-open"></i></span></div>
+        <div class="mz-kpi-value">{{ teacher_subjects_count|default:0 }}</div>
+        <div class="mz-kpi-foot">allocated to me</div>
       </div>
     </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-cyan">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-school"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">My Classes</div>
-            <div class="stat-value">{{ teacher_classes_count|default:0|intcomma }}</div>
-          </div>
-        </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">Teaching allocations</span>
-          <a href="" class="btn btn-sm btn-outline-info">View</a>
-        </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">My classes</span><span class="mz-kpi-icon ic-aqua"><i class="fas fa-school"></i></span></div>
+        <div class="mz-kpi-value">{{ teacher_classes_count|default:0 }}</div>
+        <div class="mz-kpi-foot">class / stream allocations</div>
       </div>
     </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
-      <div class="stat-card stat-amber">
-        <div class="stat-top">
-          <div class="stat-icon"><i class="fas fa-edit"></i></div>
-          <div class="stat-meta">
-            <div class="stat-label">Enter Marks</div>
-          </div>
-        </div>
-        <div class="stat-bottom">
-          <span class="text-muted small">New entry</span>
-          <a href="{% url 'marks_entry' %}" class="btn btn-sm btn-outline-warning">Enter</a>
-        </div>
+    <div class="col-xl-3 col-md-6 col-6">
+      <div class="mz-card mz-kpi">
+        <div class="mz-kpi-top"><span class="mz-kpi-label">Lessons today</span><span class="mz-kpi-icon ic-amber"><i class="fas fa-chalkboard"></i></span></div>
+        <div class="mz-kpi-value">{{ teacher_lessons_today|default:0 }}</div>
+        <div class="mz-kpi-foot">{{ teacher_attendance_today|default:0 }} attendance marks today</div>
       </div>
     </div>
   </div>
 
-  <!-- Teacher Analytics -->
-  <div class="row">
-    <div class="col-lg-8 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center flex-wrap">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-chart-line mr-2 text-primary"></i>My Marks Entry Trend</h5>
-              <p class="text-muted small mb-0">Weekly marks activity</p>
-            </div>
-            <span class="badge badge-light mt-2 mt-md-0">Teacher View</span>
-          </div>
-
-          <div class="chart-wrap mt-3" style="height:320px;">
-            <canvas id="teacherTrendChart"></canvas>
-          </div>
-        </div>
-      </div>
+  <div class="mz-card mb-4"><div class="mz-card-body">
+    <div class="mz-card-head"><div><h5 class="mz-card-title"><i class="fas fa-bolt text-warning mr-2"></i>Quick actions</h5></div></div>
+    <div class="mz-actions">
+      <a class="mz-action" href="{% url 'marks_entry' %}"><span class="mz-kpi-icon ic-green"><i class="fas fa-edit"></i></span>Enter marks</a>
+      <a class="mz-action" href="{% url 'attendance_take' %}"><span class="mz-kpi-icon ic-amber"><i class="fas fa-user-check"></i></span>Take attendance</a>
+      <a class="mz-action" href="{% url 'teacher_timetable_view' %}"><span class="mz-kpi-icon ic-blue"><i class="fas fa-calendar-alt"></i></span>My timetable</a>
+      <a class="mz-action" href="{% url 'teacher_exam_list' %}"><span class="mz-kpi-icon ic-violet"><i class="fas fa-laptop"></i></span>Online exams</a>
+      <a class="mz-action" href="{% url 'teacher_marking_inbox' %}"><span class="mz-kpi-icon ic-red"><i class="fas fa-inbox"></i></span>Marking inbox</a>
+      <a class="mz-action" href="{% url 'academic_calendar' %}"><span class="mz-kpi-icon ic-aqua"><i class="fas fa-calendar"></i></span>Calendar</a>
     </div>
+  </div></div>
 
-    <div class="col-lg-4 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-chart-pie mr-2 text-success"></i>Students by Class</h5>
-              <p class="text-muted small mb-0">My allocated classes</p>
-            </div>
-            <span class="badge badge-light">Live</span>
-          </div>
-
-          <div class="chart-wrap mt-3" style="height:240px;">
-            <canvas id="teacherClassChart"></canvas>
-          </div>
-
-          <hr class="my-3">
-
-          <div class="d-flex justify-content-between">
-            <div>
-              <div class="text-muted small">Attendance Today</div>
-              <div class="font-weight-bold">{{ teacher_attendance_today|default:0 }}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-muted small">Lessons Today</div>
-              <div class="font-weight-bold">{{ teacher_lessons_today|default:0 }}</div>
-            </div>
-          </div>
+  <div class="row grid-gap">
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head">
+          <div><h5 class="mz-card-title">Today's lessons</h5><p class="mz-card-sub">{% now "l, j M" %}</p></div>
+          <a class="mz-link" href="{% url 'teacher_timetable_view' %}">Full timetable &rarr;</a>
         </div>
-      </div>
+        <ul class="mz-list">
+          {% for item in teacher_today_timetable %}
+          <li style="justify-content:flex-start;">
+            <div class="mz-date" style="width:64px;"><b style="font-size:.86rem;">{{ item.start_time }}</b><small>{{ item.end_time }}</small></div>
+            <div class="mz-li-main flex-fill">
+              <div class="mz-li-title">{{ item.subject.name|default:item.subject }}</div>
+              <div class="mz-li-sub">{{ item.class_obj.name|default:item.class_name }}{% if item.stream %} &middot; {{ item.stream.name|default:item.stream }}{% endif %}{% if item.room %} &middot; Room {{ item.room }}{% endif %}</div>
+            </div>
+            <span class="mz-pill pill-muted">{{ item.period_name }}</span>
+          </li>
+          {% empty %}
+          <li class="justify-content-center"><div class="mz-empty"><i class="fas fa-mug-hot"></i>No lessons scheduled for today.</div></li>
+          {% endfor %}
+        </ul>
+      </div></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">My classes</h5><p class="mz-card-sub">Students in each allocated class</p></div></div>
+        <div class="mz-chart" style="height:240px;"><canvas id="teacherClassChart" aria-label="Students per class"></canvas></div>
+      </div></div>
     </div>
   </div>
 
-  <!-- Teacher lower section -->
-  <div class="row">
-    <div class="col-lg-7 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center flex-wrap">
-            <div>
-              <h5 class="mb-1"><i class="fas fa-calendar-day text-info mr-2"></i>Today's Timetable</h5>
-              <p class="text-muted small mb-0">Your lessons for today</p>
-            </div>
-            <a href="" class="btn btn-sm btn-outline-info mt-2 mt-md-0">
-              <i class="fas fa-eye mr-1"></i> Full Timetable
-            </a>
-          </div>
-
-          <div class="mt-3">
-            {% for item in teacher_today_timetable %}
-              <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                <div>
-                  <div class="font-weight-bold">
-                    {{ item.subject.name|default:item.subject }}
-                  </div>
-                  <small class="text-muted">
-                    {{ item.class_obj.name|default:item.class_name }}
-                    {% if item.stream %}
-                      - {{ item.stream.name|default:item.stream }}
-                    {% endif %}
-                  </small>
-                </div>
-                <div class="text-right">
-                  <div class="font-weight-bold">
-                    {{ item.start_time }} - {{ item.end_time }}
-                  </div>
-                  <small class="text-muted">{{ item.room|default:"-" }}</small>
-                </div>
-              </div>
-            {% empty %}
-              <div class="text-muted">No lessons scheduled for today.</div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
+  <div class="row grid-gap">
+    <div class="col-lg-7">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title">Attendance marked</h5><p class="mz-card-sub">Records for my students, last 4 weeks</p></div></div>
+        <div class="mz-chart" style="height:240px;"><canvas id="teacherTrendChart" aria-label="Attendance records per week"></canvas></div>
+      </div></div>
     </div>
-
-    <div class="col-lg-5 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <h5 class="mb-3"><i class="fas fa-bolt text-warning mr-2"></i>Quick Actions</h5>
-
-          <a href="{% url 'marks_entry' %}" class="btn btn-primary btn-sm btn-block mb-2">
-            <i class="fas fa-edit mr-1"></i> Enter Marks
-          </a>
-
-          <a href="{% url 'attendance_take' %}" class="btn btn-success btn-sm btn-block mb-2">
-            <i class="fas fa-user-check mr-1"></i> Take Attendance
-          </a>
-
-          <a href="{% url 'teacher_timetable_view' %}" class="btn btn-info btn-sm btn-block mb-2">
-            <i class="fas fa-calendar-alt mr-1"></i> My Timetable
-          </a>
-
-          <a href="{% url 'teacher_exam_list' %}" class="btn btn-light btn-sm btn-block mb-2">
-            <i class="fas fa-file-alt mr-1"></i> Online Exams
-          </a>
-
-          <a href="{% url 'teacher_marking_inbox' %}" class="btn btn-dark btn-sm btn-block">
-            <i class="fas fa-chart-bar mr-1"></i> Online Exam Marking 
-          </a>
-        </div>
-      </div>
+    <div class="col-lg-5">
+      <div class="mz-card"><div class="mz-card-body">
+        <div class="mz-card-head"><div><h5 class="mz-card-title"><i class="fas fa-bullhorn text-danger mr-2"></i>Announcements</h5></div></div>
+        <ul class="mz-list">
+          {% for note in teacher_announcements %}
+            <li><div class="mz-li-main"><div class="mz-li-title">{{ note.title }}</div><div class="mz-li-sub">{{ note.message|truncatechars:120 }}</div></div></li>
+          {% empty %}
+            <li class="justify-content-center"><div class="mz-empty"><i class="far fa-bell"></i>No announcements at the moment.</div></li>
+          {% endfor %}
+        </ul>
+        {% if current_term %}
+        <hr>
+        <div class="d-flex justify-content-between" style="font-size:.84rem;"><span class="text-muted">{{ current_term_name }}</span><b>{{ term_progress|default:0|floatformat:0 }}%</b></div>
+        <div class="mz-bar"><span style="width:{{ term_progress|default:0|unlocalize }}%;"></span></div>
+        <div class="mz-card-sub">{{ term_days_remaining|default:0 }} days left in the term</div>
+        {% endif %}
+      </div></div>
     </div>
   </div>
-
-  <!-- Teacher academic info -->
-  <div class="row">
-    <div class="col-lg-6 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <h5 class="mb-2"><i class="fas fa-info-circle text-primary mr-2"></i>Academic Information</h5>
-
-          {% if current_academic_year %}
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-calendar-alt mr-1"></i> Current Academic Year</div>
-            <div class="font-weight-bold">{{ current_academic_year.year }}</div>
-            <div class="text-muted small">
-              {{ current_academic_year.start_date|date:"M d, Y" }} - {{ current_academic_year.end_date|date:"M d, Y" }}
-            </div>
-          </div>
-          {% endif %}
-
-          {% if current_term %}
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-clock mr-1"></i> Current Term</div>
-            <div class="font-weight-bold">{{ current_term_name }}</div>
-            <div class="text-muted small">
-              {{ current_term.start_date|date:"M d" }} - {{ current_term.end_date|date:"M d, Y" }}
-            </div>
-          </div>
-          {% endif %}
-
-          <div class="mb-3">
-            <div class="text-muted small"><i class="fas fa-hourglass-half mr-1"></i> Term Progress</div>
-            <div class="progress mt-2" style="height:6px;">
-              <div class="progress-bar bg-success" style="width: {{ term_progress|default:0 }}%"></div>
-            </div>
-            <div class="text-muted small mt-1">{{ term_progress|default:0 }}% complete</div>
-          </div>
-
-          <a href="{% url 'academic_calendar' %}" class="btn btn-outline-success btn-sm btn-block">
-            <i class="fas fa-calendar mr-2"></i> Academic Calendar
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-lg-6 mb-3">
-      <div class="card soft-card h-100">
-        <div class="card-body">
-          <h5 class="mb-2"><i class="fas fa-bullhorn text-danger mr-2"></i>Announcements</h5>
-
-          <div class="mt-3">
-            {% for note in teacher_announcements %}
-              <div class="border-bottom py-2">
-                <div class="font-weight-bold">{{ note.title }}</div>
-                <div class="text-muted small">{{ note.message|truncatechars:120 }}</div>
-              </div>
-            {% empty %}
-              <div class="text-muted">No announcements at the moment.</div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   {{ teacher_dashboard_data|json_script:"teacherDashboardData" }}
   {% endif %}
 
-  <!-- Chart data -->
-  {{ dashboard_chart_data|json_script:"dashboardChartData" }}
+  {% if platform_chart_data %}{{ platform_chart_data|json_script:"platformChartData" }}{% endif %}
+  {% if school_chart_data %}{{ school_chart_data|json_script:"schoolChartData" }}{% endif %}
+  {% if bursar_chart_data %}{{ bursar_chart_data|json_script:"bursarChartData" }}{% endif %}
 </div>
 {% endblock %}
 
 {% block extrajs %}
 <script>
 (function () {
-  // Refresh
-  const btnRefresh = document.getElementById("btnRefreshDash");
-  if (btnRefresh) btnRefresh.addEventListener("click", () => location.reload());
+  "use strict";
 
-  // Apply filters -> reload with query params
-  const btnApply = document.getElementById("btnApplyFilters");
-  if (btnApply) {
-    btnApply.addEventListener("click", function (e) {
-      e.preventDefault();
-      const y = document.getElementById("filterYear")?.value || "";
-      const t = document.getElementById("filterTerm")?.value || "";
-      const url = new URL(window.location.href);
-      if (y) url.searchParams.set("year", y); else url.searchParams.delete("year");
-      if (t) url.searchParams.set("term", t); else url.searchParams.delete("term");
-      window.location.href = url.toString();
+  document.querySelectorAll(".js-refresh").forEach(function (b) {
+    b.addEventListener("click", function () { location.reload(); });
+  });
+
+  // School search on the platform table
+  var search = document.getElementById("pSchoolSearch");
+  if (search) {
+    search.addEventListener("input", function () {
+      var q = this.value.trim().toLowerCase();
+      document.querySelectorAll("#pSchoolTable tbody tr[data-name]").forEach(function (tr) {
+        tr.style.display = !q || tr.getAttribute("data-name").indexOf(q) !== -1 ? "" : "none";
+      });
     });
   }
 
-  function ensureChartJs(cb){
-    if (window.Chart) return cb();
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+  function readJSON(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    try { return JSON.parse(el.textContent || "null"); } catch (e) { return null; }
+  }
+
+  // The theme bundle ships an old Chart.js (v2). These charts need v3+.
+  function ensureChartJs(cb) {
+    if (window.Chart && parseInt(String(window.Chart.version || "0"), 10) >= 3) return cb();
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";
     s.onload = cb;
-    s.onerror = function(){ console.warn("Chart.js failed to load"); };
+    s.onerror = function () { console.warn("Chart.js failed to load"); };
     document.head.appendChild(s);
   }
 
-  function readChartData(){
-    const el = document.getElementById('dashboardChartData');
-    if(!el) return {};
-    try { return JSON.parse(el.textContent || "{}"); } catch(e){ return {}; }
+  var C = {
+    s1: "#2a78d6", s2: "#eb6834", s3: "#1baf7a", s4: "#eda100", s7: "#6250d6",
+    good: "#12a150", warn: "#e8a200", bad: "#d93f3f", muted: "#9aa3b5",
+    grid: "#eef0f5", ink2: "#5b6475", surface: "#ffffff"
+  };
+  function alpha(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")";
+  }
+  function fmt(n) { return (Number(n) || 0).toLocaleString("en-UG"); }
+  function compact(n) {
+    n = Number(n) || 0;
+    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B";
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+    if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(0) + "K";
+    return String(n);
   }
 
-  function readTeacherChartData(){
-    const el = document.getElementById('teacherDashboardData');
-    if(!el) return {};
-    try { return JSON.parse(el.textContent || "{}"); } catch(e){ return {}; }
+  function baseOptions(extra) {
+    var o = {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: "#1d2433", padding: 10, cornerRadius: 8, titleFont: { weight: "600" }, boxPadding: 4 }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: C.grid }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 }, precision: 0 } }
+      }
+    };
+    return Object.assign(o, extra || {});
   }
-
-  function palette(n, alpha){
-    const base = [
-      [54,162,235],[255,99,132],[255,205,86],[75,192,192],
-      [153,102,255],[255,159,64],[201,203,207],[0,200,83],
-      [0,188,212],[233,30,99],[63,81,181],[121,85,72],
-    ];
-    const out = [];
-    for(let i=0;i<n;i++){
-      const c = base[i % base.length];
-      out.push(`rgba(${c[0]},${c[1]},${c[2]},${alpha})`);
-    }
-    return out;
+  function bar(color) {
+    return { backgroundColor: color, hoverBackgroundColor: alpha(color, .85), borderRadius: 4, borderSkipped: "bottom",
+             borderColor: C.surface, borderWidth: 1, maxBarThickness: 34 };
   }
+  function line(color) {
+    return { borderColor: color, backgroundColor: alpha(color, .12), fill: true, tension: .35, borderWidth: 2,
+             pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: color, pointBorderColor: C.surface, pointBorderWidth: 2, spanGaps: true };
+  }
+  function doughnut(el, labels, values, colors, centerNote) {
+    var total = values.reduce(function (a, b) { return a + b; }, 0);
+    return new Chart(el, {
+      type: "doughnut",
+      data: { labels: labels, datasets: [{ data: total ? values : [1], backgroundColor: total ? colors : ["#eef0f4"],
+              borderColor: C.surface, borderWidth: 2, hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%",
+        plugins: { legend: { display: false },
+          tooltip: { enabled: !!total, callbacks: { label: function (c) {
+            return " " + c.label + ": " + fmt(c.parsed) + " (" + Math.round(c.parsed / total * 100) + "%)"; } } } } }
+    });
+  }
+  function el(id) { return document.getElementById(id); }
 
-  ensureChartJs(function(){
-    const data = readChartData();
+  ensureChartJs(function () {
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 
-    // Admin trend
-    const labels = data.labels || ["W1","W2","W3","W4"];
-    const marksTrend = data.marks_trend || [0,0,0,0];
-    const studentsTrend = data.students_trend || [0,0,0,0];
-    const feesTrend = data.fees_trend || [0,0,0,0];
-
-    // Snapshot
-    const snapshotLabels = data.snapshot_labels || ["Male","Female"];
-    const snapshotValues = data.snapshot_values || [0,0];
-
-    // Level + Class
-    const levelLabels = data.level_labels || [];
-    const levelValues = data.level_values || [];
-    const classLabels = data.class_labels || [];
-    const classValues = data.class_values || [];
-
-    // ----- Main trend chart -----
-    const ctx = document.getElementById('mainTrendChart');
-    let mainChart = null;
-
-    function buildMain(label, points){
-      if(!ctx) return;
-      if(mainChart) mainChart.destroy();
-
-      mainChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: label,
-            data: points,
-            tension: 0.35,
-            fill: true,
-            backgroundColor: "rgba(54, 162, 235, 0.15)",
-            borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    }
-
-    if (ctx) {
-      buildMain("Marks Entries", marksTrend);
-
-      document.querySelectorAll('[data-chart-mode]').forEach(btn => {
-        btn.addEventListener('click', function(){
-          document.querySelectorAll('[data-chart-mode]').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
-
-          const mode = this.getAttribute('data-chart-mode');
-          if(mode === "students") buildMain("Student Registrations", studentsTrend);
-          else if(mode === "fees") buildMain("Fees Collection", feesTrend);
-          else buildMain("Marks Entries", marksTrend);
+    // ===================== Platform =====================
+    var P = readJSON("platformChartData");
+    if (P) {
+      if (el("pRevenueChart") && P.revenue) {
+        new Chart(el("pRevenueChart"), {
+          type: "bar",
+          data: { labels: P.revenue.labels, datasets: [
+            Object.assign({ label: "Subscriptions", data: P.revenue.subscriptions, stack: "r" }, bar(C.s1)),
+            Object.assign({ label: "SMS top-ups", data: P.revenue.sms, stack: "r" }, bar(C.s2))
+          ] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+              label: function (c) { return " " + c.dataset.label + ": UGX " + fmt(c.parsed.y); },
+              footer: function (items) { var t = 0; items.forEach(function (i) { t += i.parsed.y; }); return "Total: UGX " + fmt(t); } } } },
+            scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 } } },
+                      y: { stacked: true, beginAtZero: true, grid: { color: C.grid }, border: { display: false },
+                           ticks: { color: C.ink2, font: { size: 11 }, callback: function (v) { return compact(v); } } } }
+          })
         });
-      });
+      }
+      if (el("pStatesChart") && P.states) {
+        doughnut(el("pStatesChart"), P.states.labels, P.states.values, [C.good, C.s1, C.warn, C.bad, C.muted]);
+      }
+      if (el("pTopSchoolsChart") && P.top_schools) {
+        new Chart(el("pTopSchoolsChart"), {
+          type: "bar",
+          data: { labels: P.top_schools.labels, datasets: [Object.assign({ label: "Students", data: P.top_schools.values }, bar(C.s7), { borderSkipped: "left", maxBarThickness: 22 })] },
+          options: baseOptions({ indexAxis: "y", interaction: { mode: "nearest", axis: "y", intersect: false },
+            scales: { x: { beginAtZero: true, grid: { color: C.grid }, border: { display: false }, ticks: { color: C.ink2, precision: 0 } },
+                      y: { grid: { display: false }, border: { display: false }, ticks: { color: C.ink2 } } } })
+        });
+      }
+      if (el("pSmsChart") && P.sms) {
+        new Chart(el("pSmsChart"), { type: "line",
+          data: { labels: P.sms.labels, datasets: [Object.assign({ label: "SMS units", data: P.sms.values }, line(C.s2))] },
+          options: baseOptions() });
+      }
+      if (el("pNewSchoolsChart") && P.new_schools) {
+        new Chart(el("pNewSchoolsChart"), { type: "bar",
+          data: { labels: P.new_schools.labels, datasets: [Object.assign({ label: "New schools", data: P.new_schools.values }, bar(C.s1))] },
+          options: baseOptions() });
+      }
     }
 
-    // ----- Snapshot -----
-    const snap = document.getElementById('snapshotChart');
-    if(snap){
-      new Chart(snap, {
-        type: 'doughnut',
-        data: {
-          labels: snapshotLabels,
-          datasets: [{
-            data: snapshotValues,
-            backgroundColor: palette(snapshotLabels.length, 0.8),
-            borderColor: palette(snapshotLabels.length, 1),
-            borderWidth: 1.5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: "60%",
-          plugins: { legend: { position: 'bottom' } }
-        }
-      });
+    // ===================== School admin =====================
+    var S = readJSON("schoolChartData");
+    if (S) {
+      if (el("sFeesChart") && S.fees) {
+        new Chart(el("sFeesChart"), { type: "bar",
+          data: { labels: S.fees.labels, datasets: [Object.assign({ label: "Collected", data: S.fees.values }, bar(C.s7))] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+              title: function (i) { return "Week of " + i[0].label; },
+              label: function (c) { return " UGX " + fmt(c.parsed.y); } } } },
+            scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 } } },
+                      y: { beginAtZero: true, grid: { color: C.grid }, border: { display: false },
+                           ticks: { color: C.ink2, font: { size: 11 }, callback: function (v) { return compact(v); } } } }
+          }) });
+      }
+      if (el("sClassChart") && S.classes) {
+        new Chart(el("sClassChart"), { type: "bar",
+          data: { labels: S.classes.labels, datasets: [
+            Object.assign({ label: "Boys", data: S.classes.boys, stack: "c" }, bar(C.s1)),
+            Object.assign({ label: "Girls", data: S.classes.girls, stack: "c" }, bar(C.s2))
+          ] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+              footer: function (items) { var t = 0; items.forEach(function (i) { t += i.parsed.y; }); return "Total: " + fmt(t); } } } },
+            scales: { x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 } } },
+                      y: { stacked: true, beginAtZero: true, grid: { color: C.grid }, border: { display: false }, ticks: { color: C.ink2, precision: 0 } } }
+          }) });
+      }
+      if (el("sGenderChart") && S.gender) {
+        doughnut(el("sGenderChart"), S.gender.labels, S.gender.values, [C.s1, C.s2]);
+      }
+      if (el("sAttendanceChart") && S.attendance) {
+        new Chart(el("sAttendanceChart"), { type: "line",
+          data: { labels: S.attendance.labels, datasets: [Object.assign({ label: "Present", data: S.attendance.values }, line(C.s3))] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return " " + c.parsed.y + "% present"; } } } },
+            scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 } } },
+                      y: { min: 0, max: 100, grid: { color: C.grid }, border: { display: false },
+                           ticks: { color: C.ink2, stepSize: 25, callback: function (v) { return v + "%"; } } } }
+          }) });
+      }
+      if (el("sEnrolChart") && S.enrolment) {
+        new Chart(el("sEnrolChart"), { type: "bar",
+          data: { labels: S.enrolment.labels, datasets: [Object.assign({ label: "New students", data: S.enrolment.values }, bar(C.s1), { maxBarThickness: 18 })] },
+          options: baseOptions({ scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 10 } } },
+                                           y: { display: false, beginAtZero: true } } }) });
+      }
     }
 
-    // ----- Students by Level -----
-    const byLevel = document.getElementById('studentsByLevelChart');
-    if(byLevel){
-      const L = levelLabels.length ? levelLabels : ["No Data"];
-      const V = levelValues.length ? levelValues : [1];
+    // ===================== Bursar =====================
+    var B = readJSON("bursarChartData");
+    if (B) {
+      var moneyY = { beginAtZero: true, grid: { color: C.grid }, border: { display: false },
+                     ticks: { color: C.ink2, font: { size: 11 }, callback: function (v) { return compact(v); } } };
+      var plainX = { grid: { display: false }, border: { display: false }, ticks: { color: C.ink2, font: { size: 11 } } };
+      var ugx = function (c) { return " " + c.dataset.label + ": UGX " + fmt(c.parsed.y); };
 
-      new Chart(byLevel, {
-        type: 'pie',
-        data: {
-          labels: L,
-          datasets: [{
-            data: V,
-            backgroundColor: palette(L.length, 0.8),
-            borderColor: palette(L.length, 1),
-            borderWidth: 1.2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
-        }
-      });
+      if (el("bProgressChart") && B.progress) {
+        new Chart(el("bProgressChart"), { type: "line",
+          data: { labels: B.progress.labels, datasets: [
+            Object.assign({ label: "Collected", data: B.progress.collected }, line(C.s7)),
+            { label: "Target", data: B.progress.target, borderColor: C.muted, borderDash: [6, 5], borderWidth: 2,
+              pointRadius: 0, fill: false, tension: 0 }
+          ] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ugx } } },
+            scales: { x: plainX, y: moneyY }
+          }) });
+      }
+      if (el("bStatusChart") && B.status) {
+        doughnut(el("bStatusChart"), B.status.labels, B.status.values, [C.good, C.warn, C.bad]);
+      }
+      if (el("bClassChart") && B.classes) {
+        new Chart(el("bClassChart"), { type: "bar",
+          data: { labels: B.classes.labels, datasets: [
+            Object.assign({ label: "Expected", data: B.classes.expected }, bar("#c9d2e3")),
+            Object.assign({ label: "Collected", data: B.classes.paid }, bar(C.s7))
+          ] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+              label: ugx,
+              footer: function (items) {
+                var e = items[0] ? items[0].parsed.y : 0, p = items[1] ? items[1].parsed.y : 0;
+                return e ? "Balance: UGX " + fmt(Math.max(e - p, 0)) + " (" + Math.round(p / e * 100) + "% paid)" : "";
+              } } } },
+            scales: { x: plainX, y: moneyY }
+          }) });
+      }
+      if (el("bDailyChart") && B.daily) {
+        new Chart(el("bDailyChart"), { type: "bar",
+          data: { labels: B.daily.labels, datasets: [Object.assign({ label: "Collected", data: B.daily.values }, bar(C.s3), { maxBarThickness: 18 })] },
+          options: baseOptions({
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ugx } } },
+            scales: { x: { grid: { display: false }, border: { display: false },
+                           ticks: { color: C.ink2, font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                      y: moneyY }
+          }) });
+      }
     }
 
-    // ----- Students per Class -----
-    const perClass = document.getElementById('studentsPerClassChart');
-    if(perClass){
-      const L = classLabels.length ? classLabels : ["No Data"];
-      const V = classValues.length ? classValues : [0];
-
-      new Chart(perClass, {
-        type: 'bar',
-        data: {
-          labels: L,
-          datasets: [{
-            label: "Students",
-            data: V,
-            backgroundColor: palette(L.length, 0.75),
-            borderColor: palette(L.length, 1),
-            borderWidth: 1.1,
-            borderRadius: 8,
-            maxBarThickness: 46
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 0 } },
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      });
-    }
-
-    // ----- Teacher charts -----
-    const teacherData = readTeacherChartData();
-
-    const teacherTrend = document.getElementById('teacherTrendChart');
-    if(teacherTrend){
-      const trendLabels = teacherData.trend_labels || ["Week 1","Week 2","Week 3","Week 4"];
-      const trendValues = teacherData.trend_values || [0,0,0,0];
-
-      new Chart(teacherTrend, {
-        type: 'line',
-        data: {
-          labels: trendLabels,
-          datasets: [{
-            label: "Marks Entered",
-            data: trendValues,
-            tension: 0.35,
-            fill: true,
-            backgroundColor: "rgba(54, 162, 235, 0.15)",
-            borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    }
-
-    const teacherClass = document.getElementById('teacherClassChart');
-    if(teacherClass){
-      const L = teacherData.class_labels?.length ? teacherData.class_labels : ["No Data"];
-      const V = teacherData.class_values?.length ? teacherData.class_values : [0];
-
-      new Chart(teacherClass, {
-        type: 'doughnut',
-        data: {
-          labels: L,
-          datasets: [{
-            data: V,
-            backgroundColor: palette(L.length, 0.8),
-            borderColor: palette(L.length, 1),
-            borderWidth: 1.2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
-        }
-      });
+    // ===================== Teacher =====================
+    var T = readJSON("teacherDashboardData");
+    if (T) {
+      if (el("teacherTrendChart")) {
+        new Chart(el("teacherTrendChart"), { type: "line",
+          data: { labels: T.trend_labels || [], datasets: [Object.assign({ label: "Attendance records", data: T.trend_values || [] }, line(C.s1))] },
+          options: baseOptions() });
+      }
+      if (el("teacherClassChart")) {
+        var L = (T.class_labels && T.class_labels.length) ? T.class_labels : ["No classes"];
+        var V = (T.class_values && T.class_values.length) ? T.class_values : [0];
+        new Chart(el("teacherClassChart"), { type: "bar",
+          data: { labels: L, datasets: [Object.assign({ label: "Students", data: V }, bar(C.s1))] },
+          options: baseOptions() });
+      }
     }
   });
 })();

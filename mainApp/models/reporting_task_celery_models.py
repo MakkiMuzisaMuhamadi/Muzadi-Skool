@@ -288,6 +288,18 @@ class ReportCardSnapshot(models.Model):
     pdf = models.FileField(upload_to="report_cards/%Y/%m/", null=True, blank=True)
 
     is_latest = models.BooleanField(default=True)
+
+    # Release workflow: students/parents only see published report cards.
+    is_published = models.BooleanField(default=False, db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    published_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="published_report_cards",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -302,3 +314,32 @@ class ReportCardSnapshot(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.academic_year} - {self.term}"
+
+
+class ReportReleaseOverride(models.Model):
+    """
+    Lets one learner see (and parents receive) the report card for a term even
+    though fees are not cleared - e.g. payment plan, bursary, promise to pay.
+    """
+    school = models.ForeignKey("mainApp.School", on_delete=models.CASCADE, related_name="report_release_overrides")
+    student = models.ForeignKey("mainApp.Student", on_delete=models.CASCADE, related_name="report_release_overrides")
+    term = models.ForeignKey("mainApp.Term", on_delete=models.PROTECT, related_name="report_release_overrides")
+    reason = models.CharField(max_length=255)
+    allowed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="report_release_overrides_given",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("student", "term")]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.student} - {self.term} (allowed)"
+

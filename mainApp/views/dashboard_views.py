@@ -1,5 +1,6 @@
 from typing import OrderedDict
 
+from mainApp.tenancy import for_school
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -15,10 +16,11 @@ from django.db.models import Sum
 
 from mainApp.models.teacher_models import Teacher, TeacherTeachingAllocation
 from mainApp.models.timetable_models import TeacherSubstitution, TimetableEntry
+from mainApp import dashboard_stats, tenancy  # after the * imports so nothing shadows them
 
 
 @login_required
-@role_required(['SUPER_ADMIN', 'ADMIN', 'TEACHER', 'STUDENT'])
+@role_required(['SUPER_ADMIN', 'ADMIN', 'TEACHER', 'STUDENT', 'BURSAR'])
 def index(request):
     school = getattr(getattr(request.user, "profile", None), "school", None)
     today = timezone.now().date()
@@ -273,9 +275,51 @@ def index(request):
 
             # Still safe until your marks model is attached
 
+    # =========================
+    # Rich dashboards (school head / Muzadi platform)
+    # =========================
+    role = getattr(getattr(request.user, "profile", None), "role", None)
+    is_platform = tenancy.is_platform_user(request.user)
+    tenant = getattr(request, "tenant", None)
+    show_platform = is_platform and (school is None or bool(tenant and tenant.is_platform))
+    show_school_admin = bool(school) and role in ("ADMIN", "SUPER_ADMIN") and not show_platform
+
+    show_bursar = bool(school) and role == "BURSAR"
+
+    platform = dashboard_stats.platform_dashboard(today) if show_platform else None
+    school_stats = dashboard_stats.school_dashboard(school, today) if show_school_admin else None
+    bursar_stats = dashboard_stats.bursar_dashboard(school, today) if show_bursar else None
+
     context = {
         "dashboard_chart_data": dashboard_chart_data,
         "teacher_dashboard_data": teacher_dashboard_data,
+
+        "show_platform": show_platform,
+        "show_school_admin": show_school_admin,
+        "show_bursar": show_bursar,
+        "bursar": bursar_stats,
+        "bursar_chart_data": ({
+            **(bursar_stats.get("chart_bursar") or {}),
+            "weekly": (bursar_stats.get("fees") or {}).get("chart"),
+        } if bursar_stats else None),
+        "is_platform": is_platform,
+        "platform": platform,
+        "stats": school_stats,
+        "platform_chart_data": ({
+            "revenue": platform.get("chart_revenue"),
+            "states": platform.get("chart_states"),
+            "top_schools": platform.get("chart_top_schools"),
+            "sms": platform.get("chart_sms"),
+            "new_schools": platform.get("chart_new_schools"),
+        } if platform else None),
+        "school_chart_data": ({
+            "classes": school_stats.get("chart_classes"),
+            "enrolment": school_stats.get("chart_enrolment"),
+            "gender": {"labels": ["Boys", "Girls"],
+                       "values": [school_stats.get("students_male", 0), school_stats.get("students_female", 0)]},
+            "fees": (school_stats.get("fees") or {}).get("chart"),
+            "attendance": (school_stats.get("attendance") or {}).get("chart"),
+        } if school_stats else None),
 
         "school": school,
 
@@ -353,7 +397,7 @@ def class_create(request):
 @login_required
 def class_update(request, pk):
     """Update an existing class"""
-    class_obj = get_object_or_404(Class, pk=pk)
+    class_obj = get_object_or_404(for_school(Class, request), pk=pk)
     profile = request.user.profile
     
     # Check if user has permission to edit this class
@@ -383,7 +427,7 @@ def class_update(request, pk):
 @require_POST
 def class_delete(request, pk):
     """Delete a class"""
-    class_obj = get_object_or_404(Class, pk=pk)
+    class_obj = get_object_or_404(for_school(Class, request), pk=pk)
     profile = request.user.profile
     
     # Check if user has permission to delete this class
@@ -441,7 +485,7 @@ def stream_create(request):
 @login_required
 def stream_update(request, pk):
     """Update an existing stream"""
-    stream = get_object_or_404(Stream, pk=pk)
+    stream = get_object_or_404(for_school(Stream, request, "class_ref__school"), pk=pk)
     profile = request.user.profile
     
     # Check if user has permission to edit this stream
@@ -471,7 +515,7 @@ def stream_update(request, pk):
 @require_POST
 def stream_delete(request, pk):
     """Delete a stream."""
-    stream = get_object_or_404(Stream, pk=pk)
+    stream = get_object_or_404(for_school(Stream, request, "class_ref__school"), pk=pk)
     profile = request.user.profile
 
     if not profile.school or profile.school != stream.class_ref.school:
@@ -505,7 +549,7 @@ def stream_delete(request, pk):
 def class_detail(request, pk):
     """View class details including streams and student counts."""
     class_obj = get_object_or_404(
-        Class.objects.select_related("school", "level"),
+        for_school(Class.objects.select_related("school", "level"), request),
         pk=pk
     )
 

@@ -1,0 +1,9 @@
+{% extends "tenancy/_page.html" %}
+{% block title %}Subscription expired{% endblock %}
+{% block body %}
+<div class="icon">🔒</div>
+<h1>Your change was not saved</h1>
+<p>{{ school.name }}'s subscription ended on <strong>{{ subscription.end_date|date:"j M Y" }}</strong>. You can still open and download everything, but you cannot save changes until the subscription is renewed.</p>
+<p>Please ask the school administration to contact Muzadi Technologies.</p>
+<a class="btn" href="javascript:history.back()">Go back</a>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% comment %}
+Year / Term / Class / Stream / Exam type / Subject / Paper picker.
+Used by Enter Marks and Marks Audit:
+  {% include "dashboard/marks/_marks_filter.html" with submit_label="Load Students" submit_icon="fa-users" reset_url=... %}
+
+Every change asks the server for ALL the lists at once (/marks/filter-options/),
+so the dropdowns always match what the server accepts:
+  * teachers only see their own classes, streams, subjects and papers;
+  * the year and term open on the school's current year/term (school settings);
+  * terms always belong to the selected year, exam types to the selected term;
+  * a list with a single option is picked automatically;
+  * Paper only shows for exam types entered per paper.
+{% endcomment %}
+{% if filter_form.non_field_errors %}
+  <div class="alert alert-danger">{{ filter_form.non_field_errors }}</div>
+{% endif %}
+
+<form method="get" id="marksFilter" data-options-url="{% url 'marks_filter_options' %}" novalidate>
+  <div class="form-row">
+    <div class="form-group col-6 col-md-3">
+      <label for="id_academic_year">Academic Year</label>
+      {{ filter_form.academic_year }}
+      <div class="mf-error small text-danger" data-for="academic_year">{{ filter_form.academic_year.errors|join:" " }}</div>
+    </div>
+    <div class="form-group col-6 col-md-3">
+      <label for="id_term">Term</label>
+      {{ filter_form.term }}
+      <div class="mf-error small text-danger" data-for="term">{{ filter_form.term.errors|join:" " }}</div>
+    </div>
+    <div class="form-group col-6 col-md-3">
+      <label for="id_class_ref">Class</label>
+      {{ filter_form.class_ref }}
+      <div class="mf-error small text-danger" data-for="class_ref">{{ filter_form.class_ref.errors|join:" " }}</div>
+    </div>
+    <div class="form-group col-6 col-md-3">
+      <label for="id_stream">Stream</label>
+      {{ filter_form.stream }}
+      <div class="mf-error small text-danger" data-for="stream">{{ filter_form.stream.errors|join:" " }}</div>
+      <small class="text-muted d-block" id="streamHint">{% if filter_form.options.stream_required %}Choose the stream you teach.{% else %}Leave blank to load all streams.{% endif %}</small>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="id_exam_type">Exam Type</label>
+      {{ filter_form.exam_type }}
+      <div class="mf-error small text-danger" data-for="exam_type">{{ filter_form.exam_type.errors|join:" " }}</div>
+    </div>
+    <div class="form-group col-md-4">
+      <label for="id_subject">Subject</label>
+      {{ filter_form.subject }}
+      <div class="mf-error small text-danger" data-for="subject">{{ filter_form.subject.errors|join:" " }}</div>
+    </div>
+    <div class="form-group col-md-4" id="paperGroup"{% if filter_form.options.exam_applies_to != "PAPER" %} style="display:none"{% endif %}>
+      <label for="id_paper">Paper</label>
+      {{ filter_form.paper }}
+      <div class="mf-error small text-danger" data-for="paper">{{ filter_form.paper.errors|join:" " }}</div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+    <button class="btn btn-primary" id="mfSubmit">
+      <i class="fas {{ submit_icon|default:'fa-users' }} mr-1"></i> {{ submit_label|default:"Load Students" }}
+    </button>
+    <a href="{{ reset_url }}" class="btn btn-light">
+      <i class="fas fa-sync-alt mr-1"></i> Reset
+    </a>
+    <span class="small text-muted d-none" id="mfLoading"><i class="fas fa-spinner fa-spin"></i> Updating lists…</span>
+  </div>
+</form>
+
+<script>
+(function () {
+  const form = document.getElementById("marksFilter");
+  if (!form) return;
+  const url = form.dataset.optionsUrl;
+  const FIELDS = ["academic_year", "term", "class_ref", "stream", "exam_type", "subject", "paper"];
+  const el = {};
+  FIELDS.forEach(f => { el[f] = form.querySelector(`[name="${f}"]`); });
+  const paperGroup = document.getElementById("paperGroup");
+  const streamHint = document.getElementById("streamHint");
+  const loading = document.getElementById("mfLoading");
+  const submitBtn = document.getElementById("mfSubmit");
+  let seq = 0;
+
+  function values() {
+    const v = {};
+    FIELDS.forEach(f => { if (el[f] && el[f].value) v[f] = el[f].value; });
+    return v;
+  }
+
+  function fill(field, rows, selected, placeholder, message) {
+    const sel = el[field];
+    if (!sel) return;
+    sel.innerHTML = "";
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = rows.length ? placeholder : (message || "No options available");
+    sel.appendChild(first);
+    rows.forEach(r => {
+      const o = document.createElement("option");
+      o.value = r.id;
+      o.textContent = r.label;
+      if (r.id === selected) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.disabled = !rows.length;
+    const err = form.querySelector(`.mf-error[data-for="${field}"]`);
+    if (err && !rows.length && message) err.textContent = message;
+  }
+
+  function apply(data) {
+    FIELDS.forEach(f => {
+      fill(f, data.options[f] || [], data.selected[f] || "", data.placeholders[f], (data.messages || {})[f]);
+    });
+    const perPaper = data.exam_applies_to === "PAPER";
+    if (paperGroup) paperGroup.style.display = perPaper ? "" : "none";
+    if (!perPaper && el.paper) el.paper.value = "";
+    if (streamHint) {
+      streamHint.textContent = data.stream_required
+        ? "Choose the stream you teach."
+        : "Leave blank to load all streams.";
+    }
+  }
+
+  async function refresh() {
+    // Lower choices are kept only if they are still valid (the server checks).
+    const v = values();
+    form.querySelectorAll(".mf-error").forEach(e => { e.textContent = ""; });
+    const my = ++seq;
+    loading && loading.classList.remove("d-none");
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      const qs = new URLSearchParams(v);
+      if (!v.academic_year) qs.set("defaults", "1");
+      const res = await fetch(`${url}?${qs.toString()}`, {
+        headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+        credentials: "same-origin",
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (my !== seq) return;            // a newer change is on its way
+      apply(data);
+    } catch (e) {
+      if (my !== seq) return;
+      // offline / signed out: keep what is on screen, re-enable the selects
+      FIELDS.forEach(f => { if (el[f]) el[f].disabled = false; });
+    } finally {
+      if (my === seq) {
+        loading && loading.classList.add("d-none");
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+  }
+
+  FIELDS.forEach(f => {
+    if (!el[f]) return;
+    el[f].addEventListener("change", () => {
+      // Changing the year starts a new term choice; changing the term changes the exam types.
+      if (f === "academic_year" && el.term) el.term.value = "";
+      if ((f === "academic_year" || f === "term") && el.exam_type) el.exam_type.value = "";
+      refresh();
+    });
+  });
+
+  form.addEventListener("submit", () => {
+    FIELDS.forEach(f => { if (el[f]) el[f].disabled = false; });
+  });
+
+  // The server already rendered the right lists. Disable empty lists so it is clear what to pick next.
+  FIELDS.forEach(f => { if (el[f] && el[f].options.length <= 1) el[f].disabled = true; });
+  if (el.academic_year) el.academic_year.disabled = false;
+})();
+</script>

@@ -1,0 +1,8 @@
+{% extends "tenancy/_page.html" %}
+{% block title %}{{ module }} not enabled{% endblock %}
+{% block body %}
+<div class="icon">🧩</div>
+<h1>{{ module }} is not part of your plan</h1>
+<p>{{ school.name }} does not have the <strong>{{ module }}</strong> module switched on. The school administration can contact Muzadi Technologies to add it.</p>
+<a class="btn" href="/">Back to dashboard</a>
+{% endblock %}

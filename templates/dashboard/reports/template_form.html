@@ -244,6 +244,11 @@
       <strong>Visibility Settings</strong>
     </div>
     <div class="card-body">
+      <p class="text-muted small mb-3">
+        <i class="fas fa-info-circle"></i>
+        Comments, promotion, grade legend, signatures, attendance and fees are switched on/off
+        {% if template_obj %}<a href="{% url 'report_template_sections_edit' template_obj.pk %}">on the Sections page</a>{% else %}on the Sections page after you save{% endif %}.
+      </p>
       <div class="row">
 
         {% for field in form %}

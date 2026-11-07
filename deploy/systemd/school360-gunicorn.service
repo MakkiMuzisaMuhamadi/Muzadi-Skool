@@ -1,0 +1,22 @@
+# /etc/systemd/system/school360-gunicorn.service
+[Unit]
+Description=School360 web app (gunicorn)
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User=school360
+Group=www-data
+WorkingDirectory=/srv/school360/app
+EnvironmentFile=/srv/school360/app/.env
+RuntimeDirectory=school360
+ExecStart=/srv/school360/venv/bin/gunicorn school360.wsgi:application \
+    --bind unix:/run/school360/gunicorn.sock \
+    --workers 3 --threads 2 --timeout 120 \
+    --max-requests 1000 --max-requests-jitter 100 \
+    --access-logfile - --error-logfile -
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

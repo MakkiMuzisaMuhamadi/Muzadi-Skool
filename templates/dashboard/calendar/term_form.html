@@ -101,6 +101,26 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_is_final_term">Final term of the year?</label>
+                                    <select class="form-control" id="id_is_final_term" name="is_final_term">
+                                        <option value="false" {% if not form.is_final_term.value %}selected{% endif %}>No</option>
+                                        <option value="true" {% if form.is_final_term.value %}selected{% endif %}>Yes &mdash; promotion happens after this term</option>
+                                    </select>
+                                    <small class="form-text text-muted">Each school finalizes the term on its own (Marksheet control).</small>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label for="id_notice">Notice (optional)</label>
+                                    <input type="text" class="form-control" id="id_notice" name="notice" maxlength="255"
+                                           value="{{ form.notice.value|default:'' }}" placeholder="Short message shown on the calendar and report PDF">
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="row">
                             <div class="col-md-6">

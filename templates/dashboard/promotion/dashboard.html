@@ -4,126 +4,275 @@
 <div class="page-header mb-3">
   <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
     <div>
-      <h3 class="page-title mb-0">
-        <i class="fas fa-exchange-alt"></i> Student Promotions
-      </h3>
-      <small class="text-muted">Load a class, mark decisions, and save immediately.</small>
+      <h3 class="page-title mb-0"><i class="fas fa-exchange-alt"></i> Student Promotions</h3>
+      <small class="text-muted">End of year: prepare decisions, print final-term reports, then move learners to their new class.</small>
     </div>
-    <div class="mt-2 mt-md-0">
-      <a href="{% url 'promotion_setup' %}" class="btn btn-outline-primary btn-sm">
+    <div class="mt-2 mt-md-0 d-flex align-items-center flex-wrap">
+      <form method="get" class="form-inline mr-2 mb-1">
+        <label class="small text-muted mr-2 mb-0" for="yearPicker">Academic year</label>
+        <select name="academic_year" id="yearPicker" class="form-control form-control-sm" onchange="this.form.submit()">
+          {% for y in academic_years %}
+            <option value="{{ y.id }}" {% if academic_year and y.id == academic_year.id %}selected{% endif %}>{{ y.year }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <a href="{% url 'promotion_setup' %}" class="btn btn-outline-primary btn-sm mb-1">
         <i class="fas fa-project-diagram mr-1"></i> Promotion Setup
       </a>
     </div>
   </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-    <strong>Promote All Students</strong>
-    <form method="post" action="{% url 'promotion_promote_all_students' %}" class="form-inline">
-      {% csrf_token %}
-      <label class="small text-muted mr-2 mb-0">Academic Year</label>
-      <select name="academic_year" id="bulkAcademicYear" class="form-control form-control-sm mr-2">
-        {% for y in form.academic_year.field.queryset %}
-          <option value="{{ y.id }}">{{ y.year }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-danger btn-sm">
-        <i class="fas fa-arrow-up mr-1"></i> Promote All Students
-      </button>
-    </form>
-  </div>
-  <div class="card-body">
-    <small class="text-muted d-block">
-      This button processes all active students in the school using their class progression setup.
-    </small>
-    <small class="text-danger d-block mt-2">
-      Promotion should only work when the selected term is allowed for promotion and marks entry has already been finalized.
-    </small>
-  </div>
-</div>
+{% if not academic_year %}
+  <div class="alert alert-warning">No academic year exists yet. Add one in the academic calendar first.</div>
+{% else %}
 
-<div class="card mb-3">
-  <div class="card-header">
-    <strong>Load Students By Class</strong>
+<!-- ============ Step guide + checklist ============ -->
+<div class="row">
+  <div class="col-lg-7 mb-3">
+    <div class="card h-100">
+      <div class="card-header"><strong>How promotion works</strong></div>
+      <div class="card-body small">
+        <ol class="pl-3 mb-0">
+          <li class="mb-1"><strong>Finalize {{ term.name|default:"the final term" }}</strong> in Marksheet control. This locks marks and keeps every learner's {{ academic_year.year }} reports in their current class.</li>
+          <li class="mb-1"><strong>Prepare decisions.</strong> Click <em>Prepare decisions</em>: everyone gets the default from Promotion Setup (promote / complete level / graduate). Open a class and change only the exceptions{% if selected_is_primary %} (retain or demote){% endif %}.</li>
+          <li class="mb-1"><strong>Generate {{ term.name|default:"final-term" }} report cards.</strong> They print the decision, e.g. "Promoted to Next Class (S.3)".</li>
+          <li class="mb-0"><strong>Apply.</strong> Learners move to their new class and stream. A mistake can be reversed per learner.</li>
+        </ol>
+      </div>
+    </div>
   </div>
-  <div class="card-body">
-    <div class="form-row align-items-end">
-      <div class="col-md-4 mb-2">
-        <label class="small text-muted mb-1">Academic Year</label>
-        {{ form.academic_year }}
+  <div class="col-lg-5 mb-3">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Ready to apply?</strong>
+        {% if can_apply %}<span class="badge badge-success">Ready</span>{% else %}<span class="badge badge-warning">Not yet</span>{% endif %}
       </div>
-      <div class="col-md-4 mb-2">
-        <label class="small text-muted mb-1">Level</label>
-        {{ form.level }}
-      </div>
-      <div class="col-md-4 mb-2">
-        <label class="small text-muted mb-1">Class</label>
-        {{ form.class_ref }}
-      </div>
-      <div class="col-md-12 mt-2">
-        <button type="button" id="loadPromotionStudents" class="btn btn-success btn-sm">
-          <i class="fas fa-users mr-1"></i> Load Students
-        </button>
+      <div class="card-body small">
+        {% for ok, label, help in checks %}
+          <div class="d-flex mb-2">
+            <i class="fas {% if ok %}fa-check-circle text-success{% else %}fa-times-circle text-danger{% endif %} mt-1 mr-2"></i>
+            <div>
+              <div>{{ label }}</div>
+              {% if not ok %}<div class="text-muted">{{ help }}</div>{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+        {% if term and not term_finalized %}
+          <a href="{% url 'marksheet_control_list' %}" class="btn btn-outline-secondary btn-sm mt-1">
+            <i class="fas fa-lock mr-1"></i> Open Marksheet control
+          </a>
+        {% endif %}
+        <div class="text-muted mt-2">You can prepare and edit decisions before this is ready; learners only move when you apply.</div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ============ Whole-school summary ============ -->
 <div class="card mb-3">
   <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
     <div>
-      <strong>Promotion Decisions</strong><br>
-      <small class="text-muted">Mark all promoted first, then change only the exceptions.</small>
+      <strong>Classes — {{ academic_year.year }}</strong>
+      {% if totals %}
+        <br><small class="text-muted">
+          {{ totals.learners }} learner(s) still in class ·
+          {{ totals.undecided }} without a decision ·
+          {{ totals.draft }} draft · {{ totals.applied }} moved
+        </small>
+      {% endif %}
     </div>
     <div class="mt-2 mt-md-0">
-      <button type="button" id="markAllPromoted" class="btn btn-outline-success btn-sm">
-        <i class="fas fa-check-double mr-1"></i> Mark All Promoted
-      </button>
-      <button type="button" id="markAllRetained" class="btn btn-outline-warning btn-sm">
-        <i class="fas fa-undo mr-1"></i> Mark All Retained
-      </button>
+      <form method="post" action="{% url 'promotion_generate_defaults' %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+        <button class="btn btn-outline-success btn-sm" {% if not totals.undecided %}disabled{% endif %}>
+          <i class="fas fa-magic mr-1"></i> Prepare decisions (all classes)
+        </button>
+      </form>
+      <form method="post" action="{% url 'promotion_apply' %}" class="d-inline js-confirm"
+            data-confirm="Move {{ totals.draft }} learner(s) in ALL classes to their new class now?">
+        {% csrf_token %}
+        <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+        <button class="btn btn-danger btn-sm" {% if not can_apply or not totals.draft %}disabled{% endif %}
+                title="{% if not can_apply %}Finish the checklist first{% endif %}">
+          <i class="fas fa-arrow-up mr-1"></i> Apply all ({{ totals.draft|default:0 }})
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>Class</th>
+            <th>Moves to</th>
+            <th class="text-center">In class</th>
+            <th class="text-center">No decision</th>
+            <th class="text-center">Draft</th>
+            <th class="text-center">Moved</th>
+            <th>Decisions</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in summary_rows %}
+          <tr {% if selected_class and r.class.id == selected_class.id %}class="table-active"{% endif %}>
+            <td><strong>{{ r.class.name }}</strong> <small class="text-muted">{{ r.class.level.code }}</small></td>
+            <td>
+              {% if r.needs_setup %}
+                <a href="{% url 'promotion_setup' %}" class="text-danger small"><i class="fas fa-exclamation-triangle"></i> Set next class</a>
+              {% else %}{{ r.target }}{% endif %}
+            </td>
+            <td class="text-center">{{ r.learners }}</td>
+            <td class="text-center">{% if r.undecided %}<span class="badge badge-warning">{{ r.undecided }}</span>{% else %}0{% endif %}</td>
+            <td class="text-center">{% if r.draft %}<span class="badge badge-info">{{ r.draft }}</span>{% else %}0{% endif %}</td>
+            <td class="text-center">{% if r.applied %}<span class="badge badge-success">{{ r.applied }}</span>{% else %}0{% endif %}</td>
+            <td><small class="text-muted">{{ r.by_status|default:"-" }}</small></td>
+            <td class="text-right">
+              <a class="btn btn-outline-primary btn-sm" href="?academic_year={{ academic_year.id }}&class={{ r.class.id }}#classPanel">Open</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-3">No classes with learners.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ One class ============ -->
+{% if selected_class %}
+<div class="card mb-3" id="classPanel">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <strong>{{ selected_class.name }}</strong>
+      <small class="text-muted">
+        {% if selected_class.progression_mode == "TERMINAL" %}Final class → Alumni
+        {% elif selected_class.progression_mode == "CYCLE_EXIT" %}Completes level → Await readmission
+        {% elif selected_class.next_class %}Moves to {{ selected_class.next_class.name }}
+        {% else %}<span class="text-danger">Next class not set</span>{% endif %}
+      </small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" class="btn btn-outline-success btn-sm" id="setAllDefault">Reset all to default</button>
+      <button type="button" class="btn btn-outline-warning btn-sm" id="setAllRetained">Mark all retained</button>
     </div>
   </div>
 
   <div class="card-body">
-    <form method="post" action="{% url 'promotion_bulk_save' %}" id="promotionBulkSaveForm">
+    {% if class_rows %}
+    <form method="post" action="{% url 'promotion_save_decisions' %}" id="classDecisionForm">
       {% csrf_token %}
-      <input type="hidden" name="academic_year" id="saveAcademicYear">
-      <input type="hidden" name="class_ref" id="saveClassRef">
-      <input type="hidden" name="decisions_json" id="decisionsJson">
+      <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+      <input type="hidden" name="class_ref" value="{{ selected_class.id }}">
+      <input type="hidden" name="then" id="thenField" value="">
+
+      <div class="form-inline mb-2">
+        <input type="search" id="rowFilter" class="form-control form-control-sm mr-2" placeholder="Search name / admission no.">
+        <small class="text-muted">{{ class_rows|length }} learner(s). All rows are saved together.</small>
+      </div>
 
       <div class="table-responsive">
-        <table id="promotionStudentsTable" class="table table-striped table-bordered w-100">
-          <thead>
+        <table class="table table-sm table-bordered" id="classDecisionTable">
+          <thead class="thead-light">
             <tr>
               <th>#</th>
               <th>Admission</th>
               <th>Name</th>
-              <th>Level</th>
-              <th>Class</th>
               <th>Stream</th>
-              <th>Decision</th>
-              <th>Target</th>
+              <th>{{ term.short_name|default:term.name|default:"Result" }} result</th>
+              <th style="min-width: 210px;">Decision</th>
+              <th>Goes to</th>
+              <th>Note</th>
+              <th>State</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+            {% for r in class_rows %}
+            <tr class="js-row" data-search="{{ r.student.name|lower }} {{ r.student.admission_number|lower }}">
+              <td>{{ forloop.counter }}</td>
+              <td>{{ r.student.admission_number }}</td>
+              <td>{{ r.student.name }}</td>
+              <td>{{ r.stream_name|default:"-" }}</td>
+              <td><small>{{ r.result|default:"-" }}</small></td>
+              <td>
+                {% if r.state == "applied" %}
+                  <strong>{{ r.decision.get_status_display }}</strong>
+                {% else %}
+                  <select name="status_{{ r.student.id }}" class="form-control form-control-sm js-decision"
+                          data-default="{{ r.default }}">
+                    {% if r.status == "PENDING" %}<option value="PENDING" selected>— choose —</option>{% endif %}
+                    {% for value, label in r.options %}
+                      {% if value != "PENDING" %}
+                      <option value="{{ value }}" {% if value == r.status %}selected{% endif %}>{{ label }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+                {% endif %}
+              </td>
+              <td>{{ r.target }}</td>
+              <td>
+                {% if r.state == "applied" %}
+                  <small class="text-muted">{{ r.reason }}</small>
+                {% else %}
+                  <input type="text" name="reason_{{ r.student.id }}" value="{{ r.reason }}" maxlength="200"
+                         class="form-control form-control-sm" placeholder="optional">
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                {% if r.state == "applied" %}
+                  <span class="badge badge-success">Moved</span>
+                  <button type="submit" form="reverse-{{ r.decision.id }}" class="btn btn-link btn-sm p-0 ml-1 text-danger"
+                          title="Put {{ r.student.name }} back in {{ selected_class.name }}">Reverse</button>
+                {% elif r.state == "draft" %}
+                  <span class="badge badge-info">Draft</span>
+                  <button type="submit" form="clear-{{ r.decision.id }}" class="btn btn-link btn-sm p-0 ml-1" title="Clear this draft">Clear</button>
+                {% elif r.state == "pending" %}
+                  <span class="badge badge-warning">Not decided</span>
+                {% else %}
+                  <span class="badge badge-light">Not saved</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
         </table>
       </div>
 
-      <div class="mt-3">
-        <button type="button" id="savePromotionDecisions" class="btn btn-primary btn-sm">
-          <i class="fas fa-save mr-1"></i> Save Decisions
+      {% if class_has_unapplied %}
+      <div class="d-flex flex-wrap align-items-center">
+        <button type="submit" class="btn btn-primary btn-sm mr-2 mb-1">
+          <i class="fas fa-save mr-1"></i> Save drafts
         </button>
+        <button type="submit" class="btn btn-danger btn-sm mb-1 js-save-apply" {% if not can_apply %}disabled title="Finish the checklist first"{% endif %}>
+          <i class="fas fa-arrow-up mr-1"></i> Save &amp; apply {{ selected_class.name }}
+        </button>
+        <small class="text-muted ml-2 mb-1">Saving drafts does not move anyone. "Apply" moves the learners.</small>
       </div>
+      {% endif %}
     </form>
+
+    {% for r in class_rows %}
+      {% if r.state == "applied" %}
+        <form method="post" action="{% url 'promotion_reverse' r.decision.id %}" id="reverse-{{ r.decision.id }}" class="d-none js-confirm"
+              data-confirm="Put {{ r.student.name }} back in {{ selected_class.name }}?">{% csrf_token %}</form>
+      {% elif r.state == "draft" or r.state == "pending" %}
+        <form method="post" action="{% url 'promotion_clear' r.decision.id %}" id="clear-{{ r.decision.id }}" class="d-none">{% csrf_token %}</form>
+      {% endif %}
+    {% endfor %}
+    {% else %}
+      <p class="text-muted mb-0">No learners in {{ selected_class.name }} for {{ academic_year.year }}.</p>
+    {% endif %}
   </div>
 </div>
+{% endif %}
 
+<!-- ============ Readmission ============ -->
 <div class="card">
-  <div class="card-header">
-    <strong>Awaiting Readmission</strong>
-  </div>
+  <div class="card-header"><strong>Awaiting readmission</strong> <small class="text-muted">(completed a level, e.g. S.4 → S.5)</small></div>
   <div class="card-body">
     {% if awaiting_readmission %}
       <div class="list-group">
@@ -132,120 +281,62 @@
           <div>
             <strong>{{ s.name }}</strong><br>
             <small class="text-muted">
-              {{ s.admission_number }} • {{ s.level.name|default:"-" }}
-              {% if s.current_class %} • {{ s.current_class.name }}{% endif %}
+              {{ s.admission_number }} • completed {{ s.last_completed_class.name|default:s.current_class.name|default:"-" }}
+              {% if s.completed_level_at %} on {{ s.completed_level_at }}{% endif %}
             </small>
           </div>
-          <a href="{% url 'readmit_student_view' s.id %}" class="btn btn-primary btn-sm">
-            Readmit
-          </a>
+          <a href="{% url 'readmit_student_view' s.id %}" class="btn btn-primary btn-sm">Readmit</a>
         </div>
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted mb-0">No students awaiting readmission.</p>
+      <p class="text-muted mb-0">No learners awaiting readmission.</p>
     {% endif %}
   </div>
 </div>
 
+{% endif %}
 {% endblock %}
 
 {% block extrajs %}
 <script>
 (function () {
-  function loadClasses(levelId, selectedValue = "") {
-    const $class = $('#id_class_ref');
-
-    if (!levelId) {
-      return;
-    }
-
-    $class.html('<option value="">---------</option>');
-
-    $.get("{% url 'ajax_classes_by_level' %}", { level_id: levelId })
-      .done(function (resp) {
-        (resp.results || []).forEach(function (c) {
-          const selected = String(selectedValue) === String(c.id) ? 'selected' : '';
-          $class.append(`<option value="${c.id}" ${selected}>${c.name}</option>`);
-        });
-      });
-  }
-
-  $('#id_level').on('change', function () {
-    loadClasses($(this).val());
+  document.querySelectorAll('form.js-confirm').forEach(function (f) {
+    f.addEventListener('submit', function (e) {
+      if (!window.confirm(f.dataset.confirm || 'Are you sure?')) { e.preventDefault(); }
+    });
   });
 
-  const initialLevel = $('#id_level').val();
-  const initialClass = $('#id_class_ref').val();
-  if (initialLevel) {
-    loadClasses(initialLevel, initialClass);
-  }
-
-  const table = $('#promotionStudentsTable').DataTable({
-    processing: true,
-    serverSide: true,
-    pageLength: 25,
-    searching: true,
-    ajax: {
-      url: "{% url 'promotion_students_data' %}",
-      data: function (d) {
-        d.academic_year = $('#id_academic_year').val();
-        d.class_ref = $('#id_class_ref').val();
-      }
-    },
-    columns: [
-      { data: 'counter', orderable: false, searchable: false },
-      { data: 'admission' },
-      { data: 'name' },
-      { data: 'level' },
-      { data: 'class_name' },
-      { data: 'stream' },
-      { data: 'decision', orderable: false, searchable: false },
-      { data: 'target', orderable: false, searchable: false }
-    ]
-  });
-
-  $('#loadPromotionStudents').on('click', function () {
-    const year = $('#id_academic_year').val();
-    const classRef = $('#id_class_ref').val();
-
-    if (!year) {
-      alert('Please select Academic Year first.');
-      return;
-    }
-
-    if (!classRef) {
-      alert('Please select Class first.');
-      return;
-    }
-
-    table.ajax.reload();
-  });
-
-  $('#markAllPromoted').on('click', function () {
-    $('.js-decision').val('PROMOTED');
-  });
-
-  $('#markAllRetained').on('click', function () {
-    $('.js-decision').val('RETAINED');
-  });
-
-  $('#savePromotionDecisions').on('click', function () {
-    const decisions = [];
-
-    $('#promotionStudentsTable .js-decision').each(function () {
-      decisions.push({
-        student_id: parseInt($(this).data('student')),
-        status: $(this).val()
+  var filter = document.getElementById('rowFilter');
+  if (filter) {
+    filter.addEventListener('input', function () {
+      var q = filter.value.trim().toLowerCase();
+      document.querySelectorAll('#classDecisionTable .js-row').forEach(function (tr) {
+        tr.style.display = !q || tr.dataset.search.indexOf(q) !== -1 ? '' : 'none';
       });
     });
+  }
 
-    $('#saveAcademicYear').val($('#id_academic_year').val());
-    $('#saveClassRef').val($('#id_class_ref').val());
-    $('#decisionsJson').val(JSON.stringify(decisions));
+  function setAll(fn) {
+    document.querySelectorAll('#classDecisionTable .js-decision').forEach(function (sel) {
+      var v = fn(sel);
+      if (v && sel.querySelector('option[value="' + v + '"]')) { sel.value = v; }
+    });
+  }
+  var d = document.getElementById('setAllDefault');
+  if (d) d.addEventListener('click', function () { setAll(function (s) { return s.dataset.default; }); });
+  var r = document.getElementById('setAllRetained');
+  if (r) r.addEventListener('click', function () { setAll(function () { return 'RETAINED'; }); });
 
-    $('#promotionBulkSaveForm').submit();
-  });
+  var saveApply = document.querySelector('.js-save-apply');
+  if (saveApply) {
+    saveApply.addEventListener('click', function (e) {
+      if (!window.confirm('Save these decisions and move the learners of this class now?')) {
+        e.preventDefault(); return;
+      }
+      document.getElementById('thenField').value = 'apply';
+    });
+  }
 })();
 </script>
 {% endblock %}

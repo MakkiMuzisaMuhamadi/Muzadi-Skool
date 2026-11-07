@@ -4,75 +4,33 @@
 <div class="page-header mb-3">
   <h3 class="page-title mb-0"><i class="fas fa-pen-square"></i> Enter Marks</h3>
   <small class="text-muted">
-    Auto-saves when you leave a field. Use arrow keys to move between fields.
+    Marks save automatically as you type. Press Next/Enter to move to the next student.
+    No internet at school? Use <a href="{% url 'offline_marks_app' %}"><b>Offline Marks</b></a>.
   </small>
 </div>
 
+{% if my_lists %}
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2" style="gap:.5rem;">
+      <strong><i class="fas fa-list-ul mr-1"></i> My mark lists</strong>
+      <small class="text-muted">Tap a list to open it straight away.</small>
+    </div>
+    <div class="d-flex flex-wrap" style="gap:.4rem; max-height:180px; overflow-y:auto;">
+      {% for l in my_lists %}
+        <a href="{{ l.url }}" class="btn btn-sm {% if l.active %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          {{ l.title }} <span class="badge {% if l.active %}badge-light{% else %}badge-primary{% endif %} ml-1">{{ l.exam }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="card mb-3">
   <div class="card-body">
-    {% if filter_form.errors %}
-      <div class="alert alert-danger">{{ filter_form.errors }}</div>
-    {% endif %}
-
-    <form method="get" id="marksFilter"
-          data-terms-url="{% url 'ajax_terms' %}"
-          data-classes-url="{% url 'ajax_teacher_classes' %}"
-          data-streams-url="{% url 'ajax_teacher_streams' %}"
-          data-examtypes-url="{% url 'ajax_exam_types_for_class' %}"
-          data-subjects-url="{% url 'ajax_teacher_subjects' %}"
-          data-papers-url="{% url 'ajax_teacher_papers' %}">
-      <div class="form-row">
-        <div class="form-group col-md-3">
-          <label>Academic Year</label>
-          {{ filter_form.academic_year }}
-        </div>
-
-        <div class="form-group col-md-3">
-          <label>Term</label>
-          {{ filter_form.term }}
-        </div>
-
-        <div class="form-group col-md-3">
-          <label>Class</label>
-          {{ filter_form.class_ref }}
-        </div>
-
-        <div class="form-group col-md-3">
-          <label>Stream</label>
-          {{ filter_form.stream }}
-          <small class="text-muted d-block">
-            Leave blank to load all streams.
-          </small>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group col-md-4">
-          <label>Exam Type</label>
-          {{ filter_form.exam_type }}
-        </div>
-
-        <div class="form-group col-md-4">
-          <label>Subject</label>
-          {{ filter_form.subject }}
-        </div>
-
-        <div class="form-group col-md-4">
-          <label>Paper</label>
-          {{ filter_form.paper }}
-        </div>
-      </div>
-
-      <div class="d-flex flex-wrap" style="gap:.5rem;">
-        <button class="btn btn-primary">
-          <i class="fas fa-users mr-1"></i> Load Students
-        </button>
-
-        <a href="{% url 'marks_entry' %}" class="btn btn-light">
-          <i class="fas fa-sync-alt mr-1"></i> Reset
-        </a>
-      </div>
-    </form>
+    {% url 'marks_entry' as reset_url %}
+    {% include "dashboard/marks/_marks_filter.html" with submit_label="Load Students" submit_icon="fa-users" reset_url=reset_url %}
   </div>
 </div>
 
@@ -100,6 +58,13 @@
             <i class="fas fa-file-upload mr-1"></i> Upload from Excel
           </a>
           {% endif %}
+          <button type="button" class="btn btn-outline-info btn-sm" id="saveOfflineBtn"
+                  data-package-url="{% url 'offline_marks_package' %}?{{ query_string }}"
+                  data-app-url="{% url 'offline_marks_app' %}"
+                  data-sync-url="{% url 'offline_marks_sync' %}"
+                  data-me-url="{% url 'offline_marks_me' %}">
+            <i class="fas fa-mobile-alt mr-1"></i> Save for offline
+          </button>
         </div>
       </div>
 
@@ -141,6 +106,33 @@
 
   <div id="saveBanner" class="alert alert-warning d-none" role="status" aria-live="polite"></div>
 
+  <style>
+  /* Phones: each student becomes a compact card so the mark box and
+     status are always on screen (no sideways scrolling). */
+  @media (max-width: 767.98px) {
+    #students-table, #students-table tbody { display: block; width: 100%; border: 0; }
+    #students-table thead { display: none; }
+    #students-table tbody tr {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 130px;
+      grid-template-areas: "name mark" "meta status" "stream status";
+      column-gap: .75rem; row-gap: .15rem; align-items: center;
+      padding: .6rem .7rem; margin-bottom: .5rem;
+      border: 1px solid #e3e6ef; border-radius: 10px; background: #fff;
+    }
+    #students-table tbody tr:nth-of-type(odd) { background: #f8f9fc; }
+    #students-table tbody td { display: block; border: 0; padding: 0; white-space: normal; }
+    #students-table .c-name   { grid-area: name; font-weight: 600; font-size: .95rem; line-height: 1.25; word-break: break-word; }
+    #students-table .c-id     { grid-area: meta; font-size: .78rem; color: #6c757d; align-self: start; }
+    #students-table .c-stream { grid-area: stream; font-size: .78rem; color: #6c757d; align-self: start; }
+    #students-table .c-mark   { grid-area: mark; }
+    #students-table .c-status { grid-area: status; font-size: .72rem; text-align: center; line-height: 1.2; }
+    #students-table .marks-input { height: 46px; font-size: 20px; font-weight: 600; text-align: center; }
+    #students-table .abs-btn { min-width: 42px; font-weight: 700; }
+    #saveBanner { position: sticky; top: 74px; z-index: 6; }
+  }
+  </style>
+
   <div class="card">
     <div class="card-body">
       {% if no_students %}
@@ -170,12 +162,14 @@
             <tbody>
               {% for s in students %}
               <tr>
-                <td>{{ s.candidate_id }}</td>
-                <td>{{ s.name }}</td>
-                <td>{{ s.stream }}</td>
-                <td>
+                <td class="c-id">{{ s.candidate_id }}</td>
+                <td class="c-name">{{ s.name }}</td>
+                <td class="c-stream">{{ s.stream }}</td>
+                <td class="c-mark">
                   <div class="input-group input-group-sm">
                     <input type="text"
+                           inputmode="decimal"
+                           enterkeyhint="next"
                            class="form-control marks-input {% if s.locked %}bg-light{% endif %}"
                            data-student-id="{{ s.id }}"
                            data-marksheet-id="{{ s.marksheet_id }}"
@@ -193,7 +187,7 @@
                     {% endif %}
                   </div>
                 </td>
-                <td class="status-cell small" id="status-{{ s.id }}">
+                <td class="status-cell c-status small" id="status-{{ s.id }}">
                   {% if s.locked %}
                     <span class="text-muted">{{ s.lock_reason }}</span>
                   {% elif s.value == "ABS" %}
@@ -344,6 +338,7 @@
         headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
         body: JSON.stringify(payload),
         credentials: "same-origin",
+        keepalive: true,   // lets the request finish if the teacher closes the page or switches apps
       })
       .then(async r => {
         let json = null;
@@ -407,6 +402,20 @@
 
   window.addEventListener("online", () => { retryDelay = 5000; updateBanner(); flush(); });
   window.addEventListener("offline", updateBanner);
+  // Phones rarely fire "blur" when the screen locks, the teacher switches
+  // apps, or the browser closes the tab. Save the box they are in first.
+  function saveFocusedBox() {
+    const el = document.activeElement;
+    if (el && el.classList && el.classList.contains("marks-input") && !el.disabled) {
+      clearTimeout(el._typingTimer);
+      commit(el);
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveFocusedBox();
+  });
+  window.addEventListener("pagehide", saveFocusedBox);
+
   window.addEventListener("beforeunload", e => {
     const pendingHere = Object.keys(queue).some(k => byKey[k]);
     if (pendingHere || inFlight.size) { e.preventDefault(); e.returnValue = ""; }
@@ -415,7 +424,7 @@
   // ---------------------------------------------------------------- search
   const searchInput = document.getElementById("searchInput");
   if (searchInput) {
-    searchInput.addEventListener("keyup", function () {
+    searchInput.addEventListener("input", function () {
       const f = this.value.toLowerCase();
       document.querySelectorAll("#students-table tbody tr").forEach(row => {
         const text = (row.cells[0].textContent + " " + row.cells[1].textContent + " " + row.cells[2].textContent).toLowerCase();
@@ -464,7 +473,19 @@
       else if (e.key === "Escape") { this.value = this.dataset.saved || ""; this.classList.remove("is-invalid"); }
     });
 
-    input.addEventListener("blur", function () { commit(this); });
+    input.addEventListener("blur", function () {
+      clearTimeout(this._typingTimer);
+      commit(this);
+    });
+
+    // Save a couple of seconds after the teacher stops typing, even if
+    // they never leave the box (e.g. the last student before locking the phone).
+    input.addEventListener("input", function () {
+      clearTimeout(this._typingTimer);
+      this._typingTimer = setTimeout(() => {
+        if (check(this.value).ok) commit(this);   // wrong values wait for blur to show the error
+      }, 1500);
+    });
 
     const absBtn = input.parentElement.querySelector(".abs-btn");
     if (absBtn) {
@@ -494,200 +515,37 @@
 })();
 </script>
 
+{% load static %}
+<script src="{% static 'pwa/offline-marks-store.js' %}"></script>
 <script>
+/* "Save for offline": keeps this mark list on the phone for Offline Marks. */
 (function () {
-  const form = document.getElementById("marksFilter");
-  if (!form) return;
-
-  const urls = {
-    terms: form.dataset.termsUrl,
-    classes: form.dataset.classesUrl,
-    streams: form.dataset.streamsUrl,
-    examtypes: form.dataset.examtypesUrl,
-    subjects: form.dataset.subjectsUrl,
-    papers: form.dataset.papersUrl,
-  };
-
-  const yearEl = document.getElementById("id_academic_year");
-  const termEl = document.getElementById("id_term");
-  const classEl = document.getElementById("id_class_ref");
-  const streamEl = document.getElementById("id_stream");
-  const examTypeEl = document.getElementById("id_exam_type");
-  const subjectEl = document.getElementById("id_subject");
-  const paperEl = document.getElementById("id_paper");
-
-  function reset(el, label, disabled = true) {
-    if (!el) return;
-
-    el.innerHTML = `<option value="">${label}</option>`;
-    el.disabled = disabled;
-  }
-
-  async function load(url, el, label, textKey, selectedValue = null) {
-    reset(el, label, true);
-
-    const res = await fetch(url, {
-      headers: {
-        "X-Requested-With": "XMLHttpRequest"
-      }
-    });
-
-    const data = await res.json();
-    const rows = (data.results || []).filter(x => x && x.id !== null && x.id !== undefined);
-
-    if (!rows.length) {
-      el.innerHTML = `<option value="">No options available</option>`;
-      el.disabled = true;
-      return;
-    }
-
-    reset(el, label, false);
-
-    rows.forEach(x => {
-      const opt = document.createElement("option");
-      opt.value = String(x.id);
-      opt.textContent = String(x[textKey] ?? "");
-
-      if (selectedValue && String(selectedValue) === String(x.id)) {
-        opt.selected = true;
-      }
-
-      el.appendChild(opt);
-    });
-  }
-
-  const selected = {
-    term: termEl?.value,
-    class_ref: classEl?.value,
-    stream: streamEl?.value,
-    exam_type: examTypeEl?.value,
-    subject: subjectEl?.value,
-    paper: paperEl?.value,
-  };
-
-  reset(termEl, "-- Select Term --", true);
-  reset(classEl, "-- Select Class --", true);
-  reset(streamEl, "-- All Streams --", true);
-  reset(examTypeEl, "-- Select Exam Type --", true);
-  reset(subjectEl, "-- Select Subject --", true);
-  reset(paperEl, "-- Select Paper --", true);
-
-  yearEl?.addEventListener("change", async () => {
-    reset(termEl, "-- Select Term --", true);
-    reset(classEl, "-- Select Class --", true);
-    reset(streamEl, "-- All Streams --", true);
-    reset(examTypeEl, "-- Select Exam Type --", true);
-    reset(subjectEl, "-- Select Subject --", true);
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!yearEl.value) return;
-
-    await load(
-      `${urls.terms}?year_id=${encodeURIComponent(yearEl.value)}`,
-      termEl,
-      "-- Select Term --",
-      "text",
-      selected.term
-    );
-
-    await load(
-      `${urls.classes}`,
-      classEl,
-      "-- Select Class --",
-      "name",
-      selected.class_ref
-    );
+  const btn = document.getElementById("saveOfflineBtn");
+  if (!btn || !window.MuzadiMarks) return;
+  const MM = window.MuzadiMarks;
+  const user = { id: {{ request.user.id }}, name: "{{ request.user.get_full_name|default:request.user.username|escapejs }}",
+                 is_teacher: {{ request.user.teacher|yesno:"true,false" }}, school: "{{ school_name|escapejs }}" };
+  btn.addEventListener("click", async () => {
+    const label = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving…';
+    try {
+      const res = await fetch(btn.dataset.packageUrl, { credentials: "same-origin", headers: { "Accept": "application/json" } });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Could not prepare the list");
+      await MM.setMeta("urls", { sync: btn.dataset.syncUrl, me: btn.dataset.meUrl });
+      await MM.setMeta("lastUser", user);
+      await MM.setMeta("csrf", "{{ csrf_token }}");
+      await MM.saveDownloaded(user.id, data.list);
+      btn.classList.replace("btn-outline-info", "btn-success");
+      btn.innerHTML = '<i class="fas fa-check mr-1"></i> On this phone';
+      const a = document.createElement("a");
+      a.href = btn.dataset.appUrl; a.className = "btn btn-link btn-sm"; a.textContent = "Open Offline Marks";
+      if (!btn.nextElementSibling || btn.nextElementSibling.textContent !== a.textContent) btn.after(a);
+    } catch (e) {
+      btn.innerHTML = label;
+      alert("Could not save for offline: " + e.message);
+    } finally { btn.disabled = false; }
   });
-
-  classEl?.addEventListener("change", async () => {
-    reset(streamEl, "-- All Streams --", true);
-    reset(examTypeEl, "-- Select Exam Type --", true);
-    reset(subjectEl, "-- Select Subject --", true);
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!classEl.value) return;
-
-    await load(
-      `${urls.streams}?class_id=${encodeURIComponent(classEl.value)}`,
-      streamEl,
-      "-- All Streams --",
-      "name",
-      selected.stream
-    );
-
-    await load(
-      `${urls.examtypes}?class_id=${encodeURIComponent(classEl.value)}`,
-      examTypeEl,
-      "-- Select Exam Type --",
-      "name",
-      selected.exam_type
-    );
-
-    let sUrl = `${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`;
-
-    if (streamEl.value) {
-      sUrl += `&stream_id=${encodeURIComponent(streamEl.value)}`;
-    }
-
-    await load(
-      sUrl,
-      subjectEl,
-      "-- Select Subject --",
-      "name",
-      selected.subject
-    );
-  });
-
-  streamEl?.addEventListener("change", async () => {
-    reset(subjectEl, "-- Select Subject --", true);
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!classEl.value) return;
-
-    let sUrl = `${urls.subjects}?class_id=${encodeURIComponent(classEl.value)}`;
-
-    if (streamEl.value) {
-      sUrl += `&stream_id=${encodeURIComponent(streamEl.value)}`;
-    }
-
-    await load(
-      sUrl,
-      subjectEl,
-      "-- Select Subject --",
-      "name",
-      selected.subject
-    );
-  });
-
-  subjectEl?.addEventListener("change", async () => {
-    reset(paperEl, "-- Select Paper --", true);
-
-    if (!classEl.value || !subjectEl.value) return;
-
-    let pUrl = `${urls.papers}?class_id=${encodeURIComponent(classEl.value)}&subject_id=${encodeURIComponent(subjectEl.value)}`;
-
-    if (streamEl.value) {
-      pUrl += `&stream_id=${encodeURIComponent(streamEl.value)}`;
-    }
-
-    await load(
-      pUrl,
-      paperEl,
-      "-- Select Paper --",
-      "paper_name",
-      selected.paper
-    );
-  });
-
-  form.addEventListener("submit", () => {
-    [termEl, classEl, streamEl, examTypeEl, subjectEl, paperEl].forEach(el => {
-      if (el) el.disabled = false;
-    });
-  });
-
-  if (yearEl && yearEl.value) {
-    yearEl.dispatchEvent(new Event("change"));
-  }
 })();
 </script>
 

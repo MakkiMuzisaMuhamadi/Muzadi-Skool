@@ -1,4 +1,5 @@
 from datetime import timedelta
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -47,10 +48,13 @@ class Term(AuditMixin, models.Model):
     end_date = models.DateField()
     is_current = models.BooleanField(default=False)
 
-    is_final_term = models.BooleanField(default=False, help_text="Only final term can allow promotion.")
-    is_marks_entry_open = models.BooleanField(default=True, help_text="If false, marks entry/editing for this term is locked.")
-    is_reporting_finalized = models.BooleanField(default=False, help_text="If true, reporting for this term is finalized.")
-    is_promotion_allowed = models.BooleanField(default=False, help_text="If true, promotion may be run in this term.")
+    is_final_term = models.BooleanField(default=False, help_text="Last term of the academic year. Only the final term can allow promotion.")
+    # LEGACY: these three were shared by every school. Each school's own status
+    # now lives in SchoolTermStatus (see mainApp/term_status.py). Kept only so
+    # old data stays readable; nothing reads them any more.
+    is_marks_entry_open = models.BooleanField(default=True, help_text="Legacy, not used. See SchoolTermStatus.")
+    is_reporting_finalized = models.BooleanField(default=False, help_text="Legacy, not used. See SchoolTermStatus.")
+    is_promotion_allowed = models.BooleanField(default=False, help_text="Legacy, not used. See SchoolTermStatus.")
 
     notice = models.CharField(
         max_length=255,
@@ -117,6 +121,43 @@ class Term(AuditMixin, models.Model):
             self.is_promotion_allowed = False
 
         super().save(*args, **kwargs)
+
+        # If the platform marks (or unmarks) this as the final term after a
+        # school already finalized it, switch promotion on/off for that school.
+        SchoolTermStatus.objects.filter(
+            term=self, is_reporting_finalized=True, is_marks_entry_open=False,
+        ).exclude(is_promotion_allowed=self.is_final_term).update(is_promotion_allowed=self.is_final_term)
+
+
+class SchoolTermStatus(models.Model):
+    """
+    One school's status for one term: marks entry open/closed, reporting
+    finalized, promotion allowed. Terms (dates) are shared by all schools,
+    but finalizing or reopening a term only affects the school that did it.
+    No row yet = marks entry open, nothing finalized.
+    """
+    school = models.ForeignKey("mainApp.School", on_delete=models.CASCADE, related_name="term_statuses")
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name="school_statuses")
+
+    is_marks_entry_open = models.BooleanField(default=True)
+    is_reporting_finalized = models.BooleanField(default=False)
+    is_promotion_allowed = models.BooleanField(default=False)
+
+    finalized_at = models.DateTimeField(null=True, blank=True)
+    finalized_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    reopened_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("school", "term")]
+        verbose_name = "School term status"
+        verbose_name_plural = "School term statuses"
+
+    def __str__(self):
+        state = "finalized" if self.is_reporting_finalized else ("open" if self.is_marks_entry_open else "closed")
+        return f"{self.school} - {self.term}: {state}"
 
 
 class HolidayType(AuditMixin, models.Model):

@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="page-header mb-3 d-flex align-items-center justify-content-between flex-wrap">
+  <div>
+    <h3 class="page-title mb-0"><i class="fas fa-clipboard-list"></i> Boarding requirements</h3>
+    <small class="text-muted">What every boarder must bring on reporting day. Matrons tick them off on the checklist.</small>
+  </div>
+  <div>
+    <a href="{% url 'boarding_requirement_checklist' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-check-square mr-1"></i> Checklist</a>
+    <a href="{% url 'boarding_requirement_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> Add requirement</a>
+  </div>
+</div>
+<div class="card" style="max-width: 900px;"><div class="card-body">
+  <table class="table table-hover align-middle">
+    <thead class="table-light"><tr><th>Item</th><th>Quantity</th><th>For</th><th>Notes</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td class="font-weight-bold">{{ r.name }}</td><td>{{ r.quantity }}</td><td>{{ r.get_applies_to_display }}</td><td>{{ r.notes|default:"-" }}</td>
+        <td>{% if r.is_active %}<span class="badge bg-success text-white">In use</span>{% else %}<span class="badge bg-secondary text-white">Off</span>{% endif %}</td>
+        <td class="text-right text-nowrap">
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'boarding_requirement_update' r.id %}"><i class="fas fa-edit"></i></a>
+          <form method="post" action="{% url 'boarding_requirement_delete' r.id %}" class="d-inline" onsubmit="return confirm('Delete {{ r.name|escapejs }}?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No requirements yet. Typical list: mattress, blanket, bedsheets (2), basin, bucket, mosquito net, box/suitcase.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

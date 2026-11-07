@@ -30,6 +30,16 @@ class NewUACEGradingScale(models.Model):
 
     max_total_points = models.PositiveIntegerField(default=20)
 
+    ca_weight_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text=(
+            "Continuous assessment weight from Activities of Integration (competency scores). "
+            "0 = off (exam only). E.g. 20 means: final % = 80% exam + 20% AOI average."
+        ),
+    )
+
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -55,6 +65,9 @@ class NewUACEGradingScale(models.Model):
 
         if self.max_total_points < 1:
             errors["max_total_points"] = "Maximum total points must be at least 1."
+
+        if self.ca_weight_percent is not None and not (0 <= self.ca_weight_percent <= 100):
+            errors["ca_weight_percent"] = "Continuous assessment weight must be between 0 and 100."
 
         if self.is_active and self.school_id and self.level_id:
             exists = (

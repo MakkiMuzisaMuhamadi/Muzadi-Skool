@@ -1,0 +1,40 @@
+{% load humanize %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Report card</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f4f6f9; color: #222; margin: 0; }
+    .wrap { max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .muted { color: #666; font-size: 14px; }
+    .amount { font-size: 22px; font-weight: 700; color: #b02a37; margin: 8px 0 12px; }
+    .code { background: #eef6ff; border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      {% if state == "held" %}
+        <h1>{{ snapshot.student.first_name }}'s {{ snapshot.term.name }} report card is withheld</h1>
+        <p class="muted">The report card is ready, but there is an outstanding fees balance of</p>
+        <div class="amount">UGX {{ access.balance|floatformat:0|intcomma }}</div>
+        <p class="muted">Please clear the balance with the school. Open this same link again after paying &mdash; the report card will open automatically.</p>
+        {% if snapshot.student.schoolpay_code %}
+          <div class="code">Pay with SchoolPay using code <b>{{ snapshot.student.schoolpay_code }}</b></div>
+        {% endif %}
+        <p class="muted" style="margin-top:16px;">{{ school.name }}</p>
+      {% elif state == "not_released" %}
+        <h1>Report card not available yet</h1>
+        <p class="muted">The school has not released this report card yet. Please try again later.</p>
+        <p class="muted">{{ school.name }}</p>
+      {% else %}
+        <h1>This link is not valid</h1>
+        <p class="muted">The link may be incomplete or too old. Please contact the school for a new link.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

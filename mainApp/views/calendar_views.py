@@ -16,6 +16,63 @@ from weasyprint import HTML, CSS
 
 from mainApp.models.models import *
 from mainApp.models.calendar import *
+from django.contrib.auth.mixins import UserPassesTestMixin
+from mainApp import tenancy
+
+
+# ---------------------------------------------------------------------------
+# Many schools share one calendar of academic years and terms, so only
+# Muzadi (SUPER_ADMIN) may change years and terms. Holidays and events belong
+# to one school (or to every school when "school" is empty = national holiday).
+# ---------------------------------------------------------------------------
+class PlatformOnlyMixin(UserPassesTestMixin):
+    raise_exception = True
+    permission_denied_message = "Academic years and terms are shared by all schools. Ask Muzadi Technologies to change them."
+
+    def test_func(self):
+        return tenancy.is_platform_user(self.request.user)
+
+
+def _is_platform(request):
+    return tenancy.is_platform_user(request.user)
+
+
+def _own_school(request):
+    return getattr(request, "school", None) or getattr(getattr(request.user, "profile", None), "school", None)
+
+
+def _school_choices(request):
+    if _is_platform(request):
+        return School.objects.all().order_by("name")
+    school = _own_school(request)
+    return School.objects.filter(pk=getattr(school, "pk", None))
+
+
+def _for_school_or_national(qs, request):
+    if _is_platform(request):
+        return qs
+    return qs.filter(Q(school=_own_school(request)) | Q(school__isnull=True))
+
+
+class SchoolOwnedMixin:
+    """Holidays / events: school staff only see and change their own school's rows."""
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if _is_platform(self.request):
+            return qs
+        return qs.filter(school=_own_school(self.request))
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if not _is_platform(self.request) and "school" in form.fields:
+            del form.fields["school"]
+        return form
+
+    def form_valid(self, form):
+        if not _is_platform(self.request):
+            form.instance.school = _own_school(self.request)
+        return super().form_valid(form)
 
 
 class AcademicYearListView(LoginRequiredMixin, ListView):
@@ -27,7 +84,7 @@ class AcademicYearListView(LoginRequiredMixin, ListView):
         return AcademicYear.objects.all().order_by('-start_date')
 
 
-class AcademicYearCreateView(LoginRequiredMixin, CreateView):
+class AcademicYearCreateView(LoginRequiredMixin, PlatformOnlyMixin, CreateView):
     model = AcademicYear
     template_name = 'dashboard/calendar/academic_year_form.html'
     fields = ['year', 'start_date', 'end_date', 'is_active']
@@ -38,13 +95,14 @@ class AcademicYearCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class TermCreateView(LoginRequiredMixin, CreateView):
+class TermCreateView(LoginRequiredMixin, PlatformOnlyMixin, CreateView):
     model = Term
     template_name = 'dashboard/calendar/term_form.html'
     fields = [
         'academic_year', 'name', 'short_name', 'order', 'start_date', 'end_date',
-        'is_current', 'is_final_term', 'is_marks_entry_open',
-        'is_reporting_finalized', 'is_promotion_allowed', 'notice'
+        # Marks open / finalized / promotion allowed are per school now
+        # (SchoolTermStatus), so the platform form no longer touches them.
+        'is_current', 'is_final_term', 'notice'
     ]
     success_url = reverse_lazy('academic_calendar')
 
@@ -55,7 +113,7 @@ class TermCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class HolidayCreateView(LoginRequiredMixin, CreateView):
+class HolidayCreateView(LoginRequiredMixin, SchoolOwnedMixin, CreateView):
     model = Holiday
     template_name = 'dashboard/calendar/holiday_form.html'
     fields = [
@@ -69,11 +127,11 @@ class HolidayCreateView(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['holiday_types'] = HolidayType.objects.all()
         context['academic_years'] = AcademicYear.objects.all()
-        context['schools'] = School.objects.all()
+        context['schools'] = _school_choices(self.request)
         return context
 
 
-class SchoolEventCreateView(LoginRequiredMixin, CreateView):
+class SchoolEventCreateView(LoginRequiredMixin, SchoolOwnedMixin, CreateView):
     model = SchoolEvent
     template_name = 'dashboard/calendar/event_form.html'
     fields = [
@@ -86,12 +144,12 @@ class SchoolEventCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['academic_years'] = AcademicYear.objects.all().order_by('-start_date')
-        context['schools'] = School.objects.all()
+        context['schools'] = _school_choices(self.request)
         today = timezone.now().date()
-        context['upcoming_events'] = SchoolEvent.objects.filter(
+        context['upcoming_events'] = _for_school_or_national(SchoolEvent.objects.filter(
             start_date__gte=today,
             is_public=True
-        ).order_by('start_date', 'start_time')[:10]
+        ), self.request).order_by('start_date', 'start_time')[:10]
         return context
 
 
@@ -373,7 +431,7 @@ class CalendarEventsView(LoginRequiredMixin, View):
         return JsonResponse(events, safe=False)
 
 
-class SetCurrentTermView(LoginRequiredMixin, View):
+class SetCurrentTermView(LoginRequiredMixin, PlatformOnlyMixin, View):
     def post(self, request):
         term_id = request.POST.get('term_id')
         if not term_id:
@@ -389,7 +447,7 @@ class SetCurrentTermView(LoginRequiredMixin, View):
         return redirect('academic_calendar')
 
 
-class SetActiveAcademicYearView(LoginRequiredMixin, View):
+class SetActiveAcademicYearView(LoginRequiredMixin, PlatformOnlyMixin, View):
     def post(self, request):
         year_id = request.POST.get('year_id')
         try:
@@ -401,7 +459,7 @@ class SetActiveAcademicYearView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'error': 'Academic year not found'})
 
 
-class AcademicYearDeleteView(LoginRequiredMixin, DeleteView):
+class AcademicYearDeleteView(LoginRequiredMixin, PlatformOnlyMixin, DeleteView):
     model = AcademicYear
     success_url = reverse_lazy('academic_year_list')
 
@@ -492,13 +550,14 @@ class ExportCalendarPDFView(LoginRequiredMixin, View):
         return response
 
 
-class TermUpdateView(LoginRequiredMixin, UpdateView):
+class TermUpdateView(LoginRequiredMixin, PlatformOnlyMixin, UpdateView):
     model = Term
     template_name = 'dashboard/calendar/term_form.html'
     fields = [
         'academic_year', 'name', 'short_name', 'order', 'start_date', 'end_date',
-        'is_current', 'is_final_term', 'is_marks_entry_open',
-        'is_reporting_finalized', 'is_promotion_allowed', 'notice'
+        # Marks open / finalized / promotion allowed are per school now
+        # (SchoolTermStatus), so the platform form no longer touches them.
+        'is_current', 'is_final_term', 'notice'
     ]
     success_url = reverse_lazy('academic_calendar')
 
@@ -513,7 +572,7 @@ class TermUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class TermDeleteView(LoginRequiredMixin, DeleteView):
+class TermDeleteView(LoginRequiredMixin, PlatformOnlyMixin, DeleteView):
     model = Term
     success_url = reverse_lazy('academic_calendar')
 
@@ -525,7 +584,7 @@ class TermDeleteView(LoginRequiredMixin, DeleteView):
         return HttpResponseRedirect(self.success_url)
 
 
-class HolidayUpdateView(LoginRequiredMixin, UpdateView):
+class HolidayUpdateView(LoginRequiredMixin, SchoolOwnedMixin, UpdateView):
     model = Holiday
     template_name = 'dashboard/calendar/holiday_form.html'
     fields = [
@@ -539,7 +598,7 @@ class HolidayUpdateView(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['holiday_types'] = HolidayType.objects.all()
         context['academic_years'] = AcademicYear.objects.all().order_by('-start_date')
-        context['schools'] = School.objects.all().order_by('name')
+        context['schools'] = _school_choices(self.request)
         return context
 
     def form_valid(self, form):
@@ -547,7 +606,7 @@ class HolidayUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class HolidayDeleteView(LoginRequiredMixin, DeleteView):
+class HolidayDeleteView(LoginRequiredMixin, SchoolOwnedMixin, DeleteView):
     model = Holiday
     success_url = reverse_lazy('academic_calendar')
 
@@ -559,7 +618,7 @@ class HolidayDeleteView(LoginRequiredMixin, DeleteView):
         return HttpResponseRedirect(self.success_url)
 
 
-class SchoolEventUpdateView(LoginRequiredMixin, UpdateView):
+class SchoolEventUpdateView(LoginRequiredMixin, SchoolOwnedMixin, UpdateView):
     model = SchoolEvent
     template_name = 'dashboard/calendar/event_form.html'
     fields = [
@@ -572,12 +631,12 @@ class SchoolEventUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['academic_years'] = AcademicYear.objects.all().order_by('-start_date')
-        context['schools'] = School.objects.all().order_by('name')
+        context['schools'] = _school_choices(self.request)
         today = timezone.now().date()
-        context['upcoming_events'] = SchoolEvent.objects.filter(
+        context['upcoming_events'] = _for_school_or_national(SchoolEvent.objects.filter(
             start_date__gte=today,
             is_public=True
-        ).order_by('start_date', 'start_time')[:10]
+        ), self.request).order_by('start_date', 'start_time')[:10]
         return context
 
     def form_valid(self, form):
@@ -585,7 +644,7 @@ class SchoolEventUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class SchoolEventDeleteView(LoginRequiredMixin, DeleteView):
+class SchoolEventDeleteView(LoginRequiredMixin, SchoolOwnedMixin, DeleteView):
     model = SchoolEvent
     success_url = reverse_lazy('academic_calendar')
 

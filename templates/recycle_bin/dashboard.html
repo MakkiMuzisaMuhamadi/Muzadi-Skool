@@ -1,239 +1,382 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+  .rb-stat { border-left: 4px solid #6c757d; }
+  .rb-stat.rb-total { border-left-color: #4b49ac; }
+  .rb-stat.rb-soon { border-left-color: #ffc107; }
+  .rb-stat.rb-expired { border-left-color: #dc3545; }
+  .rb-stat h3 { margin: 0; font-weight: 600; }
+  .rb-type-chip { display: inline-block; margin: 0 .35rem .35rem 0; }
+  .rb-name { font-weight: 600; }
+  .rb-muted { color: #6c757d; font-size: .82rem; }
+  .rb-actions form { display: inline; }
+  .rb-table td { vertical-align: middle; }
+  .rb-bulkbar { display: none; }
+  .rb-bulkbar.show { display: flex; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <h3 class="page-title">Recycle Bin</h3>
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="#">System</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Recycle Bin</li>
-        </ol>
-    </nav>
+<div class="page-header mb-3">
+  <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+    <div>
+      <h3 class="page-title mb-0"><i class="fas fa-trash-restore"></i> Recycle Bin</h3>
+      <small class="text-muted">
+        Deleted records are kept for {{ settings.retention_days }} day{{ settings.retention_days|pluralize }}.
+        Restoring brings a record back with the same ID and everything that was deleted with it.
+      </small>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#settingsModal">
+        <i class="fas fa-cog mr-1"></i> Settings
+      </button>
+      <button type="button" class="btn btn-outline-warning btn-sm" data-toggle="modal" data-target="#cleanupModal"
+              {% if not expired_count %}disabled{% endif %}>
+        <i class="fas fa-broom mr-1"></i> Remove expired ({{ expired_count }})
+      </button>
+      <button type="button" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#emptyModal"
+              {% if not total_count %}disabled{% endif %}>
+        <i class="fas fa-dumpster mr-1"></i> Empty bin
+      </button>
+    </div>
+  </div>
 </div>
 
+{% if not settings.enabled %}
+<div class="alert alert-danger">
+  <i class="fas fa-exclamation-triangle mr-1"></i>
+  The recycle bin is <strong>switched off</strong>. Anything deleted now is removed permanently.
+  <a href="#" data-toggle="modal" data-target="#settingsModal" class="alert-link">Turn it on</a>.
+</div>
+{% endif %}
+
+<!-- Statistics -->
 <div class="row">
-    <!-- Statistics Cards -->
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">{{ total_count }}</h4>
-                <p class="card-text">Total Items</p>
-            </div>
-        </div>
-    </div>
-    
-    {% for stat in stats %}
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">{{ stat.count }}</h4>
-                <p class="card-text">{{ stat.object_type }}</p>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+  <div class="col-6 col-md-3 mb-3">
+    <div class="card rb-stat rb-total"><div class="card-body py-3">
+      <h3>{{ total_count }}</h3><div class="rb-muted">Items in the bin</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3 mb-3">
+    <div class="card rb-stat"><div class="card-body py-3">
+      <h3>{{ total_rows }}</h3><div class="rb-muted">Records held (incl. related)</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3 mb-3">
+    <div class="card rb-stat rb-soon"><div class="card-body py-3">
+      <h3>{{ expiring_soon_count }}</h3><div class="rb-muted">Expiring within 7 days</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3 mb-3">
+    <div class="card rb-stat rb-expired"><div class="card-body py-3">
+      <h3>{{ expired_count }}</h3><div class="rb-muted">Expired</div>
+    </div></div>
+  </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="card-title mb-0">Deleted Items</h4>
-                    <div>
-                        <button type="button" class="btn btn-warning mr-2" data-toggle="modal" data-target="#cleanupModal">
-                            <i class="fas fa-broom"></i> Cleanup Expired
-                        </button>
-                        <button type="button" class="btn btn-info" data-toggle="modal" data-target="#settingsModal">
-                            <i class="fas fa-cog"></i> Settings
-                        </button>
-                    </div>
-                </div>
+{% if stats %}
+<div class="mb-2">
+  <a href="?{% if filters.q %}q={{ filters.q|urlencode }}&{% endif %}sort={{ filters.sort }}"
+     class="btn btn-sm rb-type-chip {% if not filters.type %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    All <span class="badge badge-light ml-1">{{ total_count }}</span>
+  </a>
+  {% for stat in stats %}
+  <a href="?type={{ stat.object_type|urlencode }}{% if filters.q %}&q={{ filters.q|urlencode }}{% endif %}&sort={{ filters.sort }}"
+     class="btn btn-sm rb-type-chip {% if filters.type == stat.object_type %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    {{ stat.object_type }} <span class="badge badge-light ml-1">{{ stat.count }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
 
-                {% if messages %}
-                <div class="alert-container">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    {% endfor %}
+<div class="card">
+  <div class="card-body">
+
+    <!-- Filters -->
+    <form method="get" class="form-row align-items-end mb-3">
+      {% if filters.type %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
+      <div class="col-md-4 mb-2">
+        <label class="small mb-1">Search</label>
+        <input type="search" name="q" value="{{ filters.q }}" class="form-control form-control-sm"
+               placeholder="Name, school, reason, deleted by...">
+      </div>
+      <div class="col-6 col-md-2 mb-2">
+        <label class="small mb-1">Status</label>
+        <select name="status" class="form-control form-control-sm">
+          <option value="">Any</option>
+          <option value="soon" {% if filters.status == 'soon' %}selected{% endif %}>Expiring soon</option>
+          <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>Expired</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2 mb-2">
+        <label class="small mb-1">Deleted by</label>
+        <select name="by" class="form-control form-control-sm">
+          <option value="">Anyone</option>
+          {% for name in deleters %}
+          <option value="{{ name }}" {% if filters.by == name %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2 mb-2">
+        <label class="small mb-1">Sort</label>
+        <select name="sort" class="form-control form-control-sm">
+          <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest first</option>
+          <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+          <option value="expiring" {% if filters.sort == 'expiring' %}selected{% endif %}>Expiring first</option>
+          <option value="type" {% if filters.sort == 'type' %}selected{% endif %}>Type</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2 mb-2">
+        <button class="btn btn-primary btn-sm btn-block"><i class="fas fa-filter mr-1"></i> Apply</button>
+        {% if filters.q or filters.status or filters.by or filters.type %}
+        <a href="{% url 'recycle_bin_dashboard' %}" class="btn btn-link btn-sm btn-block p-0 mt-1">Clear filters</a>
+        {% endif %}
+      </div>
+    </form>
+
+    <form method="post" action="{% url 'bulk_restore' %}" id="bulkForm">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ current_url }}">
+
+      <div class="rb-bulkbar alert alert-secondary align-items-center justify-content-between py-2" id="bulkBar">
+        <span><strong id="selCount">0</strong> selected</span>
+        <span>
+          <button type="submit" name="action" value="restore" class="btn btn-success btn-sm"
+                  onclick="return confirm('Restore the selected items?');">
+            <i class="fas fa-undo mr-1"></i> Restore selected
+          </button>
+          <button type="submit" name="action" value="delete" class="btn btn-danger btn-sm"
+                  onclick="return confirm('Permanently delete the selected items? This cannot be undone.');">
+            <i class="fas fa-trash mr-1"></i> Delete permanently
+          </button>
+        </span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover rb-table">
+          <thead>
+            <tr>
+              <th style="width:36px;"><input type="checkbox" id="selectAll" aria-label="Select all"></th>
+              <th>Item</th>
+              <th>Includes</th>
+              <th>Deleted</th>
+              <th>Expires</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in recycle_items %}
+            <tr class="{% if item.is_expired %}table-warning{% endif %}">
+              <td><input type="checkbox" class="rb-check" name="item_ids" value="{{ item.id }}" aria-label="Select"></td>
+              <td>
+                <span class="badge badge-dark">{{ item.object_type }}</span>
+                {% if item.is_legacy %}<span class="badge badge-light" title="Saved by the old recycle bin - only the main record can be restored">old format</span>{% endif %}
+                <div class="rb-name mt-1">
+                  <a href="{% url 'view_item_details' item.id %}">{{ item.display_name|truncatechars:70 }}</a>
                 </div>
+                <div class="rb-muted">
+                  #{{ item.object_id }}{% if item.school_name %} &middot; {{ item.school_name }}{% endif %}
+                  {% if item.deletion_reason %} &middot; <em>{{ item.deletion_reason|truncatechars:60 }}</em>{% endif %}
+                </div>
+              </td>
+              <td>
+                {% if item.relink_count %}
+                  <span class="badge badge-light border d-inline-block mb-1" title="Records that will be linked back to it on restore">
+                    <i class="fas fa-link"></i> {{ item.relink_count }} linked
+                  </span><br>
                 {% endif %}
-
-                <form method="POST" action="{% url 'bulk_restore' %}" id="bulkForm">
-                    {% csrf_token %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="selectAll"></th>
-                                    <th>Type</th>
-                                    <th>ID</th>
-                                    <th>Data Preview</th>
-                                    <th>Deleted By</th>
-                                    <th>Deleted At</th>
-                                    <th>Expires At</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in recycle_items %}
-                                <tr class="{% if item.is_expired %}table-warning{% endif %}">
-                                    <td><input type="checkbox" name="item_ids" value="{{ item.id }}"></td>
-                                    <td>
-                                        <span class="badge badge-secondary">{{ item.object_type }}</span>
-                                    </td>
-                                    <td>#{{ item.object_id }}</td>
-                                    <td>
-                                        <small class="text-muted">
-                                            {% for key, value in item.original_data.items|slice:":3" %}
-                                                {{ key }}: {{ value }}<br>
-                                            {% endfor %}
-                                        </small>
-                                    </td>
-                                    <td>{{ item.deleted_by.username|default:"System" }}</td>
-                                    <td>{{ item.deleted_at|date:"M d, Y H:i" }}</td>
-                                    <td>
-                                        {{ item.expires_at|date:"M d, Y H:i" }}
-                                        {% if item.is_expired %}
-                                        <span class="badge badge-warning ml-1">Expired</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{% url 'restore_item' item.id %}" 
-                                               class="btn btn-success btn-sm" 
-                                               onclick="return confirm('Restore this item?')">
-                                                <i class="fas fa-undo"></i>
-                                            </a>
-                                            <a href="{% url 'permanent_delete' item.id %}" 
-                                               class="btn btn-danger btn-sm"
-                                               onclick="return confirm('Permanently delete this item? This cannot be undone!')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="8" class="text-center py-4">
-                                        <i class="fas fa-trash fa-2x text-muted mb-2"></i><br>
-                                        Recycle bin is empty
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {% if recycle_items %}
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-success" name="action" value="restore">
-                            <i class="fas fa-undo"></i> Restore Selected
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="bulkDelete()">
-                            <i class="fas fa-trash"></i> Delete Selected Permanently
-                        </button>
-                    </div>
-                    {% endif %}
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Cleanup Modal -->
-<div class="modal fade" id="cleanupModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Cleanup Expired Items</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                {% if item.related_count %}
+                  <span class="badge badge-info" title="{% for k, v in item.summary.items %}{{ v }} {{ k }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                    +{{ item.related_count }} related
+                  </span>
+                {% elif not item.relink_count %}
+                  <span class="rb-muted">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>
+                {{ item.deleted_at|date:"d M Y, H:i" }}
+                <div class="rb-muted">by {{ item.deleted_by_display }}</div>
+              </td>
+              <td>
+                {% if item.is_expired %}
+                  <span class="badge badge-danger">Expired</span>
+                {% else %}
+                  {{ item.expires_at|date:"d M Y" }}
+                  <div class="rb-muted">{{ item.days_left }} day{{ item.days_left|pluralize }} left</div>
+                {% endif %}
+              </td>
+              <td class="text-right rb-actions text-nowrap">
+                <a href="{% url 'view_item_details' item.id %}" class="btn btn-outline-secondary btn-sm" title="Details">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <button type="submit" class="btn btn-success btn-sm" title="Restore"
+                        formaction="{% url 'restore_item' item.id %}"
+                        onclick="return confirm('Restore {{ item.object_type|escapejs }} \'{{ item.display_name|escapejs }}\'?');">
+                  <i class="fas fa-undo"></i>
                 </button>
-            </div>
-            <div class="modal-body">
-                <p>This will permanently delete all expired items from the recycle bin.</p>
-                <p class="text-warning"><strong>This action cannot be undone!</strong></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
-                <a href="{% url 'cleanup_expired' %}" class="btn btn-warning">Cleanup Expired Items</a>
-            </div>
-        </div>
-    </div>
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete permanently"
+                        formaction="{% url 'permanent_delete' item.id %}"
+                        onclick="return confirm('Permanently delete this item? This cannot be undone!');">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-5">
+                <i class="fas fa-trash-alt fa-2x text-muted mb-2"></i><br>
+                {% if filters.q or filters.status or filters.by or filters.type %}
+                  No deleted items match these filters.
+                {% else %}
+                  The recycle bin is empty.
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="d-flex justify-content-between align-items-center mt-3">
+      <small class="text-muted">
+        Showing {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?{{ filter_querystring }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?{{ filter_querystring }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
 </div>
 
-<!-- Settings Modal -->
+<!-- Remove expired -->
+<div class="modal fade" id="cleanupModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <form method="post" action="{% url 'cleanup_expired' %}">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Remove expired items</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>This permanently deletes the <strong>{{ expired_count }}</strong> expired item{{ expired_count|pluralize }}.</p>
+        <p class="text-danger mb-0"><strong>This cannot be undone.</strong></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-warning">Remove expired</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+<!-- Empty bin -->
+<div class="modal fade" id="emptyModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <form method="post" action="{% url 'recycle_bin_empty' %}" id="emptyForm">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Empty the recycle bin</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>All <strong>{{ total_count }}</strong> item{{ total_count|pluralize }} will be deleted permanently and can never be restored.</p>
+        <label class="small">Type <strong>EMPTY</strong> to confirm</label>
+        <input type="text" class="form-control" id="emptyConfirm" autocomplete="off">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger" id="emptyBtn" disabled>Empty bin</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+<!-- Settings -->
 <div class="modal fade" id="settingsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{% url 'update_recycle_bin_settings' %}">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Recycle Bin Settings</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Retention Period (days)</label>
-                        <input type="number" class="form-control" name="retention_days" 
-                               value="{{ settings.retention_days|default:30 }}" min="1" max="365">
-                    </div>
-                    <div class="form-group">
-                        <label>Maximum Items per Type</label>
-                        <input type="number" class="form-control" name="max_items_per_type" 
-                               value="{{ settings.max_items_per_type|default:1000 }}" min="10" max="10000">
-                    </div>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" name="enabled" 
-                               {% if settings.enabled %}checked{% endif %}>
-                        <label class="form-check-label">Enable Recycle Bin</label>
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" name="auto_cleanup" 
-                               {% if settings.auto_cleanup %}checked{% endif %}>
-                        <label class="form-check-label">Auto-cleanup Expired Items</label>
-                    </div>
-                    {% if settings.last_cleanup %}
-                    <small class="text-muted">
-                        Last cleanup: {{ settings.last_cleanup|date:"M d, Y H:i" }}
-                    </small>
-                    {% endif %}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-outline-success">Save Settings</button>
-                </div>
-            </form>
+  <div class="modal-dialog"><div class="modal-content">
+    <form method="post" action="{% url 'update_recycle_bin_settings' %}">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Recycle bin settings</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="custom-control custom-switch mb-3">
+          <input type="checkbox" class="custom-control-input" id="rbEnabled" name="enabled" {% if settings.enabled %}checked{% endif %}>
+          <label class="custom-control-label" for="rbEnabled">Recycle bin on (deleted records can be restored)</label>
         </div>
-    </div>
+        <div class="form-group">
+          <label for="rbRetention">Keep deleted items for (days)</label>
+          <input type="number" class="form-control" id="rbRetention" name="retention_days"
+                 value="{{ settings.retention_days }}" min="1" max="365" required>
+        </div>
+        <div class="custom-control custom-checkbox mb-3">
+          <input type="checkbox" class="custom-control-input" id="rbApply" name="apply_to_existing">
+          <label class="custom-control-label" for="rbApply">Also apply the new period to items already in the bin</label>
+        </div>
+        <div class="form-group">
+          <label for="rbMax">Maximum items kept per type</label>
+          <input type="number" class="form-control" id="rbMax" name="max_items_per_type"
+                 value="{{ settings.max_items_per_type }}" min="10" max="100000" required>
+          <small class="form-text text-muted">When a type goes over this number, its oldest items are removed.</small>
+        </div>
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="rbAuto" name="auto_cleanup" {% if settings.auto_cleanup %}checked{% endif %}>
+          <label class="custom-control-label" for="rbAuto">Remove expired items automatically</label>
+        </div>
+        {% if settings.last_cleanup %}
+        <small class="text-muted d-block mt-3">Last clean-up: {{ settings.last_cleanup|date:"d M Y, H:i" }}</small>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save settings</button>
+      </div>
+    </form>
+  </div></div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extrajs %}
 <script>
-// Select all checkboxes
-document.getElementById('selectAll').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('input[name="item_ids"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = this.checked;
-    });
-});
-
-// Bulk delete function
-function bulkDelete() {
-    if (confirm('Permanently delete selected items? This cannot be undone!')) {
-        const form = document.getElementById('bulkForm');
-        form.action = "{% url 'bulk_permanent_delete' %}";
-        form.submit();
+(function () {
+  var all = document.getElementById('selectAll');
+  var bar = document.getElementById('bulkBar');
+  var count = document.getElementById('selCount');
+  function boxes() { return document.querySelectorAll('.rb-check'); }
+  function refresh() {
+    var n = document.querySelectorAll('.rb-check:checked').length;
+    if (count) count.textContent = n;
+    if (bar) bar.classList.toggle('show', n > 0);
+    if (all) {
+      var total = boxes().length;
+      all.checked = total > 0 && n === total;
+      all.indeterminate = n > 0 && n < total;
     }
-}
+  }
+  if (all) all.addEventListener('change', function () {
+    boxes().forEach(function (b) { b.checked = all.checked; });
+    refresh();
+  });
+  boxes().forEach(function (b) { b.addEventListener('change', refresh); });
+  refresh();
+
+  var confirmBox = document.getElementById('emptyConfirm');
+  var emptyBtn = document.getElementById('emptyBtn');
+  if (confirmBox && emptyBtn) confirmBox.addEventListener('input', function () {
+    emptyBtn.disabled = confirmBox.value.trim().toUpperCase() !== 'EMPTY';
+  });
+})();
 </script>
 {% endblock %}
