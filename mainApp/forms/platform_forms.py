@@ -22,6 +22,8 @@ class _Styled:
 
 def _clean_subdomain(value, instance_pk=None):
     value = (value or "").strip().lower()
+    if value in tenancy.RESERVED_SUBDOMAINS or value in tenancy.platform_subdomains():
+        raise forms.ValidationError(f"'{value}' is a reserved address. Please choose another one.")
     if not tenancy.is_valid_subdomain(value):
         raise forms.ValidationError(
             "Use 2-63 lower-case letters, numbers or dashes (no dash at the start or end). "

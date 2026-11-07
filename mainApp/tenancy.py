@@ -94,7 +94,8 @@ def guard_mode() -> str:
 
 # Subdomains that may never be given to a school.
 RESERVED_SUBDOMAINS = {
-    "admin", "www", "api", "mail", "smtp", "ftp", "static", "media", "staging", "demo",
+    # "demo" is intentionally NOT reserved: the public demo school lives at demo.<base domain>.
+    "admin", "www", "api", "mail", "smtp", "ftp", "static", "media", "staging",
     "app", "platform", "support", "help", "status", "cpanel", "webmail", "ns1", "ns2",
 }
 
