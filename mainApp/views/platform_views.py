@@ -232,17 +232,21 @@ def whats_new(request):
 
 
 @login_required
-@role_required(["SUPER_ADMIN", "ADMIN"])
+@role_required(["SUPER_ADMIN", "ADMIN", "TEACHER", "BURSAR", "NURSE", "LIBRARIAN", "STOREKEEPER", "TRANSPORT_OFFICER"])
 def school_setup_checklist(request):
+    """Setup guide: what to set up, in which order, and what each step needs first."""
+    from mainApp import setup_guide
+
     school = _request_school(request)
     if school is None:
         messages.info(request, "Your account is not linked to a school.")
         return redirect("dashboard")
-    items = platform_services.setup_checklist(school)
-    done = sum(1 for i in items if i["done"])
+    role = tenancy.user_role(request.user)
+    guide = setup_guide.guide_for(school, role)
     return render(request, "platform/setup_checklist.html", {
-        "title": "Setting up your school", "school": school, "items": items, "done": done,
-        "percent": int(done * 100 / len(items)) if items else 100,
+        "title": "Setup guide", "school": school, "guide": guide,
+        "done": guide["done"], "percent": guide["percent"],
+        "routine": setup_guide.TERM_ROUTINE, "is_admin": role in setup_guide.ADMIN_ROLES,
     })
 
 

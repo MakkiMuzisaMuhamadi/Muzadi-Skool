@@ -12,3 +12,4 @@ DATABASE BACKUPS/
 logs/
 dump.rdb
 celerybeat-schedule
+*.dump

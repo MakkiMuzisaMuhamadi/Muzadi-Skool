@@ -1,18 +1,83 @@
 {% extends "dashboard/base.html" %}
 {% block content %}
-<div class="page-header mb-3"><h3 class="page-title mb-0"><i class="fas fa-tasks"></i> Setting up {{ school.name }}</h3>
-<small class="text-muted">Work down the list. Each step opens the right page.</small></div>
-<div class="card"><div class="card-body">
-  <div class="progress mb-3" style="height:10px;"><div class="progress-bar bg-success" style="width: {{ percent }}%"></div></div>
-  <p class="mb-3"><strong>{{ done }} of {{ items|length }}</strong> steps done.</p>
-  <ol class="pl-3 mb-0">
-  {% for i in items %}
-    <li class="mb-2">
-      {% if i.done %}<i class="fas fa-check-circle text-success"></i>{% else %}<i class="far fa-circle text-muted"></i>{% endif %}
-      {% if i.url %}<a href="{{ i.url }}">{{ i.label }}</a>{% else %}{{ i.label }}{% endif %}
-      {% if i.hint and not i.done %}<br><small class="text-muted">{{ i.hint }}</small>{% endif %}
-    </li>
+<style>
+  .sg-step { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid rgba(0,0,0,.06); }
+  .sg-step:last-child { border-bottom:0; }
+  .sg-icon { font-size:1.15rem; width:22px; flex:0 0 22px; text-align:center; padding-top:2px; }
+  .sg-step.is-blocked { opacity:.75; }
+  .sg-needs { font-size:.8rem; }
+  .sg-flow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+  .sg-flow .badge { font-size:.8rem; font-weight:500; padding:.4em .6em; }
+</style>
+
+<div class="page-header mb-3">
+  <h3 class="page-title mb-0"><i class="fas fa-route"></i> Setup guide &mdash; {{ school.name }}</h3>
+  <small class="text-muted">Some information depends on other information, so work from top to bottom.
+    Each step opens the right page.</small>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <div class="progress mb-2" style="height:10px;"><div class="progress-bar bg-success" style="width: {{ percent }}%"></div></div>
+  <p class="mb-3"><strong>{{ done }} of {{ guide.total }}</strong> steps done.</p>
+
+  <h6 class="mb-2">The order that matters most</h6>
+  <div class="sg-flow mb-1">
+    <span class="badge badge-light border">Academic year</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Terms</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Classes</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Streams</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Students</span>
+  </div>
+  <div class="sg-flow mb-1">
+    <span class="badge badge-light border">Classes + Streams + Subjects + Teachers</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Subject allocation</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Marks entry &amp; timetable</span>
+  </div>
+  <div class="sg-flow">
+    <span class="badge badge-light border">Fee categories + Term + Classes</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Fee structure</span><i class="fas fa-arrow-right text-muted"></i>
+    <span class="badge badge-light border">Collect fees</span>
+  </div>
+  {% if not is_admin %}
+    <p class="text-muted small mt-3 mb-0"><i class="fas fa-info-circle"></i>
+      Most setup steps are done by the school administrator. If something you need is missing, ask them.</p>
+  {% endif %}
+</div></div>
+
+{% for phase in guide.phases %}
+<div class="card mb-3"><div class="card-body">
+  <h5 class="mb-1">{{ phase.title }}</h5>
+  <p class="text-muted small mb-2">{{ phase.intro }}</p>
+  {% for i in phase.steps %}
+    <div class="sg-step {% if i.blocked %}is-blocked{% endif %}">
+      <div class="sg-icon">
+        {% if i.done %}<i class="fas fa-check-circle text-success" title="Done"></i>
+        {% elif i.blocked %}<i class="fas fa-lock text-muted" title="Do the earlier steps first"></i>
+        {% else %}<i class="far fa-circle text-warning" title="To do"></i>{% endif %}
+      </div>
+      <div class="flex-grow-1">
+        <div>
+          <strong>{{ i.label }}</strong>
+          {% if i.done %}<span class="badge badge-success ml-1">Done</span>{% endif %}
+          {% if i.url and not i.blocked %}
+            <a href="{{ i.url }}" class="btn btn-sm {% if i.done %}btn-outline-secondary{% else %}btn-primary{% endif %} py-0 ml-1">{% if i.done %}Open{% else %}Set up{% endif %}</a>
+          {% endif %}
+        </div>
+        <div class="small">{{ i.how }}</div>
+        {% if not i.done and i.ask and not i.blocked %}<div class="small text-muted">Ask {{ i.ask }} to do this.</div>{% endif %}
+        {% if i.blocked %}
+          <div class="sg-needs text-danger mt-1"><i class="fas fa-arrow-up"></i> First set up: {{ i.needs|join:", " }}</div>
+        {% endif %}
+      </div>
+    </div>
   {% endfor %}
-  </ol>
+</div></div>
+{% endfor %}
+
+<div class="card mb-3"><div class="card-body">
+  <h5 class="mb-2">Every term, once you are set up</h5>
+  <ul class="mb-0 pl-3">
+    {% for when, what in routine %}<li class="mb-1"><strong>{{ when }}:</strong> {{ what }}</li>{% endfor %}
+  </ul>
 </div></div>
 {% endblock %}

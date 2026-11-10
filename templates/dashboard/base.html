@@ -1492,8 +1492,8 @@
             </a>
             <div class="collapse" id="my-school-menu">
               <ul class="nav flex-column sub-menu">
-                <li class="nav-item"><a class="nav-link" href="{% url 'school_setup_checklist' %}"><i class="fas fa-tasks mr-2"></i> Setup checklist</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'school_sms_credit' %}"><i class="fas fa-sms mr-2"></i> SMS credit</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'school_setup_checklist' %}"><i class="fas fa-route mr-2"></i> Setup guide</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'school_sms_credit' %}"><i class="fas fa-sms mr-2"></i> SMS credit{% if sms_low_balance is not None %} <span class="badge {% if sms_alert_level == 'out' %}badge-danger{% else %}badge-warning{% endif %} ml-1">{% if sms_alert_level == 'out' %}Empty{% else %}Low{% endif %}</span>{% endif %}</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'subscription_status' %}"><i class="fas fa-file-contract mr-2"></i> Subscription</a></li>
               </ul>
             </div>
@@ -1526,6 +1526,7 @@
         <div class="content-wrapper">
 
           {% include "platform/_banners.html" %}
+          {% include "platform/_prereqs.html" %}
 
           <!-- Global Messages -->
           {% if messages %}

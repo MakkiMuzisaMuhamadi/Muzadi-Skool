@@ -375,3 +375,86 @@
   font-weight: 600;
   border-radius: 10px;
 }
+/* ==========================================================================
+   Readable "secondary" colour (Nov 2026)
+   The theme's secondary (#DEDEDE) was too pale to read on white.
+   Change --mz-secondary here to recolour every secondary item at once.
+   ========================================================================== */
+:root {
+  --secondary: #5b6577;
+  --mz-secondary: #5b6577;
+  --mz-secondary-dark: #4a5366;
+  --mz-secondary-soft: #eef0f4;
+}
+
+/* Solid buttons */
+.btn-secondary {
+  color: #fff !important;
+  background-color: var(--mz-secondary) !important;
+  border-color: var(--mz-secondary) !important;
+}
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary.focus,
+.btn-secondary:not(:disabled):not(.disabled):active,
+.btn-secondary:not(:disabled):not(.disabled).active,
+.show > .btn-secondary.dropdown-toggle {
+  color: #fff !important;
+  background-color: var(--mz-secondary-dark) !important;
+  border-color: var(--mz-secondary-dark) !important;
+}
+.btn-secondary.disabled,
+.btn-secondary:disabled { opacity: .55; }
+
+/* Outline buttons */
+.btn-outline-secondary {
+  color: var(--mz-secondary) !important;
+  border-color: var(--mz-secondary) !important;
+  background-color: transparent;
+}
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:not(:disabled):not(.disabled):active,
+.btn-outline-secondary:not(:disabled):not(.disabled).active,
+.show > .btn-outline-secondary.dropdown-toggle {
+  color: #fff !important;
+  background-color: var(--mz-secondary) !important;
+  border-color: var(--mz-secondary) !important;
+}
+
+/* Text, badges, backgrounds, borders */
+.text-secondary { color: var(--mz-secondary) !important; }
+a.text-secondary:hover,
+a.text-secondary:focus { color: var(--mz-secondary-dark) !important; }
+
+.badge-secondary,
+.badge.bg-secondary {
+  color: #fff !important;
+  background-color: var(--mz-secondary) !important;
+}
+.badge-secondary[href]:hover,
+.badge-secondary[href]:focus { background-color: var(--mz-secondary-dark) !important; }
+
+.bg-secondary {
+  background-color: var(--mz-secondary) !important;
+  color: #fff;
+}
+a.bg-secondary:hover, a.bg-secondary:focus,
+button.bg-secondary:hover, button.bg-secondary:focus {
+  background-color: var(--mz-secondary-dark) !important;
+}
+
+.border-secondary { border-color: var(--mz-secondary) !important; }
+
+/* Soft panels: keep light background, make the text readable */
+.alert-secondary {
+  color: var(--mz-secondary-dark);
+  background-color: var(--mz-secondary-soft);
+  border-color: #d5d9e1;
+}
+.alert-secondary .alert-link { color: #333a48; }
+.table-secondary, .table-secondary > th, .table-secondary > td,
+.list-group-item-secondary {
+  color: #3d4555;
+  background-color: var(--mz-secondary-soft);
+}

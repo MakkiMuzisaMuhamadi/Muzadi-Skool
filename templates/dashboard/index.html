@@ -534,9 +534,15 @@
       </div>
       <div style="flex:2;">
         {% for item in s.setup.items %}{% if not item.done %}
+          {% if item.blocked %}
+          <span class="mz-step text-muted" title="First set up: {{ item.needs|join:', ' }}"><i class="fas fa-lock"></i> {{ item.label }}</span>
+          {% elif not item.url %}
+          <span class="mz-step text-muted" title="Ask {{ item.ask }}"><i class="far fa-clock"></i> {{ item.label }}</span>
+          {% else %}
           <a class="mz-step" href="{{ item.url|default:'#' }}" {% if item.hint %}title="{{ item.hint }}"{% endif %}><i class="far fa-circle text-warning"></i> {{ item.label }}</a>
+          {% endif %}
         {% endif %}{% endfor %}
-        <a class="mz-link ml-1" href="{% url 'school_setup_checklist' %}">Full checklist &rarr;</a>
+        <a class="mz-link ml-1" href="{% url 'school_setup_checklist' %}">Setup guide &rarr;</a>
       </div>
     </div>
   </div></div>

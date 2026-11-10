@@ -381,10 +381,39 @@ def platform_context(request):
                 acc = SchoolMessagingAccount.objects.filter(school=school).first()
                 if acc is not None and acc.sms_enabled and acc.is_low:
                     ctx["sms_low_balance"] = acc.credit_units
+                    # "low" or "out". The banner can be snoozed (cookie set by the
+                    # banner's buttons); a snoozed "low" banner comes back when the
+                    # credit runs out completely.
+                    level = "out" if acc.credit_units <= 0 else "low"
+                    ctx["sms_alert_level"] = level
+                    ctx["sms_alert_cookie"] = f"sms_alert_snooze_{school.pk}"
+                    ctx["sms_alert_snoozed"] = request.COOKIES.get(ctx["sms_alert_cookie"]) == level
 
         from mainApp.platform_services import unread_release_notes_count
         ctx["whats_new_count"] = unread_release_notes_count(user, school)
     except Exception:  # a banner must never break a page
         import logging
         logging.getLogger(__name__).exception("platform_context failed")
+
+    try:
+        help_school = school or getattr(getattr(user, "profile", None), "school", None)
+        _add_setup_help(ctx, request, help_school, tenancy.user_role(user))
+    except Exception:  # help must never break a page
+        import logging
+        logging.getLogger(__name__).exception("setup help failed")
     return ctx
+
+
+def _add_setup_help(ctx, request, school, role):
+    """'Do this first' box for pages whose data depends on other data.
+    The rules are in mainApp/setup_guide.py."""
+    from mainApp import setup_guide
+    from mainApp.models.models import PORTAL_ROLES
+
+    if school is None or role in PORTAL_ROLES or not role:
+        return
+    match = getattr(request, "resolver_match", None)
+    url_name = getattr(match, "url_name", None)
+    if not url_name:
+        return
+    ctx["setup_prereqs"] = setup_guide.missing_for_page(url_name, school, role)

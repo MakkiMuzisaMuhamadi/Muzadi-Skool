@@ -92,33 +92,34 @@ def _url(name, *args):
         return ""
 
 
-def setup_checklist(school):
-    """[{label, done, url, hint}] - what a new school still has to do, in order."""
-    from mainApp.models.fees_models import FeeStructure
-    from mainApp.models.models import Class, Stream
-    from mainApp.models.student import Student
-    from mainApp.models.teacher_models import Teacher
+# The core steps, in order. The rules (checks, links, what needs what) live in
+# mainApp/setup_guide.py so the checklist, the setup guide and the
+# "do this first" boxes always agree.
+CHECKLIST_KEYS = [
+    "school_details", "academic_year", "term", "classes", "streams", "subjects", "teachers",
+    "students", "allocations", "exam_setup", "grading", "report_template",
+    "fee_categories", "fee_structure", "portal_users",
+]
 
-    items = [
-        {"label": "School details and logo", "done": bool(school.logo and school.contact_phone),
-         "url": _url("user_profile"), "hint": "Ask Muzadi to upload your logo and contact details if missing."},
-        {"label": "Current academic year and term", "done": bool(school.academic_year_id and school.current_term_id),
-         "url": _url("academic_year_list"), "hint": "Pick the year and term the school is in now."},
-        {"label": "Classes", "done": Class.objects.filter(school=school).exists(),
-         "url": _url("class_list"), "hint": "e.g. S.1 - S.6 or P.1 - P.7."},
-        {"label": "Streams", "done": Stream.objects.filter(class_ref__school=school).exists(),
-         "url": _url("stream_list"), "hint": "e.g. S.1 East, S.1 West (one stream is fine)."},
-        {"label": "Teachers", "done": Teacher.objects.filter(user__profile__school=school).exists(),
-         "url": _url("teacher_import_upload"), "hint": "Import them from Excel or add them one by one."},
-        {"label": "Students", "done": Student.objects.filter(school=school).exists(),
-         "url": _url("student_bulk_upload"), "hint": "Upload your Excel list of students."},
-        {"label": "Subject allocation (who teaches what)",
-         "done": _has_allocations(school), "url": _url("teacher_allocation_list"), "hint": ""},
-        {"label": "Fee structure", "done": FeeStructure.objects.filter(school=school).exists(),
-         "url": _url("fee_structure_list"), "hint": "Fees per class and term."},
-        {"label": "Student & parent logins", "done": _has_portal_users(school),
-         "url": _url("user_management"), "hint": "Generate accounts and print the login slips."},
-    ]
+
+def setup_checklist(school):
+    """[{label, done, url, hint, needs, blocked}] - what a new school still has to do, in order.
+    needs = labels of earlier steps that must be done first."""
+    from mainApp import setup_guide
+
+    needs_by_key = {key: needs for phase in setup_guide.GUIDE for key, _how, needs in phase["steps"]}
+    cache = {}
+    items = []
+    for key in CHECKLIST_KEYS:
+        req = setup_guide.REQUIREMENTS[key]
+        done = setup_guide.is_done(key, school, cache)
+        needs = [setup_guide.REQUIREMENTS[n]["label"] for n in needs_by_key.get(key, [])
+                 if not setup_guide.is_done(n, school, cache)]
+        admin_can = setup_guide.can_fix(key, "ADMIN")  # the checklist is for the school admin
+        items.append({"key": key, "label": req["label"], "done": done,
+                      "url": _url(req["url"]) if admin_can else "",
+                      "ask": "" if admin_can else req.get("owner", "the school administrator"),
+                      "hint": req["hint"], "needs": needs, "blocked": bool(needs) and not done})
     return items
 
 

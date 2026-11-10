@@ -21,9 +21,25 @@
   </div>
   {% endif %}
 {% endif %}
-{% if sms_low_balance is not None %}
-  <div class="alert alert-warning mt-2" role="alert">
-    <i class="fas fa-sms mr-1"></i> SMS credit is low: <strong>{{ sms_low_balance }}</strong> unit{{ sms_low_balance|pluralize }} left.
-    <a href="{% url 'school_sms_credit' %}" class="alert-link">See usage</a>
+{% if sms_low_balance is not None and not sms_alert_snoozed %}
+  <div class="alert {% if sms_alert_level == 'out' %}alert-danger{% else %}alert-warning{% endif %} mt-2 d-flex flex-wrap align-items-center js-snooze-alert"
+       role="alert" data-cookie="{{ sms_alert_cookie }}" data-value="{{ sms_alert_level }}"
+       data-days="{% if sms_alert_level == 'out' %}1{% else %}7{% endif %}">
+    <div class="mr-auto py-1">
+      <i class="fas fa-sms mr-1"></i>
+      {% if sms_alert_level == 'out' %}
+        <strong>SMS credit has run out.</strong> Messages to parents will not be sent until you top up.
+      {% else %}
+        SMS credit is low: <strong>{{ sms_low_balance }}</strong> unit{{ sms_low_balance|pluralize }} left.
+      {% endif %}
+      <a href="{% url 'school_sms_credit' %}" class="alert-link">See usage</a>
+    </div>
+    <button type="button" class="btn btn-sm btn-light ml-2 js-snooze-btn"
+            title="Hide this until {% if sms_alert_level == 'out' %}tomorrow{% else %}next week, or until the credit runs out{% endif %}">
+      {% if sms_alert_level == 'out' %}Remind me tomorrow{% else %}Remind me next week{% endif %}
+    </button>
+    <button type="button" class="close ml-2 js-snooze-btn" aria-label="Hide">
+      <span aria-hidden="true">&times;</span>
+    </button>
   </div>
 {% endif %}
