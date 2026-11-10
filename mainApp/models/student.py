@@ -755,7 +755,14 @@ class StudentBulkUploadRow(AuditMixin, models.Model):
             [p for p in [self.first_name, self.middle_name or "", self.last_name] if p]
         ).strip()
 
+    def refresh_names(self):
+        """Fill full_name / normalized_name from the name parts.
+        Called before bulk_create/bulk_update, which skip save()."""
+        self.full_name = self.build_full_name()[:200]
+        self.normalized_name = normalize_student_name(
+            self.first_name, self.middle_name or "", self.last_name
+        )[:200]
+
     def save(self, *args, **kwargs):
-        self.full_name = self.build_full_name()
-        self.normalized_name = normalize_student_name(self.first_name, self.middle_name or "", self.last_name)
+        self.refresh_names()
         super().save(*args, **kwargs)
